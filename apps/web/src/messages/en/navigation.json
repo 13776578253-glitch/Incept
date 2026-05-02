@@ -1,0 +1,31 @@
+{
+  "brand": "Incept",
+  "primary": {
+    "home": "Home",
+    "docs": "Docs",
+    "workspace": "Workspace",
+    "about": "About",
+    "settings": "Settings"
+  },
+  "groups": {
+    "docs": {
+      "archive": {
+        "label": "Docs archive",
+        "description": "Overview, entry points, and grouped document access."
+      },
+      "detail": {
+        "label": "Docs detail",
+        "description": "Reference pages, structured reading, and information panels."
+      }
+    }
+  },
+  "actions": {
+    "themeToggle": "Toggle theme",
+    "menu": "Menu",
+    "close": "Close",
+    "dark": "Dark",
+    "light": "Light",
+    "search": "Start searching",
+    "createEntry": "Create"
+  }
+}

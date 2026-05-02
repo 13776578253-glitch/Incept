@@ -1,0 +1,120 @@
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.search` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:241:25)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  239 |             type="button"
+  240 |             className="hidden min-w-52 items-center justify-between gap-3 rounded-full bo...
+> 241 |             aria-label={t('actions.search')}
+      |                         ^
+  242 |           >
+  243 |             <span className="truncate">{t('actions.search')}</span>
+  244 |             <span className="text-[var(--color-nav-muted)]"> (src/components/layouts/site-header.tsx:241:25)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.search` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:243:41)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  241 |             aria-label={t('actions.search')}
+  242 |           >
+> 243 |             <span className="truncate">{t('actions.search')}</span>
+      |                                         ^
+  244 |             <span className="text-[var(--color-nav-muted)]">
+  245 |               <SearchIcon className="size-[1.05rem]" />
+  246 |             </span> (src/components/layouts/site-header.tsx:243:41)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.createEntry` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:253:20)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  251 |             className="hidden items-center gap-2 rounded-full bg-[var(--color-nav-create-...
+  252 |           >
+> 253 |             <span>{t('actions.createEntry')}</span>
+      |                    ^
+  254 |             <ArrowUpRightIcon />
+  255 |           </Link>
+  256 | (src/components/layouts/site-header.tsx:253:20)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.search` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:290:22)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  288 |         nextLocale={nextLocale}
+  289 |         nextThemeLabel={mounted ? (isDark ? t('actions.light') : t('actions.dark')) : t('...
+> 290 |         searchLabel={t('actions.search')}
+      |                      ^
+  291 |         createLabel={t('actions.createEntry')}
+  292 |         onLanguageChange={setLanguage}
+  293 |         onThemeChange={() => setColorScheme(nextTheme)} (src/components/layouts/site-header.tsx:290:22)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.createEntry` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:291:22)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  289 |         nextThemeLabel={mounted ? (isDark ? t('actions.light') : t('actions.dark')) : t('...
+  290 |         searchLabel={t('actions.search')}
+> 291 |         createLabel={t('actions.createEntry')}
+      |                      ^
+  292 |         onLanguageChange={setLanguage}
+  293 |         onThemeChange={() => setColorScheme(nextTheme)}
+  294 |       /> (src/components/layouts/site-header.tsx:291:22)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.search` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:241:25)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  239 |             type="button"
+  240 |             className="hidden min-w-52 items-center justify-between gap-3 rounded-full bo...
+> 241 |             aria-label={t('actions.search')}
+      |                         ^
+  242 |           >
+  243 |             <span className="truncate">{t('actions.search')}</span>
+  244 |             <span className="text-[var(--color-nav-muted)]"> (src/components/layouts/site-header.tsx:241:25)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.search` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:243:41)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  241 |             aria-label={t('actions.search')}
+  242 |           >
+> 243 |             <span className="truncate">{t('actions.search')}</span>
+      |                                         ^
+  244 |             <span className="text-[var(--color-nav-muted)]">
+  245 |               <SearchIcon className="size-[1.05rem]" />
+  246 |             </span> (src/components/layouts/site-header.tsx:243:41)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.createEntry` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:253:20)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  251 |             className="hidden items-center gap-2 rounded-full bg-[var(--color-nav-create-...
+  252 |           >
+> 253 |             <span>{t('actions.createEntry')}</span>
+      |                    ^
+  254 |             <ArrowUpRightIcon />
+  255 |           </Link>
+  256 | (src/components/layouts/site-header.tsx:253:20)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.search` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:290:22)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  288 |         nextLocale={nextLocale}
+  289 |         nextThemeLabel={mounted ? (isDark ? t('actions.light') : t('actions.dark')) : t('...
+> 290 |         searchLabel={t('actions.search')}
+      |                      ^
+  291 |         createLabel={t('actions.createEntry')}
+  292 |         onLanguageChange={setLanguage}
+  293 |         onThemeChange={() => setColorScheme(nextTheme)} (src/components/layouts/site-header.tsx:290:22)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.createEntry` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:291:22)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  289 |         nextThemeLabel={mounted ? (isDark ? t('actions.light') : t('actions.dark')) : t('...
+  290 |         searchLabel={t('actions.search')}
+> 291 |         createLabel={t('actions.createEntry')}
+      |                      ^
+  292 |         onLanguageChange={setLanguage}
+  293 |         onThemeChange={() => setColorScheme(nextTheme)}
+  294 |       /> (src/components/layouts/site-header.tsx:291:22)

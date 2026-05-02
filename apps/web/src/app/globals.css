@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+@import '../styles/tokens.css';
+@import '../styles/theme.css';
+@import '../styles/motion.css';
+@import '../styles/layout.css';
+
+:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family-base);
+}

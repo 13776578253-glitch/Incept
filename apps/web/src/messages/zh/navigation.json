@@ -1,0 +1,31 @@
+{
+  "brand": "Incept",
+  "primary": {
+    "home": "首页",
+    "docs": "文档",
+    "workspace": "工作台",
+    "about": "关于",
+    "settings": "设置"
+  },
+  "groups": {
+    "docs": {
+      "archive": {
+        "label": "文档归档",
+        "description": "总览、入口和分类浏览。"
+      },
+      "detail": {
+        "label": "文档正文",
+        "description": "参考页、结构化阅读和信息侧栏。"
+      }
+    }
+  },
+  "actions": {
+    "themeToggle": "切换主题",
+    "menu": "菜单",
+    "close": "关闭",
+    "dark": "深色",
+    "light": "浅色",
+    "search": "开始搜索",
+    "createEntry": "创建"
+  }
+}

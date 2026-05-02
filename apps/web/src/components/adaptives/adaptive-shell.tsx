@@ -1,0 +1,2 @@
+// Adaptive shell placeholder.
+

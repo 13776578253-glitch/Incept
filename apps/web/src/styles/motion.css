@@ -1,0 +1,5 @@
+:root {
+  --duration-fast: 160ms;
+  --duration-base: 240ms;
+  --ease-standard: ease;
+}

@@ -1,0 +1,2 @@
+// Screen detection helper placeholder.
+

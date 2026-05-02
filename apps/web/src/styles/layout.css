@@ -1,0 +1,47 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-main {
+  min-height: 100vh;
+  padding-top: var(--navbar-height);
+}
+
+.page-shell {
+  width: 100%;
+}
+
+.page-shell-simple {
+  display: block;
+}
+
+.page-shell-document {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(220px, 280px);
+  min-height: calc(100vh - var(--navbar-height));
+}
+
+.page-shell-sidebar,
+.page-shell-aside {
+  min-width: 0;
+}
+
+.page-shell-content {
+  min-width: 0;
+}
+
+.page-shell-workspace,
+.page-shell-create {
+  min-height: calc(100vh - var(--navbar-height));
+}
+
+@media (max-width: 1023px) {
+  .page-shell-document {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .page-shell-sidebar,
+  .page-shell-aside {
+    display: none;
+  }
+}
