@@ -4,6 +4,7 @@
     "home": "Home",
     "docs": "Docs",
     "workspace": "Workspace",
+    "resources": "Resources",
     "about": "About",
     "settings": "Settings"
   },
@@ -26,6 +27,7 @@
     "dark": "Dark",
     "light": "Light",
     "search": "Start searching",
-    "createEntry": "Create"
+    "createEntry": "Create",
+    "settings": "Settings"
   }
 }

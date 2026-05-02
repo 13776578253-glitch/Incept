@@ -4,6 +4,7 @@
     "home": "首页",
     "docs": "文档",
     "workspace": "工作台",
+    "resources": "资源",
     "about": "关于",
     "settings": "设置"
   },
@@ -26,6 +27,7 @@
     "dark": "深色",
     "light": "浅色",
     "search": "开始搜索",
-    "createEntry": "创建"
+    "createEntry": "创建",
+    "settings": "设置"
   }
 }

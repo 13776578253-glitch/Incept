@@ -58,6 +58,17 @@ function ArrowUpRightIcon() {
   );
 }
 
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[1.08rem]">
+      <path
+        d="M19.14 12.94a7.97 7.97 0 0 0 .05-.94 7.97 7.97 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.28 7.28 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.22-1.12.53-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.97 7.97 0 0 0-.05.94c0 .32.02.63.05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.4 1.05.72 1.63.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.22 1.12-.53 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 function SunIcon() {
   return (
     <svg viewBox="0 0 22 22" aria-hidden="true" className="size-4">
@@ -82,7 +93,7 @@ function MoonIcon() {
 
 function BrandLogoIcon() {
   return (
-    <svg viewBox="0 0 24 16" className="size-5 shrink-0" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 24 16" className="size-[1.9rem] shrink-0" fill="none" aria-hidden="true">
       <path d="M1 3h14v4.2H1z" fill="currentColor" />
       <path d="M9.5 8.8H23V13H9.5z" fill="currentColor" />
       <path d="M18 3h5v4.2h-5z" fill="currentColor" />
@@ -124,8 +135,9 @@ export function SiteHeader() {
   const activeTheme = mounted ? colorScheme : 'system';
   const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
   const isDark = mounted && activeTheme === 'dark';
-  const nextLocale = language === 'zh' ? 'en' : 'zh';
   const createHref = `/${language}/create`;
+  const settingsHref = `/${language}/settings`;
+  const isSettingsActive = pathname === settingsHref;
 
   const openMenu = (id: string) => {
     if (closeTimeoutRef.current) {
@@ -150,7 +162,7 @@ export function SiteHeader() {
       <div className="flex h-[var(--navbar-height)] w-full items-center px-4 md:px-6 xl:grid xl:grid-cols-[minmax(14rem,1fr)_auto_minmax(26rem,1fr)] xl:gap-10 xl:px-10 2xl:px-12">
         <Link
           href={`/${language}`}
-          className="flex shrink-0 items-center gap-3 text-[1rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] xl:justify-self-start"
+          className="flex shrink-0 items-center gap-3 text-[1.26rem] font-bold tracking-[-0.03em] text-[var(--color-text)] xl:justify-self-start"
         >
           <BrandLogoIcon />
           <span>{t('brand')}</span>
@@ -254,13 +266,17 @@ export function SiteHeader() {
             <ArrowUpRightIcon />
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setLanguage(nextLocale)}
-            className="hidden rounded-full border border-[var(--color-nav-search-border)] px-3 py-1.5 text-[0.72rem] font-medium uppercase tracking-[0.14em] text-[var(--color-nav-item)] transition-colors hover:border-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] md:inline-flex"
+          <Link
+            href={settingsHref}
+            aria-label={t('actions.settings')}
+            className={`hidden p-1.5 transition-colors md:inline-flex ${
+              isSettingsActive
+                ? 'rounded-full bg-[var(--color-nav-item-active)] text-[var(--color-nav-item)]'
+                : 'text-[var(--color-nav-muted)] hover:text-[var(--color-text)]'
+            }`}
           >
-            {nextLocale}
-          </button>
+            <SettingsIcon />
+          </Link>
 
           <button
             type="button"
@@ -285,11 +301,11 @@ export function SiteHeader() {
         navigation={navigation}
         isOpen={mobileOpen}
         createHref={createHref}
-        nextLocale={nextLocale}
+        settingsHref={settingsHref}
         nextThemeLabel={mounted ? (isDark ? t('actions.light') : t('actions.dark')) : t('actions.dark')}
         searchLabel={t('actions.search')}
         createLabel={t('actions.createEntry')}
-        onLanguageChange={setLanguage}
+        settingsLabel={t('actions.settings')}
         onThemeChange={() => setColorScheme(nextTheme)}
       />
     </header>

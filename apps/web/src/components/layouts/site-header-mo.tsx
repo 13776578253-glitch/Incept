@@ -2,17 +2,16 @@
 
 import Link from 'next/link';
 import type { PrimaryNavItem } from '@/components/layouts/navigation.types';
-import type { AppLocale } from '@/i18n/config/locales';
 
 type MobileSiteHeaderProps = {
   navigation: PrimaryNavItem[];
   isOpen: boolean;
   createHref: string;
-  nextLocale: AppLocale;
+  settingsHref: string;
   nextThemeLabel: string;
   searchLabel: string;
   createLabel: string;
-  onLanguageChange: (locale: AppLocale) => void;
+  settingsLabel: string;
   onThemeChange: () => void;
 };
 
@@ -20,11 +19,11 @@ export function MobileSiteHeader({
   navigation,
   isOpen,
   createHref,
-  nextLocale,
+  settingsHref,
   nextThemeLabel,
   searchLabel,
   createLabel,
-  onLanguageChange,
+  settingsLabel,
   onThemeChange,
 }: MobileSiteHeaderProps) {
   if (!isOpen) {
@@ -41,12 +40,20 @@ export function MobileSiteHeader({
           >
             <span>{searchLabel}</span>
           </button>
-          <Link
-            href={createHref}
-            className="flex items-center justify-center rounded-full bg-[var(--color-nav-create-bg)] px-4 py-2 text-sm font-medium text-[var(--color-nav-create-text)]"
-          >
-            {createLabel}
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href={createHref}
+              className="flex flex-1 items-center justify-center rounded-full bg-[var(--color-nav-create-bg)] px-4 py-2 text-sm font-medium text-[var(--color-nav-create-text)]"
+            >
+              {createLabel}
+            </Link>
+            <Link
+              href={settingsHref}
+              className="flex items-center justify-center rounded-full border border-[var(--color-nav-search-border)] px-4 py-2 text-sm font-medium text-[var(--color-text)]"
+            >
+              {settingsLabel}
+            </Link>
+          </div>
         </div>
 
         {navigation.map((item) => (
@@ -84,23 +91,13 @@ export function MobileSiteHeader({
             ) : null}
           </div>
         ))}
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => onLanguageChange(nextLocale)}
-            className="flex-1 rounded-full border border-[var(--color-nav-search-border)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-[var(--color-nav-item)]"
-          >
-            {nextLocale}
-          </button>
-          <button
-            type="button"
-            onClick={onThemeChange}
-            className="flex-1 rounded-full border border-[var(--color-nav-search-border)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-[var(--color-nav-item)]"
-          >
-            {nextThemeLabel}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onThemeChange}
+          className="w-full rounded-full border border-[var(--color-nav-search-border)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-[var(--color-nav-item)]"
+        >
+          {nextThemeLabel}
+        </button>
       </div>
     </div>
   );

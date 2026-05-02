@@ -17,7 +17,6 @@ export function createSiteNavigation(
       id: 'home',
       label: t('primary.home'),
       href: withLocale('/'),
-      matchPrefix: withLocale('/'),
     },
     {
       id: 'docs',
@@ -52,16 +51,16 @@ export function createSiteNavigation(
       matchPrefix: withLocale('/workspace'),
     },
     {
+      id: 'resources',
+      label: t('primary.resources'),
+      href: withLocale('/resources'),
+      matchPrefix: withLocale('/resources'),
+    },
+    {
       id: 'about',
       label: t('primary.about'),
       href: withLocale('/about'),
       matchPrefix: withLocale('/about'),
-    },
-    {
-      id: 'settings',
-      label: t('primary.settings'),
-      href: withLocale('/settings'),
-      matchPrefix: withLocale('/settings'),
     },
   ];
 }
