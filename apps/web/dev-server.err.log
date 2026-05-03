@@ -118,3 +118,927 @@
   292 |         onLanguageChange={setLanguage}
   293 |         onThemeChange={() => setColorScheme(nextTheme)}
   294 |       /> (src/components/layouts/site-header.tsx:291:22)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Error: MISSING_MESSAGE: Could not resolve `navigation.primary.resources` in messages for locale `en`.
+    at createSiteNavigation (src\components\layouts\site-navigation.ts:56:14)
+    at <unknown> (src\components\layouts\site-header.tsx:132:31)
+    at SiteHeader (src\components\layouts\site-header.tsx:131:29)
+  54 |     {
+  55 |       id: 'resources',
+> 56 |       label: t('primary.resources'),
+     |              ^
+  57 |       href: withLocale('/resources'),
+  58 |       matchPrefix: withLocale('/resources'),
+  59 |     }, {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `navigation.primary.resources` in messages for locale `en`.'
+}
+Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src\components\layouts\site-header.tsx:270:25)
+  268 |           <Link
+  269 |             href={settingsHref}
+> 270 |             aria-label={t('actions.settings')}
+      |                         ^
+  271 |             className="hidden rounded-full border border-[var(--color-nav-search-border)]...
+  272 |           >
+  273 |             <SettingsIcon /> {
+  code: 'MISSING_MESSAGE',
+  originalMessage: 'Could not resolve `navigation.actions.settings` in messages for locale `en`.'
+}
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.primary.resources` in messages for locale `en`.
+    at createSiteNavigation (src/components/layouts/site-navigation.ts:56:14)
+    at SiteHeader.useMemo[navigation] (src/components/layouts/site-header.tsx:133:5)
+    at SiteHeader (src/components/layouts/site-header.tsx:132:42)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  54 |     {
+  55 |       id: 'resources',
+> 56 |       label: t('primary.resources'),
+     |              ^
+  57 |       href: withLocale('/resources'),
+  58 |       matchPrefix: withLocale('/resources'),
+  59 |     }, (src/components/layouts/site-navigation.ts:56:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.primary.resources` in messages for locale `en`.
+    at createSiteNavigation (src/components/layouts/site-navigation.ts:56:14)
+    at SiteHeader.useMemo[navigation] (src/components/layouts/site-header.tsx:133:5)
+    at SiteHeader (src/components/layouts/site-header.tsx:132:42)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  54 |     {
+  55 |       id: 'resources',
+> 56 |       label: t('primary.resources'),
+     |              ^
+  57 |       href: withLocale('/resources'),
+  58 |       matchPrefix: withLocale('/resources'),
+  59 |     }, (src/components/layouts/site-navigation.ts:56:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:271:23)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  269 |             href={settingsHref}
+  270 |             aria-label={t('actions.settings')}
+> 271 |             className="hidden rounded-full border border-[var(--color-nav-search-border)]...
+      |                       ^
+  272 |           >
+  273 |             <SettingsIcon />
+  274 |           </Link> (src/components/layouts/site-header.tsx:271:23)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:271:23)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  269 |             href={settingsHref}
+  270 |             aria-label={t('actions.settings')}
+> 271 |             className="hidden rounded-full border border-[var(--color-nav-search-border)]...
+      |                       ^
+  272 |           >
+  273 |             <SettingsIcon />
+  274 |           </Link> (src/components/layouts/site-header.tsx:271:23)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:271:23)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  269 |             href={settingsHref}
+  270 |             aria-label={t('actions.settings')}
+> 271 |             className="hidden rounded-full border border-[var(--color-nav-search-border)]...
+      |                       ^
+  272 |           >
+  273 |             <SettingsIcon />
+  274 |           </Link> (src/components/layouts/site-header.tsx:271:23)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:271:23)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  269 |             href={settingsHref}
+  270 |             aria-label={t('actions.settings')}
+> 271 |             className="hidden rounded-full border border-[var(--color-nav-search-border)]...
+      |                       ^
+  272 |           >
+  273 |             <SettingsIcon />
+  274 |           </Link> (src/components/layouts/site-header.tsx:271:23)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:271:23)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  269 |             href={settingsHref}
+  270 |             aria-label={t('actions.settings')}
+> 271 |             className="hidden rounded-full border border-[var(--color-nav-search-border)]...
+      |                       ^
+  272 |           >
+  273 |             <SettingsIcon />
+  274 |           </Link> (src/components/layouts/site-header.tsx:271:23)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:271:23)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  269 |             href={settingsHref}
+  270 |             aria-label={t('actions.settings')}
+> 271 |             className="hidden rounded-full border border-[var(--color-nav-search-border)]...
+      |                       ^
+  272 |           >
+  273 |             <SettingsIcon />
+  274 |           </Link> (src/components/layouts/site-header.tsx:271:23)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.primary.resources` in messages for locale `en`.
+    at createSiteNavigation (src/components/layouts/site-navigation.ts:56:14)
+    at SiteHeader.useMemo[navigation] (src/components/layouts/site-header.tsx:132:31)
+    at SiteHeader (src/components/layouts/site-header.tsx:131:29)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  54 |     {
+  55 |       id: 'resources',
+> 56 |       label: t('primary.resources'),
+     |              ^
+  57 |       href: withLocale('/resources'),
+  58 |       matchPrefix: withLocale('/resources'),
+  59 |     }, (src/components/layouts/site-navigation.ts:56:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.primary.resources` in messages for locale `en`.
+    at createSiteNavigation (src/components/layouts/site-navigation.ts:56:14)
+    at SiteHeader.useMemo[navigation] (src/components/layouts/site-header.tsx:132:31)
+    at SiteHeader (src/components/layouts/site-header.tsx:131:29)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  54 |     {
+  55 |       id: 'resources',
+> 56 |       label: t('primary.resources'),
+     |              ^
+  57 |       href: withLocale('/resources'),
+  58 |       matchPrefix: withLocale('/resources'),
+  59 |     }, (src/components/layouts/site-navigation.ts:56:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:270:25)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  268 |           <Link
+  269 |             href={settingsHref}
+> 270 |             aria-label={t('actions.settings')}
+      |                         ^
+  271 |             className="hidden rounded-full border border-[var(--color-nav-search-border)]...
+  272 |           >
+  273 |             <SettingsIcon /> (src/components/layouts/site-header.tsx:270:25)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:303:24)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  301 |         searchLabel={t('actions.search')}
+  302 |         createLabel={t('actions.createEntry')}
+> 303 |         settingsLabel={t('actions.settings')}
+      |                        ^
+  304 |         onThemeChange={() => setColorScheme(nextTheme)}
+  305 |       />
+  306 |     </header> (src/components/layouts/site-header.tsx:303:24)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:270:25)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  268 |           <Link
+  269 |             href={settingsHref}
+> 270 |             aria-label={t('actions.settings')}
+      |                         ^
+  271 |             className="hidden rounded-full border border-[var(--color-nav-search-border)]...
+  272 |           >
+  273 |             <SettingsIcon /> (src/components/layouts/site-header.tsx:270:25)
+[browser] Error: MISSING_MESSAGE: Could not resolve `navigation.actions.settings` in messages for locale `en`.
+    at SiteHeader (src/components/layouts/site-header.tsx:303:24)
+    at Set.forEach (<anonymous>)
+    at AppShell (src\components\layouts\containers\app-shell.tsx:11:7)
+    at LocaleLayout (src\app\[locale]\layout.tsx:32:7)
+  301 |         searchLabel={t('actions.search')}
+  302 |         createLabel={t('actions.createEntry')}
+> 303 |         settingsLabel={t('actions.settings')}
+      |                        ^
+  304 |         onThemeChange={() => setColorScheme(nextTheme)}
+  305 |       />
+  306 |     </header> (src/components/layouts/site-header.tsx:303:24)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <div className="min-h-[cal...">
+      <header>
+      <div className="space-y-14">
+        <SettingsGroupSection group={{id:"basic-...", ...}} theme="light" setTheme={function V.useCallback[f]} ...>
+          <section className="space-y-8">
+            <header>
+            <div className="space-y-10">
+              <SettingsDomainSection domain={{id:"appear...", ...}} theme="light" setTheme={function V.useCallback[f]} ...>
+                <section id="appearance" className="scroll-mt-...">
+                  <div>
+                  <div className="rounded-[2...">
+                    <div className="">
+                      <SettingsRow row={{id:"appear...", ...}} theme="light" setTheme={function V.useCallback[f]} ...>
+                        <div className="grid gap-4...">
+                          <div>
+                          <div className="md:justify...">
+                            <SettingsRowControl row={{id:"appear...", ...}} theme="light" ...>
+                              <SettingsSegmentedControl options={[...]} selected="light" onSelect={function onSelect}>
+                                <div className="inline-fle...">
+                                  <button
+                                    type="button"
+                                    onClick={function onClick}
++                                   className="rounded-[10px] px-3 py-2 text-sm transition-colors bg-[var(--color-nav-..."
+-                                   className="rounded-[10px] px-3 py-2 text-sm transition-colors text-[var(--color-na..."
+                                  >
++                                   Light
+                                  <button>
+                                  <button
+                                    type="button"
+                                    onClick={function onClick}
++                                   className="rounded-[10px] px-3 py-2 text-sm transition-colors text-[var(--color-na..."
+-                                   className="rounded-[10px] px-3 py-2 text-sm transition-colors bg-[var(--color-nav-..."
+                                  >
++                                   System
+                    ...
+              ...
+        ...
+ 
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.eyebrow` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:388:10)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  386 |     <div className="min-h-[calc(100vh-var(--navbar-height))] max-w-[820px] space-y-10 pb-...
+  387 |       <header className="max-w-[760px] space-y-2.5">
+> 388 |         {t('page.eyebrow') ? (
+      |          ^
+  389 |           <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(...
+  390 |             {t('page.eyebrow')}
+  391 |           </p> (src/features/settings/index.tsx:388:10)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.eyebrow` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:390:14)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  388 |         {t('page.eyebrow') ? (
+  389 |           <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(...
+> 390 |             {t('page.eyebrow')}
+      |              ^
+  391 |           </p>
+  392 |         ) : null}
+  393 |         <h1 className="max-w-3xl text-[2.15rem] font-semibold tracking-[-0.05em] text-[va... (src/features/settings/index.tsx:390:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.title` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:394:12)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  392 |         ) : null}
+  393 |         <h1 className="max-w-3xl text-[2.15rem] font-semibold tracking-[-0.05em] text-[va...
+> 394 |           {t('page.title')}
+      |            ^
+  395 |         </h1>
+  396 |         {t('page.description') ? (
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr... (src/features/settings/index.tsx:394:12)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.description` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:396:10)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  394 |           {t('page.title')}
+  395 |         </h1>
+> 396 |         {t('page.description') ? (
+      |          ^
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr...
+  398 |             {t('page.description')}
+  399 |           </p> (src/features/settings/index.tsx:396:10)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.description` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:398:14)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  396 |         {t('page.description') ? (
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr...
+> 398 |             {t('page.description')}
+      |              ^
+  399 |           </p>
+  400 |         ) : null}
+  401 |       </header> (src/features/settings/index.tsx:398:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.eyebrow` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:388:10)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  386 |     <div className="min-h-[calc(100vh-var(--navbar-height))] max-w-[820px] space-y-10 pb-...
+  387 |       <header className="max-w-[760px] space-y-2.5">
+> 388 |         {t('page.eyebrow') ? (
+      |          ^
+  389 |           <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(...
+  390 |             {t('page.eyebrow')}
+  391 |           </p> (src/features/settings/index.tsx:388:10)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.eyebrow` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:390:14)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  388 |         {t('page.eyebrow') ? (
+  389 |           <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(...
+> 390 |             {t('page.eyebrow')}
+      |              ^
+  391 |           </p>
+  392 |         ) : null}
+  393 |         <h1 className="max-w-3xl text-[2.15rem] font-semibold tracking-[-0.05em] text-[va... (src/features/settings/index.tsx:390:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.title` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:394:12)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  392 |         ) : null}
+  393 |         <h1 className="max-w-3xl text-[2.15rem] font-semibold tracking-[-0.05em] text-[va...
+> 394 |           {t('page.title')}
+      |            ^
+  395 |         </h1>
+  396 |         {t('page.description') ? (
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr... (src/features/settings/index.tsx:394:12)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.description` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:396:10)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  394 |           {t('page.title')}
+  395 |         </h1>
+> 396 |         {t('page.description') ? (
+      |          ^
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr...
+  398 |             {t('page.description')}
+  399 |           </p> (src/features/settings/index.tsx:396:10)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.description` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:398:14)
+    at Set.forEach (<anonymous>)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  396 |         {t('page.description') ? (
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr...
+> 398 |             {t('page.description')}
+      |              ^
+  399 |           </p>
+  400 |         ) : null}
+  401 |       </header> (src/features/settings/index.tsx:398:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.eyebrow` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:388:10)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  386 |     <div className="min-h-[calc(100vh-var(--navbar-height))] max-w-[820px] space-y-10 pb-...
+  387 |       <header className="max-w-[760px] space-y-2.5">
+> 388 |         {t('page.eyebrow') ? (
+      |          ^
+  389 |           <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(...
+  390 |             {t('page.eyebrow')}
+  391 |           </p> (src/features/settings/index.tsx:388:10)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.eyebrow` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:390:14)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  388 |         {t('page.eyebrow') ? (
+  389 |           <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(...
+> 390 |             {t('page.eyebrow')}
+      |              ^
+  391 |           </p>
+  392 |         ) : null}
+  393 |         <h1 className="max-w-3xl text-[2.15rem] font-semibold tracking-[-0.05em] text-[va... (src/features/settings/index.tsx:390:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.title` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:394:12)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  392 |         ) : null}
+  393 |         <h1 className="max-w-3xl text-[2.15rem] font-semibold tracking-[-0.05em] text-[va...
+> 394 |           {t('page.title')}
+      |            ^
+  395 |         </h1>
+  396 |         {t('page.description') ? (
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr... (src/features/settings/index.tsx:394:12)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.description` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:396:10)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  394 |           {t('page.title')}
+  395 |         </h1>
+> 396 |         {t('page.description') ? (
+      |          ^
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr...
+  398 |             {t('page.description')}
+  399 |           </p> (src/features/settings/index.tsx:396:10)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.description` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:398:14)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  396 |         {t('page.description') ? (
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr...
+> 398 |             {t('page.description')}
+      |              ^
+  399 |           </p>
+  400 |         ) : null}
+  401 |       </header> (src/features/settings/index.tsx:398:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.eyebrow` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:388:10)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  386 |     <div className="min-h-[calc(100vh-var(--navbar-height))] max-w-[820px] space-y-10 pb-...
+  387 |       <header className="max-w-[760px] space-y-2.5">
+> 388 |         {t('page.eyebrow') ? (
+      |          ^
+  389 |           <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(...
+  390 |             {t('page.eyebrow')}
+  391 |           </p> (src/features/settings/index.tsx:388:10)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.eyebrow` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:390:14)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  388 |         {t('page.eyebrow') ? (
+  389 |           <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(...
+> 390 |             {t('page.eyebrow')}
+      |              ^
+  391 |           </p>
+  392 |         ) : null}
+  393 |         <h1 className="max-w-3xl text-[2.15rem] font-semibold tracking-[-0.05em] text-[va... (src/features/settings/index.tsx:390:14)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.title` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:394:12)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  392 |         ) : null}
+  393 |         <h1 className="max-w-3xl text-[2.15rem] font-semibold tracking-[-0.05em] text-[va...
+> 394 |           {t('page.title')}
+      |            ^
+  395 |         </h1>
+  396 |         {t('page.description') ? (
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr... (src/features/settings/index.tsx:394:12)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.description` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:396:10)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  394 |           {t('page.title')}
+  395 |         </h1>
+> 396 |         {t('page.description') ? (
+      |          ^
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr...
+  398 |             {t('page.description')}
+  399 |           </p> (src/features/settings/index.tsx:396:10)
+[browser] Error: MISSING_MESSAGE: Could not resolve `settings.page.description` in messages for locale `zh`.
+    at SettingsPageContent (src/features/settings/index.tsx:398:14)
+    at SettingsPage (src\app\[locale]\settings\page.tsx:10:7)
+  396 |         {t('page.description') ? (
+  397 |           <p className="max-w-[760px] text-[0.9375rem] leading-7 text-[var(--color-nav-dr...
+> 398 |             {t('page.description')}
+      |              ^
+  399 |           </p>
+  400 |         ) : null}
+  401 |       </header> (src/features/settings/index.tsx:398:14)
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+  [90m 6 |[0m } [36mfrom[0m [32m'@/lib/mock/shared/mock-types'[0m;
+  [90m 7 |[0m [36mimport[0m { getSettingsSidebarMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sidebar.mock'[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m { getSettingsGroupsMock } [36mfrom[0m [32m'@/lib/mock/pages/settings/settings-sections.mock'[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 9 |[0m
+  [90m10 |[0m [36mfunction[0m getSettingsPageIntroMock(locale: [33mAppLocale[0m): [33mMockSectionIntro[0m {
+  [90m11 |[0m   [36mif[0m (locale === [32m'zh'[0m) {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[browser] Uncaught Error: ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1
+Module not found: Can't resolve '@/lib/mock/pages/settings/settings-sections.mock'
+   6 | } from '@/lib/mock/shared/mock-types';
+   7 | import { getSettingsSidebarMock } from '@/lib/mock/pages/settings/settings-sidebar.mock';
+>  8 | import { getSettingsGroupsMock } from '@/lib/mock/pages/settings/settings-sections.mock';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   9 |
+  10 | function getSettingsPageIntroMock(locale: AppLocale): MockSectionIntro {
+  11 |   if (locale === 'zh') {
+
+Import map: aliased to relative './src/lib/mock/pages/settings/settings-sections.mock' inside of [project]/apps/web
+
+
+Import traces:
+  Client Component Browser:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Client Component Browser]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Client Component SSR]
+    ./apps/web/src/features/settings/index.tsx [Server Component]
+    ./apps/web/src/app/[locale]/settings/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (Error: ./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (Error: (./apps/web/src/lib/mock/pages/settings/settings-page.mock.ts:8:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

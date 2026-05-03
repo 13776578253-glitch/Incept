@@ -56,3 +56,175 @@ Creating turbopack project { dir: 'D:\\code\\Incept\\apps\\web', testMode: true 
 ✓ Compiled in 61ms
 ✓ Compiled in 59ms
  GET /en 200 in 537ms (next.js: 206ms, proxy.ts: 12ms, application-code: 319ms)
+ GET /zh 200 in 118ms (next.js: 40ms, proxy.ts: 12ms, application-code: 66ms)
+ GET /en 200 in 110ms (next.js: 35ms, proxy.ts: 14ms, application-code: 61ms)
+✓ Compiled in 45ms
+✓ Compiled in 57ms
+✓ Compiled in 56ms
+ GET /en 200 in 638ms (next.js: 100ms, proxy.ts: 7ms, application-code: 531ms)
+✓ Compiled in 52ms
+✓ Compiled in 49ms
+✓ Compiled in 51ms
+✓ Compiled in 27ms
+ GET /en 200 in 256ms (next.js: 140ms, proxy.ts: 5ms, application-code: 111ms)
+ GET /en 200 in 78ms (next.js: 14ms, proxy.ts: 16ms, application-code: 48ms)
+ GET /en 200 in 79ms (next.js: 9ms, proxy.ts: 6ms, application-code: 64ms)
+ GET /en 200 in 79ms (next.js: 8ms, proxy.ts: 5ms, application-code: 67ms)
+ GET /en 200 in 182ms (next.js: 24ms, proxy.ts: 13ms, application-code: 146ms)
+ GET /en 200 in 183ms (next.js: 45ms, proxy.ts: 14ms, application-code: 124ms)
+ GET /en 200 in 182ms (next.js: 104ms, proxy.ts: 16ms, application-code: 62ms)
+ GET /en 200 in 184ms (next.js: 85ms, proxy.ts: 16ms, application-code: 84ms)
+ GET /en 200 in 186ms (next.js: 63ms, proxy.ts: 15ms, application-code: 108ms)
+ GET /en 200 in 119ms (next.js: 6ms, proxy.ts: 6ms, application-code: 108ms)
+ GET /en 200 in 182ms (next.js: 20ms, proxy.ts: 13ms, application-code: 150ms)
+ GET /en 200 in 178ms (next.js: 64ms, proxy.ts: 13ms, application-code: 100ms)
+ GET /en 200 in 212ms (next.js: 40ms, proxy.ts: 14ms, application-code: 159ms)
+ GET /en 200 in 207ms (next.js: 110ms, proxy.ts: 14ms, application-code: 83ms)
+ GET /en 200 in 213ms (next.js: 89ms, proxy.ts: 13ms, application-code: 111ms)
+ GET /en 200 in 168ms (next.js: 15ms, proxy.ts: 24ms, application-code: 129ms)
+ GET /en 200 in 109ms (next.js: 15ms, proxy.ts: 13ms, application-code: 82ms)
+ GET /en 200 in 105ms (next.js: 35ms, proxy.ts: 11ms, application-code: 60ms)
+ GET /en 200 in 104ms (next.js: 66ms, proxy.ts: 11ms, application-code: 27ms)
+✓ Compiled in 69ms
+ GET /en/settings 200 in 2.2s (next.js: 1990ms, proxy.ts: 15ms, application-code: 159ms)
+✓ Compiled in 157ms
+ GET /en/settings 200 in 292ms (next.js: 186ms, proxy.ts: 12ms, application-code: 94ms)
+✓ Compiled in 101ms
+ GET /en/settings 200 in 641ms (next.js: 226ms, proxy.ts: 10ms, application-code: 405ms)
+✓ Compiled in 94ms
+✓ Compiled in 96ms
+✓ Compiled in 112ms
+ GET /en 200 in 358ms (next.js: 216ms, proxy.ts: 14ms, application-code: 129ms)
+ GET /en/docs 200 in 1378ms (next.js: 1298ms, proxy.ts: 13ms, application-code: 66ms)
+ GET /en/settings 200 in 336ms (next.js: 240ms, proxy.ts: 12ms, application-code: 85ms)
+✓ Compiled in 98ms
+ GET /en 200 in 340ms (next.js: 192ms, proxy.ts: 16ms, application-code: 131ms)
+ GET /en/settings 200 in 318ms (next.js: 189ms, proxy.ts: 12ms, application-code: 117ms)
+ GET /en/docs 200 in 303ms (next.js: 180ms, proxy.ts: 11ms, application-code: 113ms)
+ GET /en/settings 200 in 95ms (next.js: 34ms, proxy.ts: 12ms, application-code: 49ms)
+ GET /en 200 in 83ms (next.js: 32ms, proxy.ts: 9ms, application-code: 41ms)
+✓ Compiled in 88ms
+ GET /en/settings 200 in 390ms (next.js: 230ms, proxy.ts: 14ms, application-code: 145ms)
+ GET /en/docs 200 in 244ms (next.js: 161ms, proxy.ts: 9ms, application-code: 74ms)
+ GET /en/docs 200 in 59ms (next.js: 34ms, proxy.ts: 9ms, application-code: 17ms)
+ GET /en/docs 200 in 67ms (next.js: 12ms, proxy.ts: 9ms, application-code: 46ms)
+ GET /en/workspace 200 in 1377ms (next.js: 1307ms, proxy.ts: 10ms, application-code: 59ms)
+ GET /en/settings 200 in 99ms (next.js: 33ms, proxy.ts: 11ms, application-code: 55ms)
+✓ Compiled in 92ms
+ GET /en/settings 200 in 293ms (next.js: 121ms, proxy.ts: 6ms, application-code: 166ms)
+ GET /en/settings 200 in 314ms (next.js: 22ms, proxy.ts: 8ms, application-code: 284ms)
+ GET /en/settings 200 in 234ms (next.js: 112ms, proxy.ts: 20ms, application-code: 101ms)
+ GET /en/settings 200 in 238ms (next.js: 31ms, proxy.ts: 16ms, application-code: 191ms)
+ GET /en/settings 200 in 238ms (next.js: 68ms, proxy.ts: 20ms, application-code: 151ms)
+ GET /en/settings 200 in 238ms (next.js: 145ms, proxy.ts: 21ms, application-code: 72ms)
+ GET /en/settings 200 in 269ms (next.js: 167ms, proxy.ts: 20ms, application-code: 82ms)
+ GET /en/settings 200 in 225ms (next.js: 15ms, proxy.ts: 4ms, application-code: 206ms)
+ GET /en/settings 200 in 188ms (next.js: 20ms, proxy.ts: 21ms, application-code: 147ms)
+ GET /en/settings 200 in 188ms (next.js: 43ms, proxy.ts: 22ms, application-code: 123ms)
+ GET /en/settings 200 in 188ms (next.js: 67ms, proxy.ts: 22ms, application-code: 99ms)
+ GET /en/settings 200 in 184ms (next.js: 88ms, proxy.ts: 19ms, application-code: 78ms)
+ GET /en/settings 200 in 207ms (next.js: 125ms, proxy.ts: 15ms, application-code: 66ms)
+ GET /en/settings 200 in 167ms (next.js: 13ms, proxy.ts: 5ms, application-code: 149ms)
+ GET /en/settings 200 in 174ms (next.js: 20ms, proxy.ts: 33ms, application-code: 121ms)
+ GET /en/settings 200 in 151ms (next.js: 42ms, proxy.ts: 12ms, application-code: 97ms)
+ GET /en/settings 200 in 150ms (next.js: 60ms, proxy.ts: 11ms, application-code: 78ms)
+ GET /en/settings 200 in 147ms (next.js: 86ms, proxy.ts: 11ms, application-code: 50ms)
+ GET /en/settings 200 in 138ms (next.js: 108ms, proxy.ts: 7ms, application-code: 23ms)
+ GET /en/test 200 in 2.2s (next.js: 1840ms, proxy.ts: 12ms, application-code: 372ms)
+✓ Compiled in 484ms
+ GET /en/test 200 in 350ms (next.js: 98ms, proxy.ts: 94ms, application-code: 158ms)
+ GET /en/test 200 in 239ms (next.js: 7ms, proxy.ts: 9ms, application-code: 224ms)
+ GET /en/test 200 in 193ms (next.js: 69ms, proxy.ts: 19ms, application-code: 105ms)
+ GET /en/test 200 in 193ms (next.js: 107ms, proxy.ts: 21ms, application-code: 65ms)
+ GET /en/test 200 in 198ms (next.js: 24ms, proxy.ts: 17ms, application-code: 157ms)
+✓ Compiled in 36ms
+✓ Compiled in 115ms
+✓ Compiled in 25ms
+ GET /en 200 in 392ms (next.js: 121ms, proxy.ts: 69ms, application-code: 203ms)
+ GET /en 200 in 102ms (next.js: 33ms, proxy.ts: 15ms, application-code: 55ms)
+ GET /en 200 in 198ms (next.js: 30ms, proxy.ts: 11ms, application-code: 158ms)
+ GET /zh 200 in 202ms (next.js: 33ms, proxy.ts: 8ms, application-code: 161ms)
+ GET /en/test 200 in 276ms (next.js: 57ms, proxy.ts: 11ms, application-code: 209ms)
+ GET /en/test 200 in 427ms (next.js: 14ms, proxy.ts: 8ms, application-code: 405ms)
+ GET /en/test 200 in 342ms (next.js: 53ms, proxy.ts: 32ms, application-code: 256ms)
+ GET /en/test 200 in 342ms (next.js: 107ms, proxy.ts: 35ms, application-code: 200ms)
+ GET /en/test 200 in 342ms (next.js: 161ms, proxy.ts: 38ms, application-code: 144ms)
+ GET /en/test 200 in 342ms (next.js: 209ms, proxy.ts: 47ms, application-code: 86ms)
+ GET /en 200 in 117ms (next.js: 39ms, proxy.ts: 15ms, application-code: 63ms)
+ GET /en/test 200 in 163ms (next.js: 31ms, proxy.ts: 10ms, application-code: 122ms)
+ GET /en 200 in 114ms (next.js: 33ms, proxy.ts: 15ms, application-code: 66ms)
+ GET /en 200 in 116ms (next.js: 42ms, proxy.ts: 11ms, application-code: 63ms)
+ GET /en 200 in 79ms (next.js: 23ms, proxy.ts: 11ms, application-code: 45ms)
+ GET /en/docs 200 in 662ms (next.js: 264ms, proxy.ts: 9ms, application-code: 389ms)
+ GET /en 200 in 111ms (next.js: 32ms, proxy.ts: 13ms, application-code: 66ms)
+✓ Compiled in 271ms
+ GET /en 200 in 640ms (next.js: 252ms, proxy.ts: 15ms, application-code: 373ms)
+ GET /en 200 in 145ms (next.js: 24ms, proxy.ts: 16ms, application-code: 106ms)
+✓ Compiled in 73ms
+✓ Compiled in 161ms
+✓ Compiled in 85ms
+✓ Compiled in 177ms
+ GET /en 200 in 369ms (next.js: 105ms, proxy.ts: 90ms, application-code: 174ms)
+ GET /en 200 in 126ms (next.js: 7ms, proxy.ts: 8ms, application-code: 111ms)
+ GET /en 200 in 82ms (next.js: 13ms, proxy.ts: 9ms, application-code: 60ms)
+ GET /en 200 in 82ms (next.js: 38ms, proxy.ts: 9ms, application-code: 34ms)
+ GET /en 200 in 394ms (next.js: 43ms, proxy.ts: 15ms, application-code: 335ms)
+ GET /en/settings 200 in 337ms (next.js: 191ms, proxy.ts: 13ms, application-code: 133ms)
+ GET /zh/settings 200 in 87ms (next.js: 23ms, proxy.ts: 11ms, application-code: 53ms)
+ GET /en/settings 200 in 119ms (next.js: 39ms, proxy.ts: 13ms, application-code: 67ms)
+ GET /en 200 in 99ms (next.js: 33ms, proxy.ts: 15ms, application-code: 51ms)
+ GET /en/settings 200 in 104ms (next.js: 31ms, proxy.ts: 14ms, application-code: 60ms)
+ GET /en 200 in 127ms (next.js: 42ms, proxy.ts: 14ms, application-code: 72ms)
+ GET /en/settings 200 in 106ms (next.js: 36ms, proxy.ts: 10ms, application-code: 60ms)
+✓ Compiled in 198ms
+ GET /en/settings 200 in 726ms (next.js: 245ms, proxy.ts: 13ms, application-code: 469ms)
+✓ Compiled in 189ms
+ GET /en/settings 200 in 605ms (next.js: 207ms, proxy.ts: 11ms, application-code: 387ms)
+✓ Compiled in 40ms
+✓ Compiled in 55ms
+ GET /en/settings 200 in 250ms (next.js: 166ms, proxy.ts: 6ms, application-code: 78ms)
+✓ Compiled in 3ms
+ GET /en/settings 200 in 327ms (next.js: 30ms, proxy.ts: 10ms, application-code: 287ms)
+ GET /en/settings 200 in 235ms (next.js: 132ms, proxy.ts: 5ms, application-code: 98ms)
+✓ Compiled in 3ms
+ GET /en 200 in 102ms (next.js: 23ms, proxy.ts: 6ms, application-code: 73ms)
+ GET /en/settings 200 in 46ms (next.js: 14ms, proxy.ts: 3ms, application-code: 28ms)
+ GET /en 200 in 76ms (next.js: 20ms, proxy.ts: 12ms, application-code: 44ms)
+ GET /en/settings 200 in 115ms (next.js: 33ms, proxy.ts: 12ms, application-code: 70ms)
+ GET /en 200 in 139ms (next.js: 36ms, proxy.ts: 11ms, application-code: 92ms)
+ GET /en/settings 200 in 140ms (next.js: 44ms, proxy.ts: 14ms, application-code: 82ms)
+✓ Compiled in 261ms
+ GET /en 200 in 179ms (next.js: 58ms, proxy.ts: 25ms, application-code: 95ms)
+ GET /en/settings 200 in 1450ms (next.js: 1222ms, proxy.ts: 14ms, application-code: 215ms)
+ GET /en/settings 200 in 99ms (next.js: 27ms, proxy.ts: 15ms, application-code: 58ms)
+✓ Compiled in 191ms
+✓ Compiled in 174ms
+✓ Compiled in 89ms
+ GET /zh/settings 200 in 2.9s (next.js: 1650ms, proxy.ts: 22ms, application-code: 1208ms)
+ GET /zh 200 in 2.4s (next.js: 2.1s, proxy.ts: 139ms, application-code: 206ms)
+ GET /zh/settings 200 in 187ms (next.js: 77ms, proxy.ts: 15ms, application-code: 95ms)
+ GET /zh 200 in 111ms (next.js: 31ms, proxy.ts: 15ms, application-code: 64ms)
+ GET /zh/settings 200 in 139ms (next.js: 39ms, proxy.ts: 13ms, application-code: 86ms)
+✓ Compiled in 1315ms
+ GET /zh/settings 200 in 1210ms (next.js: 881ms, proxy.ts: 8ms, application-code: 322ms)
+ GET /zh/settings 200 in 203ms (next.js: 9ms, proxy.ts: 7ms, application-code: 188ms)
+ GET /zh/settings 200 in 151ms (next.js: 55ms, proxy.ts: 12ms, application-code: 85ms)
+ GET /zh/settings 200 in 154ms (next.js: 22ms, proxy.ts: 11ms, application-code: 121ms)
+ GET /zh/settings 200 in 154ms (next.js: 85ms, proxy.ts: 15ms, application-code: 54ms)
+ GET /zh/settings 200 in 1433ms (next.js: 40ms, proxy.ts: 16ms, application-code: 1376ms)
+✓ Compiled in 381ms
+✓ Compiled in 237ms
+✓ Compiled in 79ms
+✓ Compiled in 80ms
+✓ Compiled in 247ms
+○ Compiling /_error ...
+ GET /zh/settings 500 in 10.4s (next.js: 8.0s, proxy.ts: 944ms, application-code: 1459ms)
+ GET /zh/settings 500 in 38ms (next.js: 17ms, proxy.ts: 8ms, application-code: 14ms)
+ GET /zh/settings 500 in 78ms (next.js: 35ms, proxy.ts: 15ms, application-code: 29ms)
+✓ Compiled in 106ms
+ GET /zh/settings 200 in 815ms (next.js: 321ms, proxy.ts: 136ms, application-code: 358ms)
+ GET /zh 200 in 5.7s (next.js: 3.2s, proxy.ts: 42ms, application-code: 2.5s)
+ GET /zh/settings 200 in 151ms (next.js: 49ms, proxy.ts: 21ms, application-code: 82ms)
+ GET /en/settings 200 in 1274ms (next.js: 43ms, proxy.ts: 19ms, application-code: 1213ms)
+ GET /en 200 in 137ms (next.js: 42ms, proxy.ts: 12ms, application-code: 84ms)
+ GET /en/settings 200 in 105ms (next.js: 37ms, proxy.ts: 13ms, application-code: 55ms)

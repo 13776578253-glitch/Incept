@@ -35,6 +35,30 @@
   min-height: calc(100vh - var(--navbar-height));
 }
 
+.page-shell-settings {
+  display: grid;
+  grid-template-columns: 188px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 32px;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 32px 24px 72px;
+}
+
+.page-shell-settings-sidebar {
+  min-width: 0;
+  position: fixed;
+  top: calc(var(--navbar-height) + 24px);
+  left: max(24px, calc((100vw - 1160px) / 2 + 24px));
+  width: 188px;
+  z-index: 20;
+}
+
+.page-shell-settings-content {
+  min-width: 0;
+  grid-column: 2;
+}
+
 @media (max-width: 1023px) {
   .page-shell-document {
     grid-template-columns: minmax(0, 1fr);
@@ -43,5 +67,23 @@
   .page-shell-sidebar,
   .page-shell-aside {
     display: none;
+  }
+
+  .page-shell-settings {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 28px;
+    padding: 28px 20px 64px;
+  }
+
+  .page-shell-settings-sidebar {
+    position: static;
+    top: auto;
+    left: auto;
+    width: auto;
+    z-index: auto;
+  }
+
+  .page-shell-settings-content {
+    grid-column: auto;
   }
 }
