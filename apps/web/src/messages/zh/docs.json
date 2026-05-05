@@ -1,0 +1,20 @@
+{
+  "archive": {
+    "eyebrow": "文档归档",
+    "title": "已发布文章、参考内容与受限草稿",
+    "description": "这里用于归档已经发布的写作、工作记录和带权限控制的内容。未开放的条目仍然可见，但会以锁定状态展示，方便理解整个文档库的结构。"
+  },
+  "access": {
+    "available": "归档可读",
+    "restricted": "受限",
+    "requiresRole": "需要 {role} 权限"
+  },
+  "roles": {
+    "guest": "访客",
+    "member": "成员",
+    "pro": "专业版"
+  },
+  "groups": {
+    "entries": "{count} 篇"
+  }
+}

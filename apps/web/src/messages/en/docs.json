@@ -1,0 +1,20 @@
+{
+  "archive": {
+    "eyebrow": "Docs archive",
+    "title": "Published notes, references, and gated drafts",
+    "description": "An editorial archive for released writing, working notes, and access-controlled pieces. Locked entries stay visible so the shape of the library remains discoverable."
+  },
+  "access": {
+    "available": "Available in archive",
+    "restricted": "Restricted",
+    "requiresRole": "Requires {role} access"
+  },
+  "roles": {
+    "guest": "guest",
+    "member": "member",
+    "pro": "pro"
+  },
+  "groups": {
+    "entries": "{count} entries"
+  }
+}

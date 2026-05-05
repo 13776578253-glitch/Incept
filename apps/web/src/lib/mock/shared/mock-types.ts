@@ -53,3 +53,32 @@ export type MockBottomSection = {
   title: string;
   description: string;
 };
+
+export type MockAccessRole = 'guest' | 'member' | 'pro';
+
+export type MockViewer = {
+  id: string;
+  name: string;
+  role: string;
+  accessRole: MockAccessRole;
+};
+
+export type MockDocsArticle = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  publishedAt: string;
+  requiredRole: MockAccessRole;
+  eyebrow?: string;
+  tags?: string[];
+  imageSrc?: string;
+  imageAlt?: string;
+};
+
+export type MockDocsArchiveGroup = {
+  id: string;
+  label: string;
+  description?: string;
+  articles: MockDocsArticle[];
+};

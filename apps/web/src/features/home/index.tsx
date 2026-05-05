@@ -10,7 +10,7 @@ type HomePageFeatureProps = {
 
 export function HomePageFeature({ locale }: HomePageFeatureProps) {
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-6 md:px-8">
+    <div className="mx-auto w-full max-w-[1120px] px-6 md:px-8 xl:pr-10 xl:pl-[5.5rem] 2xl:pr-12 2xl:pl-[7.5rem]">
       <HomeHero
         intro={homePageMock.intro}
         statements={homePageMock.heroStatements}
