@@ -9,6 +9,8 @@ import {
   type ResolvedMockDocsArchiveGroup,
 } from '@/lib/mock/pages/docs/docs-permissions.mock';
 
+export { DocsReferenceFeature } from './docs-reference-feature';
+
 export function DocsArchiveFeature() {
   const t = useTranslations('docs');
   const resolvedGroups: ResolvedMockDocsArchiveGroup[] =

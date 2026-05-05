@@ -3,6 +3,11 @@
   --radius-md: 14px;
   --radius-lg: 20px;
   --navbar-height: 64px;
+  --docs-sidebar-width: 248px;
+  --docs-content-width: 760px;
+  --docs-right-rail-width: 196px;
+  --docs-right-rail-edge-padding: 36px;
+  --docs-shell-max-width: 1480px;
 
   --color-white: #ffffff;
   --color-black: #111111;

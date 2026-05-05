@@ -82,3 +82,69 @@ export type MockDocsArchiveGroup = {
   description?: string;
   articles: MockDocsArticle[];
 };
+
+export type MockDocsLayoutMode = 'sidebar' | 'contentOnly';
+
+export type MockDocsNavItem = {
+  id: string;
+  label: string;
+  href: string;
+  active?: boolean;
+};
+
+export type MockDocsNavGroup = {
+  id: string;
+  label: string;
+  items: MockDocsNavItem[];
+  defaultOpen?: boolean;
+};
+
+export type MockDocsOutlineItem = {
+  id: string;
+  label: string;
+};
+
+export type MockDocsParagraphBlock = {
+  id: string;
+  type: 'paragraph';
+  text: string;
+};
+
+export type MockDocsListBlock = {
+  id: string;
+  type: 'list';
+  items: string[];
+};
+
+export type MockDocsCalloutBlock = {
+  id: string;
+  type: 'callout';
+  tone: 'note' | 'tip' | 'warning';
+  title: string;
+  text: string;
+};
+
+export type MockDocsContentBlock =
+  | MockDocsParagraphBlock
+  | MockDocsListBlock
+  | MockDocsCalloutBlock;
+
+export type MockDocsSection = {
+  id: string;
+  title: string;
+  description?: string;
+  blocks: MockDocsContentBlock[];
+};
+
+export type MockDocsReferencePage = {
+  id: string;
+  slug: string;
+  layoutMode: MockDocsLayoutMode;
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  outlineLabel: string;
+  sidebarGroups: MockDocsNavGroup[];
+  outline: MockDocsOutlineItem[];
+  sections: MockDocsSection[];
+};

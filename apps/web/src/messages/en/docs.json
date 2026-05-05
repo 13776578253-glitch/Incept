@@ -16,5 +16,8 @@
   },
   "groups": {
     "entries": "{count} entries"
+  },
+  "reference": {
+    "outlineLabel": "On this page"
   }
 }

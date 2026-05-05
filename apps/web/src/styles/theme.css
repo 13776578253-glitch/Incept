@@ -1,6 +1,9 @@
 :root {
   --color-bg: var(--color-white);
   --color-text: var(--color-gray-900);
+  --color-text-soft: rgba(23, 23, 23, 0.46);
+  --color-text-muted: rgba(23, 23, 23, 0.68);
+  --color-border: rgba(17, 17, 17, 0.1);
   --color-navbar-bg: rgba(255, 255, 255, 0.92);
   --color-navbar-border: rgba(17, 17, 17, 0.08);
   --color-nav-item: var(--color-gray-700);
@@ -24,6 +27,9 @@
 .dark {
   --color-bg: #050505;
   --color-text: #f5f5f5;
+  --color-text-soft: rgba(245, 245, 245, 0.5);
+  --color-text-muted: rgba(245, 245, 245, 0.76);
+  --color-border: rgba(245, 245, 245, 0.14);
   --color-navbar-bg: rgba(8, 8, 8, 0.94);
   --color-navbar-border: rgba(245, 245, 245, 0.08);
   --color-nav-item: var(--color-gray-300);

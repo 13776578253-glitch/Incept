@@ -16,5 +16,8 @@
   },
   "groups": {
     "entries": "{count} 篇"
+  },
+  "reference": {
+    "outlineLabel": "本页目录"
   }
 }
