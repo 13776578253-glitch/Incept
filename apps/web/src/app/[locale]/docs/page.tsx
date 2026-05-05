@@ -1,10 +1,10 @@
 import { SimpleShell } from '@/components/layouts/containers/simple-shell';
-import { DocsArchiveFeature } from '@/features/docs';
+import { DocsHomeFeature } from '@/features/docs';
 
 export default function DocsPage() {
   return (
     <SimpleShell>
-      <DocsArchiveFeature />
+      <DocsHomeFeature />
     </SimpleShell>
   );
 }

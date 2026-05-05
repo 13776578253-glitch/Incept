@@ -1,15 +1,15 @@
-import { DocsArchiveListItem } from '@/features/docs/components/docs-archive-list-item';
-import type { ResolvedMockDocsArchiveGroup } from '@/lib/mock/pages/docs/docs-permissions.mock';
+import { DocsHomeListItem } from '@/features/docs/home/components/docs-home-list-item';
+import type { ResolvedMockDocsArchiveGroup } from '@/lib/mock/pages/docs/shared/docs-access.mock';
 
-type DocsArchiveGroupSectionProps = {
+type DocsHomeGroupSectionProps = {
   group: ResolvedMockDocsArchiveGroup;
   entriesLabel: string;
 };
 
-export function DocsArchiveGroupSection({
+export function DocsHomeGroupSection({
   group,
   entriesLabel,
-}: DocsArchiveGroupSectionProps) {
+}: DocsHomeGroupSectionProps) {
   return (
     <section className="mx-auto max-w-[920px]">
       <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -30,7 +30,7 @@ export function DocsArchiveGroupSection({
 
       <div className="space-y-7 md:space-y-9">
         {group.articles.map((article) => (
-          <DocsArchiveListItem key={article.id} article={article} />
+          <DocsHomeListItem key={article.id} article={article} />
         ))}
       </div>
     </section>

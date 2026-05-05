@@ -1,12 +1,10 @@
 import type { MockSectionIntro } from '@/lib/mock/shared/mock-types';
 
-type DocsArchiveIntroProps = {
+type DocsHomeIntroProps = {
   intro: MockSectionIntro;
 };
 
-export function DocsArchiveIntro({
-  intro,
-}: DocsArchiveIntroProps) {
+export function DocsHomeIntro({ intro }: DocsHomeIntroProps) {
   return (
     <section className="pb-8 pt-12 md:pb-10 md:pt-16">
       <div className="mx-auto max-w-[920px]">

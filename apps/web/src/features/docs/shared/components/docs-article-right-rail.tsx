@@ -3,15 +3,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { MockDocsOutlineItem } from '@/lib/mock/shared/mock-types';
 
-type DocsReferenceRightRailProps = {
+type DocsArticleRightRailProps = {
   items: MockDocsOutlineItem[];
   label: string;
 };
 
-export function DocsReferenceRightRail({
+export function DocsArticleRightRail({
   items,
   label,
-}: DocsReferenceRightRailProps) {
+}: DocsArticleRightRailProps) {
   const itemIds = useMemo(() => items.map((item) => item.id), [items]);
   const [activeId, setActiveId] = useState(items[0]?.id ?? '');
 

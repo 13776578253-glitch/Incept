@@ -1,9 +1,9 @@
 import type {
   MockDocsCalloutBlock,
   MockDocsContentBlock,
+  MockDocsDetailPage,
   MockDocsListBlock,
   MockDocsParagraphBlock,
-  MockDocsReferencePage,
 } from '@/lib/mock/shared/mock-types';
 
 function DocsParagraphBlock({ text }: MockDocsParagraphBlock) {
@@ -59,11 +59,11 @@ function DocsContentBlockRenderer({ block }: { block: MockDocsContentBlock }) {
   }
 }
 
-type DocsReferenceArticleProps = {
-  page: MockDocsReferencePage;
+type DocsArticleBodyProps = {
+  page: MockDocsDetailPage;
 };
 
-export function DocsReferenceArticle({ page }: DocsReferenceArticleProps) {
+export function DocsArticleBody({ page }: DocsArticleBodyProps) {
   return (
     <article className="mx-auto w-full max-w-[760px] min-w-0">
       <header className="pb-12 pt-2">

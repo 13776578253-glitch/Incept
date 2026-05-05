@@ -136,7 +136,8 @@ export type MockDocsSection = {
   blocks: MockDocsContentBlock[];
 };
 
-export type MockDocsReferencePage = {
+// Detail page for individual documentation articles
+export type MockDocsDetailPage = {
   id: string;
   slug: string;
   layoutMode: MockDocsLayoutMode;
@@ -148,3 +149,5 @@ export type MockDocsReferencePage = {
   outline: MockDocsOutlineItem[];
   sections: MockDocsSection[];
 };
+
+export type MockDocsReferencePage = MockDocsDetailPage;

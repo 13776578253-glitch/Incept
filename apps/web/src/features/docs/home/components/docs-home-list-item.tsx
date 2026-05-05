@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import type { ResolvedMockDocsArticle } from '@/lib/mock/pages/docs/docs-permissions.mock';
+import { withLocalePath } from '@/i18n/utils/locale-path';
+import type { ResolvedMockDocsArticle } from '@/lib/mock/pages/docs/shared/docs-access.mock';
 
 function LockIcon() {
   return (
@@ -22,17 +24,18 @@ function formatPublishedDate(publishedAt: string, locale: string) {
   }).format(date);
 }
 
-type DocsArchiveListItemProps = {
+type DocsHomeListItemProps = {
   article: ResolvedMockDocsArticle;
 };
 
-export function DocsArchiveListItem({ article }: DocsArchiveListItemProps) {
+export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
   const locale = useLocale();
   const t = useTranslations('docs');
   const roleLabel = t(`roles.${article.requiredRole}`);
   const isLocked = !article.isAccessible;
+  const href = article.href ? withLocalePath(locale, article.href) : null;
 
-  return (
+  const content = (
     <article className="grid gap-3 md:grid-cols-[7.5rem_minmax(0,1fr)] md:gap-8" aria-label={article.title}>
       <div className="text-[0.92rem] leading-7 text-[var(--color-nav-dropdown-description)] md:pt-0.5">
         {formatPublishedDate(article.publishedAt, locale)}
@@ -77,5 +80,18 @@ export function DocsArchiveListItem({ article }: DocsArchiveListItemProps) {
         </div>
       </div>
     </article>
+  );
+
+  if (!href || isLocked) {
+    return content;
+  }
+
+  return (
+    <Link
+      href={href}
+      className="block rounded-[18px] transition-opacity hover:opacity-90"
+    >
+      {content}
+    </Link>
   );
 }

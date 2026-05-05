@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useLocale } from 'next-intl';
+import type { AppLocale } from '@/i18n/config/locales';
+import { withLocalePath } from '@/i18n/utils/locale-path';
 import type { MockDocsNavGroup } from '@/lib/mock/shared/mock-types';
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -23,11 +26,12 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
-type DocsReferenceSidebarProps = {
+type DocsArticleSidebarProps = {
   groups: MockDocsNavGroup[];
 };
 
-export function DocsReferenceSidebar({ groups }: DocsReferenceSidebarProps) {
+export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {
+  const locale = useLocale() as AppLocale;
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
     Object.fromEntries(groups.map((group) => [group.id, group.defaultOpen ?? true])),
   );
@@ -64,7 +68,7 @@ export function DocsReferenceSidebar({ groups }: DocsReferenceSidebarProps) {
                   {group.items.map((item) => (
                     <li key={item.id}>
                       <Link
-                        href={item.href}
+                        href={withLocalePath(locale, item.href)}
                         className={`block rounded-[10px] px-2.5 py-1.5 text-[0.84rem] leading-6 transition-colors ${
                           item.active
                             ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'

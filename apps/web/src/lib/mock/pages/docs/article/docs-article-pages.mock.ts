@@ -1,47 +1,13 @@
 import type {
+  MockDocsDetailPage,
   MockDocsNavGroup,
   MockDocsOutlineItem,
-  MockDocsReferencePage,
   MockDocsSection,
 } from '@/lib/mock/shared/mock-types';
 
-const docsReferenceSidebarGroups: MockDocsNavGroup[] = [
-  {
-    id: 'docs-nav-getting-started',
-    label: 'Getting started',
-    defaultOpen: true,
-    items: [
-      { id: 'docs-nav-overview', label: 'Overview', href: '/en/docs' },
-      { id: 'docs-nav-quickstart', label: 'Quickstart', href: '/en/docs' },
-    ],
-  },
-  {
-    id: 'docs-nav-reference',
-    label: 'Reference',
-    defaultOpen: true,
-    items: [
-      {
-        id: 'docs-nav-reference-shells',
-        label: 'Document shells',
-        href: '/en/docs/reference',
-        active: true,
-      },
-      { id: 'docs-nav-reference-patterns', label: 'Reading patterns', href: '/en/docs' },
-      { id: 'docs-nav-reference-access', label: 'Access notes', href: '/en/docs' },
-    ],
-  },
-  {
-    id: 'docs-nav-systems',
-    label: 'Systems',
-    defaultOpen: false,
-    items: [
-      { id: 'docs-nav-systems-navigation', label: 'Navigation', href: '/en/docs' },
-      { id: 'docs-nav-systems-workspace', label: 'Workspace', href: '/en/docs' },
-    ],
-  },
-];
+export const docsLegacyReferenceSlug = 'document-shells';
 
-const docsReferenceSections: MockDocsSection[] = [
+const docsArticleSections: MockDocsSection[] = [
   {
     id: 'overview',
     title: 'Why a reusable document shell matters',
@@ -154,29 +120,65 @@ const docsReferenceSections: MockDocsSection[] = [
   },
 ];
 
-const docsReferenceOutline: MockDocsOutlineItem[] = docsReferenceSections.map(
+const docsArticleOutline: MockDocsOutlineItem[] = docsArticleSections.map(
   (section) => ({
     id: section.id,
     label: section.title,
   }),
 );
 
-export const docsReferencePageMock: MockDocsReferencePage = {
-  id: 'docs-reference-shells',
-  slug: 'document-shells',
-  layoutMode: 'sidebar',
-  eyebrow: 'Docs reference',
-  title: 'Building a reusable document shell for the docs surface',
-  description:
-    'A test article for validating fixed navigation, a reading column, and an outline rail before the reference pattern becomes the default docs interface.',
-  outlineLabel: 'On this page',
-  sidebarGroups: docsReferenceSidebarGroups,
-  outline: docsReferenceOutline,
-  sections: docsReferenceSections,
-};
+const docsArticleSidebarGroups: MockDocsNavGroup[] = [
+  {
+    id: 'docs-nav-getting-started',
+    label: 'Getting started',
+    defaultOpen: true,
+    items: [
+      { id: 'docs-nav-overview', label: 'Overview', href: '/docs' },
+      { id: 'docs-nav-quickstart', label: 'Quickstart', href: '/docs' },
+    ],
+  },
+  {
+    id: 'docs-nav-reference',
+    label: 'Reference',
+    defaultOpen: true,
+    items: [
+      {
+        id: 'docs-nav-reference-shells',
+        label: 'Document shells',
+        href: `/docs/${docsLegacyReferenceSlug}`,
+        active: true,
+      },
+      { id: 'docs-nav-reference-patterns', label: 'Reading patterns', href: '/docs' },
+      { id: 'docs-nav-reference-access', label: 'Access notes', href: '/docs' },
+    ],
+  },
+  {
+    id: 'docs-nav-systems',
+    label: 'Systems',
+    defaultOpen: false,
+    items: [
+      { id: 'docs-nav-systems-navigation', label: 'Navigation', href: '/docs' },
+      { id: 'docs-nav-systems-workspace', label: 'Workspace', href: '/docs' },
+    ],
+  },
+];
 
-export const docsReferenceContentOnlyPageMock: MockDocsReferencePage = {
-  ...docsReferencePageMock,
-  id: 'docs-reference-shells-content-only',
-  layoutMode: 'contentOnly',
-};
+export const docsArticlePagesMock: MockDocsDetailPage[] = [
+  {
+    id: 'docs-reference-shells',
+    slug: docsLegacyReferenceSlug,
+    layoutMode: 'sidebar',
+    eyebrow: 'Docs reference',
+    title: 'Building a reusable document shell for the docs surface',
+    description:
+      'A test article for validating fixed navigation, a reading column, and an outline rail before the reference pattern becomes the default docs interface.',
+    outlineLabel: 'On this page',
+    sidebarGroups: docsArticleSidebarGroups,
+    outline: docsArticleOutline,
+    sections: docsArticleSections,
+  },
+];
+
+export function getDocsArticlePageBySlug(slug: string) {
+  return docsArticlePagesMock.find((page) => page.slug === slug);
+}

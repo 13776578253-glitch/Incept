@@ -2,18 +2,19 @@ import type {
   MockDocsArchiveGroup,
   MockDocsArticle,
 } from '@/lib/mock/shared/mock-types';
+import { docsLegacyReferenceSlug } from '@/lib/mock/pages/docs/article/docs-article-pages.mock';
 
 const docs2026Articles: MockDocsArticle[] = [
   {
-    id: 'docs-2026-archive-shells',
-    slug: 'archive-shells-before-content',
-    title: 'Designing archive shells before content systems harden',
+    id: 'docs-2026-document-shells',
+    slug: docsLegacyReferenceSlug,
+    title: 'Building a reusable document shell for the docs surface',
     summary:
-      'A note on why document archives should establish grouping, pacing, and access signals before the backend model is finalized.',
+      'A test article for validating fixed navigation, a reading column, and an outline rail before the reference pattern becomes the default docs interface.',
     publishedAt: '2026-04-28',
     requiredRole: 'guest',
-    eyebrow: 'Release note',
-    tags: ['structure', 'archive'],
+    eyebrow: 'Reference',
+    tags: ['structure', 'shell'],
   },
   {
     id: 'docs-2026-right-rail-rhythm',
@@ -75,7 +76,7 @@ const docs2025Articles: MockDocsArticle[] = [
   },
 ];
 
-export const docsArchiveGroupsMock: MockDocsArchiveGroup[] = [
+export const docsHomeGroupsMock: MockDocsArchiveGroup[] = [
   {
     id: 'docs-group-2026',
     label: '2026',
