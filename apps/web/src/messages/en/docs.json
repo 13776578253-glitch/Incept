@@ -1,8 +1,8 @@
 {
   "archive": {
-    "eyebrow": "Docs archive",
-    "title": "Published notes, references, and gated drafts",
-    "description": "An editorial archive for released writing, working notes, and access-controlled pieces. Locked entries stay visible so the shape of the library remains discoverable."
+    "eyebrow": "Docs",
+    "title": "Documentation, references, and gated drafts",
+    "description": "A calm entry point for released writing, structured reference articles, and access-controlled pieces. Locked entries stay visible so the shape of the library remains discoverable."
   },
   "access": {
     "available": "Available in archive",

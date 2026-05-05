@@ -7,10 +7,10 @@ import type {
 } from '@/lib/mock/shared/mock-types';
 
 export const docsHomeIntroMock: MockSectionIntro = {
-  eyebrow: 'Docs archive',
-  title: 'Published notes, references, and gated drafts',
+  eyebrow: 'Docs',
+  title: 'Documentation, references, and gated drafts',
   description:
-    'A single-column archive for released writing, editorial experiments, and restricted pieces that still need to remain structurally visible.',
+    'A calm entry point for released writing, structured reference articles, and restricted pieces that still need to remain structurally visible.',
 };
 
 export const docsHomeViewerMock: MockViewer = {

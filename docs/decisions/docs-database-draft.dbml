@@ -1,0 +1,72 @@
+// Docs database draft for Incept
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Enum doc_kind {
+  article
+  reference
+  note
+}
+
+Enum doc_layout_mode {
+  sidebar
+  content_only
+}
+
+Enum doc_access_role {
+  guest
+  member
+  pro
+}
+
+Enum doc_status {
+  draft
+  published
+  archived
+}
+
+Table users {
+  id integer [primary key, increment]
+  username varchar [not null, unique]
+  role varchar [not null, note: 'App-level user role, can later map to auth/permission system']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table docs_documents {
+  id integer [primary key, increment]
+  kind doc_kind [not null, default: 'article']
+  layout_mode doc_layout_mode [not null, default: 'content_only']
+  access_role doc_access_role [not null, default: 'guest']
+  created_by integer [ref: > users.id, note: 'Nullable in implementation if seed/import creates system-owned docs']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Note: 'Global document entity. Stores layout and permission metadata shared across locales.'
+}
+
+Table docs_document_locales {
+  id integer [primary key, increment]
+  document_id integer [not null, ref: > docs_documents.id]
+  locale varchar [not null, note: 'For now: en / zh']
+  slug varchar [not null]
+  eyebrow varchar
+  title varchar [not null]
+  summary text
+  status doc_status [not null, default: 'draft']
+  published_at timestamp
+  body_json json [not null, note: 'Section and block content for the article body']
+  sidebar_json json [note: 'Only used when layout_mode = sidebar']
+  seo_title varchar
+  seo_description text
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Indexes {
+    (document_id, locale) [unique]
+    (locale, slug) [unique]
+    (locale, status, published_at)
+  }
+
+  Note: 'Localized content layer. One docs document can have multiple locale rows with different slug and publish state.'
+}
