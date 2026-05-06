@@ -15,3 +15,5 @@
 
 架构说明见 [docs/architecture-v1.md](/D:/code/Incept/docs/architecture-v1.md)。
 
+本地 PostgreSQL Docker 启动说明见 [docs/local-postgres-docker-setup.md](/d:/Desktop/code/code/Incept/docs/decisions/local-postgres-docker-setup.md)。
+

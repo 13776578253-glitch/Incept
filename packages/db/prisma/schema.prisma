@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DocKind {
+  article
+  reference
+  note
+}
+
+enum DocLayoutMode {
+  sidebar
+  contentOnly
+}
+
+enum DocAccessRole {
+  guest
+  member
+  pro
+}
+
+enum DocStatus {
+  draft
+  published
+  archived
+}
+
+model User {
+  id        Int            @id @default(autoincrement())
+  username  String         @unique
+  role      String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  documents DocsDocument[]
+
+  @@map("users")
+}
+
+model DocsDocument {
+  id          Int                  @id @default(autoincrement())
+  kind        DocKind              @default(article)
+  layoutMode  DocLayoutMode        @default(contentOnly)
+  accessRole  DocAccessRole        @default(guest)
+  createdById Int?
+  createdBy   User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  locales     DocsDocumentLocale[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([kind])
+  @@index([layoutMode])
+  @@index([accessRole])
+  @@map("docs_documents")
+}
+
+model DocsDocumentLocale {
+  id             Int          @id @default(autoincrement())
+  documentId     Int
+  document       DocsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  locale         String
+  slug           String
+  eyebrow        String?
+  title          String
+  summary        String?
+  status         DocStatus    @default(draft)
+  publishedAt    DateTime?
+  bodyJson       Json
+  sidebarJson    Json?
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([documentId, locale])
+  @@unique([locale, slug])
+  @@index([locale, status, publishedAt])
+  @@map("docs_document_locales")
+}

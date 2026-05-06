@@ -5,7 +5,12 @@
   "scripts": {
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
-    "lint": "pnpm --filter web lint"
+    "lint": "pnpm --filter web lint",
+    "db:generate": "pnpm --filter @incept/db db:generate",
+    "db:migrate": "pnpm --filter @incept/db db:migrate",
+    "db:deploy": "pnpm --filter @incept/db db:deploy",
+    "db:seed": "pnpm --filter @incept/db db:seed",
+    "db:studio": "pnpm --filter @incept/db db:studio"
   }
 }
 

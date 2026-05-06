@@ -8,9 +8,12 @@ coverage
 
 .env
 .env.local
+.env.docker
 .env.*.local
 
 .DS_Store
 Thumbs.db
 
 apps/web/*.log
+
+packages/db/generated

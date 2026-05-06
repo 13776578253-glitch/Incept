@@ -1,0 +1,24 @@
+{
+  "name": "@incept/db",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:generate": "prisma generate --schema ./prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema ./prisma/schema.prisma",
+    "db:deploy": "prisma migrate deploy --schema ./prisma/schema.prisma",
+    "db:seed": "prisma db seed --schema ./prisma/schema.prisma",
+    "db:studio": "prisma studio --schema ./prisma/schema.prisma"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "prisma": "^6.8.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
