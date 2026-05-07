@@ -1,14 +1,19 @@
 import { notFound } from 'next/navigation';
 import { DocsArticleFeature } from '@/features/docs';
-import { getDocsArticlePageBySlug } from '@/lib/mock/pages/docs/article/docs-article-pages.mock';
+import { getDocsArticlePage } from '@/server/docs/loaders';
+import type { AppLocale } from '@/i18n/config/locales';
 
 export default async function DocsArticlePage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: AppLocale; slug: string }>;
 }) {
-  const { slug } = await params;
-  const page = getDocsArticlePageBySlug(slug);
+  const { locale, slug } = await params;
+  const page = await getDocsArticlePage({
+    locale,
+    slug,
+    viewerRole: 'guest',
+  });
 
   if (!page) {
     notFound();

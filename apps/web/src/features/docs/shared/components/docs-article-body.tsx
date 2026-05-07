@@ -1,12 +1,9 @@
 import type {
-  MockDocsCalloutBlock,
-  MockDocsContentBlock,
-  MockDocsDetailPage,
-  MockDocsListBlock,
-  MockDocsParagraphBlock,
-} from '@/lib/mock/shared/mock-types';
+  DocsArticlePageModel,
+  DocsContentBlockModel,
+} from '@/features/docs/shared/types';
 
-function DocsParagraphBlock({ text }: MockDocsParagraphBlock) {
+function DocsParagraphBlock({ text }: Extract<DocsContentBlockModel, { type: 'paragraph' }>) {
   return (
     <p className="text-[1rem] leading-8 text-[var(--color-text-muted)]">
       {text}
@@ -14,7 +11,7 @@ function DocsParagraphBlock({ text }: MockDocsParagraphBlock) {
   );
 }
 
-function DocsListBlock({ items }: MockDocsListBlock) {
+function DocsListBlock({ items }: Extract<DocsContentBlockModel, { type: 'list' }>) {
   return (
     <ul className="space-y-3 pl-5 text-[1rem] leading-8 text-[var(--color-text-muted)]">
       {items.map((item) => (
@@ -26,7 +23,11 @@ function DocsListBlock({ items }: MockDocsListBlock) {
   );
 }
 
-function DocsCalloutBlock({ tone, title, text }: MockDocsCalloutBlock) {
+function DocsCalloutBlock({
+  tone,
+  title,
+  text,
+}: Extract<DocsContentBlockModel, { type: 'callout' }>) {
   const toneClassName =
     tone === 'tip'
       ? 'border-[rgba(34,120,87,0.16)] bg-[rgba(34,120,87,0.05)]'
@@ -46,7 +47,7 @@ function DocsCalloutBlock({ tone, title, text }: MockDocsCalloutBlock) {
   );
 }
 
-function DocsContentBlockRenderer({ block }: { block: MockDocsContentBlock }) {
+function DocsContentBlockRenderer({ block }: { block: DocsContentBlockModel }) {
   switch (block.type) {
     case 'paragraph':
       return <DocsParagraphBlock {...block} />;
@@ -60,7 +61,7 @@ function DocsContentBlockRenderer({ block }: { block: MockDocsContentBlock }) {
 }
 
 type DocsArticleBodyProps = {
-  page: MockDocsDetailPage;
+  page: DocsArticlePageModel;
 };
 
 export function DocsArticleBody({ page }: DocsArticleBodyProps) {

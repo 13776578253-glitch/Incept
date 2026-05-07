@@ -2,6 +2,18 @@
   "name": "@incept/db",
   "private": true,
   "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./docs": {
+      "types": "./src/docs/index.ts",
+      "default": "./src/docs/index.ts"
+    }
+  },
   "scripts": {
     "db:generate": "prisma generate --schema ./prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema ./prisma/schema.prisma",

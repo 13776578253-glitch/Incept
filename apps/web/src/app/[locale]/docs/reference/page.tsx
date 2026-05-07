@@ -1,12 +1,21 @@
 import { notFound } from 'next/navigation';
 import { DocsArticleFeature } from '@/features/docs';
-import {
-  docsLegacyReferenceSlug,
-  getDocsArticlePageBySlug,
-} from '@/lib/mock/pages/docs/article/docs-article-pages.mock';
+import type { AppLocale } from '@/i18n/config/locales';
+import { getDocsArticlePage } from '@/server/docs/loaders';
 
-export default function DocsReferencePage() {
-  const page = getDocsArticlePageBySlug(docsLegacyReferenceSlug);
+const CANONICAL_DOCS_REFERENCE_SLUG = 'document-shells';
+
+export default async function DocsReferencePage({
+  params,
+}: {
+  params: Promise<{ locale: AppLocale }>;
+}) {
+  const { locale } = await params;
+  const page = await getDocsArticlePage({
+    locale,
+    slug: CANONICAL_DOCS_REFERENCE_SLUG,
+    viewerRole: 'guest',
+  });
 
   if (!page) {
     notFound();

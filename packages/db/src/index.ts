@@ -1,1 +1,2 @@
-export { prisma } from "./client.js";
+export { prisma } from "./client";
+export * from "./docs/index";

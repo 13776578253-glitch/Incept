@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
+import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
-import type { ResolvedMockDocsArticle } from '@/lib/mock/pages/docs/shared/docs-access.mock';
+import type { DocsHomeArticleItemModel } from '@/features/docs/shared/types';
 
 function LockIcon() {
   return (
@@ -25,11 +26,11 @@ function formatPublishedDate(publishedAt: string, locale: string) {
 }
 
 type DocsHomeListItemProps = {
-  article: ResolvedMockDocsArticle;
+  article: DocsHomeArticleItemModel;
 };
 
 export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
-  const locale = useLocale();
+  const locale = useLocale() as AppLocale;
   const t = useTranslations('docs');
   const roleLabel = t(`roles.${article.requiredRole}`);
   const isLocked = !article.isAccessible;

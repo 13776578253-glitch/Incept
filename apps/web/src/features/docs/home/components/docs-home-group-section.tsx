@@ -1,8 +1,8 @@
 import { DocsHomeListItem } from '@/features/docs/home/components/docs-home-list-item';
-import type { ResolvedMockDocsArchiveGroup } from '@/lib/mock/pages/docs/shared/docs-access.mock';
+import type { DocsHomeGroupModel } from '@/features/docs/shared/types';
 
 type DocsHomeGroupSectionProps = {
-  group: ResolvedMockDocsArchiveGroup;
+  group: DocsHomeGroupModel;
   entriesLabel: string;
 };
 

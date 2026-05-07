@@ -1,7 +1,7 @@
-import type { MockSectionIntro } from '@/lib/mock/shared/mock-types';
+import type { DocsHomeIntroModel } from '@/features/docs/shared/types';
 
 type DocsHomeIntroProps = {
-  intro: MockSectionIntro;
+  intro: DocsHomeIntroModel;
 };
 
 export function DocsHomeIntro({ intro }: DocsHomeIntroProps) {

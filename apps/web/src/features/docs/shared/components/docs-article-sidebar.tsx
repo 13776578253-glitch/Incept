@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
+import type { DocsNavGroupModel } from '@/features/docs/shared/types';
 import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
-import type { MockDocsNavGroup } from '@/lib/mock/shared/mock-types';
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -27,7 +27,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 }
 
 type DocsArticleSidebarProps = {
-  groups: MockDocsNavGroup[];
+  groups: DocsNavGroupModel[];
 };
 
 export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {

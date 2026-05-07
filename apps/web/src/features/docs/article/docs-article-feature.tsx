@@ -5,10 +5,10 @@ import { DocsReferenceShell } from '@/components/layouts/containers/docs-referen
 import { DocsArticleBody } from '@/features/docs/shared/components/docs-article-body';
 import { DocsArticleRightRail } from '@/features/docs/shared/components/docs-article-right-rail';
 import { DocsArticleSidebar } from '@/features/docs/shared/components/docs-article-sidebar';
-import type { MockDocsDetailPage } from '@/lib/mock/shared/mock-types';
+import type { DocsArticlePageModel } from '@/features/docs/shared/types';
 
 type DocsArticleFeatureProps = {
-  page: MockDocsDetailPage;
+  page: DocsArticlePageModel;
 };
 
 export function DocsArticleFeature({ page }: DocsArticleFeatureProps) {

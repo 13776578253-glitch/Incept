@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { MockDocsOutlineItem } from '@/lib/mock/shared/mock-types';
+import type { DocsOutlineItemModel } from '@/features/docs/shared/types';
 
 type DocsArticleRightRailProps = {
-  items: MockDocsOutlineItem[];
+  items: DocsOutlineItemModel[];
   label: string;
 };
 
