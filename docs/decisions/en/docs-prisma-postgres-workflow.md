@@ -93,7 +93,7 @@ Prisma is a good fit here because it gives you four things at once:
 3. migration history for schema evolution
 4. a predictable local-to-production workflow
 
-For your current stage, the biggest value is not “less SQL”.
+For your current stage, the biggest value is not "less SQL".
 
 The biggest value is:
 

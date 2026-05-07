@@ -2,7 +2,6 @@ import type { DocAccessRole, DocLayoutMode, DocKind, DocStatus } from '../../gen
 
 export type DbDocsLocale = 'en' | 'zh';
 
-// 文章记录包含了文档的所有信息，直接对应数据库中的字段结构
 export type DbDocsSectionBlock =
   | {
       id: string;
