@@ -10,13 +10,13 @@
   },
   "groups": {
     "docs": {
+      "entry": {
+        "label": "Docs",
+        "description": "Primary docs entry, article navigation, and reading access."
+      },
       "archive": {
         "label": "Docs archive",
-        "description": "Overview, entry points, and grouped document access."
-      },
-      "detail": {
-        "label": "Docs detail",
-        "description": "Reference pages, structured reading, and information panels."
+        "description": "Chronological article browsing and the future archive surface."
       }
     }
   },

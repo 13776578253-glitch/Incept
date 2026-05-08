@@ -8,6 +8,7 @@ type HomePageFeatureProps = {
   locale: AppLocale;
 };
 
+// TODO: 界面待完善，暂时先展示 mock 数据
 export function HomePageFeature({ locale }: HomePageFeatureProps) {
   return (
     <div className="mx-auto w-full max-w-[1120px] px-6 md:px-8 xl:pr-10 xl:pl-[5.5rem] 2xl:pr-12 2xl:pl-[7.5rem]">

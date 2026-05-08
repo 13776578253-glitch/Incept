@@ -37,34 +37,28 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
   const href = article.href ? withLocalePath(locale, article.href) : null;
 
   const content = (
-    <article className="grid gap-3 md:grid-cols-[7.5rem_minmax(0,1fr)] md:gap-8" aria-label={article.title}>
+    <article
+      className="grid gap-3 md:grid-cols-[6.75rem_minmax(0,1fr)_6.5rem] md:gap-x-7 md:gap-y-3"
+      aria-label={article.title}
+    >
       <div className="text-[0.92rem] leading-7 text-[var(--color-nav-dropdown-description)] md:pt-0.5">
         {formatPublishedDate(article.publishedAt, locale)}
       </div>
 
       <div className="min-w-0">
         <div className="space-y-3">
-          <div className="flex items-start gap-2">
-            <h3
-              className={`max-w-[34ch] text-[1.1rem] font-medium leading-8 tracking-[-0.025em] md:text-[1.18rem] ${
-                isLocked
-                  ? 'text-[color-mix(in_srgb,var(--color-text)_82%,transparent)]'
-                  : 'text-[var(--color-text)]'
-              }`}
-            >
-              {article.title}
-            </h3>
-
-            {isLocked ? (
-              <span className="mt-1.5 inline-flex items-center gap-1 text-[0.74rem] text-[var(--color-nav-muted)]">
-                <LockIcon />
-                <span>{roleLabel}</span>
-              </span>
-            ) : null}
-          </div>
+          <h3
+            className={`max-w-[30ch] text-[1.1rem] font-medium leading-8 tracking-[-0.025em] md:text-[1.18rem] ${
+              isLocked
+                ? 'text-[color-mix(in_srgb,var(--color-text)_82%,transparent)]'
+                : 'text-[var(--color-text)]'
+            }`}
+          >
+            {article.title}
+          </h3>
 
           <p
-            className={`max-w-[60ch] text-[0.95rem] leading-7 ${
+            className={`max-w-[52ch] text-[0.95rem] leading-7 ${
               isLocked
                 ? 'text-[color-mix(in_srgb,var(--color-nav-dropdown-description)_78%,transparent)] blur-[1.15px]'
                 : 'text-[var(--color-nav-dropdown-description)]'
@@ -80,6 +74,17 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
           ) : null}
         </div>
       </div>
+
+      {isLocked ? (
+        <div className="hidden items-start pt-1 md:-ml-7 md:flex md:justify-self-start">
+          <span className="inline-flex items-center gap-1 text-[0.74rem] text-[var(--color-nav-muted)]">
+            <LockIcon />
+            <span>{roleLabel}</span>
+          </span>
+        </div>
+      ) : (
+        <div className="hidden md:block" />
+      )}
     </article>
   );
 

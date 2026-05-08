@@ -29,16 +29,16 @@ export function createSiteNavigation(
           id: 'docs-group',
           items: [
             {
-              id: 'docs-archive',
-              label: t('groups.docs.archive.label'),
-              description: t('groups.docs.archive.description'),
+              id: 'docs-entry',
+              label: t('groups.docs.entry.label'),
+              description: t('groups.docs.entry.description'),
               href: withLocale('/docs'),
             },
             {
-              id: 'docs-detail',
-              label: t('groups.docs.detail.label'),
-              description: t('groups.docs.detail.description'),
-              href: withLocale('/docs/reference'),
+              id: 'docs-archive',
+              label: t('groups.docs.archive.label'),
+              description: t('groups.docs.archive.description'),
+              href: withLocale('/docs/archive'),
             },
           ],
         },

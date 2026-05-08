@@ -13,7 +13,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
   const t = useTranslations('docs');
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-6 md:px-8 xl:pr-10 xl:pl-[5.5rem] 2xl:pr-12 2xl:pl-[7.5rem]">
+    <div className="mx-auto w-full max-w-[1000px] px-6 md:px-8 xl:pr-10 xl:pl-[5rem] 2xl:pr-12 2xl:pl-[6.75rem]">
       <DocsHomeIntro intro={page.intro} />
 
       <div className="space-y-14 pb-16 md:space-y-[4.5rem] md:pb-20">
@@ -21,6 +21,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
           <DocsHomeGroupSection
             key={group.id}
             group={group}
+            sectionId={`docs-home-group-${group.id}`}
             entriesLabel={t('groups.entries', { count: group.articles.length })}
           />
         ))}

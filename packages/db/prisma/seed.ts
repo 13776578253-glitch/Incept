@@ -295,6 +295,278 @@ const docsSeedDocuments = [
       },
     ],
   },
+  {
+    id: 7,
+    kind: DocKind.article,
+    layoutMode: DocLayoutMode.contentOnly,
+    accessRole: DocAccessRole.guest,
+    locales: [
+      {
+        locale: "en",
+        slug: "release-notes-with-editorial-rhythm",
+        eyebrow: "Release note",
+        title: "Release notes with editorial rhythm",
+        summary:
+          "A pass on turning release notes into something readable enough to live beside essays and references without flattening tone.",
+        publishedAt: new Date("2026-03-30T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "Release notes with editorial rhythm",
+          "A pass on turning release notes into something readable enough to live beside essays and references without flattening tone.",
+        ),
+      },
+      {
+        locale: "zh",
+        slug: "release-notes-with-editorial-rhythm",
+        eyebrow: "发布说明",
+        title: "带有编辑节奏的发布说明",
+        summary:
+          "一轮关于如何让发布说明在不失去可读性的前提下，与随笔和参考文档并排共存的尝试。",
+        publishedAt: new Date("2026-03-30T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "带有编辑节奏的发布说明",
+          "一轮关于如何让发布说明在不失去可读性的前提下，与随笔和参考文档并排共存的尝试。",
+        ),
+      },
+    ],
+  },
+  {
+    id: 8,
+    kind: DocKind.article,
+    layoutMode: DocLayoutMode.contentOnly,
+    accessRole: DocAccessRole.member,
+    locales: [
+      {
+        locale: "en",
+        slug: "archive-entry-density-and-scan-speed",
+        eyebrow: "Archive study",
+        title: "Archive entry density and scan speed",
+        summary:
+          "Testing how many cues a document row can carry before the archive starts feeling like a dashboard instead of a reading surface.",
+        publishedAt: new Date("2026-03-18T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "Archive entry density and scan speed",
+          "Testing how many cues a document row can carry before the archive starts feeling like a dashboard instead of a reading surface.",
+        ),
+      },
+      {
+        locale: "zh",
+        slug: "archive-entry-density-and-scan-speed",
+        eyebrow: "归档研究",
+        title: "归档条目密度与扫读速度",
+        summary:
+          "用于测试一条文档记录在变成仪表盘之前，究竟还能承载多少提示信息的一组实验。",
+        publishedAt: new Date("2026-03-18T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "归档条目密度与扫读速度",
+          "用于测试一条文档记录在变成仪表盘之前，究竟还能承载多少提示信息的一组实验。",
+        ),
+      },
+    ],
+  },
+  {
+    id: 9,
+    kind: DocKind.note,
+    layoutMode: DocLayoutMode.contentOnly,
+    accessRole: DocAccessRole.pro,
+    locales: [
+      {
+        locale: "en",
+        slug: "private-taxonomy-for-unreleased-knowledge",
+        eyebrow: "Private note",
+        title: "Private taxonomy for unreleased knowledge",
+        summary:
+          "A restricted note about how unfinished research, drafts, and internal references should appear before they are publishable.",
+        publishedAt: new Date("2026-02-27T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "Private taxonomy for unreleased knowledge",
+          "A restricted note about how unfinished research, drafts, and internal references should appear before they are publishable.",
+        ),
+      },
+      {
+        locale: "zh",
+        slug: "private-taxonomy-for-unreleased-knowledge",
+        eyebrow: "私密笔记",
+        title: "未发布知识的内部分类法",
+        summary:
+          "一篇受限笔记，用于讨论未完成研究、草稿与内部参考在正式发布前应如何出现在文档结构里。",
+        publishedAt: new Date("2026-02-27T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "未发布知识的内部分类法",
+          "一篇受限笔记，用于讨论未完成研究、草稿与内部参考在正式发布前应如何出现在文档结构里。",
+        ),
+      },
+    ],
+  },
+  {
+    id: 10,
+    kind: DocKind.article,
+    layoutMode: DocLayoutMode.contentOnly,
+    accessRole: DocAccessRole.guest,
+    locales: [
+      {
+        locale: "en",
+        slug: "document-headers-and-reading-entry-points",
+        eyebrow: "Reading note",
+        title: "Document headers and reading entry points",
+        summary:
+          "How much framing belongs above an article before the page stops feeling editorial and starts feeling productized.",
+        publishedAt: new Date("2026-02-12T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "Document headers and reading entry points",
+          "How much framing belongs above an article before the page stops feeling editorial and starts feeling productized.",
+        ),
+      },
+      {
+        locale: "zh",
+        slug: "document-headers-and-reading-entry-points",
+        eyebrow: "阅读笔记",
+        title: "文档标题区与阅读入口",
+        summary:
+          "关于一篇文章在进入正文之前，顶部到底应该承载多少框架信息的一轮梳理。",
+        publishedAt: new Date("2026-02-12T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "文档标题区与阅读入口",
+          "关于一篇文章在进入正文之前，顶部到底应该承载多少框架信息的一轮梳理。",
+        ),
+      },
+    ],
+  },
+  {
+    id: 11,
+    kind: DocKind.article,
+    layoutMode: DocLayoutMode.contentOnly,
+    accessRole: DocAccessRole.member,
+    locales: [
+      {
+        locale: "en",
+        slug: "growing-a-library-without-dashboard-gravity",
+        eyebrow: "Library memo",
+        title: "Growing a library without dashboard gravity",
+        summary:
+          "Notes on how a docs surface can scale in count without inheriting the visual behavior of an operations console.",
+        publishedAt: new Date("2026-01-24T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "Growing a library without dashboard gravity",
+          "Notes on how a docs surface can scale in count without inheriting the visual behavior of an operations console.",
+        ),
+      },
+      {
+        locale: "zh",
+        slug: "growing-a-library-without-dashboard-gravity",
+        eyebrow: "文库备忘",
+        title: "如何扩展文库而不滑向仪表盘",
+        summary:
+          "记录文档界面在条目数量增长后，如何避免继承操作台视觉惯性的几条判断。",
+        publishedAt: new Date("2026-01-24T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "如何扩展文库而不滑向仪表盘",
+          "记录文档界面在条目数量增长后，如何避免继承操作台视觉惯性的几条判断。",
+        ),
+      },
+    ],
+  },
+  {
+    id: 12,
+    kind: DocKind.note,
+    layoutMode: DocLayoutMode.contentOnly,
+    accessRole: DocAccessRole.pro,
+    locales: [
+      {
+        locale: "en",
+        slug: "soft-lock-language-and-reader-trust",
+        eyebrow: "Internal memo",
+        title: "Soft-lock language and reader trust",
+        summary:
+          "Restricted notes on which labels communicate access boundaries without making the archive feel hostile or opaque.",
+        publishedAt: new Date("2025-10-02T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "Soft-lock language and reader trust",
+          "Restricted notes on which labels communicate access boundaries without making the archive feel hostile or opaque.",
+        ),
+      },
+      {
+        locale: "zh",
+        slug: "soft-lock-language-and-reader-trust",
+        eyebrow: "内部备忘",
+        title: "柔性锁定文案与读者信任",
+        summary:
+          "一篇受限笔记，讨论哪些权限提示既能传达边界，又不会让归档页面显得生硬和封闭。",
+        publishedAt: new Date("2025-10-02T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "柔性锁定文案与读者信任",
+          "一篇受限笔记，讨论哪些权限提示既能传达边界，又不会让归档页面显得生硬和封闭。",
+        ),
+      },
+    ],
+  },
+  {
+    id: 13,
+    kind: DocKind.article,
+    layoutMode: DocLayoutMode.contentOnly,
+    accessRole: DocAccessRole.guest,
+    locales: [
+      {
+        locale: "en",
+        slug: "long-form-archives-versus-reference-libraries",
+        eyebrow: "Structure note",
+        title: "Long-form archives versus reference libraries",
+        summary:
+          "A comparison of archive-driven publishing and reference-driven publishing once the docs surface begins to branch.",
+        publishedAt: new Date("2025-08-20T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "Long-form archives versus reference libraries",
+          "A comparison of archive-driven publishing and reference-driven publishing once the docs surface begins to branch.",
+        ),
+      },
+      {
+        locale: "zh",
+        slug: "long-form-archives-versus-reference-libraries",
+        eyebrow: "结构笔记",
+        title: "长文归档与参考文库的区别",
+        summary:
+          "比较归档型发布与参考型发布在文档界面开始分叉之后，会分别形成怎样的阅读结构。",
+        publishedAt: new Date("2025-08-20T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "长文归档与参考文库的区别",
+          "比较归档型发布与参考型发布在文档界面开始分叉之后，会分别形成怎样的阅读结构。",
+        ),
+      },
+    ],
+  },
+  {
+    id: 14,
+    kind: DocKind.article,
+    layoutMode: DocLayoutMode.contentOnly,
+    accessRole: DocAccessRole.member,
+    locales: [
+      {
+        locale: "en",
+        slug: "sequencing-docs-home-before-editor-workflows",
+        eyebrow: "Planning note",
+        title: "Sequencing docs home before editor workflows",
+        summary:
+          "Why the archive and reading shell should stabilize before create, publish, and editor-facing workflows start expanding the system.",
+        publishedAt: new Date("2025-07-11T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "Sequencing docs home before editor workflows",
+          "Why the archive and reading shell should stabilize before create, publish, and editor-facing workflows start expanding the system.",
+        ),
+      },
+      {
+        locale: "zh",
+        slug: "sequencing-docs-home-before-editor-workflows",
+        eyebrow: "规划笔记",
+        title: "先稳定 docs 首页，再扩编辑流",
+        summary:
+          "说明为什么应该先把归档首页与阅读壳层稳定下来，再扩 create、publish 和编辑端流程。",
+        publishedAt: new Date("2025-07-11T10:00:00.000Z"),
+        bodyJson: createMinimalBody(
+          "先稳定 docs 首页，再扩编辑流",
+          "说明为什么应该先把归档首页与阅读壳层稳定下来，再扩 create、publish 和编辑端流程。",
+        ),
+      },
+    ],
+  },
 ] as const;
 
 function toLocaleCreateInput(

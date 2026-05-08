@@ -10,13 +10,13 @@
   },
   "groups": {
     "docs": {
+      "entry": {
+        "label": "文档",
+        "description": "文档主入口、文章导航和阅读入口。"
+      },
       "archive": {
         "label": "文档归档",
-        "description": "总览、入口和分类浏览。"
-      },
-      "detail": {
-        "label": "文档正文",
-        "description": "参考页、结构化阅读和信息侧栏。"
+        "description": "按时间整理的文章归档和后续归档浏览。"
       }
     }
   },
