@@ -15,11 +15,18 @@ const referenceBody = {
     {
       id: "overview",
       title: "Why a reusable document shell matters",
+      description:
+        "The shell is not cosmetic. It is the thing that lets the docs surface feel coherent as the library grows.",
       blocks: [
         {
           id: "overview-p-1",
           type: "paragraph",
           text: "A stable shell lets the docs system grow without redesigning each article from scratch.",
+        },
+        {
+          id: "overview-p-2",
+          type: "paragraph",
+          text: "Once multiple article types begin to coexist, the shell becomes the contract between navigation, reading rhythm, metadata, and page-level behavior. If that contract stays unstable, each new piece of content forces another one-off visual decision.",
         },
         {
           id: "overview-list-1",
@@ -30,11 +37,72 @@ const referenceBody = {
             "A shared right rail keeps heading navigation consistent.",
           ],
         },
+        {
+          id: "overview-callout-1",
+          type: "callout",
+          tone: "tip",
+          title: "What the shell should solve",
+          text: "A good document shell answers where the user is, how the page is organized, and what kind of reading mode they are currently in before the body text does any work.",
+        },
+      ],
+    },
+    {
+      id: "layout-modes",
+      title: "Two layout modes, one reading system",
+      description:
+        "The article system already supports sidebar and content-only modes. The shell should make those feel related rather than separate products.",
+      blocks: [
+        {
+          id: "layout-modes-p-1",
+          type: "paragraph",
+          text: "Sidebar pages are best for structured references, guided reading, and content that benefits from a visible chapter map. Content-only pages are better for notes, essays, and standalone articles that should enter the page with less scaffolding.",
+        },
+        {
+          id: "layout-modes-p-2",
+          type: "paragraph",
+          text: "The important design constraint is not to make these two modes visually identical. It is to make them feel like members of the same system, with shared spacing logic, typography, and heading behavior.",
+        },
+        {
+          id: "layout-modes-list-1",
+          type: "list",
+          items: [
+            "Sidebar mode should foreground orientation and section hierarchy.",
+            "Content-only mode should foreground reading calm and lower interface noise.",
+            "Both modes should preserve the same heading scale and paragraph rhythm.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "navigation-contract",
+      title: "Navigation has to behave like product structure",
+      description:
+        "The document shell is not only a content frame. It is also where route structure becomes legible to the reader.",
+      blocks: [
+        {
+          id: "navigation-contract-p-1",
+          type: "paragraph",
+          text: "A docs system stops feeling improvised when global navigation, docs home, article routes, and local page navigation agree with one another. The shell is where those agreements become visible.",
+        },
+        {
+          id: "navigation-contract-p-2",
+          type: "paragraph",
+          text: "This is why the difference between /docs, /docs/archive, and /docs/[slug] matters. Even before full content exists, the reader should sense which surface is a landing page, which one is a chronological library, and which one is a document detail route.",
+        },
+        {
+          id: "navigation-contract-callout-1",
+          type: "callout",
+          tone: "note",
+          title: "Navigation rule",
+          text: "If route meaning is still blurry, the shell should not hide that ambiguity with decoration. It should make the distinction sharper.",
+        },
       ],
     },
     {
       id: "workflow",
       title: "From mock layout to production docs",
+      description:
+        "The transition path matters because the shell is already carrying real UX even before the writing system is fully live.",
       blocks: [
         {
           id: "workflow-p-1",
@@ -42,11 +110,102 @@ const referenceBody = {
           text: "The first production milestone should preserve the current reading experience while swapping mock data for database-backed queries.",
         },
         {
+          id: "workflow-p-2",
+          type: "paragraph",
+          text: "That means the view model contract has to remain stable while the data source changes underneath it. UI components should not care whether content comes from mock files, Prisma queries, or a future editor pipeline.",
+        },
+        {
+          id: "workflow-list-1",
+          type: "list",
+          items: [
+            "Seed realistic article data early enough to pressure-test scrolling and layout.",
+            "Move route loaders to database reads before starting create and publish flows.",
+            "Keep permission logic simple at first so the shell can stabilize.",
+          ],
+        },
+        {
           id: "workflow-callout-1",
           type: "callout",
           tone: "note",
           title: "Implementation note",
           text: "Store body content as JSON in v1, then normalize later only if the editor and search requirements demand it.",
+        },
+      ],
+    },
+    {
+      id: "editorial-rhythm",
+      title: "Editorial rhythm is part of the interface",
+      description:
+        "The page should feel readable before it feels feature-complete.",
+      blocks: [
+        {
+          id: "editorial-rhythm-p-1",
+          type: "paragraph",
+          text: "The shell has to create a calm reading tempo across headings, paragraphs, lists, and callouts. If the spacing between those blocks is inconsistent, the reader starts processing interface noise instead of content structure.",
+        },
+        {
+          id: "editorial-rhythm-p-2",
+          type: "paragraph",
+          text: "This also affects how docs home should relate to article pages. The archive does not need to mimic the detail shell, but both surfaces should share enough rhythm that moving between them does not feel like switching products.",
+        },
+        {
+          id: "editorial-rhythm-callout-1",
+          type: "callout",
+          tone: "tip",
+          title: "Practical test",
+          text: "A good rhythm survives long paragraphs, locked entries, and section jumps without needing visual gimmicks to stay readable.",
+        },
+      ],
+    },
+    {
+      id: "permissions",
+      title: "Permissions should remain visible but soft",
+      description:
+        "Restricted content still has to communicate structure without turning the archive into a wall of closures.",
+      blocks: [
+        {
+          id: "permissions-p-1",
+          type: "paragraph",
+          text: "The current archive keeps locked entries visible so readers can understand what kinds of material exist in the system. This is useful because access boundaries are part of the library's shape, not just an auth concern.",
+        },
+        {
+          id: "permissions-p-2",
+          type: "paragraph",
+          text: "The shell should support that model by treating restricted content as discoverable but not enterable. The cues need to be clear, but they should not dominate the entire page.",
+        },
+        {
+          id: "permissions-list-1",
+          type: "list",
+          items: [
+            "Keep the title readable enough to preserve discoverability.",
+            "Blur or mute the summary to communicate limited access.",
+            "Use role labels consistently across home and detail surfaces.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "next-steps",
+      title: "What this article should help test next",
+      description:
+        "This page is a design probe as much as it is a sample reference article.",
+      blocks: [
+        {
+          id: "next-steps-p-1",
+          type: "paragraph",
+          text: "Now that the shell can hold more content, the next useful tests are not only visual. They include sidebar density, outline stability near the end of the page, heading jump offsets, and how the shell behaves once mixed block types start arriving from real writing workflows.",
+        },
+        {
+          id: "next-steps-p-2",
+          type: "paragraph",
+          text: "After that, the natural progression is to test authoring assumptions: what new block types are actually needed, what metadata belongs in article headers, and when JSON storage starts becoming a real editing constraint rather than a convenient bootstrap format.",
+        },
+        {
+          id: "next-steps-callout-1",
+          type: "callout",
+          tone: "warning",
+          title: "Do not optimize too early",
+          text: "The shell should be tested with longer content, multiple article types, and real navigation depth before introducing heavier abstractions or editor-driven normalization.",
         },
       ],
     },
@@ -62,9 +221,48 @@ const referenceSidebar = {
       items: [
         { id: "overview", label: "Overview", href: `/docs/${CANONICAL_REFERENCE_SLUG}` },
         {
+          id: "layout-modes",
+          label: "Layout modes",
+          href: `/docs/${CANONICAL_REFERENCE_SLUG}#layout-modes`,
+        },
+        {
+          id: "navigation-contract",
+          label: "Navigation contract",
+          href: `/docs/${CANONICAL_REFERENCE_SLUG}#navigation-contract`,
+        },
+      ],
+    },
+    {
+      id: "implementation",
+      label: "Implementation",
+      defaultOpen: true,
+      items: [
+        {
           id: "workflow",
           label: "Workflow",
           href: `/docs/${CANONICAL_REFERENCE_SLUG}#workflow`,
+        },
+        {
+          id: "editorial-rhythm",
+          label: "Editorial rhythm",
+          href: `/docs/${CANONICAL_REFERENCE_SLUG}#editorial-rhythm`,
+        },
+        {
+          id: "permissions",
+          label: "Permissions",
+          href: `/docs/${CANONICAL_REFERENCE_SLUG}#permissions`,
+        },
+      ],
+    },
+    {
+      id: "validation",
+      label: "Validation",
+      defaultOpen: true,
+      items: [
+        {
+          id: "next-steps",
+          label: "Next steps",
+          href: `/docs/${CANONICAL_REFERENCE_SLUG}#next-steps`,
         },
       ],
     },

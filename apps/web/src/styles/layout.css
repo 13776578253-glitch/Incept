@@ -110,6 +110,22 @@
   grid-column: 2;
 }
 
+@media (max-width: 1800px) {
+  .page-shell-docs-reference {
+    grid-template-columns: var(--docs-sidebar-width) minmax(0, var(--docs-content-width));
+    justify-content: center;
+  }
+
+  .page-shell-docs-reference-aside {
+    display: none;
+  }
+
+  .page-shell-docs-reference[data-layout-mode='contentOnly'] {
+    grid-template-columns: minmax(0, var(--docs-content-width));
+    justify-content: center;
+  }
+}
+
 @media (max-width: 1023px) {
   .page-shell-document {
     grid-template-columns: minmax(0, 1fr);
