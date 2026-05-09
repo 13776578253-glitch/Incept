@@ -1,3 +1,7 @@
 import 'server-only';
 
-export { getDocsArticlePage, getDocsHomePage } from './access';
+export {
+  getDocsArticlePage,
+  getDocsCollectionArticlePage,
+  getDocsHomePage,
+} from './access';

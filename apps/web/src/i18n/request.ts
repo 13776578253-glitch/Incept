@@ -4,14 +4,16 @@ import { notFound } from 'next/navigation';
 import { localeConfig } from '@/i18n/config/locales';
 import { getLocaleMessages } from '@/i18n/loaders/get-messages';
 
-export default getRequestConfig(async ({ locale }) => {
-  if (!hasLocale(localeConfig.locales, locale)) {
+export default getRequestConfig(async ({ locale, requestLocale }) => {
+  const resolvedLocale = locale ?? (await requestLocale);
+
+  if (!resolvedLocale || !hasLocale(localeConfig.locales, resolvedLocale)) {
     notFound();
   }
 
   return {
-    locale,
-    messages: await getLocaleMessages(locale),
+    locale: resolvedLocale,
+    messages: await getLocaleMessages(resolvedLocale),
     timeZone: localeConfig.timeZone,
   };
 });

@@ -12,23 +12,26 @@
 
 - `/{locale}/docs`
   - docs 主入口
+- `/{locale}/docs/series/[collectionSlug]/[articleSlug]`
+  - 集合文章详情路由
 - `/{locale}/docs/[slug]`
-  - 规范文章详情路由
+  - 单文章详情路由
 - `/{locale}/docs/reference`
-  - 指向同一规范文章的兼容别名
+  - 指向集合首篇文章的兼容别名
 - `/{locale}/docs/archive`
   - 为未来扩展预留，暂未实现
 
 ## Canonical Slug 规则
 
-当前规范示例文章 slug：
+当前规范集合 slug：
 
 - `document-shells`
 
 规则：
 
 - `/reference` 只是别名
-- 规范数据源是 slug 路由
+- 集合文章规范数据源是 `series` 路由
+- 单文章规范数据源是 slug 路由
 - slug 值应可读且稳定
 - slug 值按 locale 行存储
 
@@ -59,9 +62,15 @@ Locale 行为：
 渲染行为：
 
 - `sidebar`
-  - 左侧边栏 + 主正文 + 右侧大纲
+  - 集合左侧栏 + 主正文 + 右侧大纲
 - `contentOnly`
   - 主正文 + 右侧大纲
+
+补充规则：
+
+- `sidebar` 不再表示“当前文章 section 导航”
+- 当文章属于集合时，左侧栏表示“集合内文章列表”
+- 右侧大纲始终只表示“当前文章的 section 导航”
 
 ## Access Role 规则
 
@@ -138,9 +147,39 @@ Locale 行为：
 
 规则：
 
-- 只有在 `layoutMode = sidebar` 时才有意义
+- 该结构只保留给历史或临时过渡用途
 - query layer 负责校验 `groups` 数组
 - UI 接收的是已经映射好的 sidebar groups
+
+## 集合规则
+
+当前 docs 支持两种发布对象：
+
+- 单文章
+- 集合
+
+规则：
+
+- docs 首页同时展示集合与单文章
+- 集合在首页只显示一次，不展开内部文章
+- 点击集合时直接进入集合首篇文章
+- 集合文章详情使用 `/{locale}/docs/series/[collectionSlug]/[articleSlug]`
+- 单文章详情继续使用 `/{locale}/docs/[slug]`
+- 集合左栏由集合文章顺序自动生成，不再从当前文章 section 推导
+
+## Create 决策规则
+
+未来 create 流程应先要求用户选择发布对象类型：
+
+- 集合
+- 单文章
+
+规则：
+
+- 单文章创建后走 standalone slug 路由
+- 集合创建后先生成集合，再向集合内追加有序文章
+- 集合文章自动落到 `series` 路由
+- 集合文章的左栏来自集合文章顺序
 
 ## 稳定架构边界
 

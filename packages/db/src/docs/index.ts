@@ -1,7 +1,15 @@
-export { findPublishedDocsArticleBySlug, listPublishedDocsForHome } from './queries';
+export {
+  findPublishedDocsArticleBySlug,
+  findPublishedDocsCollectionArticleBySlugs,
+  listPublishedDocsHomeEntries,
+} from './queries';
 export type {
   DbDocsArticleRecord,
+  DbDocsCollectionArticleListItem,
+  DbDocsCollectionRecord,
   DbDocsHomeArticleRecord,
+  DbDocsHomeCollectionRecord,
+  DbDocsHomeEntryRecord,
   DbDocsHomeGroupRecord,
   DbDocsLocale,
   DbDocsSection,

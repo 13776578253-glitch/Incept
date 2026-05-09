@@ -1,5 +1,9 @@
 import type { AppLocale } from '@/i18n/config/locales';
-import { listPublishedDocsForHome, findPublishedDocsArticleBySlug } from '@incept/db/docs';
+import {
+  listPublishedDocsHomeEntries,
+  findPublishedDocsArticleBySlug,
+  findPublishedDocsCollectionArticleBySlugs,
+} from '@incept/db/docs';
 import type { DbDocsLocale } from '@incept/db/docs';
 import type {
   DocsAccessRole,
@@ -9,6 +13,7 @@ import type {
 import {
   docsHomeIntro,
   mapDocsArticleRecordToPageModel,
+  mapDocsCollectionRecordToPageModel,
   mapDocsHomeGroupsToPageGroups,
 } from '@/server/docs/mappers';
 
@@ -53,6 +58,34 @@ export async function getDocsArticlePage({
   return mapDocsArticleRecordToPageModel(record);
 }
 
+export async function getDocsCollectionArticlePage({
+  locale,
+  collectionSlug,
+  articleSlug,
+  viewerRole,
+}: {
+  locale: AppLocale;
+  collectionSlug: string;
+  articleSlug: string;
+  viewerRole: DocsAccessRole;
+}): Promise<DocsArticlePageModel | null> {
+  const record = await findPublishedDocsCollectionArticleBySlugs({
+    locale: locale as DbDocsLocale,
+    collectionSlug,
+    articleSlug,
+  });
+
+  if (!record) {
+    return null;
+  }
+
+  if (!canAccessDocsArticle(viewerRole, record.collectionAccessRole)) {
+    return null;
+  }
+
+  return mapDocsCollectionRecordToPageModel(record);
+}
+
 // 查询主页的已发布文档列表，并根据访问角色过滤，返回前端使用的主页模型
 export async function getDocsHomePage({
   locale,
@@ -61,7 +94,7 @@ export async function getDocsHomePage({
   locale: AppLocale;
   viewerRole: DocsAccessRole;
 }): Promise<DocsHomePageModel> {
-  const groups = await listPublishedDocsForHome({
+  const groups = await listPublishedDocsHomeEntries({
     locale: locale as DbDocsLocale,
   });
 

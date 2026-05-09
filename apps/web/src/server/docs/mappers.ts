@@ -1,5 +1,6 @@
 import type {
   DbDocsArticleRecord,
+  DbDocsCollectionRecord,
   DbDocsHomeGroupRecord,
 } from '@incept/db/docs';
 import type {
@@ -71,6 +72,7 @@ export function mapDocsArticleRecordToPageModel(
   return {
     id: String(record.documentId),
     slug: record.slug,
+    routeType: 'singleArticle',
     layoutMode: record.layoutMode as DocsLayoutMode,
     eyebrow: record.eyebrow ?? undefined,
     title: record.title,
@@ -79,6 +81,38 @@ export function mapDocsArticleRecordToPageModel(
     sidebarGroups: toDocsSidebarGroups(record.sidebarJson),
     outline: toDocsOutline(record.bodyJson),
     sections: toDocsSections(record.bodyJson),
+  };
+}
+
+export function mapDocsCollectionRecordToPageModel(
+  record: DbDocsCollectionRecord,
+): DocsArticlePageModel {
+  return {
+    id: String(record.articleDocumentId),
+    slug: record.articleSlug,
+    routeType: 'collectionArticle',
+    collectionSlug: record.collectionSlug,
+    articleSlug: record.articleSlug,
+    layoutMode: 'sidebar',
+    eyebrow: record.articleEyebrow ?? record.collectionEyebrow ?? undefined,
+    title: record.articleTitle,
+    description: record.articleSummary ?? undefined,
+    outlineLabel: 'On this page',
+    sidebarGroups: [
+      {
+        id: `collection-${record.collectionSlug}`,
+        label: record.collectionTitle,
+        defaultOpen: true,
+        items: record.collectionItems.map((item) => ({
+          id: item.slug,
+          label: item.title,
+          href: `/docs/series/${record.collectionSlug}/${item.slug}`,
+          active: item.slug === record.articleSlug,
+        })),
+      },
+    ],
+    outline: toDocsOutline(record.articleBodyJson),
+    sections: toDocsSections(record.articleBodyJson),
   };
 }
 
@@ -95,18 +129,40 @@ export function mapDocsHomeGroupsToPageGroups(
     id: group.year,
     label: group.year,
     description: docsHomeGroupDescriptions[group.year],
-    articles: group.articles.map((article) => ({
-      id: `${article.documentId}-${article.locale}`,
-      slug: article.slug,
-      title: article.title,
-      summary: article.summary ?? '',
-      publishedAt: article.publishedAt.toISOString(),
-      requiredRole: article.requiredRole,
-      eyebrow: article.eyebrow ?? undefined,
-      isAccessible: canAccessDocsArticle(viewerRole, article.requiredRole),
-      href: canAccessDocsArticle(viewerRole, article.requiredRole)
-        ? `/docs/${article.slug}`
-        : undefined,
-    })),
+    entries: group.entries.map((entry) => {
+      const isAccessible = canAccessDocsArticle(viewerRole, entry.requiredRole);
+
+      if (entry.entryType === 'collection') {
+        return {
+          id: `collection-${entry.collectionId}-${entry.locale}`,
+          entryType: 'collection' as const,
+          slug: entry.collectionSlug,
+          collectionSlug: entry.collectionSlug,
+          firstArticleSlug: entry.firstArticleSlug,
+          title: entry.title,
+          summary: entry.summary ?? '',
+          publishedAt: entry.publishedAt.toISOString(),
+          requiredRole: entry.requiredRole,
+          eyebrow: entry.eyebrow ?? undefined,
+          isAccessible,
+          href: isAccessible
+            ? `/docs/series/${entry.collectionSlug}/${entry.firstArticleSlug}`
+            : undefined,
+        };
+      }
+
+      return {
+        id: `${entry.documentId}-${entry.locale}`,
+        entryType: 'singleArticle' as const,
+        slug: entry.slug,
+        title: entry.title,
+        summary: entry.summary ?? '',
+        publishedAt: entry.publishedAt.toISOString(),
+        requiredRole: entry.requiredRole,
+        eyebrow: entry.eyebrow ?? undefined,
+        isAccessible,
+        href: isAccessible ? `/docs/${entry.slug}` : undefined,
+      };
+    }),
   }));
 }

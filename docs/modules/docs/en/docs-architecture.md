@@ -12,23 +12,26 @@ The docs surface is currently split into:
 
 - `/{locale}/docs`
   - main docs entry
+- `/{locale}/docs/series/[collectionSlug]/[articleSlug]`
+  - collection article detail route
 - `/{locale}/docs/[slug]`
-  - canonical article detail route
+  - standalone article detail route
 - `/{locale}/docs/reference`
-  - compatibility alias to one canonical article
+  - compatibility alias to the first article in a collection
 - `/{locale}/docs/archive`
   - reserved for future expansion, not implemented yet
 
 ## Canonical Slug Rule
 
-Current canonical sample article slug:
+Current canonical collection slug:
 
 - `document-shells`
 
 Rules:
 
 - `/reference` is only an alias
-- the canonical data source is the slug route
+- collection articles use the `series` route as their canonical data source
+- standalone articles use the slug route as their canonical data source
 - slug values should be readable and stable
 - slug values are stored per locale row
 
@@ -59,9 +62,15 @@ Rules:
 Rendering behavior:
 
 - `sidebar`
-  - left sidebar + main body + right outline
+  - collection sidebar + main body + right outline
 - `contentOnly`
   - main body + right outline
+
+Additional rules:
+
+- `sidebar` no longer means "current article section navigation" on the left side
+- when an article belongs to a collection, the left sidebar lists sibling articles in that collection
+- the right outline always remains a section navigator for the current article only
 
 ## Access Role Rule
 
@@ -138,9 +147,39 @@ Current `sidebarJson` top-level structure:
 
 Rules:
 
-- only meaningful for `layoutMode = sidebar`
+- retained mainly for legacy or transitional cases
 - query layer validates the `groups` array
 - UI receives already-mapped sidebar groups
+
+## Collection Rule
+
+The docs system now supports two published object types:
+
+- standalone article
+- collection
+
+Rules:
+
+- docs home lists both collections and standalone articles
+- a collection appears only once on docs home
+- clicking a collection enters its first article directly
+- collection article detail routes use `/{locale}/docs/series/[collectionSlug]/[articleSlug]`
+- standalone articles keep using `/{locale}/docs/[slug]`
+- the collection left sidebar is generated from collection article order, not from current-article sections
+
+## Create Rule
+
+The future create flow should first require the publisher to choose:
+
+- collection
+- standalone article
+
+Rules:
+
+- standalone articles generate standalone slug routes
+- collections are created first, then filled with ordered articles
+- collection articles automatically live under the `series` route
+- the collection sidebar is derived from collection article order
 
 ## Stable Architectural Boundary
 

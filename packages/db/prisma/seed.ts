@@ -1,4 +1,5 @@
 import {
+  Prisma,
   PrismaClient,
   DocAccessRole,
   DocKind,
@@ -9,8 +10,9 @@ import {
 const prisma = new PrismaClient();
 
 const CANONICAL_REFERENCE_SLUG = "document-shells";
+const CANONICAL_REFERENCE_FIRST_ARTICLE_SLUG = "shell-foundations";
 
-const referenceBody = {
+const shellFoundationsBody = {
   sections: [
     {
       id: "overview",
@@ -73,6 +75,11 @@ const referenceBody = {
         },
       ],
     },
+  ],
+};
+
+const layoutAndNavigationBody = {
+  sections: [
     {
       id: "navigation-contract",
       title: "Navigation has to behave like product structure",
@@ -98,6 +105,36 @@ const referenceBody = {
         },
       ],
     },
+    {
+      id: "editorial-rhythm",
+      title: "Editorial rhythm is part of the interface",
+      description:
+        "The page should feel readable before it feels feature-complete.",
+      blocks: [
+        {
+          id: "editorial-rhythm-p-1",
+          type: "paragraph",
+          text: "The shell has to create a calm reading tempo across headings, paragraphs, lists, and callouts. If the spacing between those blocks is inconsistent, the reader starts processing interface noise instead of content structure.",
+        },
+        {
+          id: "editorial-rhythm-p-2",
+          type: "paragraph",
+          text: "This also affects how docs home should relate to article pages. The archive does not need to mimic the detail shell, but both surfaces should share enough rhythm that moving between them does not feel like switching products.",
+        },
+        {
+          id: "editorial-rhythm-callout-1",
+          type: "callout",
+          tone: "tip",
+          title: "Practical test",
+          text: "A good rhythm survives long paragraphs, locked entries, and section jumps without needing visual gimmicks to stay readable.",
+        },
+      ],
+    },
+  ],
+};
+
+const workflowAndValidationBody = {
+  sections: [
     {
       id: "workflow",
       title: "From mock layout to production docs",
@@ -129,31 +166,6 @@ const referenceBody = {
           tone: "note",
           title: "Implementation note",
           text: "Store body content as JSON in v1, then normalize later only if the editor and search requirements demand it.",
-        },
-      ],
-    },
-    {
-      id: "editorial-rhythm",
-      title: "Editorial rhythm is part of the interface",
-      description:
-        "The page should feel readable before it feels feature-complete.",
-      blocks: [
-        {
-          id: "editorial-rhythm-p-1",
-          type: "paragraph",
-          text: "The shell has to create a calm reading tempo across headings, paragraphs, lists, and callouts. If the spacing between those blocks is inconsistent, the reader starts processing interface noise instead of content structure.",
-        },
-        {
-          id: "editorial-rhythm-p-2",
-          type: "paragraph",
-          text: "This also affects how docs home should relate to article pages. The archive does not need to mimic the detail shell, but both surfaces should share enough rhythm that moving between them does not feel like switching products.",
-        },
-        {
-          id: "editorial-rhythm-callout-1",
-          type: "callout",
-          tone: "tip",
-          title: "Practical test",
-          text: "A good rhythm survives long paragraphs, locked entries, and section jumps without needing visual gimmicks to stay readable.",
         },
       ],
     },
@@ -212,63 +224,6 @@ const referenceBody = {
   ],
 };
 
-const referenceSidebar = {
-  groups: [
-    {
-      id: "foundations",
-      label: "Foundations",
-      defaultOpen: true,
-      items: [
-        { id: "overview", label: "Overview", href: `/docs/${CANONICAL_REFERENCE_SLUG}` },
-        {
-          id: "layout-modes",
-          label: "Layout modes",
-          href: `/docs/${CANONICAL_REFERENCE_SLUG}#layout-modes`,
-        },
-        {
-          id: "navigation-contract",
-          label: "Navigation contract",
-          href: `/docs/${CANONICAL_REFERENCE_SLUG}#navigation-contract`,
-        },
-      ],
-    },
-    {
-      id: "implementation",
-      label: "Implementation",
-      defaultOpen: true,
-      items: [
-        {
-          id: "workflow",
-          label: "Workflow",
-          href: `/docs/${CANONICAL_REFERENCE_SLUG}#workflow`,
-        },
-        {
-          id: "editorial-rhythm",
-          label: "Editorial rhythm",
-          href: `/docs/${CANONICAL_REFERENCE_SLUG}#editorial-rhythm`,
-        },
-        {
-          id: "permissions",
-          label: "Permissions",
-          href: `/docs/${CANONICAL_REFERENCE_SLUG}#permissions`,
-        },
-      ],
-    },
-    {
-      id: "validation",
-      label: "Validation",
-      defaultOpen: true,
-      items: [
-        {
-          id: "next-steps",
-          label: "Next steps",
-          href: `/docs/${CANONICAL_REFERENCE_SLUG}#next-steps`,
-        },
-      ],
-    },
-  ],
-};
-
 function createMinimalBody(title: string, summary: string) {
   return {
     sections: [
@@ -287,6 +242,43 @@ function createMinimalBody(title: string, summary: string) {
   };
 }
 
+const docsSeedCollections = [
+  {
+    id: 1,
+    accessRole: DocAccessRole.guest,
+    locales: [
+      {
+        locale: "en",
+        slug: CANONICAL_REFERENCE_SLUG,
+        eyebrow: "Collection",
+        title: "Building a reusable document shell for the docs surface",
+        summary:
+          "A multi-article reference collection for validating collection-aware sidebars, a stable reading shell, and right-rail section tracking.",
+        publishedAt: new Date("2026-04-28T10:00:00.000Z"),
+        seoTitle: "Building a reusable document shell for the docs surface",
+        seoDescription:
+          "A multi-article reference collection used to validate the reusable docs shell.",
+      },
+      {
+        locale: "zh",
+        slug: CANONICAL_REFERENCE_SLUG,
+        eyebrow: "合集",
+        title: "为文档界面构建可复用的阅读壳层",
+        summary:
+          "用于验证合集侧边栏、稳定阅读壳层与右侧目录跟踪的一组参考文章。",
+        publishedAt: new Date("2026-04-28T10:00:00.000Z"),
+        seoTitle: "为文档界面构建可复用的阅读壳层",
+        seoDescription: "用于验证集合式文档壳层的一组示例文章。",
+      },
+    ],
+    items: [
+      { documentId: 1, position: 1 },
+      { documentId: 15, position: 2 },
+      { documentId: 16, position: 3 },
+    ],
+  },
+] as const;
+
 const docsSeedDocuments = [
   {
     id: 1,
@@ -296,30 +288,92 @@ const docsSeedDocuments = [
     locales: [
       {
         locale: "en",
-        slug: CANONICAL_REFERENCE_SLUG,
+        slug: CANONICAL_REFERENCE_FIRST_ARTICLE_SLUG,
         eyebrow: "Reference",
-        title: "Building a reusable document shell for the docs surface",
+        title: "Shell foundations",
         summary:
-          "A test article for validating fixed navigation, a reading column, and an outline rail before the reference pattern becomes the default docs interface.",
+          "Why a reusable document shell matters, and how layout mode becomes the first stable contract for a growing docs surface.",
         publishedAt: new Date("2026-04-28T10:00:00.000Z"),
-        bodyJson: referenceBody,
-        sidebarJson: referenceSidebar,
-        seoTitle: "Building a reusable document shell for the docs surface",
+        bodyJson: shellFoundationsBody,
+        seoTitle: "Shell foundations",
         seoDescription:
-          "A sample docs article used to validate the reusable shell.",
+          "The first article in the reusable document shell collection.",
       },
       {
         locale: "zh",
-        slug: CANONICAL_REFERENCE_SLUG,
+        slug: CANONICAL_REFERENCE_FIRST_ARTICLE_SLUG,
         eyebrow: "参考",
-        title: "为文档界面构建可复用的阅读壳层",
+        title: "壳层基础",
         summary:
-          "用于验证固定导航、正文阅读列与右侧目录栏的一篇测试文章。",
+          "解释为什么可复用文档壳层重要，以及 layout mode 如何成为文档界面的第一个稳定契约。",
         publishedAt: new Date("2026-04-28T10:00:00.000Z"),
-        bodyJson: referenceBody,
-        sidebarJson: referenceSidebar,
-        seoTitle: "为文档界面构建可复用的阅读壳层",
-        seoDescription: "用于验证标准化文档壳层的一篇示例文章。",
+        bodyJson: shellFoundationsBody,
+        seoTitle: "壳层基础",
+        seoDescription: "合集中的第一篇文章，用于验证文档壳层的基础结构。",
+      },
+    ],
+  },
+  {
+    id: 15,
+    kind: DocKind.reference,
+    layoutMode: DocLayoutMode.sidebar,
+    accessRole: DocAccessRole.guest,
+    locales: [
+      {
+        locale: "en",
+        slug: "layout-and-navigation",
+        eyebrow: "Reference",
+        title: "Layout and navigation",
+        summary:
+          "How route structure, navigation semantics, and editorial rhythm need to align before a docs system feels stable.",
+        publishedAt: new Date("2026-04-27T10:00:00.000Z"),
+        bodyJson: layoutAndNavigationBody,
+        seoTitle: "Layout and navigation",
+        seoDescription: "The second article in the reusable document shell collection.",
+      },
+      {
+        locale: "zh",
+        slug: "layout-and-navigation",
+        eyebrow: "参考",
+        title: "布局与导航",
+        summary:
+          "讨论路由结构、导航语义与编辑节奏如何协同，才能让文档系统显得稳定。",
+        publishedAt: new Date("2026-04-27T10:00:00.000Z"),
+        bodyJson: layoutAndNavigationBody,
+        seoTitle: "布局与导航",
+        seoDescription: "合集中的第二篇文章，用于验证正文节奏与导航结构。",
+      },
+    ],
+  },
+  {
+    id: 16,
+    kind: DocKind.reference,
+    layoutMode: DocLayoutMode.sidebar,
+    accessRole: DocAccessRole.guest,
+    locales: [
+      {
+        locale: "en",
+        slug: "workflow-and-validation",
+        eyebrow: "Reference",
+        title: "Workflow and validation",
+        summary:
+          "How the shell transitions from mock layout to production data, and what should be tested before create flows begin.",
+        publishedAt: new Date("2026-04-26T10:00:00.000Z"),
+        bodyJson: workflowAndValidationBody,
+        seoTitle: "Workflow and validation",
+        seoDescription: "The third article in the reusable document shell collection.",
+      },
+      {
+        locale: "zh",
+        slug: "workflow-and-validation",
+        eyebrow: "参考",
+        title: "工作流与验证",
+        summary:
+          "说明文档壳层如何从 mock 走向生产数据，以及在进入 create 流程前应该先验证什么。",
+        publishedAt: new Date("2026-04-26T10:00:00.000Z"),
+        bodyJson: workflowAndValidationBody,
+        seoTitle: "工作流与验证",
+        seoDescription: "合集中的第三篇文章，用于验证写作流程与长页面行为。",
       },
     ],
   },
@@ -769,6 +823,35 @@ const docsSeedDocuments = [
 
 function toLocaleCreateInput(
   localeRow: (typeof docsSeedDocuments)[number]["locales"][number],
+) : Prisma.DocsDocumentLocaleCreateWithoutDocumentInput {
+  const input: Prisma.DocsDocumentLocaleCreateWithoutDocumentInput = {
+    locale: localeRow.locale,
+    slug: localeRow.slug,
+    eyebrow: localeRow.eyebrow,
+    title: localeRow.title,
+    summary: localeRow.summary,
+    status: DocStatus.published,
+    publishedAt: localeRow.publishedAt,
+    bodyJson: localeRow.bodyJson as Prisma.InputJsonValue,
+  };
+
+  if ("sidebarJson" in localeRow) {
+    input.sidebarJson = localeRow.sidebarJson as Prisma.InputJsonValue;
+  }
+
+  if ("seoTitle" in localeRow) {
+    input.seoTitle = localeRow.seoTitle;
+  }
+
+  if ("seoDescription" in localeRow) {
+    input.seoDescription = localeRow.seoDescription;
+  }
+
+  return input;
+}
+
+function toCollectionLocaleCreateInput(
+  localeRow: (typeof docsSeedCollections)[number]["locales"][number],
 ) {
   return {
     locale: localeRow.locale,
@@ -778,8 +861,6 @@ function toLocaleCreateInput(
     summary: localeRow.summary,
     status: DocStatus.published,
     publishedAt: localeRow.publishedAt,
-    bodyJson: localeRow.bodyJson,
-    ...("sidebarJson" in localeRow ? { sidebarJson: localeRow.sidebarJson } : {}),
     ...("seoTitle" in localeRow ? { seoTitle: localeRow.seoTitle } : {}),
     ...("seoDescription" in localeRow
       ? { seoDescription: localeRow.seoDescription }
@@ -820,6 +901,68 @@ async function main() {
           create: document.locales.map(toLocaleCreateInput),
         },
       },
+    });
+  }
+
+  for (const collection of docsSeedCollections) {
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `
+          INSERT INTO "docs_collections" ("id", "accessRole", "createdById", "createdAt", "updatedAt")
+          VALUES ($1, $2::"DocAccessRole", $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          ON CONFLICT ("id") DO UPDATE
+          SET "accessRole" = EXCLUDED."accessRole",
+              "createdById" = EXCLUDED."createdById",
+              "updatedAt" = CURRENT_TIMESTAMP
+        `,
+        collection.id,
+        collection.accessRole,
+        systemUser.id,
+      );
+
+      await tx.$executeRawUnsafe(
+        'DELETE FROM "docs_collection_locales" WHERE "collectionId" = $1',
+        collection.id,
+      );
+      await tx.$executeRawUnsafe(
+        'DELETE FROM "docs_collection_items" WHERE "collectionId" = $1',
+        collection.id,
+      );
+
+      for (const localeRow of collection.locales.map(toCollectionLocaleCreateInput)) {
+        await tx.$executeRawUnsafe(
+          `
+            INSERT INTO "docs_collection_locales"
+              ("collectionId", "locale", "slug", "eyebrow", "title", "summary", "status", "publishedAt", "seoTitle", "seoDescription", "createdAt", "updatedAt")
+            VALUES
+              ($1, $2, $3, $4, $5, $6, $7::"DocStatus", $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          `,
+          collection.id,
+          localeRow.locale,
+          localeRow.slug,
+          localeRow.eyebrow ?? null,
+          localeRow.title,
+          localeRow.summary ?? null,
+          localeRow.status,
+          localeRow.publishedAt,
+          localeRow.seoTitle ?? null,
+          localeRow.seoDescription ?? null,
+        );
+      }
+
+      for (const item of collection.items) {
+        await tx.$executeRawUnsafe(
+          `
+            INSERT INTO "docs_collection_items"
+              ("collectionId", "documentId", "position", "createdAt", "updatedAt")
+            VALUES
+              ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          `,
+          collection.id,
+          item.documentId,
+          item.position,
+        );
+      }
     });
   }
 }

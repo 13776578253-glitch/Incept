@@ -32,8 +32,8 @@ export function DocsHomeGroupSection({
         </div>
 
         <div className="space-y-7 md:space-y-9">
-          {group.articles.map((article) => (
-            <DocsHomeListItem key={article.id} article={article} />
+          {group.entries.map((entry) => (
+            <DocsHomeListItem key={entry.id} article={entry} />
           ))}
         </div>
       </div>

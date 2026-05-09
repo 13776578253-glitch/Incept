@@ -1,9 +1,5 @@
-import { notFound } from 'next/navigation';
-import { DocsArticleFeature } from '@/features/docs';
+import { redirect } from 'next/navigation';
 import type { AppLocale } from '@/i18n/config/locales';
-import { getDocsArticlePage } from '@/server/docs/loaders';
-
-const CANONICAL_DOCS_REFERENCE_SLUG = 'document-shells';
 
 export default async function DocsReferencePage({
   params,
@@ -11,15 +7,5 @@ export default async function DocsReferencePage({
   params: Promise<{ locale: AppLocale }>;
 }) {
   const { locale } = await params;
-  const page = await getDocsArticlePage({
-    locale,
-    slug: CANONICAL_DOCS_REFERENCE_SLUG,
-    viewerRole: 'guest',
-  });
-
-  if (!page) {
-    notFound();
-  }
-
-  return <DocsArticleFeature page={page} />;
+  redirect(`/${locale}/docs/series/document-shells/shell-foundations`);
 }

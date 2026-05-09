@@ -2,6 +2,8 @@ export type DocsAccessRole = 'guest' | 'member' | 'pro';
 
 export type DocsLayoutMode = 'sidebar' | 'contentOnly';
 
+export type DocsHomeEntryType = 'collection' | 'singleArticle';
+
 export type DocsHomeIntroModel = {
   eyebrow?: string;
   title: string;
@@ -56,6 +58,9 @@ export type DocsOutlineItemModel = {
 export type DocsArticlePageModel = {
   id: string;
   slug: string;
+  routeType: 'singleArticle' | 'collectionArticle';
+  collectionSlug?: string;
+  articleSlug?: string;
   layoutMode: DocsLayoutMode;
   eyebrow?: string;
   title: string;
@@ -68,7 +73,10 @@ export type DocsArticlePageModel = {
 
 export type DocsHomeArticleItemModel = {
   id: string;
+  entryType: DocsHomeEntryType;
   slug: string;
+  collectionSlug?: string;
+  firstArticleSlug?: string;
   title: string;
   summary: string;
   publishedAt: string;
@@ -82,7 +90,7 @@ export type DocsHomeGroupModel = {
   id: string;
   label: string;
   description?: string;
-  articles: DocsHomeArticleItemModel[];
+  entries: DocsHomeArticleItemModel[];
 };
 
 export type DocsHomePageModel = {

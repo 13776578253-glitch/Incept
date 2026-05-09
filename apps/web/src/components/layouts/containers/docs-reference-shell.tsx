@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import type { MockDocsLayoutMode } from '@/lib/mock/shared/mock-types';
+import type { DocsLayoutMode } from '@/features/docs/shared/types';
 
 type DocsReferenceShellProps = {
-  layoutMode: MockDocsLayoutMode;
+  layoutMode: DocsLayoutMode;
   sidebar?: ReactNode;
   aside?: ReactNode;
   children: ReactNode;

@@ -38,6 +38,7 @@ model User {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
   documents DocsDocument[]
+  collections DocsCollection[]
 
   @@map("users")
 }
@@ -50,6 +51,7 @@ model DocsDocument {
   createdById Int?
   createdBy   User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
   locales     DocsDocumentLocale[]
+  collectionItem DocsCollectionItem?
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
 
@@ -81,4 +83,56 @@ model DocsDocumentLocale {
   @@unique([locale, slug])
   @@index([locale, status, publishedAt])
   @@map("docs_document_locales")
+}
+
+model DocsCollection {
+  id          Int                    @id @default(autoincrement())
+  accessRole  DocAccessRole          @default(guest)
+  createdById Int?
+  createdBy   User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  locales     DocsCollectionLocale[]
+  items       DocsCollectionItem[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([accessRole])
+  @@map("docs_collections")
+}
+
+model DocsCollectionLocale {
+  id             Int            @id @default(autoincrement())
+  collectionId   Int
+  collection     DocsCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  locale         String
+  slug           String
+  eyebrow        String?
+  title          String
+  summary        String?
+  status         DocStatus      @default(draft)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([collectionId, locale])
+  @@unique([locale, slug])
+  @@index([locale, status, publishedAt])
+  @@map("docs_collection_locales")
+}
+
+model DocsCollectionItem {
+  id           Int            @id @default(autoincrement())
+  collectionId Int
+  documentId   Int            @unique
+  position     Int
+  collection   DocsCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  document     DocsDocument   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([collectionId, position])
+  @@unique([collectionId, documentId])
+  @@index([collectionId])
+  @@map("docs_collection_items")
 }

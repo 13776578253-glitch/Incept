@@ -73,6 +73,42 @@ export type DbDocsArticleRecord = {
   updatedAt: Date;
 };
 
+export type DbDocsCollectionArticleListItem = {
+  documentId: number;
+  locale: DbDocsLocale;
+  slug: string;
+  title: string;
+  summary?: string | null;
+  publishedAt?: Date | null;
+};
+
+export type DbDocsCollectionRecord = {
+  collectionId: number;
+  locale: DbDocsLocale;
+  collectionSlug: string;
+  collectionTitle: string;
+  collectionSummary?: string | null;
+  collectionEyebrow?: string | null;
+  collectionStatus: DocStatus;
+  collectionPublishedAt?: Date | null;
+  collectionAccessRole: DocAccessRole;
+  articleDocumentId: number;
+  articleSlug: string;
+  articleTitle: string;
+  articleSummary?: string | null;
+  articleEyebrow?: string | null;
+  articlePublishedAt?: Date | null;
+  articleBodyJson: DbDocsBody;
+  articleStatus: DocStatus;
+  articleKind: DocKind;
+  articleLayoutMode: DocLayoutMode;
+  collectionItems: DbDocsCollectionArticleListItem[];
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type DbDocsHomeArticleRecord = {
   documentId: number;
   locale: DbDocsLocale;
@@ -85,7 +121,28 @@ export type DbDocsHomeArticleRecord = {
   accessRole: DocAccessRole;
 };
 
+export type DbDocsHomeCollectionRecord = {
+  collectionId: number;
+  locale: DbDocsLocale;
+  collectionSlug: string;
+  title: string;
+  summary?: string | null;
+  publishedAt: Date;
+  requiredRole: DocAccessRole;
+  eyebrow?: string | null;
+  accessRole: DocAccessRole;
+  firstArticleSlug: string;
+};
+
+export type DbDocsHomeEntryRecord =
+  | ({
+      entryType: 'singleArticle';
+    } & DbDocsHomeArticleRecord)
+  | ({
+      entryType: 'collection';
+    } & DbDocsHomeCollectionRecord);
+
 export type DbDocsHomeGroupRecord = {
   year: string;
-  articles: DbDocsHomeArticleRecord[];
+  entries: DbDocsHomeEntryRecord[];
 };

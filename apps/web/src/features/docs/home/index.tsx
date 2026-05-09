@@ -22,7 +22,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
             key={group.id}
             group={group}
             sectionId={`docs-home-group-${group.id}`}
-            entriesLabel={t('groups.entries', { count: group.articles.length })}
+            entriesLabel={t('groups.entries', { count: group.entries.length })}
           />
         ))}
       </div>

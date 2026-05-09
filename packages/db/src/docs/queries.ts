@@ -2,7 +2,11 @@ import { prisma } from '../client';
 import type {
   DbDocsArticleRecord,
   DbDocsBody,
+  DbDocsCollectionArticleListItem,
+  DbDocsCollectionRecord,
+  DbDocsHomeCollectionRecord,
   DbDocsHomeArticleRecord,
+  DbDocsHomeEntryRecord,
   DbDocsHomeGroupRecord,
   DbDocsLocale,
   DbDocsNavGroup,
@@ -88,6 +92,17 @@ export async function findPublishedDocsArticleBySlug({
     return null;
   }
 
+  const collectionMembershipRows = await prisma.$queryRawUnsafe<
+    Array<{ documentId: number }>
+  >(
+    'SELECT "documentId" FROM "docs_collection_items" WHERE "documentId" = $1',
+    row.documentId,
+  );
+
+  if (collectionMembershipRows.length > 0) {
+    return null;
+  }
+
   // 数据库中直接存储 JSON 原始值 / 进行类型断言和校验，确保传递给 UI 层的数据结构正确
   return {
     documentId: row.documentId,
@@ -110,13 +125,152 @@ export async function findPublishedDocsArticleBySlug({
   };
 }
 
+export async function findPublishedDocsCollectionArticleBySlugs({
+  locale,
+  collectionSlug,
+  articleSlug,
+}: {
+  locale: DbDocsLocale;
+  collectionSlug: string;
+  articleSlug: string;
+}): Promise<DbDocsCollectionRecord | null> {
+  const baseRows = await prisma.$queryRawUnsafe<
+    Array<{
+      collectionId: number;
+      locale: string;
+      collectionSlug: string;
+      collectionEyebrow: string | null;
+      collectionTitle: string;
+      collectionSummary: string | null;
+      collectionStatus: string;
+      collectionPublishedAt: Date | null;
+      collectionAccessRole: string;
+      seoTitle: string | null;
+      seoDescription: string | null;
+      articleDocumentId: number;
+      articleSlug: string;
+      articleTitle: string;
+      articleSummary: string | null;
+      articleEyebrow: string | null;
+      articlePublishedAt: Date | null;
+      articleBodyJson: unknown;
+      articleStatus: string;
+      articleKind: string;
+      articleLayoutMode: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>
+  >(
+    `
+      SELECT
+        cl."collectionId" AS "collectionId",
+        cl."locale" AS "locale",
+        cl."slug" AS "collectionSlug",
+        cl."eyebrow" AS "collectionEyebrow",
+        cl."title" AS "collectionTitle",
+        cl."summary" AS "collectionSummary",
+        cl."status" AS "collectionStatus",
+        cl."publishedAt" AS "collectionPublishedAt",
+        c."accessRole" AS "collectionAccessRole",
+        cl."seoTitle" AS "seoTitle",
+        cl."seoDescription" AS "seoDescription",
+        d."id" AS "articleDocumentId",
+        dl."slug" AS "articleSlug",
+        dl."title" AS "articleTitle",
+        dl."summary" AS "articleSummary",
+        dl."eyebrow" AS "articleEyebrow",
+        dl."publishedAt" AS "articlePublishedAt",
+        dl."bodyJson" AS "articleBodyJson",
+        dl."status" AS "articleStatus",
+        d."kind" AS "articleKind",
+        d."layoutMode" AS "articleLayoutMode",
+        dl."createdAt" AS "createdAt",
+        dl."updatedAt" AS "updatedAt"
+      FROM "docs_collection_locales" cl
+      INNER JOIN "docs_collections" c ON c."id" = cl."collectionId"
+      INNER JOIN "docs_collection_items" ci ON ci."collectionId" = c."id"
+      INNER JOIN "docs_documents" d ON d."id" = ci."documentId"
+      INNER JOIN "docs_document_locales" dl
+        ON dl."documentId" = d."id"
+       AND dl."locale" = $1
+       AND dl."status" = 'published'
+      WHERE cl."locale" = $1
+        AND cl."slug" = $2
+        AND cl."status" = 'published'
+        AND dl."slug" = $3
+      LIMIT 1
+    `,
+    locale,
+    collectionSlug,
+    articleSlug,
+  );
+
+  const row = baseRows[0];
+
+  if (!row) {
+    return null;
+  }
+
+  const collectionItems = await prisma.$queryRawUnsafe<DbDocsCollectionArticleListItem[]>(
+    `
+      SELECT
+        d."id" AS "documentId",
+        dl."locale" AS "locale",
+        dl."slug" AS "slug",
+        dl."title" AS "title",
+        dl."summary" AS "summary",
+        dl."publishedAt" AS "publishedAt"
+      FROM "docs_collection_locales" cl
+      INNER JOIN "docs_collection_items" ci ON ci."collectionId" = cl."collectionId"
+      INNER JOIN "docs_documents" d ON d."id" = ci."documentId"
+      INNER JOIN "docs_document_locales" dl
+        ON dl."documentId" = d."id"
+       AND dl."locale" = $1
+       AND dl."status" = 'published'
+      WHERE cl."locale" = $1
+        AND cl."slug" = $2
+        AND cl."status" = 'published'
+      ORDER BY ci."position" ASC
+    `,
+    locale,
+    collectionSlug,
+  );
+
+  return {
+    collectionId: row.collectionId,
+    locale: row.locale as DbDocsLocale,
+    collectionSlug: row.collectionSlug,
+    collectionTitle: row.collectionTitle,
+    collectionSummary: row.collectionSummary,
+    collectionEyebrow: row.collectionEyebrow,
+    collectionStatus: row.collectionStatus as DbDocsCollectionRecord['collectionStatus'],
+    collectionPublishedAt: row.collectionPublishedAt,
+    collectionAccessRole: row.collectionAccessRole as DbDocsCollectionRecord['collectionAccessRole'],
+    articleDocumentId: row.articleDocumentId,
+    articleSlug: row.articleSlug,
+    articleTitle: row.articleTitle,
+    articleSummary: row.articleSummary,
+    articleEyebrow: row.articleEyebrow,
+    articlePublishedAt: row.articlePublishedAt,
+    articleBodyJson: assertDocsBody(row.articleBodyJson),
+    articleStatus: row.articleStatus as DbDocsCollectionRecord['articleStatus'],
+    articleKind: row.articleKind as DbDocsCollectionRecord['articleKind'],
+    articleLayoutMode: row.articleLayoutMode as DbDocsCollectionRecord['articleLayoutMode'],
+    collectionItems,
+    seoTitle: row.seoTitle,
+    seoDescription: row.seoDescription,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 // 查询指定 locale 的已发布文档列表，按年份分组，返回用于首页展示的数据结构
-export async function listPublishedDocsForHome({
+export async function listPublishedDocsHomeEntries({
   locale,
 }: {
   locale: DbDocsLocale;
 }): Promise<DbDocsHomeGroupRecord[]> {
-  const rows = await prisma.docsDocumentLocale.findMany({
+  const standaloneRows = await prisma.docsDocumentLocale.findMany({
     where: {
       locale,
       status: 'published',
@@ -143,21 +297,75 @@ export async function listPublishedDocsForHome({
       },
     },
   });
+  const collectionItemRows = await prisma.$queryRawUnsafe<Array<{ documentId: number }>>(
+    'SELECT "documentId" FROM "docs_collection_items"',
+  );
+  const collectionDocumentIds = new Set(collectionItemRows.map((row) => row.documentId));
+
+  const collectionRows = await prisma.$queryRawUnsafe<
+    Array<{
+      collectionId: number;
+      locale: string;
+      collectionSlug: string;
+      eyebrow: string | null;
+      title: string;
+      summary: string | null;
+      status: string;
+      publishedAt: Date | null;
+      accessRole: string;
+      firstArticleSlug: string | null;
+    }>
+  >(
+    `
+      SELECT
+        cl."collectionId" AS "collectionId",
+        cl."locale" AS "locale",
+        cl."slug" AS "collectionSlug",
+        cl."eyebrow" AS "eyebrow",
+        cl."title" AS "title",
+        cl."summary" AS "summary",
+        cl."status" AS "status",
+        cl."publishedAt" AS "publishedAt",
+        c."accessRole" AS "accessRole",
+        (
+          SELECT dl."slug"
+          FROM "docs_collection_items" ci2
+          INNER JOIN "docs_document_locales" dl
+            ON dl."documentId" = ci2."documentId"
+           AND dl."locale" = $1
+           AND dl."status" = 'published'
+          WHERE ci2."collectionId" = c."id"
+          ORDER BY ci2."position" ASC
+          LIMIT 1
+        ) AS "firstArticleSlug"
+      FROM "docs_collection_locales" cl
+      INNER JOIN "docs_collections" c ON c."id" = cl."collectionId"
+      WHERE cl."locale" = $1
+        AND cl."status" = 'published'
+      ORDER BY cl."publishedAt" DESC
+    `,
+    locale,
+  );
 
   // 按年份分组
-  const grouped = new Map<string, DbDocsHomeArticleRecord[]>();
+  const grouped = new Map<string, DbDocsHomeEntryRecord[]>();
 
   // 遍历查询结果，构建分组数据结构
-  for (const row of rows) {
+  for (const row of standaloneRows) {
     if (!row.publishedAt) {
+      continue;
+    }
+
+    if (collectionDocumentIds.has(row.documentId)) {
       continue;
     }
 
     // 根据 publishedAt 的年份进行分组，构建 DbDocsHomeArticleRecord 结构
     const year = String(row.publishedAt.getFullYear());
-    const articles = grouped.get(year) ?? [];
+    const entries = grouped.get(year) ?? [];
 
-    articles.push({
+    entries.push({
+      entryType: 'singleArticle',
       documentId: row.documentId,
       locale: row.locale as DbDocsLocale,
       slug: row.slug,
@@ -169,11 +377,49 @@ export async function listPublishedDocsForHome({
       accessRole: row.document.accessRole,
     });
 
-    grouped.set(year, articles);
+    grouped.set(year, entries);
+  }
+
+  for (const row of collectionRows) {
+    if (!row.publishedAt) {
+      continue;
+    }
+
+    const firstArticleSlug = row.firstArticleSlug;
+
+    if (!firstArticleSlug) {
+      continue;
+    }
+
+    const year = String(row.publishedAt.getFullYear());
+    const entries = grouped.get(year) ?? [];
+
+    entries.push({
+      entryType: 'collection',
+      collectionId: row.collectionId,
+      locale: row.locale as DbDocsLocale,
+      collectionSlug: row.collectionSlug,
+      title: row.title,
+      summary: row.summary,
+      publishedAt: row.publishedAt,
+      requiredRole: row.accessRole as DbDocsHomeCollectionRecord['requiredRole'],
+      eyebrow: row.eyebrow,
+      accessRole: row.accessRole as DbDocsHomeCollectionRecord['accessRole'],
+      firstArticleSlug,
+    });
+
+    grouped.set(year, entries);
   }
 
   // 将 Map 转换为数组，并按年份降序排序
   return [...grouped.entries()]
     .sort(([a], [b]) => Number(b) - Number(a))
-    .map(([year, articles]) => ({ year, articles }));
+    .map(([year, entries]) => ({
+      year,
+      entries: entries.sort((a, b) => {
+        const aDate = a.publishedAt.getTime();
+        const bDate = b.publishedAt.getTime();
+        return bDate - aDate;
+      }),
+    }));
 }

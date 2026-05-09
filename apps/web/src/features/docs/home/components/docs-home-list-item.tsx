@@ -29,6 +29,32 @@ type DocsHomeListItemProps = {
   article: DocsHomeArticleItemModel;
 };
 
+function CollectionIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="size-[0.95rem]">
+      <path
+        d="M3.5 4.75A1.25 1.25 0 0 1 4.75 3.5h8.5A1.25 1.25 0 0 1 14.5 4.75v8.5a1.25 1.25 0 0 1-1.25 1.25h-8.5A1.25 1.25 0 0 1 3.5 13.25v-8.5Zm2 1a.5.5 0 0 0-.5.5v5.5a.5.5 0 0 0 .5.5h6.25a.5.5 0 0 0 .5-.5v-5.5a.5.5 0 0 0-.5-.5H5.5Z"
+        fill="currentColor"
+      />
+      <path
+        d="M6.75 15.25a.75.75 0 0 0 .75.75h8A1.5 1.5 0 0 0 17 14.5v-8a.75.75 0 0 0-1.5 0v8H7.5a.75.75 0 0 0-.75.75Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function ArticleIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="size-[0.95rem]">
+      <path
+        d="M5 3.5A1.5 1.5 0 0 0 3.5 5v10A1.5 1.5 0 0 0 5 16.5h10a1.5 1.5 0 0 0 1.5-1.5V7.81a1.5 1.5 0 0 0-.44-1.06l-2.81-2.81A1.5 1.5 0 0 0 12.19 3.5H5Zm7 .9V7a.5.5 0 0 0 .5.5h2.6L12 4.4ZM6.75 9.25a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5a.75.75 0 0 1-.75-.75Zm0 3a.75.75 0 0 1 .75-.75h5.75a.75.75 0 0 1 0 1.5H7.5a.75.75 0 0 1-.75-.75Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations('docs');
@@ -54,7 +80,12 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
                 : 'text-[var(--color-text)]'
             }`}
           >
-            {article.title}
+            <span className="inline-flex items-center gap-2">
+              <span className="text-[var(--color-nav-muted)]">
+                {article.entryType === 'collection' ? <CollectionIcon /> : <ArticleIcon />}
+              </span>
+              <span>{article.title}</span>
+            </span>
           </h3>
 
           <p
