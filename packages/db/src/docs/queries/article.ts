@@ -1,0 +1,82 @@
+import { prisma } from '../../client';
+import type { DbDocsArticleRecord, DbDocsLocale } from '../types';
+import { assertDocsBody, assertDocsSidebar } from './shared';
+
+// 根据 slug 和 locale 查找已发布的文档文章记录
+export async function findPublishedDocsArticleBySlug({
+  locale,
+  slug,
+}: {
+  locale: DbDocsLocale;
+  slug: string;
+}): Promise<DbDocsArticleRecord | null> {
+  const row = await prisma.docsDocument.findFirst({
+    where: {
+      collectionItem: {
+        is: null,
+      },
+      locales: {
+        some: {
+          locale,
+          slug,
+          status: 'published',
+        },
+      },
+    },
+    select: {
+      id: true,
+      kind: true,
+      layoutMode: true,
+      accessRole: true,
+      locales: {
+        where: {
+          locale,
+          slug,
+          status: 'published',
+        },
+        take: 1,
+        select: {
+          locale: true,
+          slug: true,
+          eyebrow: true,
+          title: true,
+          summary: true,
+          status: true,
+          publishedAt: true,
+          bodyJson: true,
+          sidebarJson: true,
+          seoTitle: true,
+          seoDescription: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    },
+  });
+
+  const localeRow = row?.locales[0];
+
+  if (!row || !localeRow) {
+    return null;
+  }
+
+  return {
+    documentId: row.id,
+    kind: row.kind,
+    layoutMode: row.layoutMode,
+    accessRole: row.accessRole,
+    locale: localeRow.locale as DbDocsLocale,
+    slug: localeRow.slug,
+    eyebrow: localeRow.eyebrow,
+    title: localeRow.title,
+    summary: localeRow.summary,
+    status: localeRow.status,
+    publishedAt: localeRow.publishedAt,
+    bodyJson: assertDocsBody(localeRow.bodyJson),
+    sidebarJson: assertDocsSidebar(localeRow.sidebarJson),
+    seoTitle: localeRow.seoTitle,
+    seoDescription: localeRow.seoDescription,
+    createdAt: localeRow.createdAt,
+    updatedAt: localeRow.updatedAt,
+  };
+}

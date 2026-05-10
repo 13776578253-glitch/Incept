@@ -1,16 +1,23 @@
 export {
   findPublishedDocsArticleBySlug,
+} from './queries/article';
+
+export {
   findPublishedDocsCollectionArticleBySlugs,
+} from './queries/collection';
+
+export {
   listPublishedDocsHomeEntries,
-} from './queries';
+} from './queries/home';
+
 export type {
   DbDocsArticleRecord,
   DbDocsCollectionArticleListItem,
   DbDocsCollectionRecord,
+  DbDocsSidebar,
   DbDocsHomeArticleRecord,
   DbDocsHomeCollectionRecord,
   DbDocsHomeEntryRecord,
-  DbDocsHomeGroupRecord,
   DbDocsLocale,
   DbDocsSection,
   DbDocsNavGroup,

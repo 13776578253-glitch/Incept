@@ -51,6 +51,10 @@ export type DbDocsBody = {
   sections: DbDocsSection[];
 };
 
+export type DbDocsSidebar = {
+  groups: DbDocsNavGroup[];
+};
+
 export type DbDocsArticleRecord = {
   documentId: number;
   kind: DocKind;
@@ -64,9 +68,7 @@ export type DbDocsArticleRecord = {
   status: DocStatus;
   publishedAt?: Date | null;
   bodyJson: DbDocsBody;
-  sidebarJson?: {
-    groups?: DbDocsNavGroup[];
-  } | null;
+  sidebarJson: DbDocsSidebar;
   seoTitle?: string | null;
   seoDescription?: string | null;
   createdAt: Date;
@@ -141,8 +143,3 @@ export type DbDocsHomeEntryRecord =
   | ({
       entryType: 'collection';
     } & DbDocsHomeCollectionRecord);
-
-export type DbDocsHomeGroupRecord = {
-  year: string;
-  entries: DbDocsHomeEntryRecord[];
-};

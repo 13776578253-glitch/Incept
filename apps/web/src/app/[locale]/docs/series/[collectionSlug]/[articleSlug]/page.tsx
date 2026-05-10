@@ -3,6 +3,7 @@ import { DocsArticleFeature } from '@/features/docs';
 import { getDocsCollectionArticlePage } from '@/server/docs/loaders';
 import type { AppLocale } from '@/i18n/config/locales';
 
+// 获取系列文章页面 
 export default async function DocsCollectionArticlePage({
   params,
 }: {

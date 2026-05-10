@@ -14,7 +14,7 @@ import {
   docsHomeIntro,
   mapDocsArticleRecordToPageModel,
   mapDocsCollectionRecordToPageModel,
-  mapDocsHomeGroupsToPageGroups,
+  mapDocsHomeEntriesToPageGroups,
 } from '@/server/docs/mappers';
 
 // 定义访问角色的等级，确保权限检查的一致性
@@ -58,6 +58,7 @@ export async function getDocsArticlePage({
   return mapDocsArticleRecordToPageModel(record);
 }
 
+// 查询指定 locale、系列 slug 和文章 slug 的已发布文档，并检查访问权限，返回前端使用的文档页面模型
 export async function getDocsCollectionArticlePage({
   locale,
   collectionSlug,
@@ -94,14 +95,14 @@ export async function getDocsHomePage({
   locale: AppLocale;
   viewerRole: DocsAccessRole;
 }): Promise<DocsHomePageModel> {
-  const groups = await listPublishedDocsHomeEntries({
+  const entries = await listPublishedDocsHomeEntries({
     locale: locale as DbDocsLocale,
   });
 
   return {
     intro: docsHomeIntro,
-    groups: mapDocsHomeGroupsToPageGroups(
-      groups,
+    groups: mapDocsHomeEntriesToPageGroups(
+      entries,
       viewerRole,
       canAccessDocsArticle,
     ),
