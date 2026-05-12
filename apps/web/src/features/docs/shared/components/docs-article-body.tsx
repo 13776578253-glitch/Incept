@@ -1,69 +1,11 @@
-import type {
-  DocsArticlePageModel,
-  DocsContentBlockModel,
-} from '@/features/docs/shared/types';
-
-function DocsParagraphBlock({ text }: Extract<DocsContentBlockModel, { type: 'paragraph' }>) {
-  return (
-    <p className="text-[1rem] leading-8 text-[var(--color-text-muted)]">
-      {text}
-    </p>
-  );
-}
-
-function DocsListBlock({ items }: Extract<DocsContentBlockModel, { type: 'list' }>) {
-  return (
-    <ul className="space-y-3 pl-5 text-[1rem] leading-8 text-[var(--color-text-muted)]">
-      {items.map((item) => (
-        <li key={item} className="list-disc">
-          {item}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function DocsCalloutBlock({
-  tone,
-  title,
-  text,
-}: Extract<DocsContentBlockModel, { type: 'callout' }>) {
-  const toneClassName =
-    tone === 'tip'
-      ? 'border-[rgba(34,120,87,0.16)] bg-[rgba(34,120,87,0.05)]'
-      : tone === 'warning'
-        ? 'border-[rgba(164,96,32,0.18)] bg-[rgba(164,96,32,0.06)]'
-        : 'border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-nav-item-active)_45%,transparent)]';
-
-  return (
-    <div className={`rounded-[16px] border px-5 py-4 ${toneClassName}`}>
-      <h4 className="text-[0.94rem] font-semibold text-[var(--color-text)]">
-        {title}
-      </h4>
-      <p className="mt-2 text-[0.95rem] leading-7 text-[var(--color-text-muted)]">
-        {text}
-      </p>
-    </div>
-  );
-}
-
-function DocsContentBlockRenderer({ block }: { block: DocsContentBlockModel }) {
-  switch (block.type) {
-    case 'paragraph':
-      return <DocsParagraphBlock {...block} />;
-    case 'list':
-      return <DocsListBlock {...block} />;
-    case 'callout':
-      return <DocsCalloutBlock {...block} />;
-    default:
-      return null;
-  }
-}
+import type { DocsArticlePageModel } from '@/features/docs/shared/types';
+import { DocsBlockRenderer } from '@/features/docs/shared/renderers';
 
 type DocsArticleBodyProps = {
   page: DocsArticlePageModel;
 };
 
+// 文档文章内容组件，负责渲染文章的主体内容
 export function DocsArticleBody({ page }: DocsArticleBodyProps) {
   return (
     <article className="mx-auto w-full max-w-[760px] min-w-0">
@@ -100,7 +42,7 @@ export function DocsArticleBody({ page }: DocsArticleBodyProps) {
 
               <div className="space-y-5">
                 {section.blocks.map((block) => (
-                  <DocsContentBlockRenderer key={block.id} block={block} />
+                  <DocsBlockRenderer key={block.id} block={block} />
                 ))}
               </div>
             </div>

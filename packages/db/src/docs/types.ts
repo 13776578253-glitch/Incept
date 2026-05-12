@@ -2,16 +2,20 @@ import type { DocAccessRole, DocLayoutMode, DocKind, DocStatus } from '../../gen
 
 export type DbDocsLocale = 'en' | 'zh';
 
+// 定义文档内容块的类型，包括段落、列表、提示、标题、引用、代码块和分割线等不同类型的内容块 / 同feature type 结构 / 待修改
+// TODO: 需要根据实际使用情况调整内容块的结构和字段
 export type DbDocsSectionBlock =
   | {
       id: string;
       type: 'paragraph';
       text: string;
+      variant?: 'default' | 'lead' | 'muted';
     }
   | {
       id: string;
       type: 'list';
       items: string[];
+      listStyle?: 'unordered' | 'ordered';
     }
   | {
       id: string;
@@ -19,6 +23,34 @@ export type DbDocsSectionBlock =
       tone: 'note' | 'tip' | 'warning';
       title: string;
       text: string;
+      variant?: 'default' | 'soft';
+    }
+  | {
+      id: string;
+      type: 'heading';
+      level: 1 | 2 | 3 | 4;
+      text: string;
+      variant?: 'display' | 'default' | 'compact' | 'subtle';
+    }
+  | {
+      id: string;
+      type: 'quote';
+      text: string;
+      attribution?: string;
+      variant?: 'default' | 'emphasis';
+    }
+  | {
+      id: string;
+      type: 'code';
+      code: string;
+      language: string;
+      caption?: string;
+      variant?: 'block' | 'compact';
+    }
+  | {
+      id: string;
+      type: 'divider';
+      variant?: 'default' | 'spacious';
     };
 
 export type DbDocsSection = {

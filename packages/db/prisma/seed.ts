@@ -224,6 +224,130 @@ const workflowAndValidationBody = {
   ],
 };
 
+const blockV1RegressionBody = {
+  sections: [
+    {
+      id: "block-overview",
+      title: "Block V1 rhythm probe",
+      description:
+        "This temporary page is intentionally structured as a renderer test surface rather than a canonical reference article.",
+      blocks: [
+        {
+          id: "block-overview-p-1",
+          type: "paragraph",
+          text: "This article exists to lock the reading-side language of the first seven docs block types before create, snapshots, or AI-assisted writing start adding extra complexity to the model.",
+        },
+        {
+          id: "block-overview-p-2",
+          type: "paragraph",
+          text: "The goal is not realism first. The goal is to put different block transitions under pressure inside the real document shell so spacing, hierarchy, and visual weight can be judged in the same route that will later carry actual writing.",
+        },
+        {
+          id: "block-overview-divider-1",
+          type: "divider",
+        },
+        {
+          id: "block-overview-heading-1",
+          type: "heading",
+          level: 1,
+          text: "Level 1 heading inside the body should feel assertive, but still secondary to the section title.",
+        },
+        {
+          id: "block-overview-p-3",
+          type: "paragraph",
+          text: "This heading is body-level structure only. It should create clear internal hierarchy without visually competing with the larger section title above it.",
+        },
+        {
+          id: "block-overview-code-1",
+          type: "code",
+          language: "ts",
+          caption: "A minimal block shape",
+          code: "type DocsBlock = {\n  id: string;\n  type: 'paragraph' | 'list' | 'callout' | 'heading' | 'quote' | 'code' | 'divider';\n};",
+        },
+      ],
+    },
+    {
+      id: "block-mixing",
+      title: "Mixing density, emphasis, and interruption",
+      description:
+        "This section combines list, quote, callout, and smaller heading levels to test transition smoothness.",
+      blocks: [
+        {
+          id: "block-mixing-heading-2",
+          type: "heading",
+          level: 2,
+          text: "Level 2 headings should tighten the rhythm, not restart the page.",
+        },
+        {
+          id: "block-mixing-list-1",
+          type: "list",
+          items: [
+            "Paragraphs should remain calm at normal laptop widths.",
+            "Lists should not create a heavier visual column than the prose around them.",
+            "Callouts should stand out, but only enough to mark emphasis.",
+          ],
+        },
+        {
+          id: "block-mixing-quote-1",
+          type: "quote",
+          text: "A useful docs block system feels editorial before it feels feature-rich.",
+          attribution: "Temporary regression note",
+        },
+        {
+          id: "block-mixing-callout-1",
+          type: "callout",
+          tone: "note",
+          title: "Transition check",
+          text: "This note block is here to verify whether quote-to-callout and list-to-callout transitions feel abrupt or naturally spaced.",
+        },
+        {
+          id: "block-mixing-heading-3",
+          type: "heading",
+          level: 3,
+          text: "Level 3 headings can be quieter and more utility-like.",
+        },
+        {
+          id: "block-mixing-p-1",
+          type: "paragraph",
+          text: "This paragraph sits directly under the smallest heading level to test whether subdued hierarchy still feels intentional rather than visually weak.",
+        },
+        {
+          id: "block-mixing-callout-2",
+          type: "callout",
+          tone: "warning",
+          title: "Do not over-style the first pass",
+          text: "The purpose of this phase is to lock the body language of the blocks, not to optimize for maximum UI flourish.",
+        },
+      ],
+    },
+    {
+      id: "block-long-form",
+      title: "Long-form reading under mixed blocks",
+      description:
+        "A longer closing section makes sure the temporary test page still reads like a document rather than a disjointed component catalog.",
+      blocks: [
+        {
+          id: "block-long-form-p-1",
+          type: "paragraph",
+          text: "Once these blocks feel stable in sequence, the next decisions become easier: how section composition should work, how snapshots should store historical content, and how an editor can eventually expose the same structures without leaking rendering concerns into every content action.",
+        },
+        {
+          id: "block-long-form-p-2",
+          type: "paragraph",
+          text: "Testing them inside a real collection article matters because the surrounding shell changes perception. A code block that looks fine in isolation may feel too heavy once it sits beside a collection sidebar and a right-hand outline. A divider that feels elegant in a playground might feel unnecessarily loud when repeated down a longer article.",
+        },
+        {
+          id: "block-long-form-callout-1",
+          type: "callout",
+          tone: "tip",
+          title: "What to judge first",
+          text: "Judge spacing, visual hierarchy, and reading continuity before judging whether more block types are needed.",
+        },
+      ],
+    },
+  ],
+};
+
 function createMinimalBody(title: string, summary: string) {
   return {
     sections: [
@@ -275,6 +399,7 @@ const docsSeedCollections = [
       { documentId: 1, position: 1 },
       { documentId: 15, position: 2 },
       { documentId: 16, position: 3 },
+      { documentId: 17, position: 4 },
     ],
   },
 ] as const;
@@ -374,6 +499,40 @@ const docsSeedDocuments = [
         bodyJson: workflowAndValidationBody,
         seoTitle: "工作流与验证",
         seoDescription: "合集中的第三篇文章，用于验证写作流程与长页面行为。",
+      },
+    ],
+  },
+  {
+    id: 17,
+    kind: DocKind.reference,
+    layoutMode: DocLayoutMode.sidebar,
+    accessRole: DocAccessRole.guest,
+    locales: [
+      {
+        locale: "en",
+        slug: "block-v1-regression-lab",
+        eyebrow: "Temporary lab",
+        title: "Block V1 regression lab",
+        summary:
+          "A temporary collection article used to lock the first reading-side block styles inside the real document shell.",
+        publishedAt: new Date("2026-04-25T10:00:00.000Z"),
+        bodyJson: blockV1RegressionBody,
+        seoTitle: "Block V1 regression lab",
+        seoDescription:
+          "A temporary article for testing the first docs block styles in the real series route.",
+      },
+      {
+        locale: "zh",
+        slug: "block-v1-regression-lab",
+        eyebrow: "临时实验",
+        title: "Block V1 回归实验页",
+        summary:
+          "一篇临时合集文章，用于在真实文档壳层中锁定第一批阅读侧 block 样式。",
+        publishedAt: new Date("2026-04-25T10:00:00.000Z"),
+        bodyJson: blockV1RegressionBody,
+        seoTitle: "Block V1 回归实验页",
+        seoDescription:
+          "一篇用于在真实系列路由中测试第一批 docs block 样式的临时文章。",
       },
     ],
   },

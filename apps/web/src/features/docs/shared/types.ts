@@ -1,3 +1,18 @@
+import type { DocsContentBlockModel } from '@/features/docs/block-system/schema';
+
+export type {
+  DocsBlockType,
+  DocsBlockVariant,
+  DocsHeadingBlockModel,
+  DocsParagraphBlockModel,
+  DocsListBlockModel,
+  DocsCalloutBlockModel,
+  DocsQuoteBlockModel,
+  DocsCodeBlockModel,
+  DocsDividerBlockModel,
+} from '@/features/docs/block-system/schema';
+export type { DocsBlockCatalogItem } from '@/features/docs/block-system/catalog';
+
 export type DocsAccessRole = 'guest' | 'member' | 'pro';
 
 export type DocsLayoutMode = 'sidebar' | 'contentOnly';
@@ -10,24 +25,8 @@ export type DocsHomeIntroModel = {
   description?: string;
 };
 
-export type DocsContentBlockModel =
-  | {
-      id: string;
-      type: 'paragraph';
-      text: string;
-    }
-  | {
-      id: string;
-      type: 'list';
-      items: string[];
-    }
-  | {
-      id: string;
-      type: 'callout';
-      tone: 'note' | 'tip' | 'warning';
-      title: string;
-      text: string;
-    };
+// 文档内容块模型，表示文档中的不同类型的内容块，如段落、列表、提示、标题、引用、代码块和分割线等
+export type { DocsContentBlockModel } from '@/features/docs/block-system/schema';
 
 export type DocsSectionModel = {
   id: string;
