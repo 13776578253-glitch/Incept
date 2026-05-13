@@ -4,6 +4,8 @@
 @import '../styles/motion.css';
 @import '../styles/layout.css';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light dark;
 }
@@ -27,4 +29,38 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-family-base);
+}
+
+.docs-code-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  -ms-overflow-style: auto;
+}
+
+.docs-code-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.docs-code-scrollbar:hover::-webkit-scrollbar,
+.docs-code-scrollbar:focus-within::-webkit-scrollbar {
+  height: 8px;
+}
+
+.docs-code-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.docs-code-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: transparent;
+}
+
+.docs-code-scrollbar:hover,
+.docs-code-scrollbar:focus-within {
+  scrollbar-color: color-mix(in srgb, var(--color-text) 24%, transparent) transparent;
+}
+
+.docs-code-scrollbar:hover::-webkit-scrollbar-thumb,
+.docs-code-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-text) 24%, transparent);
 }

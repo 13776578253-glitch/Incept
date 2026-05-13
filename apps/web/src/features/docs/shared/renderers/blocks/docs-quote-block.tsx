@@ -4,18 +4,14 @@ import type { DocsQuoteBlockModel } from '@/features/docs/block-system';
 export function DocsQuoteBlock({
   text,
   attribution,
-  variant = 'default',
 }: DocsQuoteBlockModel) {
-  const quoteClassName =
-    variant === 'emphasis'
-      ? 'text-[1.08rem] leading-8 text-[var(--color-text)]'
-      : 'text-[1.02rem] leading-8 text-[var(--color-text)]';
-
   return (
-    <figure className="border-l border-[var(--color-border)] pl-5">
-      <blockquote className={quoteClassName}>{text}</blockquote>
+    <figure className="border-l-[4px] border-l-[var(--color-text)] pl-7">
+      <blockquote className="text-[1.02rem] leading-8 text-[var(--color-text)]">
+        {text}
+      </blockquote>
       {attribution ? (
-        <figcaption className="mt-3 text-[0.82rem] uppercase tracking-[0.12em] text-[var(--color-nav-muted)]">
+        <figcaption className="mt-3 text-[0.92rem] leading-7 text-[var(--color-text-muted)]">
           {attribution}
         </figcaption>
       ) : null}

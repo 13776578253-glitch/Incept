@@ -8,7 +8,31 @@ export type DbDocsSectionBlock =
   | {
       id: string;
       type: 'paragraph';
-      text: string;
+      text?: string;
+      content?: (
+        | {
+            type: 'text';
+            text: string;
+          }
+        | {
+            type: 'link';
+            label: string;
+            href: string;
+            external?: boolean;
+          }
+        | {
+            type: 'delete';
+            text: string;
+          }
+        | {
+            type: 'mark';
+            text: string;
+          }
+        | {
+            type: 'inlineCode';
+            code: string;
+          }
+      )[];
       variant?: 'default' | 'lead' | 'muted';
     }
   | {
@@ -16,14 +40,25 @@ export type DbDocsSectionBlock =
       type: 'list';
       items: string[];
       listStyle?: 'unordered' | 'ordered';
+      variant?: 'default' | 'emphasis';
+    }
+  | {
+      id: string;
+      type: 'checklist';
+      items: {
+        id: string;
+        text: string;
+        checked: boolean;
+      }[];
+      variant?: 'default' | 'emphasis';
     }
   | {
       id: string;
       type: 'callout';
-      tone: 'note' | 'tip' | 'warning';
+      tone: 'note' | 'tip' | 'attention' | 'warning' | 'meta';
       title: string;
       text: string;
-      variant?: 'default' | 'soft';
+      variant?: 'default' | 'soft' | 'context';
     }
   | {
       id: string;
@@ -37,7 +72,6 @@ export type DbDocsSectionBlock =
       type: 'quote';
       text: string;
       attribution?: string;
-      variant?: 'default' | 'emphasis';
     }
   | {
       id: string;
@@ -51,6 +85,13 @@ export type DbDocsSectionBlock =
       id: string;
       type: 'divider';
       variant?: 'default' | 'spacious';
+    }
+  | {
+      id: string;
+      type: 'image';
+      src: string;
+      alt: string;
+      caption?: string;
     };
 
 export type DbDocsSection = {

@@ -8,7 +8,7 @@ type DocsArticleBodyProps = {
 // 文档文章内容组件，负责渲染文章的主体内容
 export function DocsArticleBody({ page }: DocsArticleBodyProps) {
   return (
-    <article className="mx-auto w-full max-w-[760px] min-w-0">
+    <article className="mx-auto w-full max-w-[var(--docs-prose-max-width)] min-w-0">
       <header className="pb-12 pt-2">
         {page.eyebrow ? (
           <p className="text-[0.74rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
@@ -19,7 +19,7 @@ export function DocsArticleBody({ page }: DocsArticleBodyProps) {
           {page.title}
         </h1>
         {page.description ? (
-          <p className="mt-4 max-w-[60ch] text-[1.08rem] leading-8 text-[var(--color-text-muted)]">
+          <p className="mt-4 w-full max-w-[var(--docs-prose-description-max-width)] text-[1.08rem] leading-8 text-[var(--color-text-muted)]">
             {page.description}
           </p>
         ) : null}
@@ -34,7 +34,7 @@ export function DocsArticleBody({ page }: DocsArticleBodyProps) {
                   {section.title}
                 </h2>
                 {section.description ? (
-                  <p className="max-w-[58ch] text-[0.98rem] leading-7 text-[var(--color-text-soft)]">
+                  <p className="w-full max-w-[var(--docs-prose-description-max-width)] text-[0.98rem] leading-7 text-[var(--color-text-soft)]">
                     {section.description}
                   </p>
                 ) : null}

@@ -1,3 +1,5 @@
+/* docs 正文主列宽和描述列宽走共享 token */
+
 :root {
   --font-family-base: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --radius-md: 14px;
@@ -9,6 +11,11 @@
   --docs-right-rail-edge-padding: 36px;
   --docs-shell-max-width: 1480px;
 
+  --docs-prose-max-width: var(--docs-content-width);
+  --docs-prose-description-max-width: 680px;
+  --docs-paragraph-line-height: 2rem;
+  --docs-paragraph-line-height-relaxed: 2.25rem;
+
   --color-white: #ffffff;
   --color-black: #111111;
   --color-gray-100: #f5f5f5;
@@ -18,3 +25,4 @@
   --color-gray-700: #404040;
   --color-gray-900: #171717;
 }
+

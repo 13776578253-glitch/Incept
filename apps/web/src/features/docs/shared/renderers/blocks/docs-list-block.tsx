@@ -4,9 +4,12 @@ import type { DocsListBlockModel } from '@/features/docs/block-system';
 export function DocsListBlock({
   items,
   listStyle = 'unordered',
+  variant = 'default',
 }: DocsListBlockModel) {
   const commonClassName =
-    'space-y-3 pl-5 text-[1rem] leading-8 text-[var(--color-text-muted)]';
+    variant === 'emphasis'
+      ? 'space-y-3 pl-5 text-[1.02rem] leading-8 text-[var(--color-text)]'
+      : 'space-y-3 pl-5 text-[1rem] leading-8 text-[var(--color-text-muted)]';
 
   if (listStyle === 'ordered') {
     return (

@@ -1,14 +1,14 @@
 import type {
   DocsCalloutTone,
   DocsCalloutVariant,
+  DocsChecklistVariant,
   DocsCodeVariant,
   DocsDividerVariant,
   DocsHeadingVariant,
   DocsListStyle,
+  DocsListVariant,
   DocsParagraphSpacing,
   DocsParagraphVariant,
-  DocsParagraphWidth,
-  DocsQuoteVariant,
 } from '../schema';
 
 // 定义文档内容块的预设选项，包含不同类型块的可选值列表，方便在创建和编辑文档内容时使用
@@ -30,12 +30,6 @@ export const docsParagraphVariants = [
   'muted',
 ] as const satisfies readonly DocsParagraphVariant[];
 
-export const docsParagraphWidths = [
-  'default',
-  'narrow',
-  'wide',
-] as const satisfies readonly DocsParagraphWidth[];
-
 export const docsParagraphSpacings = [
   'default',
   'relaxed',
@@ -46,21 +40,29 @@ export const docsListStyles = [
   'ordered',
 ] as const satisfies readonly DocsListStyle[];
 
+export const docsListVariants = [
+  'default',
+  'emphasis',
+] as const satisfies readonly DocsListVariant[];
+
+export const docsChecklistVariants = [
+  'default',
+  'emphasis',
+] as const satisfies readonly DocsChecklistVariant[];
+
 export const docsCalloutTones = [
   'note',
   'tip',
+  'attention',
   'warning',
+  'meta',
 ] as const satisfies readonly DocsCalloutTone[];
 
 export const docsCalloutVariants = [
   'default',
   'soft',
+  'context',
 ] as const satisfies readonly DocsCalloutVariant[];
-
-export const docsQuoteVariants = [
-  'default',
-  'emphasis',
-] as const satisfies readonly DocsQuoteVariant[];
 
 export const docsCodeVariants = [
   'block',

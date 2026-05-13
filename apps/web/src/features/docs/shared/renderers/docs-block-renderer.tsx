@@ -1,8 +1,10 @@
 import type { DocsContentBlockModel } from '@/features/docs/block-system';
 import { DocsCalloutBlock } from './blocks/docs-callout-block';
+import { DocsChecklistBlock } from './blocks/docs-checklist-block';
 import { DocsCodeBlock } from './blocks/docs-code-block';
 import { DocsDividerBlock } from './blocks/docs-divider-block';
 import { DocsHeadingBlock } from './blocks/docs-heading-block';
+import { DocsImageBlock } from './blocks/docs-image-block';
 import { DocsListBlock } from './blocks/docs-list-block';
 import { DocsParagraphBlock } from './blocks/docs-paragraph-block';
 import { DocsQuoteBlock } from './blocks/docs-quote-block';
@@ -15,6 +17,8 @@ export function DocsBlockRenderer({ block }: { block: DocsContentBlockModel }) {
       return <DocsParagraphBlock {...block} />;
     case 'list':
       return <DocsListBlock {...block} />;
+    case 'checklist':
+      return <DocsChecklistBlock {...block} />;
     case 'callout':
       return <DocsCalloutBlock {...block} />;
     case 'heading':
@@ -25,6 +29,8 @@ export function DocsBlockRenderer({ block }: { block: DocsContentBlockModel }) {
       return <DocsCodeBlock {...block} />;
     case 'divider':
       return <DocsDividerBlock {...block} />;
+    case 'image':
+      return <DocsImageBlock {...block} />;
     default:
       return null;
   }

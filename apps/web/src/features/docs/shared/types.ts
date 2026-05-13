@@ -5,11 +5,20 @@ export type {
   DocsBlockVariant,
   DocsHeadingBlockModel,
   DocsParagraphBlockModel,
+  DocsParagraphInlineModel,
+  DocsParagraphTextInlineModel,
+  DocsParagraphLinkInlineModel,
+  DocsParagraphDeleteInlineModel,
+  DocsParagraphMarkInlineModel,
+  DocsParagraphInlineCodeInlineModel,
   DocsListBlockModel,
+  DocsChecklistItemModel,
+  DocsChecklistBlockModel,
   DocsCalloutBlockModel,
   DocsQuoteBlockModel,
   DocsCodeBlockModel,
   DocsDividerBlockModel,
+  DocsImageBlockModel,
 } from '@/features/docs/block-system/schema';
 export type { DocsBlockCatalogItem } from '@/features/docs/block-system/catalog';
 

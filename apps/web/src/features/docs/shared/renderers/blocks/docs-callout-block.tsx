@@ -9,12 +9,20 @@ export function DocsCalloutBlock({
 }: DocsCalloutBlockModel) {
   const toneClassName =
     tone === 'tip'
-      ? 'border-[rgba(34,120,87,0.16)] bg-[rgba(34,120,87,0.05)]'
-      : tone === 'warning'
+      ? variant === 'context'
+        ? 'border-[rgba(76,129,196,0.14)] bg-[rgba(76,129,196,0.045)]'
+        : 'border-[rgba(34,120,87,0.16)] bg-[rgba(34,120,87,0.05)]'
+      : tone === 'attention'
         ? 'border-[rgba(164,96,32,0.18)] bg-[rgba(164,96,32,0.06)]'
-        : 'border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-nav-item-active)_45%,transparent)]';
+        : tone === 'warning'
+          ? 'border-[rgba(198,74,28,0.42)] bg-[rgba(198,74,28,0.16)]'
+          : tone === 'meta'
+            ? 'border-[rgba(120,96,196,0.18)] bg-[rgba(120,96,196,0.06)]'
+            : 'border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-nav-item-active)_45%,transparent)]';
   const variantClassName =
-    variant === 'soft' ? 'rounded-[14px] px-4 py-3' : 'rounded-[16px] px-5 py-4';
+    variant === 'soft' || variant === 'context'
+      ? 'rounded-[14px] px-4 py-3'
+      : 'rounded-[16px] px-5 py-4';
 
   return (
     <div className={`border ${variantClassName} ${toneClassName}`}>
