@@ -1,0 +1,86 @@
+import type { DbDocsLocale, DbDocsSection } from '@incept/db/docs';
+import type { DocsAccessRole, DocsArticlePageModel, DocsLayoutMode } from '../shared/types';
+
+export type DocsImportRouteType = 'singleArticle' | 'collectionArticle';
+
+export type DocsImportKind = 'article' | 'reference' | 'note';
+
+export type DocsImportArticleMeta = {
+  locale: DbDocsLocale;
+  routeType: DocsImportRouteType;
+  kind?: DocsImportKind;
+  layoutMode?: DocsLayoutMode;
+  accessRole?: DocsAccessRole;
+  slug: string;
+  title: string;
+  summary: string;
+  eyebrow?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  publishedAt?: string | Date;
+  collectionSlug?: string;
+  collectionTitle?: string;
+  collectionSummary?: string;
+  collectionEyebrow?: string;
+  position?: number;
+};
+
+export type DocsImportArticleBody = {
+  sections: DbDocsSection[];
+};
+
+export type DocsImportArticleSource = {
+  meta: DocsImportArticleMeta;
+  body: DocsImportArticleBody;
+};
+
+export type DocsImportValidationIssueLevel = 'error' | 'warning';
+
+export type DocsImportValidationIssue = {
+  level: DocsImportValidationIssueLevel;
+  code: string;
+  message: string;
+  path?: string;
+};
+
+export type DocsImportNormalizedMeta = {
+  locale: DbDocsLocale;
+  routeType: DocsImportRouteType;
+  kind: DocsImportKind;
+  layoutMode: DocsLayoutMode;
+  accessRole: DocsAccessRole;
+  slug: string;
+  title: string;
+  summary: string;
+  eyebrow?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  publishedAt: string;
+  collectionSlug?: string;
+  collectionTitle?: string;
+  collectionSummary?: string;
+  collectionEyebrow?: string;
+  position?: number;
+};
+
+export type DocsImportNormalizedSource = {
+  meta: DocsImportNormalizedMeta;
+  body: DocsImportArticleBody;
+};
+
+export type DocsImportDraft = {
+  id: string;
+  createdAt: string;
+  sourceFilePath: string;
+  replace: boolean;
+  source: DocsImportNormalizedSource;
+  issues: DocsImportValidationIssue[];
+  page: DocsArticlePageModel;
+};
+
+export type DocsImportPreviewModel = {
+  draft: DocsImportDraft;
+  hasErrors: boolean;
+  errorCount: number;
+  warningCount: number;
+};

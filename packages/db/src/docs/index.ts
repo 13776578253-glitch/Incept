@@ -10,6 +10,12 @@ export {
   listPublishedDocsHomeEntries,
 } from './queries/home';
 
+export {
+  importDocsArticleDraft,
+  upsertDocsSingleArticle,
+  upsertDocsCollectionArticle,
+} from './import';
+
 export type {
   DbDocsArticleRecord,
   DbDocsCollectionArticleListItem,
@@ -23,3 +29,9 @@ export type {
   DbDocsNavGroup,
   DbDocsOutlineItem,
 } from './types';
+
+export type {
+  DocsImportRouteType,
+  DocsImportWriteMeta,
+  DocsImportWriteSource,
+} from './import-types';

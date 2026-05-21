@@ -34,6 +34,7 @@ export type DbDocsSectionBlock =
           }
       )[];
       variant?: 'default' | 'lead' | 'muted';
+      spacing?: 'default' | 'relaxed';
     }
   | {
       id: string;

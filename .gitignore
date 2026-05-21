@@ -18,3 +18,4 @@ apps/web/*.log
 
 packages/db/generated
 packages/db/node_modules
+.docs-import-drafts

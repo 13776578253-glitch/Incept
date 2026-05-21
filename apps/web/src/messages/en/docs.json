@@ -19,5 +19,10 @@
   },
   "reference": {
     "outlineLabel": "On this page"
+  },
+  "importFeedback": {
+    "eyebrow": "Import complete",
+    "title": "Article published to docs",
+    "description": "The draft has been written to the database and is now loading through the normal docs route."
   }
 }

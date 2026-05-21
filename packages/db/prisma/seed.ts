@@ -404,6 +404,30 @@ const docsSeedCollections = [
   },
 ] as const;
 
+async function syncAutoincrementSequence(
+  tx: Prisma.TransactionClient | PrismaClient,
+  tableName: "docs_documents" | "docs_collections",
+) {
+  if (tableName === "docs_documents") {
+    await tx.$executeRaw`
+      SELECT setval(
+        pg_get_serial_sequence('docs_documents', 'id'),
+        COALESCE((SELECT MAX("id") FROM "docs_documents"), 1),
+        true
+      )
+    `;
+    return;
+  }
+
+  await tx.$executeRaw`
+    SELECT setval(
+      pg_get_serial_sequence('docs_collections', 'id'),
+      COALESCE((SELECT MAX("id") FROM "docs_collections"), 1),
+      true
+    )
+  `;
+}
+
 const docsSeedDocuments = [
   {
     id: 1,
@@ -1124,6 +1148,9 @@ async function main() {
       }
     });
   }
+
+  await syncAutoincrementSequence(prisma, "docs_documents");
+  await syncAutoincrementSequence(prisma, "docs_collections");
 }
 
 main()

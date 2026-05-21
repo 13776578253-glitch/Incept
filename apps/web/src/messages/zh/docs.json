@@ -19,5 +19,10 @@
   },
   "reference": {
     "outlineLabel": "本页目录"
+  },
+  "importFeedback": {
+    "eyebrow": "导入完成",
+    "title": "文章已发布到 docs",
+    "description": "这份草稿已经写入数据库，现在正通过正式 docs 路由加载。"
   }
 }
