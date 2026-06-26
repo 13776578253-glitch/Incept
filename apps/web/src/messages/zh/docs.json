@@ -24,5 +24,75 @@
     "eyebrow": "导入完成",
     "title": "文章已发布到 docs",
     "description": "这份草稿已经写入数据库，现在正通过正式 docs 路由加载。"
+  },
+  "library": {
+    "eyebrow": "工作台",
+    "title": "Docs 发布总览",
+    "description": "用于查看当前 docs 里到底发布了什么、每篇文章挂载到了哪里，以及哪些正式路由现在已经生效。",
+    "roles": {
+      "guest": "访客",
+      "member": "成员",
+      "pro": "专业版"
+    },
+    "routeType": {
+      "singleArticle": "单篇文章",
+      "collectionArticle": "合集文章"
+    },
+    "filters": {
+      "search": "搜索",
+      "searchPlaceholder": "搜索标题、slug、合集或路由",
+      "routeType": "路由类型",
+      "locale": "语言",
+      "accessRole": "访问权限",
+      "all": "全部"
+    },
+    "stats": {
+      "total": {
+        "label": "已发布行",
+        "description": "当前所有已发布的文章 locale 行。"
+      },
+      "standalone": {
+        "label": "单篇文章",
+        "description": "当前未挂载到合集中的已发布文章。"
+      },
+      "collectionArticles": {
+        "label": "合集文章",
+        "description": "当前挂载在合集中的已发布文章。"
+      },
+      "collections": {
+        "label": "合集数",
+        "description": "当前至少暴露了已发布内容的合集。"
+      },
+      "recentlyUpdated": {
+        "label": "30 天更新",
+        "description": "最近 30 天内更新过的已发布文章 locale 行。"
+      }
+    },
+    "table": {
+      "eyebrow": "当前状态",
+      "title": "已发布 docs 条目",
+      "description": "用这张表快速确认每篇已发布 docs 文章当前的正式路由、合集挂载、position 和权限边界。",
+      "results": "{count} 条可见记录",
+      "empty": "当前筛选条件下没有匹配的已发布 docs 条目。",
+      "none": "无",
+      "unknownCollection": "未知合集"
+    },
+    "columns": {
+      "title": "标题",
+      "locale": "语言",
+      "routeType": "路由类型",
+      "kind": "类型",
+      "accessRole": "访问权限",
+      "collection": "当前合集",
+      "position": "当前位置",
+      "currentRoute": "当前路由",
+      "lastUpdated": "最近更新",
+      "actions": "操作"
+    },
+    "actions": {
+      "openRoute": "打开路由",
+      "copyRoute": "复制路由",
+      "copied": "已复制"
+    }
   }
 }

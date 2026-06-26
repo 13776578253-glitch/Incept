@@ -24,7 +24,7 @@ import { buildCodeExample } from './docs-code-example-utils';
 //   1. 行内标记系统：delete line、mark、code span、strong、em
 //   2. 未完成 block：table
 //   3. 未来可扩展：embed、timeline、interactive block
-// - 当前重点观察项：
+// - 重点观察项：
 //   1. paragraph / list / checklist 在标准正文列宽下的换行稳定性
 //   2. emphasis 变体是否足够明确，但不会破坏正文整体节奏
 //   3. checklist 完成态的勾选框、删除线、降级字色是否清晰但不过重

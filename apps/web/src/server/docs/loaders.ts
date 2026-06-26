@@ -5,3 +5,7 @@ export {
   getDocsCollectionArticlePage,
   getDocsHomePage,
 } from './access';
+
+export {
+  getDocsLibraryPage,
+} from './library';

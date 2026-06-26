@@ -24,5 +24,75 @@
     "eyebrow": "Import complete",
     "title": "Article published to docs",
     "description": "The draft has been written to the database and is now loading through the normal docs route."
+  },
+  "library": {
+    "eyebrow": "Workspace",
+    "title": "Docs library overview",
+    "description": "A current-state view of what is published in docs, where each article is mounted, and which routes are live right now.",
+    "roles": {
+      "guest": "guest",
+      "member": "member",
+      "pro": "pro"
+    },
+    "routeType": {
+      "singleArticle": "Standalone article",
+      "collectionArticle": "Collection article"
+    },
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Search title, slug, collection, or route",
+      "routeType": "Route type",
+      "locale": "Locale",
+      "accessRole": "Access role",
+      "all": "All"
+    },
+    "stats": {
+      "total": {
+        "label": "Published rows",
+        "description": "All currently published article locale rows."
+      },
+      "standalone": {
+        "label": "Standalone",
+        "description": "Published articles that live outside collections."
+      },
+      "collectionArticles": {
+        "label": "Collection rows",
+        "description": "Published articles mounted inside collections."
+      },
+      "collections": {
+        "label": "Collections",
+        "description": "Collections that currently expose published content."
+      },
+      "recentlyUpdated": {
+        "label": "Updated / 30d",
+        "description": "Published article locale rows updated in the last 30 days."
+      }
+    },
+    "table": {
+      "eyebrow": "Current state",
+      "title": "Published docs entries",
+      "description": "Use this table to verify the current route, collection mount, position, and access boundary of every published docs article locale.",
+      "results": "{count} visible rows",
+      "empty": "No published docs entries match the current filters.",
+      "none": "None",
+      "unknownCollection": "Unknown collection"
+    },
+    "columns": {
+      "title": "Title",
+      "locale": "Locale",
+      "routeType": "Route type",
+      "kind": "Kind",
+      "accessRole": "Access role",
+      "collection": "Current collection",
+      "position": "Current position",
+      "currentRoute": "Current route",
+      "lastUpdated": "Last updated",
+      "actions": "Actions"
+    },
+    "actions": {
+      "openRoute": "Open route",
+      "copyRoute": "Copy route",
+      "copied": "Copied"
+    }
   }
 }

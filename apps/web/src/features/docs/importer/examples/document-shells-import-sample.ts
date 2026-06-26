@@ -1,6 +1,6 @@
 import type { DocsImportArticleSource } from '../types';
 
-// 导入器示例文章数据，作为文档导入流程的测试和验证使用，确保整个流程从文件加载、数据规范化、预览展示到最终导入都能正确处理一个标准的文档文章源数据结构
+// 集合文章导入示例：作为导入器功能链的第一个验证样例，保持内容和结构都非常简单，主要用于验证导入器的基本功能和数据库写入的正确性，后续会基于这个样例进行更复杂的写作实验
 const articleSource: DocsImportArticleSource = {
   meta: {
     locale: 'en',

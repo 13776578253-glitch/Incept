@@ -1,6 +1,7 @@
 import type { DocsArticlePageModel, DocsNavGroupModel, DocsOutlineItemModel, DocsSectionModel } from '../shared/types';
 import type { DocsImportNormalizedSource, DocsImportPreviewModel } from './types';
 
+// 预览模型映射器，将导入草稿数据转换为预览展示所需的结构，主要负责将原始的导入源数据规范化为文档页面模型，并计算预览中需要展示的错误和警告信息等 --- IGNORE ---
 function toDocsSections(source: DocsImportNormalizedSource): DocsSectionModel[] {
   return source.body.sections.map((section) => ({
     id: section.id,

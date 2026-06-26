@@ -11,6 +11,11 @@ export {
 } from './queries/home';
 
 export {
+  listDocsLibraryEntries,
+  getDocsLibraryStats,
+} from './library';
+
+export {
   importDocsArticleDraft,
   upsertDocsSingleArticle,
   upsertDocsCollectionArticle,
@@ -24,6 +29,9 @@ export type {
   DbDocsHomeArticleRecord,
   DbDocsHomeCollectionRecord,
   DbDocsHomeEntryRecord,
+  DbDocsLibraryEntryRecord,
+  DbDocsLibraryRouteType,
+  DbDocsLibraryStatsRecord,
   DbDocsLocale,
   DbDocsSection,
   DbDocsNavGroup,

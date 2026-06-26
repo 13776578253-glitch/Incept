@@ -217,3 +217,31 @@ export type DbDocsHomeEntryRecord =
   | ({
       entryType: 'collection';
     } & DbDocsHomeCollectionRecord);
+
+export type DbDocsLibraryRouteType = 'singleArticle' | 'collectionArticle';
+
+export type DbDocsLibraryEntryRecord = {
+  documentId: number;
+  locale: DbDocsLocale;
+  title: string;
+  slug: string;
+  routeType: DbDocsLibraryRouteType;
+  kind: DocKind;
+  layoutMode: DocLayoutMode;
+  accessRole: DocAccessRole;
+  collectionId?: number;
+  collectionSlug?: string;
+  collectionTitle?: string;
+  position?: number;
+  finalRoute: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type DbDocsLibraryStatsRecord = {
+  totalArticles: number;
+  standaloneArticleCount: number;
+  collectionArticleCount: number;
+  collectionCount: number;
+  recentlyUpdatedCount: number;
+};
