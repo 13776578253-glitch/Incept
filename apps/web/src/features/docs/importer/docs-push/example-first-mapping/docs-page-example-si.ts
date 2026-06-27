@@ -21,6 +21,7 @@ import type { DocsImportArticleSource } from '../../types';
 const articleSource: DocsImportArticleSource = {
   meta: {
     // TODO 未来可以考虑新增 documentKey 来标识同一篇文档的不同 locale 版本
+    // documentKey: 'docs-page-example-single',
     locale: 'en',
     routeType: 'singleArticle',
     kind: 'article',

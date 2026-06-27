@@ -1,0 +1,59 @@
+export const markdownLikeSupportedExtensions = new Set(['.md', '.docs.md']);
+
+export const markdownLikeAllowedFrontmatterKeys = new Set([
+  'locale',
+  'slug',
+  'title',
+  'summary',
+  'eyebrow',
+  'seoTitle',
+  'seoDescription',
+  'publishedAt',
+  'kind',
+  'layoutMode',
+  'accessRole',
+  'routeType',
+]);
+
+export const markdownLikeRequiredFrontmatterKeys = [
+  'locale',
+  'slug',
+  'title',
+  'summary',
+] as const;
+
+export const markdownLikeAllowedKinds = new Set([
+  'article', 
+  'reference', 
+  'note'
+]);
+
+export const markdownLikeAllowedLayoutModes = new Set(['contentOnly']);
+
+export const markdownLikeAllowedAccessRoles = new Set([
+  'guest', 
+  'member', 
+  'pro'
+]);
+
+export const markdownLikeAllowedCalloutTones = new Set([
+  'note',
+  'tip',
+  'attention',
+  'warning',
+  'meta',
+]);
+
+export const markdownLikeAllowedCalloutVariants = new Set([
+  'default',
+  'soft',
+  'context',
+]);
+
+export const markdownLikeAllowedCodeVariants = new Set(['block', 'compact']);
+
+export const markdownLikeAllowedDividerVariants = new Set(['default', 'spacious']);
+
+export const markdownLikeAllowedParagraphVariants = new Set(['default', 'lead', 'muted']);
+
+export const markdownLikeAllowedParagraphSpacings = new Set(['default', 'relaxed']);

@@ -1,8 +1,10 @@
 import type { DocsImportArticleSource } from '../../types';
 
+// block格式不完全 /  需要进一步补充
 const articleSource: DocsImportArticleSource = {
   meta: {
     // TODO 未来可以考虑新增 documentKey 来标识同一篇文档的不同 locale 版本
+    // documentKey: 'docs-page-example-collection',
     locale: 'en',
     routeType: 'collectionArticle',
     kind: 'article',

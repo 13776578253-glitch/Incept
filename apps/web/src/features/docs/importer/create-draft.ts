@@ -17,7 +17,8 @@ export async function createDocsImportDraft({
   const resolvedFilePath = path.isAbsolute(filePath)
     ? filePath
     : path.resolve(findRepoRoot(), filePath);
-  const source = await loadDocsImportSource(filePath);
+  const loadedSource = await loadDocsImportSource(filePath);
+  const source = loadedSource.source;
   const { normalizedSource, issues } = normalizeDocsImportSource(source);
 
   return {
@@ -26,7 +27,7 @@ export async function createDocsImportDraft({
     sourceFilePath: resolvedFilePath,
     replace,
     source: normalizedSource,
-    issues,
+    issues: [...loadedSource.issues, ...issues],
     page: mapDocsImportSourceToPageModel(normalizedSource),
   };
 }
