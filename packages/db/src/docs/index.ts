@@ -21,6 +21,15 @@ export {
   upsertDocsCollectionArticle,
 } from './import';
 
+export {
+  archiveDocsArticleLocale,
+  findDocsArticleLocaleForArchive,
+} from './archive';
+
+export type {
+  DocsArchiveArticleLocaleResult,
+} from './archive';
+
 export type {
   DbDocsArticleRecord,
   DbDocsCollectionArticleListItem,
