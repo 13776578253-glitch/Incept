@@ -762,6 +762,7 @@ function parseContent(rawContent: string, contentStartLine: number, initialIssue
 function buildSource(frontmatter: FrontmatterRecord, sections: WorkingSection[]): DocsImportArticleSource {
   return {
     meta: {
+      documentKey: frontmatter.documentKey,
       locale: frontmatter.locale as DocsImportArticleSource['meta']['locale'],
       routeType: 'singleArticle',
       kind: (frontmatter.kind as DocsImportKind | undefined) ?? 'article',

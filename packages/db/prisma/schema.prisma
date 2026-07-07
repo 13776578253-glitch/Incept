@@ -45,6 +45,7 @@ model User {
 
 model DocsDocument {
   id          Int                  @id @default(autoincrement())
+  documentKey String?              @unique
   kind        DocKind              @default(article)
   layoutMode  DocLayoutMode        @default(contentOnly)
   accessRole  DocAccessRole        @default(guest)

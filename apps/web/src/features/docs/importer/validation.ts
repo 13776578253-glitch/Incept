@@ -8,6 +8,7 @@ import type {
 // 定义允许的元信息字段和正文字段，提供数据验证和规范化的功能，确保导入的文档数据符合预期的结构和要求，并收集潜在的问题以供用户参考和修正
 // 待对齐
 const allowedMetaKeys = new Set([
+  'documentKey',
   'locale',
   'routeType',
   'kind',
@@ -31,6 +32,10 @@ const allowedBodyKeys = new Set(['sections'] as const);
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isValidDocumentKey(value: string) {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }
 
 function addUnknownKeyWarnings(
@@ -141,6 +146,24 @@ export function normalizeDocsImportSource(
     });
   }
 
+  if (source.meta.documentKey !== undefined) {
+    if (!isNonEmptyString(source.meta.documentKey)) {
+      issues.push({
+        level: 'error',
+        code: 'invalid_document_key',
+        message: 'documentKey must be a non-empty string when provided.',
+        path: 'meta.documentKey',
+      });
+    } else if (!isValidDocumentKey(source.meta.documentKey)) {
+      issues.push({
+        level: 'error',
+        code: 'invalid_document_key',
+        message: 'documentKey must use lowercase letters, numbers, and hyphen separators.',
+        path: 'meta.documentKey',
+      });
+    }
+  }
+
   if (!Array.isArray(source.body.sections) || source.body.sections.length === 0) {
     issues.push({
       level: 'error',
@@ -229,6 +252,7 @@ export function normalizeDocsImportSource(
 
   const normalizedSource: DocsImportNormalizedSource = {
     meta: {
+      documentKey: source.meta.documentKey,
       locale: source.meta.locale,
       routeType: source.meta.routeType,
       kind: source.meta.kind ?? 'article',

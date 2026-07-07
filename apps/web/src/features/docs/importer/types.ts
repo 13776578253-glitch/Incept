@@ -6,6 +6,7 @@ export type DocsImportRouteType = 'singleArticle' | 'collectionArticle';
 export type DocsImportKind = 'article' | 'reference' | 'note';
 
 export type DocsImportArticleMeta = {
+  documentKey?: string;
   locale: DbDocsLocale;
   routeType: DocsImportRouteType;
   kind?: DocsImportKind;
@@ -44,6 +45,7 @@ export type DocsImportValidationIssue = {
 };
 
 export type DocsImportNormalizedMeta = {
+  documentKey?: string;
   locale: DbDocsLocale;
   routeType: DocsImportRouteType;
   kind: DocsImportKind;

@@ -10,6 +10,7 @@ import type { DbDocsSection, DbDocsLocale } from './types';
 export type DocsImportRouteType = 'singleArticle' | 'collectionArticle';
 
 export type DocsImportWriteMeta = {
+  documentKey?: string;
   locale: DbDocsLocale;
   routeType: DocsImportRouteType;
   kind: 'article' | 'reference' | 'note';
@@ -38,6 +39,7 @@ export type DocsImportWriteSource = {
 
 type DocsImportExistingTarget = {
   documentId: number;
+  documentKey: string | null;
   slug: string;
   locale: DbDocsLocale;
 };
@@ -73,6 +75,11 @@ async function findExistingLocaleTarget({
       documentId: true,
       slug: true,
       locale: true,
+      document: {
+        select: {
+          documentKey: true,
+        },
+      },
     },
   });
 
@@ -82,9 +89,48 @@ async function findExistingLocaleTarget({
 
   return {
     documentId: localeRow.documentId,
+    documentKey: localeRow.document.documentKey,
     slug: localeRow.slug,
     locale: localeRow.locale as DbDocsLocale,
   };
+}
+
+async function findDocumentByKey(documentKey: string) {
+  return prisma.docsDocument.findUnique({
+    where: {
+      documentKey,
+    },
+    select: {
+      id: true,
+      documentKey: true,
+      locales: {
+        select: {
+          locale: true,
+          slug: true,
+        },
+      },
+    },
+  });
+}
+
+async function assertLocaleSlugAvailable({
+  locale,
+  slug,
+  expectedDocumentId,
+}: {
+  locale: DbDocsLocale;
+  slug: string;
+  expectedDocumentId?: number;
+}) {
+  const existingLocale = await findExistingLocaleTarget({ locale, slug });
+
+  if (existingLocale && existingLocale.documentId !== expectedDocumentId) {
+    throw new Error(
+      `The route ${locale}/${slug} is already used by another docs document.`,
+    );
+  }
+
+  return existingLocale;
 }
 
 function toDocumentKind(kind: DocsImportWriteMeta['kind']) {
@@ -262,12 +308,39 @@ export async function upsertDocsSingleArticle({
   replace: boolean;
 }) {
   const systemUserId = await getSystemUserId();
+  const existingDocumentByKey = source.meta.documentKey
+    ? await findDocumentByKey(source.meta.documentKey)
+    : null;
   const existingTarget = await findExistingLocaleTarget({
     locale: source.meta.locale,
     slug: source.meta.slug,
   });
+  const targetDocumentId = existingDocumentByKey?.id ?? existingTarget?.documentId;
+  const existingSameLocaleForKey = existingDocumentByKey?.locales.find(
+    (localeRow) => localeRow.locale === source.meta.locale,
+  );
 
-  if (existingTarget && !replace) {
+  if (source.meta.documentKey && existingTarget && existingTarget.documentId !== targetDocumentId) {
+    throw new Error(
+      `The route ${source.meta.locale}/${source.meta.slug} is already used by another docs document.`,
+    );
+  }
+
+  if (source.meta.documentKey && existingDocumentByKey) {
+    if (existingSameLocaleForKey && !replace) {
+      throw new Error(
+        `A locale already exists for documentKey "${source.meta.documentKey}" and locale "${source.meta.locale}". Re-run with replace to overwrite it.`,
+      );
+    }
+
+    await assertLocaleSlugAvailable({
+      locale: source.meta.locale,
+      slug: source.meta.slug,
+      expectedDocumentId: existingDocumentByKey.id,
+    });
+  }
+
+  if (!existingDocumentByKey && existingTarget && !replace) {
     throw new Error(
       `An article already exists for ${source.meta.locale}/${source.meta.slug}. Re-run with replace to overwrite it.`,
     );
@@ -275,10 +348,11 @@ export async function upsertDocsSingleArticle({
 
   const localeWriteData = buildLocaleWriteData(source);
 
-  if (existingTarget) {
+  if (targetDocumentId) {
     const document = await prisma.docsDocument.update({
-      where: { id: existingTarget.documentId },
+      where: { id: targetDocumentId },
       data: {
+        documentKey: source.meta.documentKey,
         kind: toDocumentKind(source.meta.kind),
         layoutMode: toDocumentLayoutMode(source.meta.layoutMode),
         accessRole: toDocumentAccessRole(source.meta.accessRole),
@@ -303,6 +377,7 @@ export async function upsertDocsSingleArticle({
 
   const document = await prisma.docsDocument.create({
     data: {
+      documentKey: source.meta.documentKey,
       kind: toDocumentKind(source.meta.kind),
       layoutMode: toDocumentLayoutMode(source.meta.layoutMode),
       accessRole: toDocumentAccessRole(source.meta.accessRole),
@@ -340,6 +415,9 @@ export async function upsertDocsCollectionArticle({
     source,
     systemUserId,
   });
+  const existingDocumentByKey = source.meta.documentKey
+    ? await findDocumentByKey(source.meta.documentKey)
+    : null;
 
   const conflictingPosition = await prisma.docsCollectionItem.findUnique({
     where: {
@@ -357,8 +435,32 @@ export async function upsertDocsCollectionArticle({
     locale: source.meta.locale,
     slug: source.meta.slug,
   });
+  const targetDocumentId = existingDocumentByKey?.id ?? existingTarget?.documentId;
+  const existingSameLocaleForKey = existingDocumentByKey?.locales.find(
+    (localeRow) => localeRow.locale === source.meta.locale,
+  );
 
-  if (conflictingPosition && conflictingPosition.documentId !== existingTarget?.documentId) {
+  if (source.meta.documentKey && existingTarget && existingTarget.documentId !== targetDocumentId) {
+    throw new Error(
+      `The route ${source.meta.locale}/${source.meta.slug} is already used by another docs document.`,
+    );
+  }
+
+  if (source.meta.documentKey && existingDocumentByKey) {
+    if (existingSameLocaleForKey && !replace) {
+      throw new Error(
+        `A locale already exists for documentKey "${source.meta.documentKey}" and locale "${source.meta.locale}". Re-run with replace to overwrite it.`,
+      );
+    }
+
+    await assertLocaleSlugAvailable({
+      locale: source.meta.locale,
+      slug: source.meta.slug,
+      expectedDocumentId: existingDocumentByKey.id,
+    });
+  }
+
+  if (conflictingPosition && conflictingPosition.documentId !== targetDocumentId) {
     throw new Error(
       `The collection position ${position} is already used by another article in "${source.meta.collectionSlug}".`,
     );
@@ -368,16 +470,23 @@ export async function upsertDocsCollectionArticle({
 
   let documentId: number;
 
-  if (existingTarget) {
-    if (!replace) {
+  if (targetDocumentId) {
+    const localeAlreadyExists = source.meta.documentKey
+      ? Boolean(existingSameLocaleForKey)
+      : Boolean(existingTarget);
+
+    if (localeAlreadyExists && !replace) {
       throw new Error(
-        `An article already exists for ${source.meta.locale}/${source.meta.slug}. Re-run with replace to overwrite it.`,
+        source.meta.documentKey
+          ? `A locale already exists for documentKey "${source.meta.documentKey}" and locale "${source.meta.locale}". Re-run with replace to overwrite it.`
+          : `An article already exists for ${source.meta.locale}/${source.meta.slug}. Re-run with replace to overwrite it.`,
       );
     }
 
     const updated = await prisma.docsDocument.update({
-      where: { id: existingTarget.documentId },
+      where: { id: targetDocumentId },
       data: {
+        documentKey: source.meta.documentKey,
         kind: toDocumentKind(source.meta.kind),
         layoutMode: toDocumentLayoutMode(source.meta.layoutMode),
         accessRole: toDocumentAccessRole(source.meta.accessRole),
@@ -398,6 +507,7 @@ export async function upsertDocsCollectionArticle({
   } else {
     const created = await prisma.docsDocument.create({
       data: {
+        documentKey: source.meta.documentKey,
         kind: toDocumentKind(source.meta.kind),
         layoutMode: toDocumentLayoutMode(source.meta.layoutMode),
         accessRole: toDocumentAccessRole(source.meta.accessRole),

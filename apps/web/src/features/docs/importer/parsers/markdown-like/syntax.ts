@@ -1,6 +1,7 @@
 export const markdownLikeSupportedExtensions = new Set(['.md', '.docs.md']);
 
 export const markdownLikeAllowedFrontmatterKeys = new Set([
+  'documentKey',
   'locale',
   'slug',
   'title',
