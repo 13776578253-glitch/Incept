@@ -1,0 +1,31 @@
+import { notFound } from 'next/navigation';
+import { DocsArticleFeature } from '@/features/docs';
+import type { AppLocale } from '@/i18n/config/locales';
+import { getNotesArticlePage } from '@/server/notes/loaders';
+
+export default async function NotesArticlePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: AppLocale; slug: string }>;
+  searchParams?: Promise<{ imported?: string }>;
+}) {
+  const { locale, slug } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const page = await getNotesArticlePage({
+    locale,
+    slug,
+    viewerRole: 'guest',
+  });
+
+  if (!page) {
+    notFound();
+  }
+
+  return (
+    <DocsArticleFeature
+      page={page}
+      showImportSuccessToast={resolvedSearchParams?.imported === '1'}
+    />
+  );
+}

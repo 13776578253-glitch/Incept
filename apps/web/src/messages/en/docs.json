@@ -1,8 +1,13 @@
 {
   "archive": {
     "eyebrow": "Docs",
-    "title": "Documentation, references, and gated drafts",
-    "description": "A calm entry point for released writing, structured reference articles, and access-controlled pieces. Locked entries stay visible so the shape of the library remains discoverable."
+    "title": "Documentation and references",
+    "description": "Browse published guides, reference notes, and topic-based articles. Each entry opens into a focused reading page with its own structure and outline."
+  },
+  "archivePage": {
+    "eyebrow": "Docs archive",
+    "title": "Browse published content over time",
+    "description": "The archive gathers articles, notes, and references by publication period. Timeline filters and archive-specific browsing will continue to improve in future updates."
   },
   "access": {
     "available": "Available in archive",
@@ -16,6 +21,12 @@
   },
   "groups": {
     "entries": "{count} entries"
+  },
+  "home": {
+    "groupDescriptions": {
+      "2026": "Recently published articles and references.",
+      "2025": "Earlier notes and foundational material."
+    }
   },
   "reference": {
     "outlineLabel": "On this page"

@@ -70,6 +70,9 @@ export async function listPublishedDocsHomeEntries({
   const [standaloneRows, collectionRows] = await Promise.all([
     prisma.docsDocument.findMany({
       where: {
+        kind: {
+          not: 'note',
+        },
         collectionItem: {
           is: null,
         },
@@ -181,4 +184,70 @@ export async function listPublishedDocsHomeEntries({
   });
 
   return [...standaloneEntries, ...collectionEntries].sort(comparePublishedAtDesc);
+}
+
+// 查询指定 locale 的已发布随笔条目。随笔复用 docs 内容结构，但通过 DocKind.note 与正式 docs 分开。
+export async function listPublishedNotesHomeEntries({
+  locale,
+}: {
+  locale: DbDocsLocale;
+}): Promise<DbDocsHomeEntryRecord[]> {
+  const rows = await prisma.docsDocument.findMany({
+    where: {
+      kind: 'note',
+      collectionItem: {
+        is: null,
+      },
+      locales: {
+        some: {
+          locale,
+          status: 'published',
+        },
+      },
+    },
+    select: {
+      id: true,
+      accessRole: true,
+      locales: {
+        where: {
+          locale,
+          status: 'published',
+        },
+        take: 1,
+        select: {
+          locale: true,
+          slug: true,
+          eyebrow: true,
+          title: true,
+          summary: true,
+          publishedAt: true,
+        },
+      },
+    },
+  });
+
+  return rows
+    .flatMap((row) => {
+      const localeRow = row.locales[0];
+
+      if (!localeRow?.publishedAt) {
+        return [];
+      }
+
+      return [
+        {
+          entryType: 'singleArticle' as const,
+          documentId: row.id,
+          locale: localeRow.locale as DbDocsLocale,
+          slug: localeRow.slug,
+          title: localeRow.title,
+          summary: localeRow.summary,
+          publishedAt: localeRow.publishedAt,
+          requiredRole: row.accessRole,
+          eyebrow: localeRow.eyebrow,
+          accessRole: row.accessRole,
+        },
+      ];
+    })
+    .sort(comparePublishedAtDesc);
 }

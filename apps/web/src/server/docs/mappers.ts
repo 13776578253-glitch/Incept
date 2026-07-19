@@ -18,17 +18,17 @@ import type {
 // 定义主页分组的描述 / 描述文本待拆分
 // todo : 目前的描述文本是硬编码在这里的，后续可以考虑将其存储在数据库中，或者根据分组的不同属性动态生成描述，以提升灵活性和可维护性
 const docsHomeGroupDescriptions: Record<string, string> = {
-  '2026': 'Recent releases, interface studies, and gated working notes.',
-  '2025': 'Earlier groundwork that shaped the current archive and navigation patterns.',
+  '2026': 'Recently published articles and references.',
+  '2025': 'Earlier notes and foundational material.',
 };
 
 // 将数据库中的文章记录转换为前端使用的页面模型
 // todo : 目前的转换函数是针对单篇文章和系列文章分别定义的，后续可以考虑合并成一个更通用的函数，或者引入一个工厂函数来根据记录类型选择合适的转换逻辑，以减少重复代码和提升可维护性
 export const docsHomeIntro: DocsHomeIntroModel = {
   eyebrow: 'Docs',
-  title: 'Documentation, references, and gated drafts',
+  title: 'Documentation and references',
   description:
-    'A calm entry point for released writing, structured reference articles, and restricted pieces that still need to remain structurally visible.',
+    'Browse published guides, reference notes, and topic-based articles.',
 };
 
 // 将数据库中的内容块转换为前端使用的内容块模型
@@ -147,6 +147,7 @@ export function mapDocsHomeEntriesToPageGroups(
     viewerRole: DocsAccessRole,
     requiredRole: DocsAccessRole,
   ) => boolean,
+  routeBase = '/docs',
 ): DocsHomeGroupModel[] {
   return groupDocsHomeEntriesByYear(entries).map((group) => ({
     id: group.year,
@@ -169,7 +170,7 @@ export function mapDocsHomeEntriesToPageGroups(
           eyebrow: entry.eyebrow ?? undefined,
           isAccessible,
           href: isAccessible
-            ? `/docs/series/${entry.collectionSlug}/${entry.firstArticleSlug}`
+            ? `${routeBase}/series/${entry.collectionSlug}/${entry.firstArticleSlug}`
             : undefined,
         };
       }
@@ -184,7 +185,7 @@ export function mapDocsHomeEntriesToPageGroups(
         requiredRole: entry.requiredRole,
         eyebrow: entry.eyebrow ?? undefined,
         isAccessible,
-        href: isAccessible ? `/docs/${entry.slug}` : undefined,
+        href: isAccessible ? `${routeBase}/${entry.slug}` : undefined,
       };
     }),
   }));

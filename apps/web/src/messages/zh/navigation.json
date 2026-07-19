@@ -14,6 +14,10 @@
         "label": "文档",
         "description": "文档主入口、文章导航和阅读入口。"
       },
+      "notes": {
+        "label": "随笔",
+        "description": "个人文章、观察记录和较自由的写作。"
+      },
       "archive": {
         "label": "文档归档",
         "description": "按时间整理的文章归档和后续归档浏览。"

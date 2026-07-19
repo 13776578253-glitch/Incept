@@ -14,6 +14,10 @@
         "label": "Docs",
         "description": "Primary docs entry, article navigation, and reading access."
       },
+      "notes": {
+        "label": "Notes",
+        "description": "Personal essays, observations, and looser writing."
+      },
       "archive": {
         "label": "Docs archive",
         "description": "Chronological article browsing and the future archive surface."

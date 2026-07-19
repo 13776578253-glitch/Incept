@@ -7,6 +7,10 @@ type ImportPreviewReviewPanelProps = {
 };
 
 function buildRouteDescription(locale: string, preview: DocsImportPreviewModel) {
+  if (preview.draft.source.meta.kind === 'note') {
+    return `/${locale}/notes/${preview.draft.source.meta.slug}`;
+  }
+
   return preview.draft.source.meta.routeType === 'collectionArticle'
     ? `/${locale}/docs/series/${preview.draft.source.meta.collectionSlug}/${preview.draft.source.meta.slug}`
     : `/${locale}/docs/${preview.draft.source.meta.slug}`;
@@ -21,6 +25,10 @@ function buildCollectionDescription(preview: DocsImportPreviewModel) {
 }
 
 function buildWriteTargetDescription(preview: DocsImportPreviewModel) {
+  if (preview.draft.source.meta.kind === 'note') {
+    return 'Standalone note';
+  }
+
   return preview.draft.source.meta.routeType === 'collectionArticle'
     ? 'Collection article'
     : 'Standalone article';
@@ -28,6 +36,14 @@ function buildWriteTargetDescription(preview: DocsImportPreviewModel) {
 
 function buildHomepageVisibilityDescription(preview: DocsImportPreviewModel) {
   const accessRole = preview.draft.source.meta.accessRole;
+
+  if (preview.draft.source.meta.kind === 'note') {
+    if (accessRole === 'guest') {
+      return 'Appears as a standalone notes entry for guest viewers.';
+    }
+
+    return `Appears as a standalone notes entry, but only to ${accessRole} viewers or above.`;
+  }
 
   if (preview.draft.source.meta.routeType === 'collectionArticle') {
     if (accessRole === 'guest') {

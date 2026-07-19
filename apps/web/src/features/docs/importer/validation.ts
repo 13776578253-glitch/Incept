@@ -205,6 +205,15 @@ export function normalizeDocsImportSource(
   }
 
   if (source.meta.routeType === 'collectionArticle') {
+    if (source.meta.kind === 'note') {
+      issues.push({
+        level: 'error',
+        code: 'note_collection_not_allowed',
+        message: 'note sources must use singleArticle in the first notes version.',
+        path: 'meta.routeType',
+      });
+    }
+
     if (!isNonEmptyString(source.meta.collectionSlug)) {
       issues.push({
         level: 'error',

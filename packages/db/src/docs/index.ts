@@ -1,5 +1,6 @@
 export {
   findPublishedDocsArticleBySlug,
+  findPublishedNoteBySlug,
 } from './queries/article';
 
 export {
@@ -8,6 +9,7 @@ export {
 
 export {
   listPublishedDocsHomeEntries,
+  listPublishedNotesHomeEntries,
 } from './queries/home';
 
 export {

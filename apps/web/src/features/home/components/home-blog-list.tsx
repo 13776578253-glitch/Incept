@@ -6,9 +6,16 @@ import type { MockBlogEntry } from '@/lib/mock/shared/mock-types';
 type HomeBlogListProps = {
   entries: MockBlogEntry[];
   locale: AppLocale;
+  eyebrow: string;
+  title: string;
 };
 
-export function HomeBlogList({ entries, locale }: HomeBlogListProps) {
+export function HomeBlogList({
+  entries,
+  locale,
+  eyebrow,
+  title,
+}: HomeBlogListProps) {
   return (
     <section className="py-8 md:py-10">
       <div className="mx-auto max-w-[880px]">
@@ -16,10 +23,10 @@ export function HomeBlogList({ entries, locale }: HomeBlogListProps) {
           <div className="mb-8 flex items-end justify-between gap-6">
             <div className="space-y-3">
               <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
-                Latest writing
+                {eyebrow}
               </p>
               <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text)] md:text-[2rem]">
-                Notes, drafts, and interface thinking
+                {title}
               </h2>
             </div>
           </div>

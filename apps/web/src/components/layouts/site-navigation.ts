@@ -35,6 +35,12 @@ export function createSiteNavigation(
               description: t('groups.docs.entry.description'),
               href: withLocale('/docs'),
             },
+            {
+              id: 'notes-entry',
+              label: t('groups.docs.notes.label'),
+              description: t('groups.docs.notes.description'),
+              href: withLocale('/notes'),
+            },
             // {
             //   id: 'docs-archive',
             //   label: t('groups.docs.archive.label'),

@@ -35,7 +35,7 @@ export function DocsArticleFeature({
         aside={
           <DocsArticleRightRail
             items={page.outline}
-            label={page.outlineLabel || t('reference.outlineLabel')}
+            label={t('reference.outlineLabel')}
           />
         }
       >

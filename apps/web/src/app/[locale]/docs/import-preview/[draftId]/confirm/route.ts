@@ -45,8 +45,10 @@ export async function POST(
   deleteDocsImportDraft(draftId);
 
   const targetLocale = draft.source.meta.locale;
-  const redirectPath =
-    draft.source.meta.routeType === 'collectionArticle'
+  const isNote = draft.source.meta.kind === 'note';
+  const redirectPath = isNote
+    ? `/${targetLocale}/notes/${draft.source.meta.slug}?imported=1`
+    : draft.source.meta.routeType === 'collectionArticle'
       ? `/${targetLocale}/docs/series/${draft.source.meta.collectionSlug}/${draft.source.meta.slug}?imported=1`
       : `/${targetLocale}/docs/${draft.source.meta.slug}?imported=1`;
 
