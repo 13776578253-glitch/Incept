@@ -13,12 +13,14 @@ import { DocsImportSuccessToast } from './docs-import-success-toast';
 type DocsArticleFeatureProps = {
   page: DocsArticlePageModel;
   showImportSuccessToast?: boolean;
+  backToListHref?: string;
 };
 
 // 文档文章页功能组件，负责渲染文档内容、侧边栏和右侧大纲等元素
 export function DocsArticleFeature({
   page,
   showImportSuccessToast = false,
+  backToListHref,
 }: DocsArticleFeatureProps) {
   const t = useTranslations('docs');
 
@@ -39,7 +41,11 @@ export function DocsArticleFeature({
           />
         }
       >
-        <DocsArticleBody page={page} />
+        <DocsArticleBody
+          page={page}
+          backToListHref={backToListHref}
+          backToListLabel={backToListHref ? t('reference.backToList') : undefined}
+        />
       </DocsReferenceShell>
     </>
   );

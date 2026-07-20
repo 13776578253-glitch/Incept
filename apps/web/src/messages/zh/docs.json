@@ -29,7 +29,8 @@
     }
   },
   "reference": {
-    "outlineLabel": "本页目录"
+    "outlineLabel": "本页目录",
+    "backToList": "返回文章列表"
   },
   "importFeedback": {
     "eyebrow": "导入完成",

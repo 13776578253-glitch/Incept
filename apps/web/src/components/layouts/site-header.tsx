@@ -47,17 +47,6 @@ function SearchIcon({ className = 'size-4' }: { className?: string }) {
   );
 }
 
-function ArrowUpRightIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4">
-      <path
-        d="M16.243 6.757a1 1 0 0 1 1 1v7.072a1 1 0 1 1-2 0v-4.657L8.464 16.95a1 1 0 0 1-1.414-1.414l6.778-6.779H9.172a1 1 0 1 1 0-2h7.07Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
 function SettingsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[1.08rem]">
@@ -135,7 +124,6 @@ export function SiteHeader() {
   const activeTheme = mounted ? colorScheme : 'system';
   const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
   const isDark = mounted && activeTheme === 'dark';
-  const createHref = `/${language}/create`;
   const settingsHref = `/${language}/settings`;
   const isSettingsActive = pathname === settingsHref;
 
@@ -249,7 +237,7 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2 md:gap-3 xl:ml-0 xl:justify-self-end">
           <button
             type="button"
-            className="hidden min-w-50 items-center justify-between gap-3 rounded-full border border-[var(--color-nav-search-border)] bg-[var(--color-nav-search-bg)] px-4.5 py-2 text-[0.9rem] text-[var(--color-nav-search-placeholder)] transition-colors hover:border-[var(--color-nav-search-hover-border)] hover:bg-[var(--color-nav-search-hover-bg)] hover:text-[var(--color-text)] lg:inline-flex"
+            className="hidden w-[11.5rem] items-center justify-between gap-3 rounded-full border border-[var(--color-nav-search-border)] bg-[var(--color-nav-search-bg)] px-4.5 py-2 text-[0.9rem] text-[var(--color-nav-search-placeholder)] transition-colors hover:border-[var(--color-nav-search-hover-border)] hover:bg-[var(--color-nav-search-hover-bg)] hover:text-[var(--color-text)] lg:inline-flex xl:w-[12.75rem]"
             aria-label={t('actions.search')}
           >
             <span className="truncate">{t('actions.search')}</span>
@@ -257,14 +245,6 @@ export function SiteHeader() {
               <SearchIcon className="size-[1.05rem]" />
             </span>
           </button>
-
-          <Link
-            href={createHref}
-            className="hidden items-center gap-2 rounded-full bg-[var(--color-nav-create-bg)] px-5 py-2 text-[0.9rem] font-medium text-[var(--color-nav-create-text)] transition-colors hover:bg-[var(--color-nav-create-hover-bg)] md:inline-flex"
-          >
-            <span>{t('actions.createEntry')}</span>
-            <ArrowUpRightIcon />
-          </Link>
 
           <Link
             href={settingsHref}
@@ -300,11 +280,9 @@ export function SiteHeader() {
       <MobileSiteHeader
         navigation={navigation}
         isOpen={mobileOpen}
-        createHref={createHref}
         settingsHref={settingsHref}
         nextThemeLabel={mounted ? (isDark ? t('actions.light') : t('actions.dark')) : t('actions.dark')}
         searchLabel={t('actions.search')}
-        createLabel={t('actions.createEntry')}
         settingsLabel={t('actions.settings')}
         onThemeChange={() => setColorScheme(nextTheme)}
       />

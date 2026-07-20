@@ -6,11 +6,9 @@ import type { PrimaryNavItem } from '@/components/layouts/navigation.types';
 type MobileSiteHeaderProps = {
   navigation: PrimaryNavItem[];
   isOpen: boolean;
-  createHref: string;
   settingsHref: string;
   nextThemeLabel: string;
   searchLabel: string;
-  createLabel: string;
   settingsLabel: string;
   onThemeChange: () => void;
 };
@@ -18,11 +16,9 @@ type MobileSiteHeaderProps = {
 export function MobileSiteHeader({
   navigation,
   isOpen,
-  createHref,
   settingsHref,
   nextThemeLabel,
   searchLabel,
-  createLabel,
   settingsLabel,
   onThemeChange,
 }: MobileSiteHeaderProps) {
@@ -40,20 +36,12 @@ export function MobileSiteHeader({
           >
             <span>{searchLabel}</span>
           </button>
-          <div className="flex gap-2">
-            <Link
-              href={createHref}
-              className="flex flex-1 items-center justify-center rounded-full bg-[var(--color-nav-create-bg)] px-4 py-2 text-sm font-medium text-[var(--color-nav-create-text)]"
-            >
-              {createLabel}
-            </Link>
-            <Link
-              href={settingsHref}
-              className="flex items-center justify-center rounded-full border border-[var(--color-nav-search-border)] px-4 py-2 text-sm font-medium text-[var(--color-text)]"
-            >
-              {settingsLabel}
-            </Link>
-          </div>
+          <Link
+            href={settingsHref}
+            className="flex w-full items-center justify-center rounded-full border border-[var(--color-nav-search-border)] px-4 py-2 text-sm font-medium text-[var(--color-text)]"
+          >
+            {settingsLabel}
+          </Link>
         </div>
 
         {navigation.map((item) => (

@@ -1,10 +1,21 @@
 'use client';
 
-import type { SettingsDomain, SettingsGroup, SettingsOption, SettingsRow } from './settings-types';
+import type { SettingsOption, SettingsRow, SettingsSection } from './settings-types';
 
 function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ');
 }
+
+type SettingsInteractionProps = {
+  theme: 'light' | 'dark' | 'system';
+  setTheme: (value: 'light' | 'dark' | 'system') => void;
+  isThemeReady: boolean;
+  eyeComfortFilterEnabled: boolean;
+  setEyeComfortFilter: (value: boolean) => void;
+  isEyeComfortFilterReady: boolean;
+  language: string;
+  setLanguage: (value: 'zh' | 'en') => void;
+};
 
 function SettingsSegmentedControl({
   options,
@@ -109,21 +120,54 @@ function SettingsStaticControl({ row }: { row: SettingsRow }) {
   );
 }
 
+function SettingsBooleanToggle({
+  enabled,
+  onToggle,
+  isInteractive,
+  labels,
+}: {
+  enabled: boolean;
+  onToggle: () => void;
+  isInteractive: boolean;
+  labels: { enabled: string; disabled: string };
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      disabled={!isInteractive}
+      onClick={onToggle}
+      className={cx(
+        'inline-flex rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 text-[0.8125rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]',
+        !enabled &&
+          'hover:border-[var(--color-nav-search-hover-border)] hover:text-[var(--color-text)]',
+        !isInteractive && 'cursor-default opacity-80',
+      )}
+    >
+      <span
+        className={cx(
+          'inline-flex min-h-8 items-center justify-center rounded-[8px] px-3 py-1 text-[var(--color-nav-dropdown-description)] transition-colors',
+          enabled && 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]',
+        )}
+      >
+        {enabled ? labels.enabled : labels.disabled}
+      </span>
+    </button>
+  );
+}
+
 function SettingsRowControl({
   row,
   theme,
   setTheme,
   isThemeReady,
+  eyeComfortFilterEnabled,
+  setEyeComfortFilter,
+  isEyeComfortFilterReady,
   language,
   setLanguage,
-}: {
-  row: SettingsRow;
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (value: 'light' | 'dark' | 'system') => void;
-  isThemeReady: boolean;
-  language: string;
-  setLanguage: (value: 'zh' | 'en') => void;
-}) {
+}: { row: SettingsRow } & SettingsInteractionProps) {
   if (row.controlType === 'theme-segmented') {
     const options: SettingsOption[] = row.options ?? [
       { id: 'light', label: language === 'zh' ? '亮色' : 'Light' },
@@ -151,31 +195,33 @@ function SettingsRowControl({
     );
   }
 
+  if (row.controlType === 'boolean-toggle') {
+    const enabledLabel =
+      row.options?.find((option) => option.id === 'enabled')?.label ?? 'On';
+    const disabledLabel =
+      row.options?.find((option) => option.id === 'disabled')?.label ?? 'Off';
+
+    return (
+      <SettingsBooleanToggle
+        enabled={eyeComfortFilterEnabled}
+        onToggle={() => setEyeComfortFilter(!eyeComfortFilterEnabled)}
+        isInteractive={isEyeComfortFilterReady}
+        labels={{ enabled: enabledLabel, disabled: disabledLabel }}
+      />
+    );
+  }
+
   return <SettingsStaticControl row={row} />;
 }
 
-function SettingsRowView({
-  row,
-  theme,
-  setTheme,
-  isThemeReady,
-  language,
-  setLanguage,
-}: {
-  row: SettingsRow;
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (value: 'light' | 'dark' | 'system') => void;
-  isThemeReady: boolean;
-  language: string;
-  setLanguage: (value: 'zh' | 'en') => void;
-}) {
+function SettingsRowView({ row, ...interactions }: { row: SettingsRow } & SettingsInteractionProps) {
   return (
     <div className="grid gap-4 px-0 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <h4 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+          <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
             {row.label}
-          </h4>
+          </h3>
           {row.badge ? (
             <span className="rounded-full border border-[var(--color-nav-dropdown-border)] px-2 py-0.5 text-[0.62rem] uppercase tracking-[0.12em] text-[var(--color-nav-muted)] opacity-80">
               {row.badge}
@@ -188,137 +234,67 @@ function SettingsRowView({
       </div>
 
       <div className="md:justify-self-end">
-        <SettingsRowControl
-          row={row}
-          theme={theme}
-          setTheme={setTheme}
-          isThemeReady={isThemeReady}
-          language={language}
-          setLanguage={setLanguage}
-        />
+        <SettingsRowControl row={row} {...interactions} />
       </div>
     </div>
   );
 }
 
-function SettingsDomainSection({
-  domain,
-  theme,
-  setTheme,
-  isThemeReady,
-  language,
-  setLanguage,
-}: {
-  domain: SettingsDomain;
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (value: 'light' | 'dark' | 'system') => void;
-  isThemeReady: boolean;
-  language: string;
-  setLanguage: (value: 'zh' | 'en') => void;
-}) {
-  const domainBody = (
+function SettingsRows({
+  section,
+  ...interactions
+}: { section: SettingsSection } & SettingsInteractionProps) {
+  const rows = (
     <div className="max-w-[760px] divide-y divide-[var(--color-nav-dropdown-border)]">
-      {domain.rows.map((row, index) => (
-        <div
-          key={row.id}
-          className={cx(index === 0 && 'pt-0')}
-        >
-          <SettingsRowView
-            row={row}
-            theme={theme}
-            setTheme={setTheme}
-            isThemeReady={isThemeReady}
-            language={language}
-            setLanguage={setLanguage}
-          />
-        </div>
+      {section.rows.map((row) => (
+        <SettingsRowView key={row.id} row={row} {...interactions} />
       ))}
     </div>
   );
 
-  return (
-    <section id={domain.anchorId} className="scroll-mt-28 space-y-3">
-      <div className="space-y-1.5">
-        <h3 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
-          {domain.label}
-        </h3>
-        {domain.description ? (
-          <p className="max-w-3xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-            {domain.description}
-          </p>
-        ) : null}
-      </div>
+  if (section.visibility !== 'admin') {
+    return rows;
+  }
 
-      {domain.visibility === 'admin' ? (
-        <details className="group max-w-[760px]" open={domain.defaultExpanded}>
-          <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-4 text-[0.8125rem] text-[var(--color-nav-dropdown-description)] transition-colors">
-            <div className="space-y-1">
-              <p className="font-medium text-[var(--color-text)]">{domain.label}</p>
-              <p>
-                {language === 'zh'
-                  ? '访客默认折叠显示，后续验证管理员身份后可解锁真实操作。'
-                  : 'Collapsed by default for visitors. Admin verification will unlock real controls later.'}
-              </p>
-            </div>
-            <span className="text-xs uppercase tracking-[0.12em] text-[var(--color-nav-muted)] group-open:hidden">
-              {language === 'zh' ? '展开' : 'Expand'}
-            </span>
-            <span className="hidden text-xs uppercase tracking-[0.12em] text-[var(--color-nav-muted)] group-open:inline">
-              {language === 'zh' ? '收起' : 'Collapse'}
-            </span>
-          </summary>
-          <div className="border-t border-[var(--color-nav-dropdown-border)] pt-1">
-            {domainBody}
-          </div>
-        </details>
-      ) : (
-        domainBody
-      )}
-    </section>
+  return (
+    <details className="group max-w-[760px]">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-4 text-[0.8125rem] text-[var(--color-nav-dropdown-description)] transition-colors">
+        <p>
+          {interactions.language === 'zh'
+            ? '访客默认折叠显示，后续验证管理员身份后可解锁真实操作。'
+            : 'Collapsed for visitors. Administrator verification will unlock these controls later.'}
+        </p>
+        <span className="shrink-0 text-xs uppercase tracking-[0.12em] text-[var(--color-nav-muted)] group-open:hidden">
+          {interactions.language === 'zh' ? '展开' : 'Expand'}
+        </span>
+        <span className="hidden shrink-0 text-xs uppercase tracking-[0.12em] text-[var(--color-nav-muted)] group-open:inline">
+          {interactions.language === 'zh' ? '收起' : 'Collapse'}
+        </span>
+      </summary>
+      <div className="border-t border-[var(--color-nav-dropdown-border)] pt-1">
+        {rows}
+      </div>
+    </details>
   );
 }
 
-export function SettingsGroupSection({
-  group,
-  theme,
-  setTheme,
-  isThemeReady,
-  language,
-  setLanguage,
-}: {
-  group: SettingsGroup;
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (value: 'light' | 'dark' | 'system') => void;
-  isThemeReady: boolean;
-  language: string;
-  setLanguage: (value: 'zh' | 'en') => void;
-}) {
+export function SettingsSectionPanel({
+  section,
+  ...interactions
+}: { section: SettingsSection } & SettingsInteractionProps) {
   return (
-    <section className="space-y-4">
+    <section id={section.id} className="space-y-3">
       <header className="space-y-1.5">
-        <h2 className="text-[1.45rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
-          {group.title}
+        <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
+          {section.label}
         </h2>
-        {group.description ? (
+        {section.description ? (
           <p className="max-w-3xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-            {group.description}
+            {section.description}
           </p>
         ) : null}
       </header>
-
-      <div className="space-y-8">
-        {group.domains.map((domain) => (
-          <SettingsDomainSection
-            key={domain.id}
-            domain={domain}
-            theme={theme}
-            setTheme={setTheme}
-            isThemeReady={isThemeReady}
-            language={language}
-            setLanguage={setLanguage}
-          />
-        ))}
-      </div>
+      <SettingsRows section={section} {...interactions} />
     </section>
   );
 }

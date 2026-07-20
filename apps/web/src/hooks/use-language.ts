@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale } from 'next-intl';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { AppLocale } from '@/i18n/config/locales';
 import { localeConfig } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
@@ -22,6 +22,7 @@ export function useLanguage() {
   const locale = useLocale() as AppLocale;
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const setLanguage = (nextLocale: AppLocale) => {
     if (!localeConfig.locales.includes(nextLocale)) {
@@ -33,7 +34,9 @@ export function useLanguage() {
       stripLocalePrefix(pathname, locale),
     );
 
-    router.push(nextPath);
+    const query = searchParams.toString();
+
+    router.push(query ? `${nextPath}?${query}` : nextPath);
   };
 
   return {

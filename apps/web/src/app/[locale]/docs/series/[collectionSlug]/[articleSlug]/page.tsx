@@ -32,6 +32,7 @@ export default async function DocsCollectionArticlePage({
     <DocsArticleFeature
       page={page}
       showImportSuccessToast={resolvedSearchParams?.imported === '1'}
+      backToListHref={`/${locale}/docs`}
     />
   );
 }

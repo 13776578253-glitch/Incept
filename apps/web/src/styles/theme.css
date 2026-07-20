@@ -49,3 +49,11 @@
   --color-nav-create-text: #050505;
   --shadow-nav-dropdown: 0 24px 60px rgba(0, 0, 0, 0.55);
 }
+
+html[data-eye-comfort-filter='warm']:not(.dark) {
+  --color-bg: #fffaf0;
+  --color-navbar-bg: rgba(255, 250, 240, 0.94);
+  --color-nav-dropdown-bg: #fffdf7;
+  --color-nav-search-bg: rgba(255, 252, 245, 0.92);
+  --color-nav-search-hover-bg: rgba(133, 98, 42, 0.06);
+}

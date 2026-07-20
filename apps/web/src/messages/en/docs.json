@@ -29,7 +29,8 @@
     }
   },
   "reference": {
-    "outlineLabel": "On this page"
+    "outlineLabel": "On this page",
+    "backToList": "Back to article list"
   },
   "importFeedback": {
     "eyebrow": "Import complete",

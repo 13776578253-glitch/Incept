@@ -2,6 +2,7 @@ export type SettingsVisibility = 'public' | 'admin';
 
 export type SettingsControlType =
   | 'theme-segmented'
+  | 'boolean-toggle'
   | 'language-segmented'
   | 'select'
   | 'button'
@@ -18,12 +19,6 @@ export type SettingsOption = {
   label: string;
 };
 
-export type SettingsAnchor = {
-  id: string;
-  label: string;
-  description?: string;
-};
-
 export type SettingsRow = {
   id: string;
   label: string;
@@ -38,24 +33,16 @@ export type SettingsRow = {
   options?: SettingsOption[];
 };
 
-export type SettingsDomain = {
-  id: string;
-  anchorId: string;
+export type SettingsSection = {
+  id: 'appearance' | 'language' | 'account' | 'ai';
   label: string;
   description?: string;
   visibility: SettingsVisibility;
-  defaultExpanded?: boolean;
   rows: SettingsRow[];
 };
 
-export type SettingsGroup = {
-  id: string;
-  title: string;
-  description?: string;
-  domains: SettingsDomain[];
-};
-
 export type SettingsPageData = {
-  sidebar: SettingsAnchor[];
-  groups: SettingsGroup[];
+  title: string;
+  description: string;
+  sections: SettingsSection[];
 };
