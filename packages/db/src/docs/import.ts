@@ -15,7 +15,7 @@ export type DocsImportWriteMeta = {
   routeType: DocsImportRouteType;
   kind: 'article' | 'reference' | 'note';
   layoutMode: 'sidebar' | 'contentOnly';
-  accessRole: 'guest' | 'member' | 'pro';
+  accessRole: 'guest' | 'pro' | 'private';
   slug: string;
   title: string;
   summary: string;
@@ -47,10 +47,10 @@ type DocsImportExistingTarget = {
 async function getSystemUserId() {
   const systemUser = await prisma.user.upsert({
     where: { username: 'system' },
-    update: { role: 'admin' },
+    update: { role: 'content-system' },
     create: {
       username: 'system',
-      role: 'admin',
+      role: 'content-system',
     },
   });
 
@@ -148,8 +148,8 @@ function toDocumentLayoutMode(layoutMode: DocsImportWriteMeta['layoutMode']) {
 function toDocumentAccessRole(accessRole: DocsImportWriteMeta['accessRole']) {
   return accessRole === 'pro'
     ? DocAccessRole.pro
-    : accessRole === 'member'
-      ? DocAccessRole.member
+    : accessRole === 'private'
+      ? DocAccessRole.private
       : DocAccessRole.guest;
 }
 

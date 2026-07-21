@@ -16,8 +16,8 @@
   },
   "roles": {
     "guest": "guest",
-    "member": "member",
-    "pro": "pro"
+    "pro": "Temporary access",
+    "private": "Private"
   },
   "groups": {
     "entries": "{count} entries"
@@ -43,8 +43,8 @@
     "description": "A current-state view of what is published in docs, where each article is mounted, and which routes are live right now.",
     "roles": {
       "guest": "guest",
-      "member": "member",
-      "pro": "pro"
+      "pro": "Temporary access",
+      "private": "Private"
     },
     "routeType": {
       "singleArticle": "Standalone article",

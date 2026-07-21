@@ -22,7 +22,7 @@ export type {
 } from '@/features/docs/block-system/schema';
 export type { DocsBlockCatalogItem } from '@/features/docs/block-system/catalog';
 
-export type DocsAccessRole = 'guest' | 'member' | 'pro';
+export type DocsAccessRole = 'guest' | 'pro' | 'private';
 
 export type DocsLayoutMode = 'sidebar' | 'contentOnly';
 

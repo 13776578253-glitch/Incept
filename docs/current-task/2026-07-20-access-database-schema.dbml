@@ -1,0 +1,188 @@
+// Target schema after the Principal identity foundation migration.
+// Paste this file into https://dbdiagram.io.
+
+Enum DocKind {
+  article
+  reference
+  note
+}
+
+Enum DocLayoutMode {
+  sidebar
+  contentOnly
+}
+
+Enum DocAccessRole {
+  guest
+  pro
+  private
+}
+
+Enum DocStatus {
+  draft
+  published
+  archived
+}
+
+Enum AccessSessionRole {
+  owner
+  pro
+}
+
+Enum AccessGrantType {
+  invitation
+  sharedCode
+}
+
+Enum AccessPrincipalType {
+  invited
+  anonymous
+}
+
+Table users {
+  id int [pk, increment]
+  username varchar [not null, unique]
+  role varchar [not null, note: 'Content ownership metadata only.']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table access_principals {
+  id varchar [pk]
+  type AccessPrincipalType [not null]
+  label varchar [not null, note: 'Owner-provided invitee label or an anonymous shared-access label.']
+  expiresAt timestamp
+  revokedAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (type, revokedAt)
+    (expiresAt)
+  }
+}
+
+Table access_grants {
+  id varchar [pk]
+  type AccessGrantType [not null]
+  label varchar [not null]
+  credentialHash varchar [not null, unique, note: 'Hash of an invitation link secret or shared code.']
+  principalId varchar [note: 'Required for invitation grants; null for sharedCode grants.']
+  expiresAt timestamp
+  revokedAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (type, revokedAt)
+    (principalId)
+    (expiresAt)
+  }
+}
+
+Table access_sessions {
+  id varchar [pk]
+  role AccessSessionRole [not null]
+  tokenHash varchar [not null, unique]
+  principalId varchar [note: 'Required for pro sessions; null for owner sessions.']
+  grantId varchar [note: 'Required for pro sessions; null for owner sessions.']
+  expiresAt timestamp [note: 'Required for owner sessions; null for pro sessions, which follow Principal and Grant validity.']
+  revokedAt timestamp
+  lastUsedAt timestamp
+  createdAt timestamp [not null]
+
+  Indexes {
+    (role, expiresAt)
+    (principalId)
+    (grantId)
+  }
+}
+
+Table docs_documents {
+  id int [pk, increment]
+  documentKey varchar [unique]
+  kind DocKind [not null, default: 'article']
+  layoutMode DocLayoutMode [not null, default: 'contentOnly']
+  accessRole DocAccessRole [not null, default: 'guest']
+  createdById int
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table docs_document_locales {
+  id int [pk, increment]
+  documentId int [not null]
+  locale varchar [not null]
+  slug varchar [not null]
+  eyebrow varchar
+  title varchar [not null]
+  summary varchar
+  status DocStatus [not null, default: 'draft']
+  publishedAt timestamp
+  bodyJson json [not null]
+  sidebarJson json
+  seoTitle varchar
+  seoDescription varchar
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (documentId, locale) [unique]
+    (locale, slug) [unique]
+    (locale, status, publishedAt)
+  }
+}
+
+Table docs_collections {
+  id int [pk, increment]
+  accessRole DocAccessRole [not null, default: 'guest']
+  createdById int
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table docs_collection_locales {
+  id int [pk, increment]
+  collectionId int [not null]
+  locale varchar [not null]
+  slug varchar [not null]
+  eyebrow varchar
+  title varchar [not null]
+  summary varchar
+  status DocStatus [not null, default: 'draft']
+  publishedAt timestamp
+  seoTitle varchar
+  seoDescription varchar
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (collectionId, locale) [unique]
+    (locale, slug) [unique]
+    (locale, status, publishedAt)
+  }
+}
+
+Table docs_collection_items {
+  id int [pk, increment]
+  collectionId int [not null]
+  documentId int [not null, unique]
+  position int [not null]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (collectionId, position) [unique]
+    (collectionId, documentId) [unique]
+  }
+}
+
+Ref: access_grants.principalId > access_principals.id [delete: restrict]
+Ref: access_sessions.principalId > access_principals.id [delete: restrict]
+Ref: access_sessions.grantId > access_grants.id [delete: restrict]
+Ref: docs_documents.createdById > users.id [delete: set null]
+Ref: docs_document_locales.documentId > docs_documents.id [delete: cascade]
+Ref: docs_collections.createdById > users.id [delete: set null]
+Ref: docs_collection_locales.collectionId > docs_collections.id [delete: cascade]
+Ref: docs_collection_items.collectionId > docs_collections.id [delete: cascade]
+Ref: docs_collection_items.documentId - docs_documents.id [delete: cascade]

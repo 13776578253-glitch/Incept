@@ -33,8 +33,8 @@ export const markdownLikeAllowedLayoutModes = new Set(['contentOnly']);
 
 export const markdownLikeAllowedAccessRoles = new Set([
   'guest', 
-  'member', 
-  'pro'
+  'pro',
+  'private',
 ]);
 
 export const markdownLikeAllowedCalloutTones = new Set([

@@ -8,8 +8,8 @@ import type {
 // Define a ranking for access roles to determine if a viewer can access a given article
 const accessRoleRank: Record<MockAccessRole, number> = {
   guest: 0,
-  member: 1,
-  pro: 2,
+  pro: 1,
+  private: 2,
 };
 
 // Function to check if a viewer with a certain role can access an article that requires a specific role

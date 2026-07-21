@@ -16,8 +16,8 @@
   },
   "roles": {
     "guest": "访客",
-    "member": "成员",
-    "pro": "专业版"
+    "pro": "临时准许",
+    "private": "私人"
   },
   "groups": {
     "entries": "{count} 篇"
@@ -43,8 +43,8 @@
     "description": "用于查看当前 docs 里到底发布了什么、每篇文章挂载到了哪里，以及哪些正式路由现在已经生效。",
     "roles": {
       "guest": "访客",
-      "member": "成员",
-      "pro": "专业版"
+      "pro": "临时准许",
+      "private": "私人"
     },
     "routeType": {
       "singleArticle": "单篇文章",

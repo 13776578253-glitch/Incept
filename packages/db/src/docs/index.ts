@@ -28,9 +28,19 @@ export {
   findDocsArticleLocaleForArchive,
 } from './archive';
 
+export {
+  cleanupDocsTestData,
+  previewDocsTestDataCleanup,
+  retainedDocsDocumentKeys,
+} from './cleanup';
+
 export type {
   DocsArchiveArticleLocaleResult,
 } from './archive';
+
+export type {
+  DocsTestDataCleanupPreview,
+} from './cleanup';
 
 export type {
   DbDocsArticleRecord,

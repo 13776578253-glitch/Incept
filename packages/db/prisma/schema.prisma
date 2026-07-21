@@ -21,8 +21,23 @@ enum DocLayoutMode {
 
 enum DocAccessRole {
   guest
-  member
   pro
+  private
+}
+
+enum AccessSessionRole {
+  owner
+  pro
+}
+
+enum AccessGrantType {
+  invitation
+  sharedCode
+}
+
+enum AccessPrincipalType {
+  invited
+  anonymous
 }
 
 enum DocStatus {
@@ -32,29 +47,83 @@ enum DocStatus {
 }
 
 model User {
-  id        Int            @id @default(autoincrement())
-  username  String         @unique
-  role      String
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  documents DocsDocument[]
+  id          Int              @id @default(autoincrement())
+  username    String           @unique
+  role        String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  documents   DocsDocument[]
   collections DocsCollection[]
 
   @@map("users")
 }
 
+model AccessPrincipal {
+  id        String              @id @default(cuid())
+  type      AccessPrincipalType
+  label     String
+  expiresAt DateTime?
+  revokedAt DateTime?
+  grants    AccessGrant[]       @relation("AccessPrincipalGrants")
+  sessions  AccessSession[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([type, revokedAt])
+  @@index([expiresAt])
+  @@map("access_principals")
+}
+
+model AccessGrant {
+  id             String           @id @default(cuid())
+  type           AccessGrantType
+  label          String
+  credentialHash String           @unique
+  principalId    String?
+  principal      AccessPrincipal? @relation("AccessPrincipalGrants", fields: [principalId], references: [id], onDelete: Restrict)
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  sessions       AccessSession[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([type, revokedAt])
+  @@index([principalId])
+  @@index([expiresAt])
+  @@map("access_grants")
+}
+
+model AccessSession {
+  id          String            @id @default(cuid())
+  role        AccessSessionRole
+  tokenHash   String            @unique
+  principalId String?
+  principal   AccessPrincipal?  @relation(fields: [principalId], references: [id], onDelete: Restrict)
+  grantId     String?
+  grant       AccessGrant?      @relation(fields: [grantId], references: [id], onDelete: Restrict)
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([role, expiresAt])
+  @@index([principalId])
+  @@index([grantId])
+  @@map("access_sessions")
+}
+
 model DocsDocument {
-  id          Int                  @id @default(autoincrement())
-  documentKey String?              @unique
-  kind        DocKind              @default(article)
-  layoutMode  DocLayoutMode        @default(contentOnly)
-  accessRole  DocAccessRole        @default(guest)
-  createdById Int?
-  createdBy   User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  locales     DocsDocumentLocale[]
+  id             Int                  @id @default(autoincrement())
+  documentKey    String?              @unique
+  kind           DocKind              @default(article)
+  layoutMode     DocLayoutMode        @default(contentOnly)
+  accessRole     DocAccessRole        @default(guest)
+  createdById    Int?
+  createdBy      User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  locales        DocsDocumentLocale[]
   collectionItem DocsCollectionItem?
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
   @@index([kind])
   @@index([layoutMode])

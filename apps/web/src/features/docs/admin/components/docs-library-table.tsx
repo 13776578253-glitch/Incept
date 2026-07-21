@@ -145,8 +145,8 @@ export function DocsLibraryTable({
             >
               <option value="all">{t('filters.all')}</option>
               <option value="guest">{t('roles.guest')}</option>
-              <option value="member">{t('roles.member')}</option>
               <option value="pro">{t('roles.pro')}</option>
+              <option value="private">{t('roles.private')}</option>
             </select>
           </label>
         </div>

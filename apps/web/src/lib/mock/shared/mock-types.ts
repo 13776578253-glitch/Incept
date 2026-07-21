@@ -54,7 +54,7 @@ export type MockBottomSection = {
   description: string;
 };
 
-export type MockAccessRole = 'guest' | 'member' | 'pro';
+export type MockAccessRole = 'guest' | 'pro' | 'private';
 
 export type MockViewer = {
   id: string;

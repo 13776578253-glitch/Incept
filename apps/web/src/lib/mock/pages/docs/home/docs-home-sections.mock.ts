@@ -23,7 +23,7 @@ const docs2026Articles: MockDocsArticle[] = [
     summary:
       'Experiments around metadata density, summary length, and how much scaffolding a calm archive page can carry before it feels procedural.',
     publishedAt: '2026-04-16',
-    requiredRole: 'member',
+    requiredRole: 'pro',
     eyebrow: 'Interface study',
     tags: ['layout', 'reading'],
   },
@@ -59,7 +59,7 @@ const docs2025Articles: MockDocsArticle[] = [
     summary:
       'Patterns for showing restricted knowledge without flattening the rest of the archive into anonymous placeholders.',
     publishedAt: '2025-11-03',
-    requiredRole: 'member',
+    requiredRole: 'pro',
     eyebrow: 'Access memo',
     tags: ['permissions', 'ui'],
   },

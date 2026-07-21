@@ -20,8 +20,8 @@ import {
 // 定义访问角色的等级，确保权限检查的一致性
 const docsRoleRank: Record<DocsAccessRole, number> = {
   guest: 0,
-  member: 1,
-  pro: 2,
+  pro: 1,
+  private: 2,
 };
 
 // 根据访问角色判断用户是否有权限访问文档

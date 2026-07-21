@@ -2,7 +2,7 @@
 
 ## Status
 
-Planning record only. Authentication and account code have not been implemented.
+Database and Principal identity foundations implemented on 2026-07-20/21. Login routes, cookies, owner-secret validation, and account UI remain unimplemented.
 
 ## Goal
 
@@ -28,14 +28,14 @@ owner/admin  -> guest, pro, and private content; internal operations
 
 ## Temporary Access
 
-Two grant types run in parallel and both create a temporary `pro` session:
+Two grant types run in parallel. Both create `pro` sessions, but their identities are intentionally different:
 
-1. Individual invitation link: one random bearer link per invited person, with a recipient label, expiry, usage information, and independent revocation.
-2. Shared access code: one long-lived code for a broader trusted group, with rotation and revocation.
+1. Individual invitation link: one random bearer link per invited person. It is linked to one persistent `invited` Principal, so the recipient can exchange it on multiple devices. Revoking the Principal invalidates all of that person's sessions and dedicated invitation grants.
+2. Shared access code: one long-lived code for a broader trusted group. Each confirmed exchange creates a distinct `anonymous` Principal and session. Revoking the shared grant invalidates every session created from that grant without deleting audit history.
 
 Both grant records must store only token/code hashes. Revoking a grant invalidates all active sessions created from it.
 
-Bearer links cannot prove the identity of the recipient if they are forwarded. This is acceptable for the first personal-blog version; identity-bound reader accounts are a later option.
+Bearer links cannot prove the real-world identity of the recipient if they are forwarded. The Principal is an access identity rather than a verified user account. This is acceptable for the first personal-blog version.
 
 ## Security Boundary
 
@@ -53,15 +53,15 @@ Unauthorized visitors should be redirected to the account section with a validat
 
 ## Planned Data Direction
 
-The existing `User` table is content ownership infrastructure because the importer creates a `system` user. It must not be reused as the authentication account model.
+The existing `User` table is content ownership infrastructure because the importer creates a `system` user. It remains separate from authentication.
 
-Authentication should introduce dedicated owner/session/grant records. Sessions use random tokens in secure HttpOnly cookies; the database stores token hashes, expiry, revocation state, and the originating grant when applicable.
+Owner identity is a deployment-only `OWNER_ACCESS_SECRET`, not a database account. The database now contains `AccessPrincipal`, `AccessGrant`, and `AccessSession` records. A grant is a hashed credential, a Principal is the revocable access identity, and a session is one browser/device binding. Pro sessions stay valid only while both their Principal and Grant remain active.
 
-The existing Docs access enum must eventually move from `guest / member / pro` to `guest / pro / private`. Viewer identity and content access types must be separate in application code.
+Docs access has moved from `guest / member / pro` to `guest / pro / private`. Viewer identity and content access types still need to be separated in application code during the server authentication phase.
 
 ## Next Decisions
 
-- Select the authentication implementation: custom single-owner credentials with database sessions, or an authentication library.
-- Define owner bootstrap: secure CLI setup versus environment-based initial password.
-- Set default and maximum expiry policies for individual invitation links, shared-code sessions, and owner sessions.
+- Implement server-side owner-secret validation and secure HttpOnly session cookies.
+- Add `getCurrentViewer()` and `requireOwner()` server helpers, then protect internal pages and write routes.
+- Define owner-secret deployment setup and rotation instructions.
 - Define the account settings UI for owner login, logout, grant creation, grant revocation, and session visibility.

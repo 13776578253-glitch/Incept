@@ -8,7 +8,7 @@ export type DocsLibraryEntryModel = {
   routeType: DocsLibraryRouteType;
   kind: 'article' | 'reference' | 'note';
   layoutMode: 'sidebar' | 'contentOnly';
-  accessRole: 'guest' | 'member' | 'pro';
+  accessRole: 'guest' | 'pro' | 'private';
   collectionId?: number;
   collectionSlug?: string;
   collectionTitle?: string;
