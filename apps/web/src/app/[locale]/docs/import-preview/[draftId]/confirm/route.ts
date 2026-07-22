@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { importDocsArticleDraft } from '@incept/db/docs';
 import { deleteDocsImportDraft, readDocsImportDraft } from '@/features/docs/importer/draft-store';
-
-// TODO: 需要添加权限验证，确保只有管理员或具有相应权限的用户才能执行导入操作
+import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
 
 // 处理导入预览的确认请求，将草稿文章正式导入文档数据库
 export async function POST(
@@ -14,6 +13,18 @@ export async function POST(
     }>;
   },
 ) {
+
+  // 验证请求来源
+  if (!hasSameOrigin(_request)) {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
+
+  const viewer = await getCurrentViewer();
+
+  if (viewer.role !== 'owner') {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
+
   const { draftId } = await context.params;
   const draft = readDocsImportDraft(draftId);
 

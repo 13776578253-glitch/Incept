@@ -2,7 +2,7 @@
 
 ## Status
 
-Database and Principal identity foundations implemented on 2026-07-20/21. Login routes, cookies, owner-secret validation, and account UI remain unimplemented.
+Database, Principal identity, and Owner server authentication foundations implemented on 2026-07-20/21. Browser account UI and pro credential redemption remain unimplemented.
 
 ## Goal
 
@@ -49,7 +49,9 @@ Protected owner-only surfaces include:
 - Import preview confirmation and all future write routes
 - Invitation and shared-code management
 
-Unauthorized visitors should be redirected to the account section with a validated local `next` path. After login, only same-site paths may be used as redirect targets.
+The current Owner implementation returns not found for protected internal pages. A future browser login flow may redirect only to a validated same-site `next` path.
+
+The first Owner authentication API deliberately returns 404 for protected internal pages instead of redirecting. It uses `OWNER_ACCESS_SECRET` from the Web server environment, random token hashes in the database, and a secure HttpOnly cookie. Browser account UI and `next` redirects remain a later stage.
 
 ## Planned Data Direction
 
@@ -61,7 +63,7 @@ Docs access has moved from `guest / member / pro` to `guest / pro / private`. Vi
 
 ## Next Decisions
 
-- Implement server-side owner-secret validation and secure HttpOnly session cookies.
-- Add `getCurrentViewer()` and `requireOwner()` server helpers, then protect internal pages and write routes.
-- Define owner-secret deployment setup and rotation instructions.
-- Define the account settings UI for owner login, logout, grant creation, grant revocation, and session visibility.
+- Add individual invitation and shared-code redemption routes, then resolve pro viewers in Docs and Notes loaders.
+- Define the browser account settings UI for Owner login/logout and future grant management.
+- Add CLI commands for creating, listing, revoking, and rotating invitation/shared-code grants.
+- Define resource-specific `AccessEntitlement` records and `restricted` content access when selective sharing is needed.

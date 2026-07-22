@@ -383,3 +383,31 @@ export async function revokeAccessSession(
     data: { revokedAt: now },
   });
 }
+
+export async function listRevocableOwnerAccessSessions() {
+  return prisma.accessSession.findMany({
+    where: {
+      role: AccessSessionRole.owner,
+      revokedAt: null,
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      expiresAt: true,
+      lastUsedAt: true,
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+}
+
+export async function revokeAllOwnerAccessSessions(
+  { now = new Date() }: AccessNowOptions = {},
+) {
+  return prisma.accessSession.updateMany({
+    where: {
+      role: AccessSessionRole.owner,
+      revokedAt: null,
+    },
+    data: { revokedAt: now },
+  });
+}
