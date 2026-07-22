@@ -80,11 +80,19 @@ export async function getDocsCollectionArticlePage({
     return null;
   }
 
-  if (!canAccessDocsArticle(viewerRole, record.collectionAccessRole)) {
+  if (
+    !canAccessDocsArticle(viewerRole, record.collectionAccessRole) ||
+    !canAccessDocsArticle(viewerRole, record.articleAccessRole)
+  ) {
     return null;
   }
 
-  return mapDocsCollectionRecordToPageModel(record);
+  return mapDocsCollectionRecordToPageModel({
+    ...record,
+    collectionItems: record.collectionItems.filter((item) =>
+      canAccessDocsArticle(viewerRole, item.accessRole),
+    ),
+  });
 }
 
 // 查询主页的已发布文档列表，并根据访问角色过滤，返回前端使用的主页模型

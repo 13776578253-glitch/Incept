@@ -411,3 +411,110 @@ export async function revokeAllOwnerAccessSessions(
     data: { revokedAt: now },
   });
 }
+
+export async function listAccessGrants({
+  includeRevoked = false,
+}: {
+  includeRevoked?: boolean;
+} = {}) {
+  return prisma.accessGrant.findMany({
+    where: includeRevoked ? undefined : { revokedAt: null },
+    select: {
+      id: true,
+      type: true,
+      label: true,
+      principalId: true,
+      expiresAt: true,
+      revokedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      principal: {
+        select: {
+          label: true,
+          revokedAt: true,
+        },
+      },
+      _count: {
+        select: {
+          sessions: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function findAccessGrantForManagement(grantId: string) {
+  return prisma.accessGrant.findUnique({
+    where: { id: grantId },
+    select: {
+      id: true,
+      type: true,
+      label: true,
+      expiresAt: true,
+      revokedAt: true,
+    },
+  });
+}
+
+export async function rotateSharedAccessGrant({
+  grantId,
+  credentialHash,
+  label,
+  expiresAt,
+  now = new Date(),
+}: {
+  grantId: string;
+  credentialHash: string;
+  label?: string;
+  expiresAt?: Date;
+  now?: Date;
+}) {
+  assertFutureExpiry(expiresAt, 'Access grant');
+
+  return prisma.$transaction(async (tx) => {
+    const existingGrant = await tx.accessGrant.findUnique({
+      where: { id: grantId },
+      select: {
+        id: true,
+        type: true,
+        label: true,
+        expiresAt: true,
+        revokedAt: true,
+      },
+    });
+
+    if (!existingGrant || existingGrant.type !== AccessGrantType.sharedCode) {
+      throw new Error('Only an existing shared-code grant can be rotated.');
+    }
+
+    if (existingGrant.revokedAt) {
+      throw new Error('A revoked shared-code grant cannot be rotated.');
+    }
+
+    const nextExpiry = expiresAt ?? existingGrant.expiresAt ?? undefined;
+    assertFutureExpiry(nextExpiry, 'Access grant');
+
+    await tx.accessGrant.update({
+      where: { id: grantId },
+      data: { revokedAt: now },
+    });
+
+    await tx.accessSession.updateMany({
+      where: {
+        grantId,
+        revokedAt: null,
+      },
+      data: { revokedAt: now },
+    });
+
+    return tx.accessGrant.create({
+      data: {
+        type: AccessGrantType.sharedCode,
+        label: label ?? existingGrant.label,
+        credentialHash,
+        expiresAt: nextExpiry,
+      },
+    });
+  });
+}

@@ -149,12 +149,16 @@ export function mapDocsHomeEntriesToPageGroups(
   ) => boolean,
   routeBase = '/docs',
 ): DocsHomeGroupModel[] {
-  return groupDocsHomeEntriesByYear(entries).map((group) => ({
-    id: group.year,
-    label: group.year,
-    description: docsHomeGroupDescriptions[group.year],
-    entries: group.entries.map((entry) => {
-      const isAccessible = canAccessDocsArticle(viewerRole, entry.requiredRole);
+  return groupDocsHomeEntriesByYear(entries).flatMap((group) => {
+    const mappedEntries = group.entries.flatMap((entry) => {
+      const isAccessible =
+        canAccessDocsArticle(viewerRole, entry.requiredRole) &&
+        (entry.entryType !== 'collection' ||
+          canAccessDocsArticle(viewerRole, entry.firstArticleAccessRole));
+
+      if (!isAccessible) {
+        return [];
+      }
 
       if (entry.entryType === 'collection') {
         return {
@@ -168,10 +172,8 @@ export function mapDocsHomeEntriesToPageGroups(
           publishedAt: entry.publishedAt.toISOString(),
           requiredRole: entry.requiredRole,
           eyebrow: entry.eyebrow ?? undefined,
-          isAccessible,
-          href: isAccessible
-            ? `${routeBase}/series/${entry.collectionSlug}/${entry.firstArticleSlug}`
-            : undefined,
+          isAccessible: true,
+          href: `${routeBase}/series/${entry.collectionSlug}/${entry.firstArticleSlug}`,
         };
       }
 
@@ -184,9 +186,18 @@ export function mapDocsHomeEntriesToPageGroups(
         publishedAt: entry.publishedAt.toISOString(),
         requiredRole: entry.requiredRole,
         eyebrow: entry.eyebrow ?? undefined,
-        isAccessible,
-        href: isAccessible ? `${routeBase}/${entry.slug}` : undefined,
+        isAccessible: true,
+        href: `${routeBase}/${entry.slug}`,
       };
-    }),
-  }));
+    });
+
+    return mappedEntries.length
+      ? [{
+          id: group.year,
+          label: group.year,
+          description: docsHomeGroupDescriptions[group.year],
+          entries: mappedEntries,
+        }]
+      : [];
+  });
 }

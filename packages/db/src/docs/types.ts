@@ -151,6 +151,7 @@ export type DbDocsArticleRecord = {
 
 export type DbDocsCollectionArticleListItem = {
   documentId: number;
+  accessRole: DocAccessRole;
   locale: DbDocsLocale;
   slug: string;
   title: string;
@@ -169,6 +170,7 @@ export type DbDocsCollectionRecord = {
   collectionPublishedAt?: Date | null;
   collectionAccessRole: DocAccessRole;
   articleDocumentId: number;
+  articleAccessRole: DocAccessRole;
   articleSlug: string;
   articleTitle: string;
   articleSummary?: string | null;
@@ -208,6 +210,7 @@ export type DbDocsHomeCollectionRecord = {
   eyebrow?: string | null;
   accessRole: DocAccessRole;
   firstArticleSlug: string;
+  firstArticleAccessRole: DocAccessRole;
 };
 
 export type DbDocsHomeEntryRecord =

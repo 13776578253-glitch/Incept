@@ -224,10 +224,39 @@ async function ensureCollection({
   });
 
   if (existingLocale) {
+    const existingCollection = await prisma.docsCollection.findUnique({
+      where: { id: existingLocale.collectionId },
+      select: {
+        accessRole: true,
+        items: {
+          select: {
+            document: {
+              select: {
+                accessRole: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    const requiredAccessRole = toDocumentAccessRole(source.meta.accessRole);
+
+    if (
+      !existingCollection ||
+      existingCollection.accessRole !== requiredAccessRole ||
+      existingCollection.items.some(
+        (item) => item.document.accessRole !== requiredAccessRole,
+      )
+    ) {
+      throw new Error(
+        `All articles in collection "${collectionSlug}" must use accessRole "${source.meta.accessRole}".`,
+      );
+    }
+
     await prisma.docsCollection.update({
       where: { id: existingLocale.collectionId },
       data: {
-        accessRole: toDocumentAccessRole(source.meta.accessRole),
+        accessRole: requiredAccessRole,
         createdById: systemUserId,
         locales: {
           upsert: {

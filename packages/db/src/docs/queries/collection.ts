@@ -11,6 +11,7 @@ function toCollectionArticleListItems(
   items: Array<{
     document: {
       id: number;
+      accessRole: DbDocsCollectionArticleListItem['accessRole'];
       locales: Array<{
         locale: string;
         slug: string;
@@ -31,6 +32,7 @@ function toCollectionArticleListItems(
     return [
       {
         documentId: item.document.id,
+        accessRole: item.document.accessRole,
         locale: localeRow.locale as DbDocsLocale,
         slug: localeRow.slug,
         title: localeRow.title,
@@ -104,6 +106,7 @@ export async function findPublishedDocsCollectionArticleBySlugs({
           document: {
             select: {
               id: true,
+              accessRole: true,
               kind: true,
               layoutMode: true,
               locales: {
@@ -159,6 +162,7 @@ export async function findPublishedDocsCollectionArticleBySlugs({
     collectionPublishedAt: collectionLocale.publishedAt,
     collectionAccessRole: row.accessRole,
     articleDocumentId: currentItem.document.id,
+    articleAccessRole: currentItem.document.accessRole,
     articleSlug: currentLocale.slug,
     articleTitle: currentLocale.title,
     articleSummary: currentLocale.summary,

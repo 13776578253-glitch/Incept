@@ -25,6 +25,7 @@ function toHomeCollectionRecord({
     }>;
     items: Array<{
       document: {
+        accessRole: DbDocsHomeCollectionRecord['firstArticleAccessRole'];
         locales: Array<{
           slug: string;
         }>;
@@ -38,9 +39,8 @@ function toHomeCollectionRecord({
     return null;
   }
 
-  const firstArticleSlug = row.items.find(
-    (item) => item.document.locales[0]?.slug,
-  )?.document.locales[0]?.slug;
+  const firstArticle = row.items.find((item) => item.document.locales[0]?.slug);
+  const firstArticleSlug = firstArticle?.document.locales[0]?.slug;
 
   if (!firstArticleSlug) {
     return null;
@@ -58,6 +58,7 @@ function toHomeCollectionRecord({
     eyebrow: localeRow.eyebrow,
     accessRole: row.accessRole,
     firstArticleSlug,
+    firstArticleAccessRole: firstArticle.document.accessRole,
   };
 }
 
@@ -137,6 +138,7 @@ export async function listPublishedDocsHomeEntries({
           select: {
             document: {
               select: {
+                accessRole: true,
                 locales: {
                   where: {
                     locale,

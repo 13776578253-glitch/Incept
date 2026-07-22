@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
 import { useLanguage } from '@/hooks/use-language';
+import { AccountSettingsPanel } from '../account/account-settings-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
 
@@ -18,7 +19,11 @@ function useMounted() {
   return mounted;
 }
 
-export function SettingsPageContent() {
+export function SettingsPageContent({
+  viewerRole,
+}: {
+  viewerRole: 'guest' | 'pro' | 'owner';
+}) {
   const mounted = useMounted();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,12 +80,20 @@ export function SettingsPageContent() {
       </header>
 
       <div className="hidden lg:block">
-        <SettingsSectionPanel section={selectedSection} {...interactions} />
+        {selectedSection.id === 'account' ? (
+          <AccountSettingsPanel language={language} viewerRole={viewerRole} />
+        ) : (
+          <SettingsSectionPanel section={selectedSection} {...interactions} />
+        )}
       </div>
 
       <div className="space-y-12 lg:hidden">
         {page.sections.map((section) => (
-          <SettingsSectionPanel key={section.id} section={section} {...interactions} />
+          section.id === 'account' ? (
+            <AccountSettingsPanel key={section.id} language={language} viewerRole={viewerRole} />
+          ) : (
+            <SettingsSectionPanel key={section.id} section={section} {...interactions} />
+          )
         ))}
       </div>
     </div>

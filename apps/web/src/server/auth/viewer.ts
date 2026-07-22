@@ -16,6 +16,7 @@ export type CurrentViewer =
       sessionId: string;
     };
 
+// 获取当前访问者信息
 export async function getCurrentViewer(): Promise<CurrentViewer> {
   const token = await readAccessSessionToken();
 
@@ -23,6 +24,7 @@ export async function getCurrentViewer(): Promise<CurrentViewer> {
     return { role: 'guest' };
   }
 
+  // 查询数据库中是否存在与该 token 对应的有效访问会话
   const session = await findActiveAccessSessionByTokenHash(
     hashAccessCredential(token),
   );

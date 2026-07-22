@@ -3,11 +3,14 @@ import {
   SettingsPageContent,
   SettingsPageSidebar,
 } from '@/features/settings';
+import { getCurrentViewer } from '@/server/auth';
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const viewer = await getCurrentViewer();
+
   return (
     <SettingsShell sidebar={<SettingsPageSidebar />}>
-      <SettingsPageContent />
+      <SettingsPageContent viewerRole={viewer.role} />
     </SettingsShell>
   );
 }

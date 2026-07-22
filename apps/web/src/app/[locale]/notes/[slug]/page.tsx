@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { DocsArticleFeature } from '@/features/docs';
 import type { AppLocale } from '@/i18n/config/locales';
 import { getNotesArticlePage } from '@/server/notes/loaders';
+import { getCurrentViewer } from '@/server/auth';
+import { toDocsViewerAccessRole } from '@/server/docs/viewer';
 
 export default async function NotesArticlePage({
   params,
@@ -12,10 +14,11 @@ export default async function NotesArticlePage({
 }) {
   const { locale, slug } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const viewer = await getCurrentViewer();
   const page = await getNotesArticlePage({
     locale,
     slug,
-    viewerRole: 'guest',
+    viewerRole: toDocsViewerAccessRole(viewer),
   });
 
   if (!page) {

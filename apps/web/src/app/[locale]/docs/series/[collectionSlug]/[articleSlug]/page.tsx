@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { DocsArticleFeature } from '@/features/docs';
 import { getDocsCollectionArticlePage } from '@/server/docs/loaders';
 import type { AppLocale } from '@/i18n/config/locales';
+import { getCurrentViewer } from '@/server/auth';
+import { toDocsViewerAccessRole } from '@/server/docs/viewer';
 
 // 获取系列文章页面 
 export default async function DocsCollectionArticlePage({
@@ -17,11 +19,12 @@ export default async function DocsCollectionArticlePage({
 }) {
   const { locale, collectionSlug, articleSlug } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const viewer = await getCurrentViewer();
   const page = await getDocsCollectionArticlePage({
     locale,
     collectionSlug,
     articleSlug,
-    viewerRole: 'guest',
+    viewerRole: toDocsViewerAccessRole(viewer),
   });
 
   if (!page) {
