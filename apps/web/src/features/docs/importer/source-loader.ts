@@ -10,15 +10,16 @@ import {
 } from './parsers';
 import type { DocsImportArticleSource, DocsImportValidationIssue } from './types';
 
+// 加载完成后统一返回数据结构
 export type LoadedDocsImportSource = {
-  source: DocsImportArticleSource;
-  issues: DocsImportValidationIssue[];
+  source: DocsImportArticleSource;       // 解析/导入得到的文章源数据
+  issues: DocsImportValidationIssue[];   // 校验时发现的问题列表
 };
 
 // 加载文档导入源数据，从指定的文件路径动态导入模块，支持绝对路径和相对路径，要求模块必须导出一个符合 DocsImportArticleSource 结构的对象，作为后续数据规范化和预览展示的基础
 
-// 待修改为标准结构
 function getSourceExtension(filePath: string) {
+  // 特殊处理 .docs.md 文件扩展名
   if (filePath.endsWith('.docs.md')) {
     return '.docs.md';
   }
@@ -26,7 +27,9 @@ function getSourceExtension(filePath: string) {
   return path.extname(filePath);
 }
 
+// 创建一个无效的 Markdown-like 导入源对象 / 兜底
 function createInvalidMarkdownSource(filePath: string): DocsImportArticleSource {
+  //  用文件名去掉扩展名 作为后备 slug
   const fallbackSlug = path.basename(filePath).replace(/\.[^.]+$/, '') || 'invalid-markdown-source';
 
   return {
@@ -89,6 +92,7 @@ async function loadMarkdownLikeDocsImportSource(
   }
 }
 
+// 主函数：根据文件扩展名选择加载方式，支持 Markdown-like 和 TypeScript 两种格式的文档导入源
 export async function loadDocsImportSource(filePath: string): Promise<LoadedDocsImportSource> {
   const absolutePath = path.isAbsolute(filePath)
     ? filePath
@@ -100,5 +104,7 @@ export async function loadDocsImportSource(filePath: string): Promise<LoadedDocs
     return loadMarkdownLikeDocsImportSource(absolutePath);
   }
 
+  // 按照 ts/tsx 文件处理
+  // 要求模块必须导出一个符合 DocsImportArticleSource 结构的对象
   return loadTsDocsImportSource(absolutePath);
 }

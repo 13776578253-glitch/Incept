@@ -1,3 +1,4 @@
+// 支持字段
 export const markdownLikeSupportedExtensions = new Set(['.md', '.docs.md']);
 
 export const markdownLikeAllowedFrontmatterKeys = new Set([
@@ -10,6 +11,12 @@ export const markdownLikeAllowedFrontmatterKeys = new Set([
   'seoTitle',
   'seoDescription',
   'publishedAt',
+  'collectionKey',
+  'collectionSlug',
+  'collectionTitle',
+  'collectionSummary',
+  'collectionEyebrow',
+  'position',
   'kind',
   'layoutMode',
   'accessRole',
@@ -29,7 +36,7 @@ export const markdownLikeAllowedKinds = new Set([
   'note'
 ]);
 
-export const markdownLikeAllowedLayoutModes = new Set(['contentOnly']);
+export const markdownLikeAllowedLayoutModes = new Set(['contentOnly', 'sidebar']);
 
 export const markdownLikeAllowedAccessRoles = new Set([
   'guest', 

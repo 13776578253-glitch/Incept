@@ -14,8 +14,8 @@ Enum DocLayoutMode {
 
 Enum DocAccessRole {
   guest
-  member
   pro
+  private
 }
 
 Enum DocStatus {
@@ -69,6 +69,7 @@ Table docs_document_locales {
 
 Table docs_collections {
   id int [pk, increment]
+  collectionKey varchar [unique, note: 'Optional key linking locale variants of one collection.']
   accessRole DocAccessRole [not null, default: 'guest']
   createdById int [note: 'Currently set to the importer-managed system user.']
   createdAt timestamp [not null]

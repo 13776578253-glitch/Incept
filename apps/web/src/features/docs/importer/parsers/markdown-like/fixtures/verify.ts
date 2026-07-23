@@ -36,6 +36,10 @@ export async function runMarkdownLikeFixtureChecks() {
     assert.equal(source.meta.slug, fixture.expectedSource.slug);
     assert.equal(source.meta.documentKey, fixture.expectedSource.documentKey);
     assert.equal(source.meta.accessRole, fixture.expectedSource.accessRole);
+    assert.equal(source.meta.routeType, fixture.expectedSource.routeType);
+    assert.equal(source.meta.collectionKey, fixture.expectedSource.collectionKey);
+    assert.equal(source.meta.collectionSlug, fixture.expectedSource.collectionSlug);
+    assert.equal(source.meta.position, fixture.expectedSource.position);
     assert.equal(source.body.sections[0]?.blocks[0]?.type, 'paragraph');
   }
 

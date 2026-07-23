@@ -1,5 +1,8 @@
 import type { DocsImportArticleSource } from '../../types';
-import { toSingleArticleDocsImportSource } from './conversion';
+import {
+  toCollectionArticleDocsImportSource,
+  toSingleArticleDocsImportSource,
+} from './conversion';
 import { parseMarkdownLikeDocument } from './document';
 import { MarkdownLikeParseError } from './errors';
 
@@ -11,7 +14,7 @@ export function parseMarkdownLikeDocsSource(raw: string): DocsImportArticleSourc
     throw new MarkdownLikeParseError(result.issues);
   }
 
-  // 将解析后的 Markdown-like 文档对象转换为单篇文章的导入源对象
-  // TODO: 未来可能支持多篇文章的导入源对象，届时需要修改此处的转换逻辑
-  return toSingleArticleDocsImportSource(result.document);
+  return result.document.frontmatter.routeType === 'collectionArticle'
+    ? toCollectionArticleDocsImportSource(result.document)
+    : toSingleArticleDocsImportSource(result.document);
 }

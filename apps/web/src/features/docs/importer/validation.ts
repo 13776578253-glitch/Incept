@@ -21,6 +21,7 @@ const allowedMetaKeys = new Set([
   'seoTitle',
   'seoDescription',
   'publishedAt',
+  'collectionKey',
   'collectionSlug',
   'collectionTitle',
   'collectionSummary',
@@ -34,7 +35,7 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function isValidDocumentKey(value: string) {
+function isValidStableKey(value: string) {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }
 
@@ -154,12 +155,30 @@ export function normalizeDocsImportSource(
         message: 'documentKey must be a non-empty string when provided.',
         path: 'meta.documentKey',
       });
-    } else if (!isValidDocumentKey(source.meta.documentKey)) {
+    } else if (!isValidStableKey(source.meta.documentKey)) {
       issues.push({
         level: 'error',
         code: 'invalid_document_key',
         message: 'documentKey must use lowercase letters, numbers, and hyphen separators.',
         path: 'meta.documentKey',
+      });
+    }
+  }
+
+  if (source.meta.collectionKey !== undefined) {
+    if (!isNonEmptyString(source.meta.collectionKey)) {
+      issues.push({
+        level: 'error',
+        code: 'invalid_collection_key',
+        message: 'collectionKey must be a non-empty string when provided.',
+        path: 'meta.collectionKey',
+      });
+    } else if (!isValidStableKey(source.meta.collectionKey)) {
+      issues.push({
+        level: 'error',
+        code: 'invalid_collection_key',
+        message: 'collectionKey must use lowercase letters, numbers, and hyphen separators.',
+        path: 'meta.collectionKey',
       });
     }
   }
@@ -185,6 +204,15 @@ export function normalizeDocsImportSource(
   }
 
   if (source.meta.routeType === 'singleArticle') {
+    if (source.meta.collectionKey) {
+      issues.push({
+        level: 'error',
+        code: 'collection_key_not_allowed',
+        message: 'singleArticle sources cannot provide collectionKey.',
+        path: 'meta.collectionKey',
+      });
+    }
+
     if (source.meta.collectionSlug) {
       issues.push({
         level: 'error',
@@ -274,6 +302,7 @@ export function normalizeDocsImportSource(
       seoTitle: source.meta.seoTitle,
       seoDescription: source.meta.seoDescription,
       publishedAt: publishedAt ?? new Date().toISOString(),
+      collectionKey: source.meta.collectionKey,
       collectionSlug: source.meta.collectionSlug,
       collectionTitle: source.meta.collectionTitle,
       collectionSummary: source.meta.collectionSummary,

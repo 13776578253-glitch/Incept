@@ -22,6 +22,25 @@ export const validMarkdownLikeFixtures = [
       slug: 'markdown-like-fixture',
       documentKey: 'markdown-like-fixture',
       accessRole: 'private',
+      routeType: 'singleArticle',
+      collectionKey: undefined,
+      collectionSlug: undefined,
+      position: undefined,
+    },
+  },
+  {
+    fileName: 'collection-article.docs.md',
+    expectedSectionIds: ['collection-opening'],
+    expectedBlockTypes: ['paragraph', 'heading', 'callout', 'image'],
+    expectedSource: {
+      locale: 'zh',
+      slug: 'collection-fixture-article',
+      documentKey: 'markdown-like-collection-fixture-article',
+      accessRole: 'pro',
+      routeType: 'collectionArticle',
+      collectionKey: 'markdown-like-collection-fixture',
+      collectionSlug: 'markdown-like-collection-zh',
+      position: 1,
     },
   },
 ] as const;
@@ -67,5 +86,13 @@ export const invalidMarkdownLikeFixtures = [
       { code: 'unsupported_syntax', line: 10 },
       { code: 'unsupported_syntax', line: 10 },
     ],
+  },
+  {
+    fileName: 'collection-missing-key.docs.md',
+    expectedIssues: [{ code: 'missing_frontmatter_field', line: 1 }],
+  },
+  {
+    fileName: 'collection-invalid-position.docs.md',
+    expectedIssues: [{ code: 'invalid_frontmatter', line: 1 }],
   },
 ] as const;

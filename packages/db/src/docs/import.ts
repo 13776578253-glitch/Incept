@@ -23,6 +23,7 @@ export type DocsImportWriteMeta = {
   seoTitle?: string;
   seoDescription?: string;
   publishedAt: string;
+  collectionKey?: string;
   collectionSlug?: string;
   collectionTitle?: string;
   collectionSummary?: string;
@@ -196,6 +197,75 @@ function buildLocaleWriteData(source: DocsImportWriteSource) {
   };
 }
 
+const collectionImportSelect = {
+  id: true,
+  collectionKey: true,
+  accessRole: true,
+  items: {
+    select: {
+      document: {
+        select: {
+          accessRole: true,
+        },
+      },
+    },
+  },
+} as const;
+
+async function findCollectionByKey(collectionKey: string) {
+  return prisma.docsCollection.findUnique({
+    where: { collectionKey },
+    select: collectionImportSelect,
+  });
+}
+
+async function findCollectionByLocaleSlug({
+  locale,
+  slug,
+}: {
+  locale: DbDocsLocale;
+  slug: string;
+}) {
+  const localeRow = await prisma.docsCollectionLocale.findUnique({
+    where: {
+      locale_slug: {
+        locale,
+        slug,
+      },
+    },
+    select: {
+      collection: {
+        select: collectionImportSelect,
+      },
+    },
+  });
+
+  return localeRow?.collection ?? null;
+}
+
+function assertCollectionAccessRole({
+  collection,
+  source,
+}: {
+  collection: Awaited<ReturnType<typeof findCollectionByKey>>;
+  source: DocsImportWriteSource;
+}) {
+  if (!collection) {
+    return;
+  }
+
+  const requiredAccessRole = toDocumentAccessRole(source.meta.accessRole);
+
+  if (
+    collection.accessRole !== requiredAccessRole ||
+    collection.items.some((item) => item.document.accessRole !== requiredAccessRole)
+  ) {
+    throw new Error(
+      `All articles in collection "${source.meta.collectionSlug}" must use accessRole "${source.meta.accessRole}".`,
+    );
+  }
+}
+
 async function ensureCollection({
   source,
   systemUserId,
@@ -205,114 +275,96 @@ async function ensureCollection({
 }) {
   const collectionSlug = source.meta.collectionSlug;
   const collectionTitle = source.meta.collectionTitle;
+  const collectionKey = source.meta.collectionKey;
   const publishedAt = toPublishedDate(source.meta.publishedAt);
 
   if (!collectionSlug || !collectionTitle) {
     throw new Error('Collection articles require collectionSlug and collectionTitle.');
   }
 
-  const existingLocale = await prisma.docsCollectionLocale.findUnique({
-    where: {
-      locale_slug: {
-        locale: source.meta.locale,
-        slug: collectionSlug,
-      },
-    },
-    select: {
-      collectionId: true,
-    },
+  const localeCollection = await findCollectionByLocaleSlug({
+    locale: source.meta.locale,
+    slug: collectionSlug,
   });
+  const keyedCollection = collectionKey ? await findCollectionByKey(collectionKey) : null;
 
-  if (existingLocale) {
-    const existingCollection = await prisma.docsCollection.findUnique({
-      where: { id: existingLocale.collectionId },
-      select: {
-        accessRole: true,
-        items: {
-          select: {
-            document: {
-              select: {
-                accessRole: true,
-              },
-            },
-          },
-        },
-      },
-    });
-    const requiredAccessRole = toDocumentAccessRole(source.meta.accessRole);
+  let collection = keyedCollection ?? localeCollection;
 
-    if (
-      !existingCollection ||
-      existingCollection.accessRole !== requiredAccessRole ||
-      existingCollection.items.some(
-        (item) => item.document.accessRole !== requiredAccessRole,
-      )
-    ) {
-      throw new Error(
-        `All articles in collection "${collectionSlug}" must use accessRole "${source.meta.accessRole}".`,
-      );
-    }
-
-    await prisma.docsCollection.update({
-      where: { id: existingLocale.collectionId },
-      data: {
-        accessRole: requiredAccessRole,
-        createdById: systemUserId,
-        locales: {
-          upsert: {
-            where: {
-              collectionId_locale: {
-                collectionId: existingLocale.collectionId,
-                locale: source.meta.locale,
-              },
-            },
-            update: {
-              slug: collectionSlug,
-              eyebrow: source.meta.collectionEyebrow ?? null,
-              title: collectionTitle,
-              summary: source.meta.collectionSummary ?? null,
-              status: DocStatus.published,
-              publishedAt,
-            },
-            create: {
-              locale: source.meta.locale,
-              slug: collectionSlug,
-              eyebrow: source.meta.collectionEyebrow ?? null,
-              title: collectionTitle,
-              summary: source.meta.collectionSummary ?? null,
-              status: DocStatus.published,
-              publishedAt,
-            },
-          },
-        },
-      },
-    });
-
-    return existingLocale.collectionId;
+  if (collectionKey && keyedCollection && localeCollection && keyedCollection.id !== localeCollection.id) {
+    throw new Error(
+      `The collection route ${source.meta.locale}/${collectionSlug} is already used by another collection.`,
+    );
   }
 
-  const createdCollection = await prisma.docsCollection.create({
+  if (collectionKey && !keyedCollection && localeCollection?.collectionKey) {
+    throw new Error(
+      `The collection route ${source.meta.locale}/${collectionSlug} is already linked to collectionKey "${localeCollection.collectionKey}".`,
+    );
+  }
+
+  if (!collectionKey && localeCollection?.collectionKey) {
+    throw new Error(
+      `Collection "${collectionSlug}" requires its existing collectionKey "${localeCollection.collectionKey}".`,
+    );
+  }
+
+  if (collectionKey && collection && !collection.collectionKey) {
+    collection = await prisma.docsCollection.update({
+      where: { id: collection.id },
+      data: { collectionKey },
+      select: collectionImportSelect,
+    });
+  }
+
+  if (!collection) {
+    collection = await prisma.docsCollection.create({
+      data: {
+        collectionKey,
+        accessRole: toDocumentAccessRole(source.meta.accessRole),
+        createdById: systemUserId,
+      },
+      select: collectionImportSelect,
+    });
+  }
+
+  assertCollectionAccessRole({ collection, source });
+
+  await prisma.docsCollection.update({
+    where: { id: collection.id },
     data: {
       accessRole: toDocumentAccessRole(source.meta.accessRole),
       createdById: systemUserId,
       locales: {
-        create: {
-          locale: source.meta.locale,
-          slug: collectionSlug,
-          eyebrow: source.meta.collectionEyebrow ?? null,
-          title: collectionTitle,
-          summary: source.meta.collectionSummary ?? null,
-          status: DocStatus.published,
-          publishedAt,
+        upsert: {
+          where: {
+            collectionId_locale: {
+              collectionId: collection.id,
+              locale: source.meta.locale,
+            },
+          },
+          update: {
+            slug: collectionSlug,
+            eyebrow: source.meta.collectionEyebrow ?? null,
+            title: collectionTitle,
+            summary: source.meta.collectionSummary ?? null,
+            status: DocStatus.published,
+            publishedAt,
+          },
+          create: {
+            locale: source.meta.locale,
+            slug: collectionSlug,
+            eyebrow: source.meta.collectionEyebrow ?? null,
+            title: collectionTitle,
+            summary: source.meta.collectionSummary ?? null,
+            status: DocStatus.published,
+            publishedAt,
+          },
         },
       },
     },
-    select: {
-      id: true,
-    },
   });
 
-  return createdCollection.id;
+  return collection.id;
 }
 
 export async function importDocsArticleDraft({
@@ -468,6 +520,20 @@ export async function upsertDocsCollectionArticle({
   const existingSameLocaleForKey = existingDocumentByKey?.locales.find(
     (localeRow) => localeRow.locale === source.meta.locale,
   );
+  const hasAnotherLocaleForDocumentKey = Boolean(
+    source.meta.documentKey &&
+      existingDocumentByKey?.locales.some((localeRow) => localeRow.locale !== source.meta.locale),
+  );
+
+  const existingCollectionItem = targetDocumentId
+    ? await prisma.docsCollectionItem.findUnique({
+        where: { documentId: targetDocumentId },
+        select: {
+          collectionId: true,
+          position: true,
+        },
+      })
+    : null;
 
   if (source.meta.documentKey && existingTarget && existingTarget.documentId !== targetDocumentId) {
     throw new Error(
@@ -492,6 +558,22 @@ export async function upsertDocsCollectionArticle({
   if (conflictingPosition && conflictingPosition.documentId !== targetDocumentId) {
     throw new Error(
       `The collection position ${position} is already used by another article in "${source.meta.collectionSlug}".`,
+    );
+  }
+
+  if (existingCollectionItem && existingCollectionItem.collectionId !== collectionId) {
+    throw new Error(
+      `Document "${source.meta.documentKey ?? source.meta.slug}" already belongs to another collection.`,
+    );
+  }
+
+  if (
+    hasAnotherLocaleForDocumentKey &&
+    existingCollectionItem &&
+    existingCollectionItem.position !== position
+  ) {
+    throw new Error(
+      `All locale variants of documentKey "${source.meta.documentKey}" must use collection position ${existingCollectionItem.position}.`,
     );
   }
 

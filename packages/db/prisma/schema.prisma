@@ -156,14 +156,15 @@ model DocsDocumentLocale {
 }
 
 model DocsCollection {
-  id          Int                    @id @default(autoincrement())
-  accessRole  DocAccessRole          @default(guest)
-  createdById Int?
-  createdBy   User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  locales     DocsCollectionLocale[]
-  items       DocsCollectionItem[]
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
+  id            Int                    @id @default(autoincrement())
+  collectionKey String?                @unique
+  accessRole    DocAccessRole          @default(guest)
+  createdById   Int?
+  createdBy     User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  locales       DocsCollectionLocale[]
+  items         DocsCollectionItem[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
 
   @@index([accessRole])
   @@map("docs_collections")

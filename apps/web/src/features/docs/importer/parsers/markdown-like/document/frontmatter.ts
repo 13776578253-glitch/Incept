@@ -117,12 +117,14 @@ function validateMarkdownLikeFrontmatter(
     }
   }
 
-  if (frontmatter.routeType && frontmatter.routeType !== 'singleArticle') {
+  const routeType = frontmatter.routeType ?? 'singleArticle';
+
+  if (routeType !== 'singleArticle' && routeType !== 'collectionArticle') {
     addMarkdownLikeIssue(
       issues,
       1,
       'unsupported_route_type',
-      'Markdown-like v1 only supports routeType: singleArticle.',
+      'Markdown-like docs sources must use routeType: singleArticle or collectionArticle.',
     );
   }
 
@@ -140,7 +142,7 @@ function validateMarkdownLikeFrontmatter(
       issues,
       1,
       'invalid_frontmatter',
-      'Markdown-like v1 only supports layoutMode: contentOnly.',
+      'Markdown-like docs sources must use a supported layoutMode.',
     );
   }
 
@@ -151,5 +153,77 @@ function validateMarkdownLikeFrontmatter(
       'invalid_frontmatter',
       `Unsupported accessRole "${frontmatter.accessRole}".`,
     );
+  }
+
+  if (routeType === 'collectionArticle') {
+    for (const key of ['collectionKey', 'collectionSlug', 'collectionTitle', 'position'] as const) {
+      if (!frontmatter[key]?.trim()) {
+        addMarkdownLikeIssue(
+          issues,
+          1,
+          'missing_frontmatter_field',
+          `collectionArticle sources must provide a non-empty ${key}.`,
+        );
+      }
+    }
+
+    if (
+      frontmatter.collectionKey &&
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(frontmatter.collectionKey)
+    ) {
+      addMarkdownLikeIssue(
+        issues,
+        1,
+        'invalid_frontmatter',
+        'collectionKey must use lowercase letters, numbers, and hyphen separators.',
+      );
+    }
+
+    if (frontmatter.position && !/^\d+$/.test(frontmatter.position)) {
+      addMarkdownLikeIssue(
+        issues,
+        1,
+        'invalid_frontmatter',
+        'collectionArticle position must be an integer.',
+      );
+    }
+
+    if (frontmatter.layoutMode && frontmatter.layoutMode !== 'sidebar') {
+      addMarkdownLikeIssue(
+        issues,
+        1,
+        'invalid_frontmatter',
+        'collectionArticle sources must use layoutMode: sidebar.',
+      );
+    }
+
+    if (frontmatter.kind === 'note') {
+      addMarkdownLikeIssue(
+        issues,
+        1,
+        'invalid_frontmatter',
+        'collectionArticle sources cannot use kind: note.',
+      );
+    }
+  }
+
+  if (routeType === 'singleArticle') {
+    for (const key of [
+      'collectionKey',
+      'collectionSlug',
+      'collectionTitle',
+      'collectionSummary',
+      'collectionEyebrow',
+      'position',
+    ] as const) {
+      if (frontmatter[key] !== undefined) {
+        addMarkdownLikeIssue(
+          issues,
+          1,
+          'invalid_frontmatter',
+          `singleArticle sources cannot provide ${key}.`,
+        );
+      }
+    }
   }
 }

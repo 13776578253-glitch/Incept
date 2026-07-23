@@ -102,17 +102,17 @@ function toDocsContentBlock(block: MarkdownLikeBlock): DocsContentBlockModel {
   }
 }
 
-// TODO: 未来可能支持多篇文章的导入源对象，届时需要修改此处的 routeType
+export function toDocsArticleBody(document: MarkdownLikeDocument): DocsImportArticleSource['body'] {
+  return {
+    sections: document.sections.map((section) => ({
+      id: section.id,
+      title: section.title,
+      blocks: section.blocks.map(toDocsContentBlock),
+    })),
+  };
+}
 
-/**
- * 将完整的 MarkdownLike 文档转换为单篇文章的导入源数据
- *
- * @param document 由 parseMarkdownLikeDocument 生成的中间文档结构
- * @returns 最终的文章源对象，可直接用于后续的导入流程
- */
-export function toSingleArticleDocsImportSource(
-  document: MarkdownLikeDocument,
-): DocsImportArticleSource {
+export function toSingleArticleDocsImportSource(document: MarkdownLikeDocument): DocsImportArticleSource {
   const { frontmatter } = document;
 
   return {
@@ -131,12 +131,6 @@ export function toSingleArticleDocsImportSource(
       seoDescription: frontmatter.seoDescription,
       publishedAt: frontmatter.publishedAt,
     },
-    body: {
-      sections: document.sections.map((section) => ({
-        id: section.id,
-        title: section.title,
-        blocks: section.blocks.map(toDocsContentBlock),
-      })),
-    },
+    body: toDocsArticleBody(document),
   };
 }

@@ -19,6 +19,7 @@ export type DocsImportArticleMeta = {
   seoTitle?: string;
   seoDescription?: string;
   publishedAt?: string | Date;
+  collectionKey?: string;
   collectionSlug?: string;
   collectionTitle?: string;
   collectionSummary?: string;
@@ -58,6 +59,7 @@ export type DocsImportNormalizedMeta = {
   seoTitle?: string;
   seoDescription?: string;
   publishedAt: string;
+  collectionKey?: string;
   collectionSlug?: string;
   collectionTitle?: string;
   collectionSummary?: string;
