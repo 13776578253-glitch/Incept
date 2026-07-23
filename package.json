@@ -7,6 +7,7 @@
     "build": "pnpm --filter web build",
     "lint": "pnpm --filter web lint",
     "docs:import": "pnpm --filter @incept/db exec tsx ../../scripts/docs-import.mjs",
+    "docs:check-markdown-like": "pnpm --filter @incept/db exec tsx ../../scripts/docs-markdown-like-check.mjs",
     "docs:archive": "pnpm --filter @incept/db exec tsx ../../scripts/docs-archive.mjs",
     "docs:cleanup-test-data": "pnpm --filter @incept/db exec tsx ../../scripts/docs-cleanup-test-data.mjs",
     "auth:revoke-owner-sessions": "pnpm --filter @incept/db exec tsx ../../scripts/auth-revoke-owner-sessions.mjs",
