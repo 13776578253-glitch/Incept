@@ -4,7 +4,16 @@ import {
   toSingleArticleDocsImportSource,
 } from './conversion';
 import { parseMarkdownLikeDocument } from './document';
+import type { MarkdownLikeDocument } from './document/types';
 import { MarkdownLikeParseError } from './errors';
+
+export function toMarkdownLikeDocsImportSource(
+  document: MarkdownLikeDocument,
+): DocsImportArticleSource {
+  return document.frontmatter.routeType === 'collectionArticle'
+    ? toCollectionArticleDocsImportSource(document)
+    : toSingleArticleDocsImportSource(document);
+}
 
 export function parseMarkdownLikeDocsSource(raw: string): DocsImportArticleSource {
   // 解析 Markdown-like 文档源数据
@@ -14,7 +23,5 @@ export function parseMarkdownLikeDocsSource(raw: string): DocsImportArticleSourc
     throw new MarkdownLikeParseError(result.issues);
   }
 
-  return result.document.frontmatter.routeType === 'collectionArticle'
-    ? toCollectionArticleDocsImportSource(result.document)
-    : toSingleArticleDocsImportSource(result.document);
+  return toMarkdownLikeDocsImportSource(result.document);
 }

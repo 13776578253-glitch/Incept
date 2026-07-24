@@ -4,6 +4,18 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const projectRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 
+function loadDocsImportEnvironment() {
+  const envFilePath = path.join(projectRoot, 'apps', 'web', '.env.local');
+
+  try {
+    process.loadEnvFile(envFilePath);
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
 function printUsage() {
   console.log('Usage: pnpm docs:import --file <path> [--replace] [--dry-run]');
 }
@@ -39,6 +51,7 @@ function parseArgs(argv) {
 }
 
 async function main() {
+  loadDocsImportEnvironment();
   const args = parseArgs(process.argv.slice(2));
 
   if (!args.file) {
@@ -55,6 +68,7 @@ async function main() {
   const draft = await importerModule.createDocsImportDraft({
     filePath: args.file,
     replace: args.replace,
+    mediaMode: args.dryRun ? 'validate' : 'publish',
   });
 
   const preview = importerModule.toDocsImportPreviewModel(draft);
@@ -72,6 +86,15 @@ async function main() {
   console.log(`- Replace existing: ${draft.replace ? 'yes' : 'no'}`);
   console.log(`- Errors: ${preview.errorCount}`);
   console.log(`- Warnings: ${preview.warningCount}`);
+
+  if (draft.media.operations.length > 0) {
+    console.log('');
+    console.log('Media operations');
+    for (const operation of draft.media.operations) {
+      console.log(`- ${operation.status}: ${operation.sourcePath}`);
+      console.log(`  -> ${operation.targetUrl} (${operation.size} bytes)`);
+    }
+  }
 
   if (!args.dryRun) {
     importerModule.writeDocsImportDraft(draft, projectRoot);

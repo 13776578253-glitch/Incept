@@ -1,5 +1,6 @@
 import type { DbDocsLocale, DbDocsSection } from '@incept/db/docs';
 import type { DocsAccessRole, DocsArticlePageModel, DocsLayoutMode } from '../shared/types';
+import type { DocsImportMediaResolution } from './media';
 
 export type DocsImportRouteType = 'singleArticle' | 'collectionArticle';
 
@@ -79,6 +80,7 @@ export type DocsImportDraft = {
   replace: boolean;
   source: DocsImportNormalizedSource;
   issues: DocsImportValidationIssue[];
+  media: DocsImportMediaResolution;
   page: DocsArticlePageModel;
 };
 
