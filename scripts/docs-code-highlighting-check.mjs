@@ -11,6 +11,7 @@ const highlighterModule = await import(
 
 assert.equal(highlighterModule.normalizeDocsCodeLanguage('ts'), 'typescript');
 assert.equal(highlighterModule.normalizeDocsCodeLanguage('shell'), 'bash');
+assert.equal(highlighterModule.normalizeDocsCodeLanguage('ps1'), 'powershell');
 assert.equal(highlighterModule.normalizeDocsCodeLanguage('unknown-language'), null);
 
 const highlighted = await highlighterModule.highlightDocsCode(
@@ -31,6 +32,13 @@ assert.ok(
 );
 
 assert.equal(await highlighterModule.highlightDocsCode('plain text', 'unknown-language'), null);
+
+const powerShellHighlight = await highlighterModule.highlightDocsCode(
+  'Get-ChildItem -LiteralPath .',
+  'pwsh',
+);
+assert.ok(powerShellHighlight);
+assert.equal(powerShellHighlight.lines.length, 1);
 
 for (const palette of ['vscode', 'github', 'vitesse']) {
   const paletteHighlight = await highlighterModule.highlightDocsCode(

@@ -29,17 +29,13 @@ import { buildCodeExample } from './docs-code-example-utils';
 //   2. emphasis 变体是否足够明确，但不会破坏正文整体节奏
 //   3. checklist 完成态的勾选框、删除线、降级字色是否清晰但不过重
 
-// TODO: 目前这种通过目录获取内容块的方式比较 hacky，后续可以考虑更直接地在样式实验室页面中定义需要展示的内容块数据
-// TODO: 待添加 delete line、mark，用于 paragraph、list、quote、code
-// TODO: 后续把 style-lab 页面标题和 section 说明文案也逐步收成更统一的测试规范
-// TODO: 规划
-// 代码块 section 后续不只验证“容器样式”，还要升级成“多语言代码展示实验面”。
+// 已实现：代码块 section 后续不只验证“容器样式”，还要升级成“多语言代码展示实验面”。
 // 这里的职责目标：
 // 1. 给 docs block system 提供稳定的代码示例输入面
 // 2. 验证不同语言在 light / dark 下的 token 配色是否可读
 // 3. 验证长行、命令行、结构化数据、缩进代码在同一外壳里的表现差异
 //
-// 下一阶段计划：
+// 计划：
 // 1. 保留当前 3 类代码测试：
 //    - multiline code
 //    - compact command
@@ -63,11 +59,10 @@ import { buildCodeExample } from './docs-code-example-utils';
 //    - style-lab 先成为第一落点
 //    - 先验证 example 页面，再进入真实 docs 正文链
 //    - 让 DocsCodeBlock 继续只负责 UI，不负责语言解析
-//
-// 推荐实施顺序：
-// 1. 先完善 docs-code-example-utils.ts
-// 2. 再新增 code highlight helper
-// 3. 最后把这里的 code section 切到“rawCode + highlighted output”双输入结构
+
+// TODO: 目前这种通过目录获取内容块的方式比较 hacky，后续可以考虑更直接地在样式实验室页面中定义需要展示的内容块数据
+// TODO: 待添加 delete line、mark，用于 paragraph、list、quote、code
+// TODO: 后续把 style-lab 页面标题和 section 说明文案也逐步收成更统一的测试规范
 
 function getBlock<TType extends DocsContentBlockModel['type']>(
   type: TType,
