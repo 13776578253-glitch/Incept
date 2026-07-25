@@ -2,6 +2,7 @@ export type SettingsVisibility = 'public' | 'admin';
 
 export type SettingsControlType =
   | 'theme-segmented'
+  | 'code-palette-segmented'
   | 'boolean-toggle'
   | 'language-segmented'
   | 'select'
@@ -30,6 +31,7 @@ export type SettingsRow = {
   placeholder?: string;
   actionLabel?: string;
   badge?: string;
+  disabledHint?: string;
   options?: SettingsOption[];
 };
 

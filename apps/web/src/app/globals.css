@@ -31,6 +31,66 @@ body {
   font-family: var(--font-family-base);
 }
 
+.docs-code-block {
+  --docs-code-border: color-mix(in srgb, var(--shiki-light-bg, #ffffff) 90%, #111827);
+  --docs-code-toolbar-text: color-mix(in srgb, var(--shiki-light, #111827) 54%, transparent);
+  --docs-code-toolbar-hover: color-mix(in srgb, var(--shiki-light-bg, #ffffff) 90%, #111827);
+  --docs-code-toolbar-hover-text: var(--shiki-light, #111827);
+  --docs-code-toolbar-divider: color-mix(in srgb, var(--shiki-light, #111827) 14%, transparent);
+  border-color: var(--docs-code-border);
+  background: var(--shiki-light-bg, #ffffff);
+  color: var(--shiki-light, #111827);
+}
+
+.docs-code-language {
+  color: var(--docs-code-toolbar-text);
+}
+
+.docs-code-toolbar-divider {
+  background: var(--docs-code-toolbar-divider);
+}
+
+.docs-code-block button {
+  color: var(--docs-code-toolbar-text);
+}
+
+.docs-code-block button:hover {
+  background: var(--docs-code-toolbar-hover);
+  color: var(--docs-code-toolbar-hover-text);
+}
+
+.dark .docs-code-block {
+  --docs-code-border: color-mix(in srgb, var(--shiki-dark-bg, #1e1e1e) 88%, #ffffff);
+  --docs-code-toolbar-text: color-mix(in srgb, var(--shiki-dark, #d4d4d4) 54%, transparent);
+  --docs-code-toolbar-hover: color-mix(in srgb, var(--shiki-dark-bg, #1e1e1e) 82%, #ffffff);
+  --docs-code-toolbar-hover-text: var(--shiki-dark, #d4d4d4);
+  --docs-code-toolbar-divider: color-mix(in srgb, var(--shiki-dark, #d4d4d4) 16%, transparent);
+  background: var(--shiki-dark-bg, #1e1e1e);
+  color: var(--shiki-dark, #d4d4d4);
+}
+
+.dark .docs-code-token {
+  color: var(--shiki-dark, inherit) !important;
+  font-style: var(--shiki-dark-font-style, inherit) !important;
+  font-weight: var(--shiki-dark-font-weight, inherit) !important;
+}
+
+html[data-eye-comfort-filter='warm']:not(.dark) .docs-code-block {
+  --docs-code-border: color-mix(in srgb, var(--shiki-warm-bg, #faf4ed) 90%, #7a6655);
+  --docs-code-toolbar-text: color-mix(in srgb, var(--shiki-warm, #575279) 58%, transparent);
+  --docs-code-toolbar-hover: color-mix(in srgb, var(--shiki-warm-bg, #faf4ed) 84%, #7a6655);
+  --docs-code-toolbar-hover-text: var(--shiki-warm, #575279);
+  --docs-code-toolbar-divider: color-mix(in srgb, var(--shiki-warm, #575279) 18%, transparent);
+  background: var(--shiki-warm-bg, #faf4ed);
+  color: var(--shiki-warm, #575279);
+}
+
+html[data-eye-comfort-filter='warm']:not(.dark) .docs-code-token {
+  color: var(--shiki-warm, inherit) !important;
+  font-style: var(--shiki-warm-font-style, inherit) !important;
+  font-weight: var(--shiki-warm-font-weight, inherit) !important;
+}
+
 .docs-code-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;

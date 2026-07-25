@@ -13,6 +13,9 @@ type SettingsInteractionProps = {
   eyeComfortFilterEnabled: boolean;
   setEyeComfortFilter: (value: boolean) => void;
   isEyeComfortFilterReady: boolean;
+  codePalette: 'vscode' | 'github' | 'vitesse';
+  setCodePalette: (value: 'vscode' | 'github' | 'vitesse') => void;
+  isCodePaletteReady: boolean;
   language: string;
   setLanguage: (value: 'zh' | 'en') => void;
 };
@@ -31,7 +34,7 @@ function SettingsSegmentedControl({
   return (
     <div className="inline-flex flex-wrap items-center gap-1.5 rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1">
       {options.map((option) => {
-        const active = isInteractive && option.id === selected;
+        const active = option.id === selected;
 
         return (
           <button
@@ -165,6 +168,9 @@ function SettingsRowControl({
   eyeComfortFilterEnabled,
   setEyeComfortFilter,
   isEyeComfortFilterReady,
+  codePalette,
+  setCodePalette,
+  isCodePaletteReady,
   language,
   setLanguage,
 }: { row: SettingsRow } & SettingsInteractionProps) {
@@ -191,6 +197,17 @@ function SettingsRowControl({
         options={row.options ?? []}
         selected={language}
         onSelect={(id) => setLanguage(id as 'zh' | 'en')}
+      />
+    );
+  }
+
+  if (row.controlType === 'code-palette-segmented') {
+    return (
+      <SettingsSegmentedControl
+        options={row.options ?? []}
+        selected={isCodePaletteReady ? codePalette : ''}
+        onSelect={(id) => setCodePalette(id as 'vscode' | 'github' | 'vitesse')}
+        isInteractive={isCodePaletteReady && !eyeComfortFilterEnabled}
       />
     );
   }
@@ -231,6 +248,11 @@ function SettingsRowView({ row, ...interactions }: { row: SettingsRow } & Settin
         <p className="max-w-2xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
           {row.description}
         </p>
+        {row.disabledHint && interactions.eyeComfortFilterEnabled ? (
+          <p className="max-w-2xl text-[0.75rem] leading-5 text-[var(--color-text-soft)]">
+            {row.disabledHint}
+          </p>
+        ) : null}
       </div>
 
       <div className="md:justify-self-end">

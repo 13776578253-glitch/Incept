@@ -1,34 +1,37 @@
 'use client';
 
+import type { CSSProperties, ReactNode } from 'react';
 import { useState } from 'react';
 import type { DocsCodeBlockModel } from '@/features/docs/block-system';
 
 // 代码块组件，根据提供的代码内容、编程语言、可选的标题和变体（如紧凑或块状）渲染格式化的代码展示，适用于文档中的代码示例和技术说明
 export function DocsCodeBlock({
   code,
-  language: _language,
-  caption: _caption,
+  language,
   variant = 'block',
-}: DocsCodeBlockModel) {
+  children,
+  highlightStyle,
+}: DocsCodeBlockModel & {
+  children: ReactNode;
+  highlightStyle?: Record<string, string>;
+}) {
   const [copied, setCopied] = useState(false);
 
   // 代码块外框样式
   const frameClassName =
     variant === 'compact'
-      ? 'group relative overflow-hidden rounded-[6px] border border-[#ececec] bg-[#fcfcfc] shadow-none dark:border-transparent dark:bg-[#1f1f1f]'
-      : 'group relative overflow-hidden rounded-[7px] border border-[#ececec] bg-[#fcfcfc] shadow-none dark:border-transparent dark:bg-[#1f1f1f]';
+      ? 'docs-code-block group relative overflow-hidden rounded-[6px] border shadow-none'
+      : 'docs-code-block group relative overflow-hidden rounded-[7px] border shadow-none';
   
   // 代码块工具栏样式
   const toolbarClassName =
-    variant === 'compact'
-      ? 'pointer-events-none absolute right-2 top-2 z-10 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100'
-      : 'pointer-events-none absolute right-2 top-2 z-10 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100';
+    'pointer-events-none absolute right-2 top-2 z-10 flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100';
   
   // 代码块内容样式
   const contentClassName =
     variant === 'compact'
-      ? 'overflow-x-auto pl-10 pr-[4.75rem] pb-10 pt-10 text-[0.81rem] leading-[1.45rem] text-[var(--color-text)]'
-      : 'overflow-x-auto pl-[2.5rem] pr-[5rem] pb-11 pt-11 text-[0.86rem] leading-[1.6rem] text-[var(--color-text)]';
+      ? 'docs-code-scrollbar overflow-x-auto px-5 py-5 pr-16 text-[0.81rem] leading-[1.45rem]'
+      : 'docs-code-scrollbar overflow-x-auto px-6 py-7 pr-20 text-[0.86rem] leading-[1.6rem]';
 
   // 处理复制代码的功能，使用 Clipboard API 将代码内容复制到剪贴板，并提供用户反馈（如按钮文本变化和短暂的状态显示）
   async function handleCopy() {
@@ -42,15 +45,15 @@ export function DocsCodeBlock({
   }
 
   return (
-    <figure className={frameClassName}>
+    <figure className={frameClassName} style={highlightStyle as CSSProperties | undefined}>
       <div className={toolbarClassName}>
-        {/* <span className="text-[0.68rem] leading-4 text-[var(--color-text-soft)]">
+        <span className="docs-code-language text-[0.68rem] leading-4">
           {language}
-        </span> */}
-        {/* <span
-          className="h-3 w-px bg-[color:color-mix(in_srgb,var(--color-text)_10%,transparent)]"
+        </span>
+        <span
+          className="docs-code-toolbar-divider h-3 w-px"
           aria-hidden="true"
-        /> */}
+        />
         <button
           type="button"
           onClick={handleCopy}
@@ -80,16 +83,12 @@ export function DocsCodeBlock({
         </button>
       </div>
       <div className="relative">
-        <pre className={`${contentClassName} docs-code-scrollbar`}>
+        <pre className={contentClassName}>
           <span className="inline-flex min-w-full items-stretch">
-            <code className="block min-w-full whitespace-pre font-mono font-medium tracking-[0.005em]">
-              {code}
-            </code>
+            {children}
             <span aria-hidden="true" className="shrink-0 basis-10" />
           </span>
         </pre>
-        <div className="pointer-events-none absolute left-0 top-0 h-[calc(100%-8px)] w-7 bg-[#fcfcfc] dark:bg-[#1f1f1f]" />
-        <div className="pointer-events-none absolute right-0 top-0 h-[calc(100%-8px)] w-7 bg-[#fcfcfc] dark:bg-[#1f1f1f]" />
       </div>
     </figure>
   );

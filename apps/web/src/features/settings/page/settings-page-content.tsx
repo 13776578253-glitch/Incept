@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
+import { useDocsCodePaletteContext } from '@/components/base/docs-code-palette-provider';
 import { useLanguage } from '@/hooks/use-language';
 import { AccountSettingsPanel } from '../account/account-settings-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
@@ -34,6 +35,11 @@ export function SettingsPageContent({
     setEyeComfortFilter,
     isEyeComfortFilterReady,
   } = useEyeComfortFilter();
+  const {
+    codePalette,
+    setCodePalette,
+    isCodePaletteReady,
+  } = useDocsCodePaletteContext();
   const page = getSettingsPageData(language);
   const requestedSection = searchParams.get('section');
   const selectedSection =
@@ -46,6 +52,9 @@ export function SettingsPageContent({
     eyeComfortFilterEnabled,
     setEyeComfortFilter,
     isEyeComfortFilterReady,
+    codePalette,
+    setCodePalette,
+    isCodePaletteReady,
     language,
     setLanguage,
   };

@@ -1,7 +1,7 @@
 import type { DocsContentBlockModel } from '@/features/docs/block-system';
 import { DocsCalloutBlock } from './blocks/docs-callout-block';
 import { DocsChecklistBlock } from './blocks/docs-checklist-block';
-import { DocsCodeBlock } from './blocks/docs-code-block';
+import { DocsHighlightedCodeBlock } from './blocks/docs-highlighted-code-block';
 import { DocsDividerBlock } from './blocks/docs-divider-block';
 import { DocsHeadingBlock } from './blocks/docs-heading-block';
 import { DocsImageBlock } from './blocks/docs-image-block';
@@ -26,7 +26,7 @@ export function DocsBlockRenderer({ block }: { block: DocsContentBlockModel }) {
     case 'quote':
       return <DocsQuoteBlock {...block} />;
     case 'code':
-      return <DocsCodeBlock {...block} />;
+      return <DocsHighlightedCodeBlock {...block} />;
     case 'divider':
       return <DocsDividerBlock {...block} />;
     case 'image':

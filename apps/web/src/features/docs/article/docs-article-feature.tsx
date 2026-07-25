@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from 'next-intl';
 
 import { DocsReferenceShell } from '@/components/layouts/containers/docs-reference-shell';
