@@ -36,7 +36,8 @@ export function useLanguage() {
 
     const query = searchParams.toString();
 
-    router.push(query ? `${nextPath}?${query}` : nextPath);
+    // A locale switch is a view preference, not a destination the settings back button should revisit.
+    router.replace(query ? `${nextPath}?${query}` : nextPath);
   };
 
   return {

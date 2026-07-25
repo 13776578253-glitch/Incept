@@ -1,5 +1,3 @@
-import { useTranslations } from 'next-intl';
-
 import { DocsReferenceShell } from '@/components/layouts/containers/docs-reference-shell';
 
 import { DocsArticleBody } from '@/features/docs/shared/components/docs-article-body';
@@ -35,7 +33,7 @@ export function DocsArticleFeature({
         aside={
           <DocsArticleRightRail
             items={page.outline}
-            label={t('reference.outlineLabel')}
+            label="On this page"
           />
         }
       >
@@ -48,3 +46,4 @@ export function DocsArticleFeature({
     </>
   );
 }
+import { useTranslations } from 'next-intl';

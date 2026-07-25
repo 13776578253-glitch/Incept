@@ -64,7 +64,7 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
 
   const content = (
     <article
-      className="grid gap-3 md:grid-cols-[6.75rem_minmax(0,1fr)_6.5rem] md:gap-x-7 md:gap-y-3"
+      className="grid gap-2 md:grid-cols-[6.75rem_minmax(0,1fr)_6.5rem] md:gap-x-7 md:gap-y-2"
       aria-label={article.title}
     >
       <div className="text-[0.92rem] leading-7 text-[var(--color-nav-dropdown-description)] md:pt-0.5">
@@ -72,7 +72,7 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
       </div>
 
       <div className="min-w-0">
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           <h3
             className={`max-w-[30ch] text-[1.1rem] font-medium leading-8 tracking-[-0.025em] md:text-[1.18rem] ${
               isLocked

@@ -6,6 +6,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
 import { useDocsCodePaletteContext } from '@/components/base/docs-code-palette-provider';
 import { useLanguage } from '@/hooks/use-language';
+import { localeConfig, type AppLocale } from '@/i18n/config/locales';
+import { withLocalePath } from '@/i18n/utils/locale-path';
 import { AccountSettingsPanel } from '../account/account-settings-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
@@ -18,6 +20,31 @@ function useMounted() {
   }, []);
 
   return mounted;
+}
+
+function getLocalizedReturnPath(returnTo: string | null, locale: AppLocale) {
+  if (!returnTo?.startsWith('/') || returnTo.startsWith('//')) {
+    return null;
+  }
+
+  const [pathname, query = ''] = returnTo.split('?', 2);
+  const sourceLocale = localeConfig.locales.find(
+    (candidate) => pathname === `/${candidate}` || pathname.startsWith(`/${candidate}/`),
+  );
+  const localeFreePath = sourceLocale
+    ? pathname === `/${sourceLocale}`
+      ? '/'
+      : pathname.slice(sourceLocale.length + 1)
+    : pathname;
+
+  // Never use a settings URL as a return destination: it would recreate the loop this button avoids.
+  if (localeFreePath === '/settings' || localeFreePath.startsWith('/settings/')) {
+    return null;
+  }
+
+  const localizedPath = withLocalePath(locale, localeFreePath);
+
+  return query ? `${localizedPath}?${query}` : localizedPath;
 }
 
 export function SettingsPageContent({
@@ -42,6 +69,7 @@ export function SettingsPageContent({
   } = useDocsCodePaletteContext();
   const page = getSettingsPageData(language);
   const requestedSection = searchParams.get('section');
+  const returnTo = searchParams.get('returnTo');
   const selectedSection =
     page.sections.find((section) => section.id === requestedSection) ??
     page.sections[0];
@@ -59,12 +87,14 @@ export function SettingsPageContent({
     setLanguage,
   };
   const handleBack = () => {
-    if (window.history.length > 1) {
-      router.back();
+    const returnPath = getLocalizedReturnPath(returnTo, language);
+
+    if (returnPath) {
+      router.replace(returnPath);
       return;
     }
 
-    router.push(`/${language}`);
+    router.replace(`/${language}`);
   };
 
   return (

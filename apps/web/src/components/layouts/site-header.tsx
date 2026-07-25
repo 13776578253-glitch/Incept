@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createSiteNavigation } from '@/components/layouts/site-navigation';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -93,6 +93,7 @@ function BrandLogoIcon() {
 export function SiteHeader() {
   const t = useTranslations('navigation');
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { language, setLanguage } = useLanguage();
   const { colorScheme, setColorScheme } = useColorScheme();
   const [mounted, setMounted] = useState(false);
@@ -124,8 +125,15 @@ export function SiteHeader() {
   const activeTheme = mounted ? colorScheme : 'system';
   const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
   const isDark = mounted && activeTheme === 'dark';
-  const settingsHref = `/${language}/settings`;
-  const isSettingsActive = pathname === settingsHref;
+  const settingsPath = `/${language}/settings`;
+  const isSettingsActive = pathname === settingsPath;
+  const currentQuery = searchParams.toString();
+  const currentHref = currentQuery ? `${pathname}?${currentQuery}` : pathname;
+  const settingsHref = isSettingsActive
+    ? currentQuery
+      ? `${settingsPath}?${currentQuery}`
+      : settingsPath
+    : `${settingsPath}?${new URLSearchParams({ returnTo: currentHref }).toString()}`;
 
   const openMenu = (id: string) => {
     if (closeTimeoutRef.current) {

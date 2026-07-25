@@ -63,13 +63,17 @@
   min-width: 0;
   position: fixed;
   top: calc(var(--navbar-height) + 32px);
-  right: max(32px, calc((100vw - var(--docs-shell-max-width)) / 2 + 32px));
+  right: max(32px, calc((100vw - var(--docs-shell-max-width)) / 2));
   width: var(--docs-right-rail-width);
   z-index: 20;
 }
 
+.page-shell-docs-reference:not(.page-shell-docs-import-preview) .page-shell-docs-reference-aside {
+  transform: translateX(48px);
+}
+
 .page-shell-docs-reference[data-layout-mode='contentOnly'] .page-shell-docs-reference-aside {
-  right: max(32px, calc((100vw - (var(--docs-content-width) + var(--docs-right-rail-width) + 48px + 64px)) / 2 + 32px));
+  right: max(32px, calc((100vw - (var(--docs-content-width) + var(--docs-right-rail-width) + 48px + 64px)) / 2));
 }
 
 .page-shell-docs-import-preview .import-preview-mobile-review {

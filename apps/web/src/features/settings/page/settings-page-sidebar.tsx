@@ -19,11 +19,14 @@ function SettingsSidebar() {
     <nav aria-label={language === 'zh' ? '设置分区' : 'Settings sections'} className="space-y-1.5">
       {page.sections.map((section) => {
         const active = section.id === activeSection;
+        const nextSearchParams = new URLSearchParams(searchParams.toString());
+
+        nextSearchParams.set('section', section.id);
 
         return (
           <Link
             key={section.id}
-            href={{ pathname, query: { section: section.id } }}
+            href={`${pathname}?${nextSearchParams.toString()}`}
             scroll={false}
             replace
             aria-current={active ? 'page' : undefined}

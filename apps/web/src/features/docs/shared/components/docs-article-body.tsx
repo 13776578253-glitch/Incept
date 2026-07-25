@@ -33,7 +33,7 @@ export function DocsArticleBody({
             {page.eyebrow}
           </p>
         ) : null}
-        <h1 className="mt-4 max-w-[16ch] text-[2.35rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[3rem]">
+        <h1 className="mt-4 text-[2.35rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[3rem]">
           {page.title}
         </h1>
         {page.description ? (
