@@ -12,15 +12,15 @@
     "docs": {
       "entry": {
         "label": "Docs",
-        "description": "Primary docs entry, article navigation, and reading access."
+        "description": "Technical documentation and records."
       },
       "notes": {
         "label": "Notes",
-        "description": "Personal essays, observations, and looser writing."
+        "description": "Personal thoughts and notes."
       },
       "archive": {
-        "label": "Docs archive",
-        "description": "Chronological article browsing and the future archive surface."
+        "label": "Archive",
+        "description": "Articles organised by publication time."
       }
     }
   },

@@ -1,5 +1,6 @@
 export {
   findPublishedDocsArticleBySlug,
+  findPublishedUnlistedDocsArticleByDocumentKey,
   findPublishedNoteBySlug,
 } from './queries/article';
 
@@ -34,6 +35,9 @@ export {
   retainedDocsDocumentKeys,
 } from './cleanup';
 
+export { calculateDocsReadingStats } from './reading-stats';
+export { listDocsWritingActivityEntries } from './activity';
+
 export type {
   DocsArchiveArticleLocaleResult,
 } from './archive';
@@ -42,8 +46,12 @@ export type {
   DocsTestDataCleanupPreview,
 } from './cleanup';
 
+export type { DocsReadingStats } from './reading-stats';
+export type { DocsWritingActivityEntry } from './activity';
+
 export type {
   DbDocsArticleRecord,
+  DbDocsBody,
   DbDocsCollectionArticleListItem,
   DbDocsCollectionRecord,
   DbDocsSidebar,
@@ -55,6 +63,7 @@ export type {
   DbDocsLibraryStatsRecord,
   DbDocsLocale,
   DbDocsSection,
+  DbDocsSectionBlock,
   DbDocsNavGroup,
   DbDocsOutlineItem,
 } from './types';

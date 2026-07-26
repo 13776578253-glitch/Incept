@@ -1,12 +1,7 @@
 'use client';
 
-import { useTheme } from 'next-themes';
+import { useColorSchemeContext } from '@/components/base/color-scheme-provider';
 
 export function useColorScheme() {
-  const { theme, setTheme } = useTheme();
-
-  return {
-    colorScheme: (theme ?? 'system') as 'light' | 'dark' | 'system',
-    setColorScheme: setTheme,
-  };
+  return useColorSchemeContext();
 }

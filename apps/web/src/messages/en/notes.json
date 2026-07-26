@@ -1,12 +1,6 @@
 {
   "home": {
-    "eyebrow": "Notes",
-    "title": "Notes and personal writing",
-    "description": "A quieter place for personal essays, observations, and less formal writing. Notes are managed separately from formal documentation while keeping the same reading quality.",
-    "groupDescriptions": {
-      "2026": "Recent notes and personal essays.",
-      "2025": "Earlier personal writing."
-    }
+    "title": "Notes and personal writing"
   },
   "groups": {
     "entries": "{count} entries"

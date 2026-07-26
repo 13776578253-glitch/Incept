@@ -1,8 +1,6 @@
 {
   "archive": {
-    "eyebrow": "Docs",
-    "title": "Documentation and references",
-    "description": "Browse published guides, reference notes, and topic-based articles. Each entry opens into a focused reading page with its own structure and outline."
+    "title": "Documentation and references"
   },
   "archivePage": {
     "eyebrow": "Docs archive",
@@ -10,8 +8,6 @@
     "description": "The archive gathers articles, notes, and references by publication period. Timeline filters and archive-specific browsing will continue to improve in future updates."
   },
   "access": {
-    "available": "Available in archive",
-    "restricted": "Restricted",
     "requiresRole": "Requires {role} access"
   },
   "roles": {
@@ -22,15 +18,12 @@
   "groups": {
     "entries": "{count} entries"
   },
-  "home": {
-    "groupDescriptions": {
-      "2026": "Recently published articles and references.",
-      "2025": "Earlier notes and foundational material."
-    }
-  },
   "reference": {
-    "outlineLabel": "On this page",
-    "backToList": "Back to article list"
+    "backToList": "Back to article list",
+    "readingMeta": {
+      "zh": "全文 {characters} 字 · 预计 {minutes} 分钟阅读",
+      "en": "{words} words · {minutes} min read"
+    }
   },
   "importFeedback": {
     "eyebrow": "Import complete",

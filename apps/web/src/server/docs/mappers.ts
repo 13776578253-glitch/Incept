@@ -3,6 +3,7 @@ import type {
   DbDocsCollectionRecord,
   DbDocsHomeEntryRecord,
 } from '@incept/db/docs';
+import { calculateDocsReadingStats } from '@incept/db/docs';
 import type {
   DocsAccessRole,
   DocsArticlePageModel,
@@ -76,9 +77,16 @@ export function mapDocsArticleRecordToPageModel(
     slug: record.slug,
     routeType: 'singleArticle',
     layoutMode: record.layoutMode as DocsLayoutMode,
+    locale: record.locale,
     eyebrow: record.eyebrow ?? undefined,
     title: record.title,
     description: record.summary ?? undefined,
+    publishedAt: record.publishedAt?.toISOString(),
+    readingStats: calculateDocsReadingStats({
+      title: record.title,
+      summary: record.summary,
+      body: record.bodyJson,
+    }),
     outlineLabel: 'On this page',
     sidebarGroups: toDocsSidebarGroups(record.sidebarJson),
     outline: toDocsOutline(record.bodyJson),
@@ -97,9 +105,16 @@ export function mapDocsCollectionRecordToPageModel(
     collectionSlug: record.collectionSlug,
     articleSlug: record.articleSlug,
     layoutMode: 'sidebar',
+    locale: record.locale,
     eyebrow: record.articleEyebrow ?? record.collectionEyebrow ?? undefined,
     title: record.articleTitle,
     description: record.articleSummary ?? undefined,
+    publishedAt: record.articlePublishedAt?.toISOString(),
+    readingStats: calculateDocsReadingStats({
+      title: record.articleTitle,
+      summary: record.articleSummary,
+      body: record.articleBodyJson,
+    }),
     outlineLabel: 'On this page',
     sidebarGroups: [
       {

@@ -23,6 +23,7 @@ export function toCollectionArticleDocsImportSource(
       kind: (frontmatter.kind as DocsImportKind | undefined) ?? 'article',
       layoutMode: 'sidebar',
       accessRole: (frontmatter.accessRole as DocsAccessRole | undefined) ?? 'guest',
+      isListed: true,
 
       slug: frontmatter.slug,
       title: frontmatter.title,

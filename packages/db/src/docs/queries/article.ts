@@ -12,6 +12,7 @@ export async function findPublishedDocsArticleBySlug({
 }): Promise<DbDocsArticleRecord | null> {
   const row = await prisma.docsDocument.findFirst({
     where: {
+      isListed: true,
       kind: {
         not: 'note',
       },
@@ -84,6 +85,85 @@ export async function findPublishedDocsArticleBySlug({
   };
 }
 
+// 查询不挂载到 Docs 路由的内部文章。调用方必须自行完成访问角色校验。
+export async function findPublishedUnlistedDocsArticleByDocumentKey({
+  locale,
+  documentKey,
+}: {
+  locale: DbDocsLocale;
+  documentKey: string;
+}): Promise<DbDocsArticleRecord | null> {
+  const row = await prisma.docsDocument.findFirst({
+    where: {
+      documentKey,
+      isListed: false,
+      collectionItem: {
+        is: null,
+      },
+      locales: {
+        some: {
+          locale,
+          status: 'published',
+        },
+      },
+    },
+    select: {
+      id: true,
+      kind: true,
+      layoutMode: true,
+      accessRole: true,
+      locales: {
+        where: {
+          locale,
+          status: 'published',
+        },
+        take: 1,
+        select: {
+          locale: true,
+          slug: true,
+          eyebrow: true,
+          title: true,
+          summary: true,
+          status: true,
+          publishedAt: true,
+          bodyJson: true,
+          sidebarJson: true,
+          seoTitle: true,
+          seoDescription: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    },
+  });
+
+  const localeRow = row?.locales[0];
+
+  if (!row || !localeRow) {
+    return null;
+  }
+
+  return {
+    documentId: row.id,
+    kind: row.kind,
+    layoutMode: row.layoutMode,
+    accessRole: row.accessRole,
+    locale: localeRow.locale as DbDocsLocale,
+    slug: localeRow.slug,
+    eyebrow: localeRow.eyebrow,
+    title: localeRow.title,
+    summary: localeRow.summary,
+    status: localeRow.status,
+    publishedAt: localeRow.publishedAt,
+    bodyJson: assertDocsBody(localeRow.bodyJson),
+    sidebarJson: assertDocsSidebar(localeRow.sidebarJson),
+    seoTitle: localeRow.seoTitle,
+    seoDescription: localeRow.seoDescription,
+    createdAt: localeRow.createdAt,
+    updatedAt: localeRow.updatedAt,
+  };
+}
+
 // 根据 slug 和 locale 查找已发布的随笔记录。随笔只允许 kind=note，避免和 docs 正文互相串路由。
 export async function findPublishedNoteBySlug({
   locale,
@@ -94,6 +174,7 @@ export async function findPublishedNoteBySlug({
 }): Promise<DbDocsArticleRecord | null> {
   const row = await prisma.docsDocument.findFirst({
     where: {
+      isListed: true,
       kind: 'note',
       collectionItem: {
         is: null,

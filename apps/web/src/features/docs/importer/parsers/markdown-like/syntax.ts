@@ -20,6 +20,7 @@ export const markdownLikeAllowedFrontmatterKeys = new Set([
   'kind',
   'layoutMode',
   'accessRole',
+  'isListed',
   'routeType',
 ]);
 

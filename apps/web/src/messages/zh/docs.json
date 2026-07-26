@@ -1,8 +1,6 @@
 {
   "archive": {
-    "eyebrow": "文档",
-    "title": "技术文档与记录",
-    "description": "这里汇集已发布的说明、参考资料和专题文章。你可以按时间浏览内容，也可以进入具体文章查看完整说明。"
+    "title": "Documentation and references"
   },
   "archivePage": {
     "eyebrow": "归档",
@@ -10,8 +8,6 @@
     "description": "归档页用于集中查看不同时期发布的文章、说明和参考资料。完整的时间线筛选会在后续版本中继续完善。"
   },
   "access": {
-    "available": "归档可读",
-    "restricted": "受限",
     "requiresRole": "需要 {role} 权限"
   },
   "roles": {
@@ -22,15 +18,12 @@
   "groups": {
     "entries": "{count} 篇"
   },
-  "home": {
-    "groupDescriptions": {
-      "2026": "近期发布的文章与参考资料。",
-      "2025": "早期整理的说明与基础资料。"
-    }
-  },
   "reference": {
-    "outlineLabel": "本页目录",
-    "backToList": "返回文章列表"
+    "backToList": "返回文章列表",
+    "readingMeta": {
+      "zh": "全文 {characters} 字 · 预计 {minutes} 分钟阅读",
+      "en": "{words} words · {minutes} min read"
+    }
   },
   "importFeedback": {
     "eyebrow": "导入完成",

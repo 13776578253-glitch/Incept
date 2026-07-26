@@ -155,7 +155,25 @@ function validateMarkdownLikeFrontmatter(
     );
   }
 
+  if (frontmatter.isListed && frontmatter.isListed !== 'true' && frontmatter.isListed !== 'false') {
+    addMarkdownLikeIssue(
+      issues,
+      1,
+      'invalid_frontmatter',
+      'isListed must be true or false.',
+    );
+  }
+
   if (routeType === 'collectionArticle') {
+    if (frontmatter.isListed === 'false') {
+      addMarkdownLikeIssue(
+        issues,
+        1,
+        'invalid_frontmatter',
+        'collectionArticle sources cannot set isListed to false.',
+      );
+    }
+
     for (const key of ['collectionKey', 'collectionSlug', 'collectionTitle', 'position'] as const) {
       if (!frontmatter[key]?.trim()) {
         addMarkdownLikeIssue(

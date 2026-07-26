@@ -2,10 +2,12 @@ import {
   DocAccessRole,
   DocKind,
   DocLayoutMode,
+  DocsPublicationEventType,
   DocStatus,
 } from '../../generated/client/index.js';
 import { prisma } from '../client';
 import type { DbDocsSection, DbDocsLocale } from './types';
+import { calculateDocsReadingStats } from './reading-stats';
 
 export type DocsImportRouteType = 'singleArticle' | 'collectionArticle';
 
@@ -16,6 +18,7 @@ export type DocsImportWriteMeta = {
   kind: 'article' | 'reference' | 'note';
   layoutMode: 'sidebar' | 'contentOnly';
   accessRole: 'guest' | 'pro' | 'private';
+  isListed: boolean;
   slug: string;
   title: string;
   summary: string;
@@ -195,6 +198,36 @@ function buildLocaleWriteData(source: DocsImportWriteSource) {
     seoTitle: source.meta.seoTitle ?? null,
     seoDescription: source.meta.seoDescription ?? null,
   };
+}
+
+// 创建文档发布事件
+async function createDocsPublicationEvent({
+  documentId,
+  type,
+  source,
+}: {
+  documentId: number;
+  type: DocsPublicationEventType;
+  source: DocsImportWriteSource;
+}) {
+  const readingStats = calculateDocsReadingStats({
+    title: source.meta.title,
+    summary: source.meta.summary,
+    body: source.body,
+  });
+
+  await prisma.docsPublicationEvent.create({
+    data: {
+      documentId,
+      type,
+      locale: source.meta.locale,
+      occurredAt:
+        type === DocsPublicationEventType.published
+          ? toPublishedDate(source.meta.publishedAt)
+          : new Date(),
+      writingUnits: readingStats.writingUnits,
+    },
+  });
 }
 
 const collectionImportSelect = {
@@ -400,6 +433,11 @@ export async function upsertDocsSingleArticle({
   const existingSameLocaleForKey = existingDocumentByKey?.locales.find(
     (localeRow) => localeRow.locale === source.meta.locale,
   );
+  const isReplacingExistingLocale = Boolean(
+    targetDocumentId &&
+      replace &&
+      (existingSameLocaleForKey || existingTarget?.documentId === targetDocumentId),
+  );
 
   if (source.meta.documentKey && existingTarget && existingTarget.documentId !== targetDocumentId) {
     throw new Error(
@@ -437,6 +475,7 @@ export async function upsertDocsSingleArticle({
         kind: toDocumentKind(source.meta.kind),
         layoutMode: toDocumentLayoutMode(source.meta.layoutMode),
         accessRole: toDocumentAccessRole(source.meta.accessRole),
+        isListed: source.meta.isListed,
         createdById: systemUserId,
         locales: {
           deleteMany: {
@@ -450,6 +489,14 @@ export async function upsertDocsSingleArticle({
       },
     });
 
+    if (isReplacingExistingLocale) {
+      await createDocsPublicationEvent({
+        documentId: document.id,
+        type: DocsPublicationEventType.replaced,
+        source,
+      });
+    }
+
     return {
       documentId: document.id,
       replaced: true,
@@ -462,6 +509,7 @@ export async function upsertDocsSingleArticle({
       kind: toDocumentKind(source.meta.kind),
       layoutMode: toDocumentLayoutMode(source.meta.layoutMode),
       accessRole: toDocumentAccessRole(source.meta.accessRole),
+      isListed: source.meta.isListed,
       createdById: systemUserId,
       locales: {
         create: localeWriteData,
@@ -470,6 +518,12 @@ export async function upsertDocsSingleArticle({
     select: {
       id: true,
     },
+  });
+
+  await createDocsPublicationEvent({
+    documentId: document.id,
+    type: DocsPublicationEventType.published,
+    source,
   });
 
   return {
@@ -519,6 +573,11 @@ export async function upsertDocsCollectionArticle({
   const targetDocumentId = existingDocumentByKey?.id ?? existingTarget?.documentId;
   const existingSameLocaleForKey = existingDocumentByKey?.locales.find(
     (localeRow) => localeRow.locale === source.meta.locale,
+  );
+  const isReplacingExistingLocale = Boolean(
+    targetDocumentId &&
+      replace &&
+      (existingSameLocaleForKey || existingTarget?.documentId === targetDocumentId),
   );
   const hasAnotherLocaleForDocumentKey = Boolean(
     source.meta.documentKey &&
@@ -601,6 +660,7 @@ export async function upsertDocsCollectionArticle({
         kind: toDocumentKind(source.meta.kind),
         layoutMode: toDocumentLayoutMode(source.meta.layoutMode),
         accessRole: toDocumentAccessRole(source.meta.accessRole),
+        isListed: source.meta.isListed,
         createdById: systemUserId,
         locales: {
           deleteMany: {
@@ -620,8 +680,9 @@ export async function upsertDocsCollectionArticle({
       data: {
         documentKey: source.meta.documentKey,
         kind: toDocumentKind(source.meta.kind),
-        layoutMode: toDocumentLayoutMode(source.meta.layoutMode),
-        accessRole: toDocumentAccessRole(source.meta.accessRole),
+      layoutMode: toDocumentLayoutMode(source.meta.layoutMode),
+      accessRole: toDocumentAccessRole(source.meta.accessRole),
+      isListed: source.meta.isListed,
         createdById: systemUserId,
         locales: {
           create: localeWriteData,
@@ -649,6 +710,20 @@ export async function upsertDocsCollectionArticle({
       position,
     },
   });
+
+  if (!targetDocumentId) {
+    await createDocsPublicationEvent({
+      documentId,
+      type: DocsPublicationEventType.published,
+      source,
+    });
+  } else if (isReplacingExistingLocale) {
+    await createDocsPublicationEvent({
+      documentId,
+      type: DocsPublicationEventType.replaced,
+      source,
+    });
+  }
 
   return {
     documentId,

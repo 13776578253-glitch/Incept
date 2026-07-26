@@ -12,15 +12,15 @@
     "docs": {
       "entry": {
         "label": "文档",
-        "description": "文档主入口、文章导航和阅读入口。"
+        "description": "技术文档与记录"
       },
       "notes": {
         "label": "随笔",
-        "description": "个人文章、观察记录和较自由的写作。"
+        "description": "个人想法与随笔"
       },
       "archive": {
-        "label": "文档归档",
-        "description": "按时间整理的文章归档和后续归档浏览。"
+        "label": "归档",
+        "description": "按时间整理的文章归档"
       }
     }
   },

@@ -120,12 +120,19 @@ export function getDocsBlockStyleLabPage(locale: AppLocale): DocsArticlePageMode
     collectionSlug: 'style-lab',
     articleSlug: 'style-lab',
     layoutMode: 'sidebar',
+    locale,
 
     eyebrow: isZh ? '格式目录' : 'Style lab',
     title: isZh ? '正文段落实验页' : 'Paragraph rendering lab',
     description: isZh
       ? '使用与真实 docs 文章更接近的外壳来验证标题块与段落块在标准阅读环境下的层级、换行与节奏。'
       : 'A shell-aligned lab page for validating headings and paragraphs inside the same reading environment used by real docs articles.',
+    readingStats: {
+      chineseCharacterCount: 0,
+      wordCount: 0,
+      writingUnits: 0,
+      estimatedMinutes: 0,
+    },
 
     // description: isZh
     //   ? '当前先只保留标题块测试，用于逐条验证 level 与 variant 的视觉结构。'

@@ -46,6 +46,11 @@ enum DocStatus {
   archived
 }
 
+enum DocsPublicationEventType {
+  published
+  replaced
+}
+
 model User {
   id          Int              @id @default(autoincrement())
   username    String           @unique
@@ -118,17 +123,35 @@ model DocsDocument {
   kind           DocKind              @default(article)
   layoutMode     DocLayoutMode        @default(contentOnly)
   accessRole     DocAccessRole        @default(guest)
+  isListed       Boolean              @default(true)
   createdById    Int?
   createdBy      User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
   locales        DocsDocumentLocale[]
   collectionItem DocsCollectionItem?
+  publicationEvents DocsPublicationEvent[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
   @@index([kind])
   @@index([layoutMode])
   @@index([accessRole])
+  @@index([isListed])
   @@map("docs_documents")
+}
+
+model DocsPublicationEvent {
+  id           Int                      @id @default(autoincrement())
+  documentId   Int
+  document     DocsDocument             @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  type         DocsPublicationEventType
+  locale       String?
+  occurredAt   DateTime
+  writingUnits Int
+  createdAt    DateTime                 @default(now())
+
+  @@index([occurredAt])
+  @@index([documentId, occurredAt])
+  @@map("docs_publication_events")
 }
 
 model DocsDocumentLocale {

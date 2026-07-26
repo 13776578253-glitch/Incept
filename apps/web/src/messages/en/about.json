@@ -1,0 +1,36 @@
+{
+  "activityLink": "View activity",
+  "backToAbout": "Back to About",
+  "identity": {
+    "eyebrow": "ABOUT ME",
+    "name": "CPP",
+    "role": "What can be said at all can be said clearly; and whereof one cannot speak, thereof one must be silent."
+  },
+  "activity": {
+    "eyebrow": "Activity",
+    "title": "A record in progress",
+    "preview": "Preview",
+    "git": {
+      "eyebrow": "Git activity",
+      "scopes": {
+        "account": "All GitHub",
+        "repository": "Incept"
+      },
+      "rollingRange": "Last 52 weeks through {end}",
+      "calendarRange": "year{year}",
+      "totalRolling": "{count} contributions in the last year",
+      "totalCalendar": "{count} contributions in {year}",
+      "empty": "No commits in this period",
+      "unavailable": "GitHub activity is unavailable",
+      "loading": "Updating"
+    },
+    "blog": {
+      "eyebrow": "Blog activity",
+      "title": "Writing and publishing",
+      "rollingRange": "Last 52 weeks through {end}",
+      "calendarRange": "Writing in {year}",
+      "summary": "{articles} articles · {units} words",
+      "loading": "Updating"
+    }
+  }
+}

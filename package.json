@@ -10,6 +10,7 @@
     "docs:check-markdown-like": "pnpm --filter @incept/db exec tsx ../../scripts/docs-markdown-like-check.mjs",
     "docs:check-media": "pnpm --filter @incept/db exec tsx ../../scripts/docs-media-check.mjs",
     "docs:check-code-highlighting": "pnpm --filter @incept/db exec tsx ../../scripts/docs-code-highlighting-check.mjs",
+    "activity:check-github": "pnpm --filter @incept/db exec tsx ../../scripts/github-activity-check.mjs",
     "docs:archive": "pnpm --filter @incept/db exec tsx ../../scripts/docs-archive.mjs",
     "docs:cleanup-test-data": "pnpm --filter @incept/db exec tsx ../../scripts/docs-cleanup-test-data.mjs",
     "auth:revoke-owner-sessions": "pnpm --filter @incept/db exec tsx ../../scripts/auth-revoke-owner-sessions.mjs",

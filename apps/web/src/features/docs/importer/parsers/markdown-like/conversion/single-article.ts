@@ -123,6 +123,7 @@ export function toSingleArticleDocsImportSource(document: MarkdownLikeDocument):
       kind: (frontmatter.kind as DocsImportKind | undefined) ?? 'article',
       layoutMode: (frontmatter.layoutMode as DocsLayoutMode | undefined) ?? 'contentOnly',
       accessRole: (frontmatter.accessRole as DocsAccessRole | undefined) ?? 'guest',
+      isListed: frontmatter.isListed !== 'false',
       slug: frontmatter.slug,
       title: frontmatter.title,
       summary: frontmatter.summary,

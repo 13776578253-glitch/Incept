@@ -1,0 +1,36 @@
+{
+  "activityLink": "查看活动记录",
+  "backToAbout": "返回关于",
+  "identity": {
+    "eyebrow": "ABOUT ME",
+    "name": "CPP",
+    "role": "What can be said at all can be said clearly; and whereof one cannot speak, thereof one must be silent."
+  },
+  "activity": {
+    "eyebrow": "Activity",
+    "title": "活动记录",
+    "preview": "Preview",
+    "git": {
+      "eyebrow": "Git activity",
+      "scopes": {
+        "account": "All GitHub",
+        "repository": "Incept"
+      },
+      "rollingRange": "截至 {end} 的最近 52 周",
+      "calendarRange": "{year}年",
+      "totalRolling": "{count} contributions in the last year",
+      "totalCalendar": "{count} contributions in {year}",
+      "empty": "该时间范围内暂无提交",
+      "unavailable": "GitHub 活动暂不可用",
+      "loading": "正在更新"
+    },
+    "blog": {
+      "eyebrow": "Blog activity",
+      "title": "写作与发布",
+      "rollingRange": "截至 {end} 的最近 52 周",
+      "calendarRange": "{year} 年写作记录",
+      "summary": "{articles} 篇文章 · {units} 字",
+      "loading": "正在更新"
+    }
+  }
+}

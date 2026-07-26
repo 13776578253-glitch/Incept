@@ -14,6 +14,7 @@ const allowedMetaKeys = new Set([
   'kind',
   'layoutMode',
   'accessRole',
+  'isListed',
   'slug',
   'title',
   'summary',
@@ -165,6 +166,15 @@ export function normalizeDocsImportSource(
     }
   }
 
+  if (source.meta.isListed !== undefined && typeof source.meta.isListed !== 'boolean') {
+    issues.push({
+      level: 'error',
+      code: 'invalid_is_listed',
+      message: 'isListed must be a boolean when provided.',
+      path: 'meta.isListed',
+    });
+  }
+
   if (source.meta.collectionKey !== undefined) {
     if (!isNonEmptyString(source.meta.collectionKey)) {
       issues.push({
@@ -233,6 +243,15 @@ export function normalizeDocsImportSource(
   }
 
   if (source.meta.routeType === 'collectionArticle') {
+    if (source.meta.isListed === false) {
+      issues.push({
+        level: 'error',
+        code: 'unlisted_collection_not_allowed',
+        message: 'collectionArticle sources cannot set isListed to false.',
+        path: 'meta.isListed',
+      });
+    }
+
     if (source.meta.kind === 'note') {
       issues.push({
         level: 'error',
@@ -295,6 +314,7 @@ export function normalizeDocsImportSource(
       kind: source.meta.kind ?? 'article',
       layoutMode: normalizedLayoutMode,
       accessRole: source.meta.accessRole ?? 'guest',
+      isListed: source.meta.isListed ?? true,
       slug: source.meta.slug,
       title: source.meta.title,
       summary: source.meta.summary,

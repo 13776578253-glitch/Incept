@@ -71,6 +71,7 @@ export async function listPublishedDocsHomeEntries({
   const [standaloneRows, collectionRows] = await Promise.all([
     prisma.docsDocument.findMany({
       where: {
+        isListed: true,
         kind: {
           not: 'note',
         },
@@ -196,6 +197,7 @@ export async function listPublishedNotesHomeEntries({
 }): Promise<DbDocsHomeEntryRecord[]> {
   const rows = await prisma.docsDocument.findMany({
     where: {
+      isListed: true,
       kind: 'note',
       collectionItem: {
         is: null,

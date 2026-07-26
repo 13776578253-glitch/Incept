@@ -26,6 +26,13 @@ export type DocsAccessRole = 'guest' | 'pro' | 'private';
 
 export type DocsLayoutMode = 'sidebar' | 'contentOnly';
 
+export type DocsReadingStats = {
+  chineseCharacterCount: number;
+  wordCount: number;
+  writingUnits: number;
+  estimatedMinutes: number;
+};
+
 export type DocsHomeEntryType = 'collection' | 'singleArticle';
 
 export type DocsHomeIntroModel = {
@@ -70,9 +77,12 @@ export type DocsArticlePageModel = {
   collectionSlug?: string;
   articleSlug?: string;
   layoutMode: DocsLayoutMode;
+  locale: 'en' | 'zh';
   eyebrow?: string;
   title: string;
   description?: string;
+  publishedAt?: string;
+  readingStats: DocsReadingStats;
   outlineLabel: string;
   sidebarGroups: DocsNavGroupModel[];
   outline: DocsOutlineItemModel[];

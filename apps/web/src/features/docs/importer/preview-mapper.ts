@@ -1,4 +1,5 @@
 import type { DocsArticlePageModel, DocsNavGroupModel, DocsOutlineItemModel, DocsSectionModel } from '../shared/types';
+import { calculateDocsReadingStats } from '@incept/db/docs';
 import type { DocsImportNormalizedSource, DocsImportPreviewModel } from './types';
 
 // 预览模型映射器，将导入草稿数据转换为预览展示所需的结构，主要负责将原始的导入源数据规范化为文档页面模型，并计算预览中需要展示的错误和警告信息等 --- IGNORE ---
@@ -50,9 +51,16 @@ export function mapDocsImportSourceToPageModel(
     collectionSlug: source.meta.collectionSlug,
     articleSlug: source.meta.routeType === 'collectionArticle' ? source.meta.slug : undefined,
     layoutMode: source.meta.layoutMode,
+    locale: source.meta.locale,
     eyebrow: source.meta.eyebrow,
     title: source.meta.title,
     description: source.meta.summary,
+    publishedAt: source.meta.publishedAt,
+    readingStats: calculateDocsReadingStats({
+      title: source.meta.title,
+      summary: source.meta.summary,
+      body: source.body,
+    }),
     outlineLabel: 'On this page',
     sidebarGroups: toDocsSidebarGroups(source),
     outline: toDocsOutline(source),

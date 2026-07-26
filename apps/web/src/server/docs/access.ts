@@ -2,6 +2,7 @@ import type { AppLocale } from '@/i18n/config/locales';
 import {
   listPublishedDocsHomeEntries,
   findPublishedDocsArticleBySlug,
+  findPublishedUnlistedDocsArticleByDocumentKey,
   findPublishedDocsCollectionArticleBySlugs,
 } from '@incept/db/docs';
 import type { DbDocsLocale } from '@incept/db/docs';
@@ -52,6 +53,29 @@ export async function getDocsArticlePage({
   }
 
   if (!canAccessDocsArticle(viewerRole, record.accessRole)) {
+    return null;
+  }
+
+  return mapDocsArticleRecordToPageModel(record);
+}
+
+// Reads an internal Docs article without attaching it to the Docs route.
+// history: About page content
+export async function getUnlistedDocsArticlePage({
+  locale,
+  documentKey,
+  viewerRole,
+}: {
+  locale: AppLocale;
+  documentKey: string;
+  viewerRole: DocsAccessRole;
+}): Promise<DocsArticlePageModel | null> {
+  const record = await findPublishedUnlistedDocsArticleByDocumentKey({
+    locale: locale as DbDocsLocale,
+    documentKey,
+  });
+
+  if (!record || !canAccessDocsArticle(viewerRole, record.accessRole)) {
     return null;
   }
 

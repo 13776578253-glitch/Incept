@@ -46,6 +46,9 @@ export async function listDocsLibraryEntries({
   const rows = await prisma.docsDocumentLocale.findMany({
     where: {
       status: 'published',
+      document: {
+        isListed: true,
+      },
       ...(locale ? { locale } : {}),
     },
     orderBy: {
@@ -146,6 +149,9 @@ export async function getDocsLibraryStats({
     prisma.docsDocumentLocale.count({
       where: {
         status: 'published',
+        document: {
+          isListed: true,
+        },
         ...localeWhere,
       },
     }),
@@ -154,6 +160,7 @@ export async function getDocsLibraryStats({
         status: 'published',
         ...localeWhere,
         document: {
+          isListed: true,
           collectionItem: {
             is: null,
           },
@@ -165,6 +172,7 @@ export async function getDocsLibraryStats({
         status: 'published',
         ...localeWhere,
         document: {
+          isListed: true,
           collectionItem: {
             isNot: null,
           },
@@ -184,6 +192,9 @@ export async function getDocsLibraryStats({
     prisma.docsDocumentLocale.count({
       where: {
         status: 'published',
+        document: {
+          isListed: true,
+        },
         ...localeWhere,
         updatedAt: {
           gte: updatedSince,

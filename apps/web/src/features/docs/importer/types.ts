@@ -13,6 +13,7 @@ export type DocsImportArticleMeta = {
   kind?: DocsImportKind;
   layoutMode?: DocsLayoutMode;
   accessRole?: DocsAccessRole;
+  isListed?: boolean;
   slug: string;
   title: string;
   summary: string;
@@ -53,6 +54,7 @@ export type DocsImportNormalizedMeta = {
   kind: DocsImportKind;
   layoutMode: DocsLayoutMode;
   accessRole: DocsAccessRole;
+  isListed: boolean;
   slug: string;
   title: string;
   summary: string;
