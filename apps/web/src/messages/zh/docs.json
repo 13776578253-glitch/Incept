@@ -23,7 +23,8 @@
     "readingMeta": {
       "zh": "全文 {characters} 字 · 预计 {minutes} 分钟阅读",
       "en": "{words} words · {minutes} min read"
-    }
+    },
+    "lastEdited": "最后更新于 {date}"
   },
   "importFeedback": {
     "eyebrow": "导入完成",

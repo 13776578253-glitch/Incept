@@ -32,6 +32,11 @@ export async function findPublishedDocsArticleBySlug({
       kind: true,
       layoutMode: true,
       accessRole: true,
+      publicationEvents: {
+        orderBy: { occurredAt: 'desc' },
+        take: 1,
+        select: { occurredAt: true },
+      },
       locales: {
         where: {
           locale,
@@ -76,6 +81,7 @@ export async function findPublishedDocsArticleBySlug({
     summary: localeRow.summary,
     status: localeRow.status,
     publishedAt: localeRow.publishedAt,
+    lastEditedAt: row.publicationEvents[0]?.occurredAt ?? localeRow.publishedAt,
     bodyJson: assertDocsBody(localeRow.bodyJson),
     sidebarJson: assertDocsSidebar(localeRow.sidebarJson),
     seoTitle: localeRow.seoTitle,
@@ -112,6 +118,11 @@ export async function findPublishedUnlistedDocsArticleByDocumentKey({
       kind: true,
       layoutMode: true,
       accessRole: true,
+      publicationEvents: {
+        orderBy: { occurredAt: 'desc' },
+        take: 1,
+        select: { occurredAt: true },
+      },
       locales: {
         where: {
           locale,
@@ -155,6 +166,7 @@ export async function findPublishedUnlistedDocsArticleByDocumentKey({
     summary: localeRow.summary,
     status: localeRow.status,
     publishedAt: localeRow.publishedAt,
+    lastEditedAt: row.publicationEvents[0]?.occurredAt ?? localeRow.publishedAt,
     bodyJson: assertDocsBody(localeRow.bodyJson),
     sidebarJson: assertDocsSidebar(localeRow.sidebarJson),
     seoTitle: localeRow.seoTitle,
@@ -192,6 +204,11 @@ export async function findPublishedNoteBySlug({
       kind: true,
       layoutMode: true,
       accessRole: true,
+      publicationEvents: {
+        orderBy: { occurredAt: 'desc' },
+        take: 1,
+        select: { occurredAt: true },
+      },
       locales: {
         where: {
           locale,
@@ -236,6 +253,7 @@ export async function findPublishedNoteBySlug({
     summary: localeRow.summary,
     status: localeRow.status,
     publishedAt: localeRow.publishedAt,
+    lastEditedAt: row.publicationEvents[0]?.occurredAt ?? localeRow.publishedAt,
     bodyJson: assertDocsBody(localeRow.bodyJson),
     sidebarJson: assertDocsSidebar(localeRow.sidebarJson),
     seoTitle: localeRow.seoTitle,

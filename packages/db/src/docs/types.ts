@@ -141,6 +141,7 @@ export type DbDocsArticleRecord = {
   summary?: string | null;
   status: DocStatus;
   publishedAt?: Date | null;
+  lastEditedAt?: Date | null;
   bodyJson: DbDocsBody;
   sidebarJson: DbDocsSidebar;
   seoTitle?: string | null;
@@ -176,6 +177,7 @@ export type DbDocsCollectionRecord = {
   articleSummary?: string | null;
   articleEyebrow?: string | null;
   articlePublishedAt?: Date | null;
+  articleLastEditedAt?: Date | null;
   articleBodyJson: DbDocsBody;
   articleStatus: DocStatus;
   articleKind: DocKind;

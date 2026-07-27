@@ -82,6 +82,7 @@ export function mapDocsArticleRecordToPageModel(
     title: record.title,
     description: record.summary ?? undefined,
     publishedAt: record.publishedAt?.toISOString(),
+    lastEditedAt: record.lastEditedAt?.toISOString(),
     readingStats: calculateDocsReadingStats({
       title: record.title,
       summary: record.summary,
@@ -110,6 +111,7 @@ export function mapDocsCollectionRecordToPageModel(
     title: record.articleTitle,
     description: record.articleSummary ?? undefined,
     publishedAt: record.articlePublishedAt?.toISOString(),
+    lastEditedAt: record.articleLastEditedAt?.toISOString(),
     readingStats: calculateDocsReadingStats({
       title: record.articleTitle,
       summary: record.articleSummary,

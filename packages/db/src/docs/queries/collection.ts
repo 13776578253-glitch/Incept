@@ -109,6 +109,11 @@ export async function findPublishedDocsCollectionArticleBySlugs({
               accessRole: true,
               kind: true,
               layoutMode: true,
+              publicationEvents: {
+                orderBy: { occurredAt: 'desc' },
+                take: 1,
+                select: { occurredAt: true },
+              },
               locales: {
                 where: {
                   locale,
@@ -168,6 +173,8 @@ export async function findPublishedDocsCollectionArticleBySlugs({
     articleSummary: currentLocale.summary,
     articleEyebrow: currentLocale.eyebrow,
     articlePublishedAt: currentLocale.publishedAt,
+    articleLastEditedAt:
+      currentItem.document.publicationEvents[0]?.occurredAt ?? currentLocale.publishedAt,
     articleBodyJson: assertDocsBody(currentLocale.bodyJson),
     articleStatus: currentLocale.status,
     articleKind: currentItem.document.kind,

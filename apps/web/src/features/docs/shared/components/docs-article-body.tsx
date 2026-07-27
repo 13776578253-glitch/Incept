@@ -15,7 +15,11 @@ export function DocsArticleBody({
   backToListHref,
   backToListLabel,
 }: DocsArticleBodyProps) {
+
+  // 使用 next-intl 获取国际化翻译函数
   const t = useTranslations('docs');
+
+  // 根据文档的 locale 和阅读统计信息，生成阅读元信息字符串
   const readingMeta = page.locale === 'zh'
     ? t('reference.readingMeta.zh', {
         characters: page.readingStats.chineseCharacterCount,
@@ -25,6 +29,14 @@ export function DocsArticleBody({
         words: page.readingStats.wordCount,
         minutes: page.readingStats.estimatedMinutes,
       });
+  
+  // 如有最后编辑时间，则格式化为本地化日期字符串
+  const lastEditedDate = page.lastEditedAt
+    ? new Intl.DateTimeFormat(page.locale === 'zh' ? 'zh-CN' : 'en-US', {
+        dateStyle: 'long',
+        timeZone: 'Asia/Shanghai',
+      }).format(new Date(page.lastEditedAt))
+    : null;
 
   return (
     <article className="mx-auto w-full max-w-[var(--docs-prose-max-width)] min-w-0">
@@ -84,6 +96,11 @@ export function DocsArticleBody({
           </section>
         ))}
       </div>
+      {lastEditedDate ? (
+        <footer className="mt-12 border-t border-[var(--color-border)] pt-4 text-[0.75rem] text-[var(--color-nav-muted)]">
+          {t('reference.lastEdited', { date: lastEditedDate })}
+        </footer>
+      ) : null}
     </article>
   );
 }

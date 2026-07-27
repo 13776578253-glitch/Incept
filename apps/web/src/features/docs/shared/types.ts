@@ -82,6 +82,7 @@ export type DocsArticlePageModel = {
   title: string;
   description?: string;
   publishedAt?: string;
+  lastEditedAt?: string;
   readingStats: DocsReadingStats;
   outlineLabel: string;
   sidebarGroups: DocsNavGroupModel[];
