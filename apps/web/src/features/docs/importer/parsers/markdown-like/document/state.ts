@@ -2,8 +2,7 @@ import { addMarkdownLikeIssue } from '../errors';
 import { createMarkdownLikeBlockId } from './ids';
 import type { MarkdownLikeParseState, MarkdownLikeSection } from './types';
 
-// TODO：章节解析逻辑需要更新，目前仅支持 # 标题 识别标题
-// TODO: 整个 section 样式可能需要重构，应对上文不同层级标题的解析问题 / 支持多层级小标题
+// history: # creates a section and ## through #### already parse as body heading blocks.
 // TODO: 未来可能支持多篇文章的导入源对象，届时需要修改此处的 ID 生成逻辑
 
 /**

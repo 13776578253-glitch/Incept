@@ -2,8 +2,8 @@ import type { DocAccessRole, DocLayoutMode, DocKind, DocStatus } from '../../gen
 
 export type DbDocsLocale = 'en' | 'zh';
 
-// 定义文档内容块的类型，包括段落、列表、提示、标题、引用、代码块和分割线等不同类型的内容块 / 同feature type 结构 / 待修改
-// TODO: 需要根据实际使用情况调整内容块的结构和字段
+// history: The current block union matches the implemented renderer and importer contract.
+// Future block additions require an explicit schema, importer, renderer, and database contract change.
 export type DbDocsSectionBlock =
   | {
       id: string;

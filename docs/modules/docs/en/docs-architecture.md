@@ -1,197 +1,160 @@
 # Docs Module Architecture
 
-## Goal
+## Purpose
 
-This document defines the current stable architecture for the `docs` module.
+Docs is the site's structured content publishing module. Articles are imported from Markdown-like or TypeScript sources, first become local drafts, and are written to PostgreSQL only after an Owner confirms the browser preview. Reading routes only load published content and filter it by the current viewer's access level.
 
-It captures the route model, content rules, and data rules that should remain consistent unless a new decision explicitly changes them.
+This document describes implemented boundaries. It does not present a future editor, object storage, or version rollback as existing capability.
 
-## Current Route Model
+## Routes
 
-The docs surface is currently split into:
+| Route | Status | Purpose |
+| --- | --- | --- |
+| `/{locale}/docs` | Implemented | Docs home, grouped by year with accessible standalone articles and collections. |
+| `/{locale}/docs/{slug}` | Implemented | Published standalone `article` or `reference`. |
+| `/{locale}/docs/series/{collectionSlug}/{articleSlug}` | Implemented | Article inside a collection. |
+| `/{locale}/notes` | Implemented | Separate home for `kind: note`. |
+| `/{locale}/notes/{slug}` | Implemented | Published note detail. |
+| `/{locale}/docs/import-preview/{draftId}` | Owner-only | Import draft, media, and validation preview. |
+| `/{locale}/studio/docs/library` | Owner-only | Published content library and route inspection. |
+| `/{locale}/docs/reference` | Legacy compatibility route | Currently redirects to an early `document-shells` route; not a canonical route for new content. |
+| `/{locale}/docs/archive` | Placeholder | Route and shell remain, but formal archive browsing is not implemented. |
+| `/{locale}/docs/style-lab` | Owner-only test surface | Retained block regression page; not exposed in public navigation. |
 
-- `/{locale}/docs`
-  - main docs entry
-- `/{locale}/docs/series/[collectionSlug]/[articleSlug]`
-  - collection article detail route
-- `/{locale}/docs/[slug]`
-  - standalone article detail route
-- `/{locale}/docs/reference`
-  - compatibility alias to the first article in a collection
-- `/{locale}/docs/archive`
-  - reserved for future expansion, not implemented yet
+Internal content can use `isListed: false`, such as the Docs-backed About body. It is not exposed through public Docs listings or slug routes; a dedicated Owner page loads it by `documentKey`.
 
-## Canonical Slug Rule
+## Content And Data Model
 
-Current canonical collection slug:
+### Identity and locale
 
-- `document-shells`
+- `DocsDocument` is the cross-locale article identity.
+- `documentKey` is an optional but recommended stable key for new authored content; `en` and `zh` locale rows sharing it belong to one article.
+- `DocsDocumentLocale` stores locale-specific slugs, title, summary, publication date, SEO, and `bodyJson`.
+- `DocsCollection` and `DocsCollectionLocale` use the same pattern for collections; `collectionKey` is the cross-locale collection identity.
+- `DocsCollectionItem` mounts one cross-locale `DocsDocument` into a collection at a global `position`.
 
-Rules:
+### Publication history
 
-- `/reference` is only an alias
-- collection articles use the `series` route as their canonical data source
-- standalone articles use the slug route as their canonical data source
-- slug values should be readable and stable
-- slug values are stored per locale row
+- `DocsPublicationEvent` is an immutable event table.
+- Initial publication writes `published`; a same-locale `replace` writes `replaced`.
+- Events store occurrence time, triggering locale, and a `writingUnits` snapshot for article "last updated" metadata and About writing activity.
+- Events are not body-version snapshots. They cannot currently show historic body content, diffs, or rollback.
 
-## Locale Rule
+### Visibility and access
 
-Locale behavior:
+Content access has three levels: `guest`, `pro`, and `private`.
 
-- locale exists only in the leading route segment
-- current supported locales are `en` and `zh`
-- data lookup is based on `locale + slug`
-- the slug itself should not carry locale suffixes
+- An unauthenticated viewer is `guest`.
+- Redeemed invitations and shared codes create `pro` access.
+- An Owner session maps to `private` access inside Docs.
+- Home hides inaccessible entries; direct access to an inaccessible detail route returns 404.
+- Collection detail checks both collection and current-article access, and filters collection items individually.
+- A collection and all of its articles must use the same `accessRole`.
 
-## Layout Mode Rule
+The `users` table is content ownership metadata, not a public user-account system.
 
-The document page shape is controlled by `layoutMode`.
+### Reading Authorization Flow
 
-Current values:
+```mermaid
+flowchart LR
+  A["Reading request"] --> B["getCurrentViewer()"]
+  B --> C{"Session cookie present?"}
+  C -->|No| D["guest viewer"]
+  C -->|Yes| E["Validate Session; for pro also validate\nPrincipal and Grant revocation and expiry"]
+  E --> F{"resolved viewer role"}
+  F -->|guest: invalid cookie| D
+  F -->|pro| G["pro viewer"]
+  F -->|owner| H["private viewer"]
+  D --> I["Published Docs lookup\n+ accessRole check"]
+  G --> I
+  H --> I
+  I -->|Allowed| J["Render article or list"]
+  I -->|Denied| K["404"]
+```
 
-- `sidebar`
-- `contentOnly`
+## Body Contract
 
-Rules:
-
-- `layoutMode` is a document property
-- `layoutMode` belongs to the document metadata layer, not the route
-- the same route pattern can render either layout
-
-Rendering behavior:
-
-- `sidebar`
-  - collection sidebar + main body + right outline
-- `contentOnly`
-  - main body + right outline
-
-Additional rules:
-
-- `sidebar` no longer means "current article section navigation" on the left side
-- when an article belongs to a collection, the left sidebar lists sibling articles in that collection
-- the right outline always remains a section navigator for the current article only
-
-## Access Role Rule
-
-Access control is currently modeled by document-level access roles.
-
-Current values:
-
-- `guest`
-- `member`
-- `pro`
-
-Rules:
-
-- home page may show inaccessible entries in locked state
-- detail route denies access when viewer role is insufficient
-- current viewer role is still mocked for development
-
-## Body JSON Rule
-
-Current `bodyJson` top-level structure:
+The database `bodyJson` root shape is:
 
 ```json
 {
   "sections": [
     {
       "id": "overview",
-      "title": "Section title",
-      "blocks": [
-        {
-          "id": "p1",
-          "type": "paragraph",
-          "text": "..."
-        }
-      ]
+      "title": "Overview",
+      "blocks": []
     }
   ]
 }
 ```
 
-Rules:
+Current block types:
 
-- database stores an object, not a bare array
-- query layer validates this shape
-- UI receives already-mapped page models, not raw JSON
+- `paragraph`: text, link, mark, delete, and inlineCode.
+- `heading`: body hierarchy at levels 2-4.
+- `list` and `checklist`.
+- `callout`, `quote`, and `divider`.
+- `code`: language, caption, and `block` / `compact` variants.
+- `image`: URL, alt text, and optional caption.
 
-Current supported block types:
+The right `On this page` rail currently derives only from sections. `##` through `####` already render as body headings; adding them to a nested outline is backlog B-03 and does not change the current writing grammar.
 
-- `paragraph`
-- `list`
-- `callout`
+## Import And Publication
 
-## Sidebar JSON Rule
+### Input boundary
 
-Current `sidebarJson` top-level structure:
+- The normal authoring format is `.docs.md` inside `DOCS_CONTENT_ROOT`.
+- TypeScript `DocsImportArticleSource` remains supported for advanced or programmatic imports.
+- Local images must stay inside the content root. The importer validates, hashes, and writes Git-ignored local mirrors under `public/_docs-media`.
+- External `http` / `https` images retain their original URL.
 
-```json
-{
-  "groups": [
-    {
-      "id": "foundations",
-      "label": "Foundations",
-      "defaultOpen": true,
-      "items": [
-        {
-          "id": "overview",
-          "label": "Overview",
-          "href": "/docs/document-shells"
-        }
-      ]
-    }
-  ]
-}
+### Publication flow
+
+```mermaid
+flowchart LR
+  A[".docs.md or TypeScript source"] --> B["Parser / source loader"]
+  B --> C["Validation and media resolution"]
+  C -->|dry-run or errors| D["CLI report\nNo file or database write"]
+  C -->|normal import| E["Hash-addressed local media mirror\npublic/_docs-media"]
+  C -->|normal import| F["Local draft store"]
+  F --> G["Owner import preview"]
+  G -->|same-origin + Owner confirm| H["@incept/db/docs transaction"]
+  H --> I["Published PostgreSQL content"]
+  E -. "Git ignored" .-> J["Browser-accessible media URL"]
+  I --> K["Docs / Notes reading routes"]
+  J --> K
 ```
 
-Rules:
+- `pnpm docs:import --file <path> --dry-run` validates only and writes neither files nor database rows.
+- A normal import publishes local preview mirrors and writes a draft.
+- The confirm route validates same-origin requests and Owner session; a draft with errors cannot be confirmed.
+- `--replace` is only for intentionally overwriting an existing locale article.
 
-- retained mainly for legacy or transitional cases
-- query layer validates the `groups` array
-- UI receives already-mapped sidebar groups
+The complete writing contract lives in `apps/web/src/features/docs/importer/docs-push/README.md`.
 
-## Collection Rule
+## Runtime Boundaries
 
-The docs system now supports two published object types:
+```text
+packages/db
+  Prisma schema, migrations, Docs queries, import writes, publication events
 
-- standalone article
-- collection
+apps/web/src/server/docs
+  viewer role mapping, access checks, DB record -> page model mapping
 
-Rules:
+apps/web/src/features/docs
+  reading UI, block renderer, home, import preview, Studio library
 
-- docs home lists both collections and standalone articles
-- a collection appears only once on docs home
-- clicking a collection enters its first article directly
-- collection article detail routes use `/{locale}/docs/series/[collectionSlug]/[articleSlug]`
-- standalone articles keep using `/{locale}/docs/[slug]`
-- the collection left sidebar is generated from collection article order, not from current-article sections
+apps/web/src/app/[locale]
+  thin route entrypoints and 404 / redirect behavior
+```
 
-## Create Rule
+Browser components do not access Prisma directly. Routes resolve the viewer first, then call server Docs loaders. `@incept/db/docs` does not depend on Next routes or page components.
 
-The future create flow should first require the publisher to choose:
+## Current Deferred Boundaries
 
-- collection
-- standalone article
-
-Rules:
-
-- standalone articles generate standalone slug routes
-- collections are created first, then filled with ordered articles
-- collection articles automatically live under the `series` route
-- the collection sidebar is derived from collection article order
-
-## Stable Architectural Boundary
-
-The module is intentionally split like this:
-
-- `packages/db`
-  - DB schema, query DTOs, Prisma queries
-- `apps/web/src/server/docs`
-  - access checks, mapping, loader assembly
-- `apps/web/src/features/docs`
-  - page rendering
-- `apps/web/src/app/[locale]/docs`
-  - thin route entrypoints
-
-This boundary should be preserved as the docs module expands into create/edit/publish flows.
+- Body version snapshots, diffs, and rollback.
+- Nested heading navigation in the right outline.
+- New body blocks such as table, video, and embed.
+- Formal Archive browsing, search, and topic filtering.
+- Object storage/CDN media publishing and safe media cleanup.
+- A browser Docs editor; publication currently uses external source files and preview/confirm.

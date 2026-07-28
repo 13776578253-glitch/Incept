@@ -2,7 +2,7 @@
 
 ## Status
 
-Database, Principal identity, and Owner server authentication foundations implemented on 2026-07-20/21. Browser account UI and pro credential redemption remain unimplemented.
+The database model, Principal identity layer, Owner server authentication, pro credential issuance/redemption, and Docs/Notes viewer checks are implemented. Owner secret login intentionally remains API-only; the settings surface exposes shared-code redemption, current access state, and logout rather than an Owner secret form.
 
 ## Goal
 
@@ -21,10 +21,10 @@ Viewer identity must remain separate from content access:
 ```text
 guest viewer -> guest content
 pro viewer   -> guest and pro content
-owner/admin  -> guest, pro, and private content; internal operations
+owner        -> guest, pro, and private content; internal operations
 ```
 
-`admin` represents the sole site owner, not a multi-person management role. It is still required to separate content reading from server-side operations such as publishing, archive actions, invitation management, and internal tools.
+`owner` represents the single deployment-controlled site owner, not a multi-person management role. It remains separate from content reading because publishing, archive actions, credential operations, and internal tools require server-side authorization.
 
 ## Temporary Access
 
@@ -37,6 +37,25 @@ Both grant records must store only token/code hashes. Revoking a grant invalidat
 
 Bearer links cannot prove the real-world identity of the recipient if they are forwarded. The Principal is an access identity rather than a verified user account. This is acceptable for the first personal-blog version.
 
+### Principal, Grant, And Session Relationship
+
+```mermaid
+flowchart TD
+  A["Invitation Grant\nhashed bearer credential"] -->|binds to| B["invited Principal"]
+  A -->|redeemed per device| C["pro Session"]
+  B -->|identity for| C
+
+  D["Shared-Code Grant\nhashed reusable code"] -->|redeemed in a new browser| E["anonymous Principal"]
+  D -->|creates| F["pro Session"]
+  E -->|identity for| F
+
+  G["OWNER_ACCESS_SECRET"] -->|creates| H["owner Session\nno Principal or Grant"]
+
+  B -->|revoke: invalidates| A
+  B -->|revoke: invalidates| C
+  D -->|revoke: invalidates| F
+```
+
 ## Security Boundary
 
 Authentication must be enforced server-side, not only through hidden navigation or `proxy.ts`.
@@ -47,23 +66,20 @@ Protected owner-only surfaces include:
 - `/[locale]/docs/import-preview/**`
 - `/[locale]/docs/style-lab`
 - Import preview confirmation and all future write routes
-- Invitation and shared-code management
 
-The current Owner implementation returns not found for protected internal pages. A future browser login flow may redirect only to a validated same-site `next` path.
+The Owner implementation returns not found for protected internal pages. Owner login is intentionally a same-origin API endpoint rather than a public browser form.
 
-The first Owner authentication API deliberately returns 404 for protected internal pages instead of redirecting. It uses `OWNER_ACCESS_SECRET` from the Web server environment, random token hashes in the database, and a secure HttpOnly cookie. Browser account UI and `next` redirects remain a later stage.
+It uses `OWNER_ACCESS_SECRET` from the Web server environment, random token hashes in the database, and a secure HttpOnly cookie. Owner session revocation is available through a dedicated CLI.
 
-## Planned Data Direction
+## Implemented Data Model
 
 The existing `User` table is content ownership infrastructure because the importer creates a `system` user. It remains separate from authentication.
 
 Owner identity is a deployment-only `OWNER_ACCESS_SECRET`, not a database account. The database now contains `AccessPrincipal`, `AccessGrant`, and `AccessSession` records. A grant is a hashed credential, a Principal is the revocable access identity, and a session is one browser/device binding. Pro sessions stay valid only while both their Principal and Grant remain active.
 
-Docs access has moved from `guest / member / pro` to `guest / pro / private`. Viewer identity and content access types still need to be separated in application code during the server authentication phase.
+Docs access uses `guest / pro / private`. Viewer identity and content access are separated in application code: `getCurrentViewer()` resolves the identity, and Docs/Notes loaders enforce the required content access level.
 
-## Next Decisions
+## Deferred Decisions
 
-- Add individual invitation and shared-code redemption routes, then resolve pro viewers in Docs and Notes loaders.
-- Define the browser account settings UI for Owner login/logout and future grant management.
-- Add CLI commands for creating, listing, revoking, and rotating invitation/shared-code grants.
+- Define a browser management surface for grants and Principals if CLI operations are no longer sufficient.
 - Define resource-specific `AccessEntitlement` records and `restricted` content access when selective sharing is needed.

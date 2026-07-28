@@ -61,10 +61,15 @@ Current standard structure:
 ```text
 docs/
   INDEX.md
+  NEXT.md
+  BACKLOG.md
   READAI.md
 
   current-task/
   finish-task/
+  history/
+    dbml/
+    plans/
 
   runbooks/
     en/
@@ -84,13 +89,14 @@ docs/
 
 ### `current-task/`
 
-Stores active or recently completed task records.
+Stores only work that is actively being carried across sessions.
 
 Examples:
 
 - current milestone notes
-- recent AI implementation logs
-- short-term continuity summaries
+- short-term continuity notes
+
+Completed material should move out promptly.
 
 ### `finish-task/`
 
@@ -101,6 +107,23 @@ Examples:
 - completed milestone archives
 - old AI execution history
 - previous task bundles moved out of `current-task/`
+
+### `history/`
+
+Stores preserved reference material that is not a current decision or active task.
+
+Examples:
+
+- old DBML schema snapshots in `history/dbml/`
+- superseded plans and investigations in `history/plans/`
+
+### `NEXT.md`
+
+Stores the small, human-readable entry point for the next product stage. It lists only active product tasks and links to `BACKLOG.md` for detailed source-code acceptance criteria.
+
+### `BACKLOG.md`
+
+The canonical inventory of source-code TODOs. Completed TODOs become in-place `history:` comments in source code; task records must not duplicate that inventory.
 
 ### `runbooks/`
 
@@ -158,8 +181,7 @@ Rules:
 Older docs may still exist in legacy locations such as:
 
 - flat files in `docs/decisions/`
-- `docs archive/`
-- `plan-docs/`
+- older one-language decision drafts
 
 Rules:
 
@@ -200,16 +222,7 @@ Focus on:
 From this point forward:
 
 1. new human-facing stable docs should prefer the bilingual structure
-2. AI task records continue to live in `current-task/` and `finish-task/`
-3. old historical docs remain preserved
-4. migration can happen incrementally and does not need to be completed in one pass
-
-## Immediate Next Step
-
-The next documentation cleanup pass should:
-
-1. translate core stable docs into `en/` and `zh/`
-2. place them into the new structured directories
-3. keep filenames aligned across languages
-
-That will make future architecture work and multi-session collaboration far more stable.
+2. active work belongs in `NEXT.md`, with source-code detail in `BACKLOG.md`
+3. completed task records move from `current-task/` to `finish-task/`
+4. superseded plans and DBML snapshots move to `history/`
+5. migration can happen incrementally and does not need to be completed in one pass

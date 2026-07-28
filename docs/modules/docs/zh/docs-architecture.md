@@ -1,197 +1,160 @@
 # Docs 模块架构
 
-## 目标
+## 定位
 
-本文定义 `docs` 模块当前稳定的架构。
+Docs 是站点的结构化内容发布模块。文章通过 Markdown-like 或 TypeScript source 导入，先生成本地 draft，由 Owner 在预览页确认后写入 PostgreSQL；阅读页只读取已发布内容，并按当前 viewer 权限过滤。
 
-它记录了路由模型、内容规则和数据规则；除非有新的明确决策修改它们，否则这些约束应保持一致。
+这份文档描述当前已实现的边界，不把未来 editor、对象存储或版本回滚当作现有能力。
 
-## 当前路由模型
+## 路由
 
-当前 docs 页面面分为：
+| 路由 | 状态 | 职责 |
+| --- | --- | --- |
+| `/{locale}/docs` | 已实现 | Docs 首页，按年份展示可访问的单篇文章与合集。 |
+| `/{locale}/docs/{slug}` | 已实现 | 已发布的单篇 `article` 或 `reference`。 |
+| `/{locale}/docs/series/{collectionSlug}/{articleSlug}` | 已实现 | 合集内文章。 |
+| `/{locale}/notes` | 已实现 | `kind: note` 的独立阅读入口。 |
+| `/{locale}/notes/{slug}` | 已实现 | 已发布随笔详情。 |
+| `/{locale}/docs/import-preview/{draftId}` | Owner-only | 导入 draft 的正文、媒体和校验预览。 |
+| `/{locale}/studio/docs/library` | Owner-only | 已发布内容库与路由检查。 |
+| `/{locale}/docs/reference` | 遗留兼容入口 | 当前重定向到早期 `document-shells` 路由；不是新内容的规范入口。 |
+| `/{locale}/docs/archive` | 占位入口 | 保留路由和界面壳，尚未实现正式归档浏览。 |
+| `/{locale}/docs/style-lab` | Owner-only 测试面 | 保留的 block 回归实验页，不进入公开导航。 |
 
-- `/{locale}/docs`
-  - docs 主入口
-- `/{locale}/docs/series/[collectionSlug]/[articleSlug]`
-  - 集合文章详情路由
-- `/{locale}/docs/[slug]`
-  - 单文章详情路由
-- `/{locale}/docs/reference`
-  - 指向集合首篇文章的兼容别名
-- `/{locale}/docs/archive`
-  - 为未来扩展预留，暂未实现
+内部内容可使用 `isListed: false`，例如 About 的 Docs-backed 正文；此类内容不通过公开 Docs 列表或 slug 路由暴露，而由专用 Owner 页面按 `documentKey` 读取。
 
-## Canonical Slug 规则
+## 内容与数据模型
 
-当前规范集合 slug：
+### 身份与 locale
 
-- `document-shells`
+- `DocsDocument` 是跨语言文章身份。
+- `documentKey` 是可选但推荐的新文章稳定 key；同一 key 的 `en` / `zh` locale 行属于同一文章。
+- `DocsDocumentLocale` 保存 locale 专属 slug、标题、摘要、发布时间、SEO 和 `bodyJson`。
+- `DocsCollection` 与 `DocsCollectionLocale` 对合集采用相同模式；`collectionKey` 是跨语言合集身份。
+- `DocsCollectionItem` 将一个跨语言 `DocsDocument` 以全局 `position` 挂载到一个合集。
 
-规则：
+### 发布历史
 
-- `/reference` 只是别名
-- 集合文章规范数据源是 `series` 路由
-- 单文章规范数据源是 slug 路由
-- slug 值应可读且稳定
-- slug 值按 locale 行存储
+- `DocsPublicationEvent` 是不可变事件表。
+- 首次发布写入 `published`；同 locale `replace` 写入 `replaced`。
+- 事件保存发生时间、触发 locale 与 `writingUnits` 快照，用于文章页“最后更新”与 About 写作活动。
+- 当前事件不是正文版本快照：不能据此查看旧正文、diff 或回滚。
 
-## Locale 规则
+### 可见性与权限
 
-Locale 行为：
+内容权限只有三档：`guest`、`pro`、`private`。
 
-- locale 只存在于前导路由段
-- 当前支持的 locale 为 `en` 与 `zh`
-- 数据查找基于 `locale + slug`
-- slug 自身不应携带 locale 后缀
+- 未登录 viewer 是 `guest`。
+- 兑换 invitation 或 shared code 后是 `pro`。
+- Owner session 在 Docs 中映射为 `private`。
+- 首页不显示无权限条目；直接访问无权限详情返回 404。
+- 合集详情同时检查合集和当前文章权限，合集内条目也逐篇过滤。
+- 合集及其文章必须使用一致的 `accessRole`。
 
-## Layout Mode 规则
+`users` 表只承载内容系统所有权元数据，不是公开用户账户系统。
 
-文档页面形态由 `layoutMode` 控制。
+### 阅读授权流程
 
-当前取值：
+```mermaid
+flowchart LR
+  A["阅读请求"] --> B["getCurrentViewer()"]
+  B --> C{"存在 session cookie?"}
+  C -->|无| D["guest viewer"]
+  C -->|有| E["校验 Session；pro 同时校验\nPrincipal 与 Grant 的撤销和过期"]
+  E --> F{"解析后的 viewer role"}
+  F -->|guest：cookie 无效| D
+  F -->|pro| G["pro viewer"]
+  F -->|owner| H["private viewer"]
+  D --> I["已发布 Docs 查询\n+ accessRole 检查"]
+  G --> I
+  H --> I
+  I -->|允许| J["渲染文章或列表"]
+  I -->|拒绝| K["404"]
+```
 
-- `sidebar`
-- `contentOnly`
+## 正文合同
 
-规则：
-
-- `layoutMode` 是文档属性
-- `layoutMode` 属于文档元数据层，而不是路由层
-- 相同的路由模式可以渲染两种布局
-
-渲染行为：
-
-- `sidebar`
-  - 集合左侧栏 + 主正文 + 右侧大纲
-- `contentOnly`
-  - 主正文 + 右侧大纲
-
-补充规则：
-
-- `sidebar` 不再表示“当前文章 section 导航”
-- 当文章属于集合时，左侧栏表示“集合内文章列表”
-- 右侧大纲始终只表示“当前文章的 section 导航”
-
-## Access Role 规则
-
-当前访问控制使用文档级 access role 建模。
-
-当前取值：
-
-- `guest`
-- `member`
-- `pro`
-
-规则：
-
-- 首页可以用锁定态展示不可访问条目
-- 当访问者角色不足时，详情路由应拒绝访问
-- 当前 viewer role 在开发阶段仍然是 mocked 状态
-
-## Body JSON 规则
-
-当前 `bodyJson` 顶层结构：
+数据库中的 `bodyJson` 顶层结构：
 
 ```json
 {
   "sections": [
     {
       "id": "overview",
-      "title": "Section title",
-      "blocks": [
-        {
-          "id": "p1",
-          "type": "paragraph",
-          "text": "..."
-        }
-      ]
+      "title": "Overview",
+      "blocks": []
     }
   ]
 }
 ```
 
-规则：
+当前 block 类型：
 
-- 数据库存储的是对象，而不是裸数组
-- query layer 负责校验这个形态
-- UI 接收的是已经映射好的页面模型，而不是原始 JSON
+- `paragraph`：text、link、mark、delete、inlineCode。
+- `heading`：level 2-4 的正文层级。
+- `list`、`checklist`。
+- `callout`、`quote`、`divider`。
+- `code`：语言、caption、`block` / `compact` 变体。
+- `image`：URL、alt 与可选 caption。
 
-当前支持的 block 类型：
+页面右侧 `On this page` 当前只由 section 生成。`##` 到 `####` 已渲染为正文 heading；把它们加入嵌套目录是 backlog B-03，不改变当前写作语法。
 
-- `paragraph`
-- `list`
-- `callout`
+## 导入与发布
 
-## Sidebar JSON 规则
+### 输入边界
 
-当前 `sidebarJson` 顶层结构：
+- 常规写作格式是位于 `DOCS_CONTENT_ROOT` 内的 `.docs.md`。
+- TypeScript `DocsImportArticleSource` 仍支持高级或程序化导入。
+- 本地图片必须位于内容根目录内；导入器校验、hash 并写入 Git 忽略的 `public/_docs-media` 本地镜像。
+- 外部 `http` / `https` 图片保持原 URL。
 
-```json
-{
-  "groups": [
-    {
-      "id": "foundations",
-      "label": "Foundations",
-      "defaultOpen": true,
-      "items": [
-        {
-          "id": "overview",
-          "label": "Overview",
-          "href": "/docs/document-shells"
-        }
-      ]
-    }
-  ]
-}
+### 发布流程
+
+```mermaid
+flowchart LR
+  A[".docs.md 或 TypeScript source"] --> B["Parser / source loader"]
+  B --> C["校验与媒体解析"]
+  C -->|dry-run 或有错误| D["CLI 报告\n不写文件、不写数据库"]
+  C -->|正式导入| E["按 hash 发布本地媒体镜像\npublic/_docs-media"]
+  C -->|正式导入| F["本地 draft store"]
+  F --> G["Owner import preview"]
+  G -->|同源 + Owner confirm| H["@incept/db/docs transaction"]
+  H --> I["已发布 PostgreSQL 内容"]
+  E -. "Git 忽略" .-> J["浏览器可访问的媒体 URL"]
+  I --> K["Docs / Notes 阅读路由"]
+  J --> K
 ```
 
-规则：
+- CLI `pnpm docs:import --file <path> --dry-run` 只验证，不写文件或数据库。
+- 非 dry-run 会发布本地媒体镜像并写入 draft。
+- confirm route 校验同源请求和 Owner session；含 error 的 draft 不能确认。
+- `--replace` 仅用于有意覆盖既有 locale 内容。
 
-- 该结构只保留给历史或临时过渡用途
-- query layer 负责校验 `groups` 数组
-- UI 接收的是已经映射好的 sidebar groups
+完整写作合同见 `apps/web/src/features/docs/importer/docs-push/README.md`。
 
-## 集合规则
+## 运行时边界
 
-当前 docs 支持两种发布对象：
+```text
+packages/db
+  Prisma schema, migrations, Docs queries, import writes, publication events
 
-- 单文章
-- 集合
+apps/web/src/server/docs
+  viewer role mapping, access checks, DB record -> page model mapping
 
-规则：
+apps/web/src/features/docs
+  reading UI, block renderer, home, import preview, Studio library
 
-- docs 首页同时展示集合与单文章
-- 集合在首页只显示一次，不展开内部文章
-- 点击集合时直接进入集合首篇文章
-- 集合文章详情使用 `/{locale}/docs/series/[collectionSlug]/[articleSlug]`
-- 单文章详情继续使用 `/{locale}/docs/[slug]`
-- 集合左栏由集合文章顺序自动生成，不再从当前文章 section 推导
+apps/web/src/app/[locale]
+  thin route entrypoints and 404 / redirect behavior
+```
 
-## Create 决策规则
+浏览器组件不直接访问 Prisma；路由先解析 viewer，再调用 server Docs loader。`@incept/db/docs` 不依赖 Next 路由或页面组件。
 
-未来 create 流程应先要求用户选择发布对象类型：
+## 当前未实现边界
 
-- 集合
-- 单文章
-
-规则：
-
-- 单文章创建后走 standalone slug 路由
-- 集合创建后先生成集合，再向集合内追加有序文章
-- 集合文章自动落到 `series` 路由
-- 集合文章的左栏来自集合文章顺序
-
-## 稳定架构边界
-
-这个模块有意拆成如下边界：
-
-- `packages/db`
-  - DB schema、query DTO、Prisma 查询
-- `apps/web/src/server/docs`
-  - access checks、mapping、loader 组装
-- `apps/web/src/features/docs`
-  - 页面渲染
-- `apps/web/src/app/[locale]/docs`
-  - 轻量路由入口
-
-随着 docs 模块扩展到 create/edit/publish 流程，这个边界应继续保持。
+- 文章正文版本快照、diff 与回滚。
+- 嵌套 heading 的右侧目录。
+- table、video、embed 等新的正文 block。
+- Archive 的正式浏览、搜索与主题筛选。
+- 对象存储/CDN 媒体发布适配器和安全媒体清理。
+- 浏览器中的 Docs 创建/编辑器；当前发布入口仍是外部源文件与 preview/confirm。

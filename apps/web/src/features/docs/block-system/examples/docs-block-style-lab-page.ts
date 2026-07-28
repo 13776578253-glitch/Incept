@@ -60,9 +60,8 @@ import { buildCodeExample } from './docs-code-example-utils';
 //    - 先验证 example 页面，再进入真实 docs 正文链
 //    - 让 DocsCodeBlock 继续只负责 UI，不负责语言解析
 
-// TODO: 目前这种通过目录获取内容块的方式比较 hacky，后续可以考虑更直接地在样式实验室页面中定义需要展示的内容块数据
-// TODO: 待添加 delete line、mark，用于 paragraph、list、quote、code
-// TODO: 后续把 style-lab 页面标题和 section 说明文案也逐步收成更统一的测试规范
+// history: The catalog-backed fixture lookup remains sufficient for the retained Owner-only Style Lab.
+// Deferred: expand inline-mark fixtures or formalize the lab specification only with a concrete regression-testing need.
 
 function getBlock<TType extends DocsContentBlockModel['type']>(
   type: TType,

@@ -33,8 +33,8 @@ export type DocsBlockCatalogItem = {
 
 // 定义文档内容块目录，包含每种类型块的基本信息、支持的选项、默认示例和AI使用提示，方便在文档编辑器中展示和选择不同类型的内容块
 
-// 提供 block 说明 / 待修改 / 测试条目 / 为未来AI生成内容提供提示
-// TODO: image block 后续需要补真实照片 / 真实截图测试，当前 catalog 中的 data:image 主要只是占位图，用来先验证壳层、边框和 caption 节奏，不能替代真实视觉素材测试。
+// history: Real image validation now uses Markdown-like imports and the external content-root media pipeline.
+// Catalog data-image payloads remain local fixtures for the retained Style Lab.
 export const docsBlockCatalog: DocsBlockCatalogItem[] = [
   {
     type: 'paragraph',

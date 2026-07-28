@@ -4,7 +4,7 @@ import { parseMarkdownLikeAttributes } from '../attributes';
 import { ensureMarkdownLikeSection, makeMarkdownLikeBlockId } from '../state';
 import type { MarkdownLikeParseState } from '../types';
 
-//TODO: 增加代码解析 / 高亮/分割/不同类型代码区分
+// history: Code fences parse language, caption, and variants; Shiki owns highlighting and theme rendering.
 
 
 

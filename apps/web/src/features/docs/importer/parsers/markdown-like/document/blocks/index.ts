@@ -9,8 +9,8 @@ export { parseMarkdownLikeImage } from './image';
 export { parseMarkdownLikeChecklist, parseMarkdownLikeList } from './lists';
 export { parseMarkdownLikeParagraph } from './paragraph';
 
-// TODO：章节解析逻辑需要更新，目前仅支持 # 标题 识别标题
-// TODO: 整个 section 样式可能需要重构，应对上文不同层级标题的解析问题 / 支持多层级小标题
+// history: # creates a section and ## through #### already parse as body heading blocks.
+// TODO: When nested On this page navigation is added, map heading blocks into the outline without changing section IDs or article-writing syntax.
 
 /**
  * 开始一个新章节（section），由一级标题 / # 标题文本 触发。

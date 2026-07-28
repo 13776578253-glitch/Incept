@@ -1,2 +1,0 @@
-// Adaptive layout strategy placeholder.
-

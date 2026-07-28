@@ -1,2 +1,0 @@
-// Shared breakpoint definitions placeholder.
-
