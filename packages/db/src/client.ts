@@ -1,6 +1,6 @@
 import { PrismaClient } from "../generated/client/index.js";
 
-// 在开发环境中使用全局 PrismaClient 实例，避免频繁创建连接导致性能问题；在生产环境中正常创建实例
+// 全局 PrismaClient 
 declare global {
   var __inceptPrisma__: PrismaClient | undefined;
   var __inceptPrismaSchemaRevision__: string | undefined;
@@ -12,7 +12,7 @@ const hasCurrentPrismaClient =
   globalThis.__inceptPrisma__ &&
   globalThis.__inceptPrismaSchemaRevision__ === prismaSchemaRevision;
 
-// 导出 PrismaClient 实例供其他模块使用
+// 导出 PrismaClient
 export const prisma =
   (hasCurrentPrismaClient ? globalThis.__inceptPrisma__ : undefined) ??
   new PrismaClient({

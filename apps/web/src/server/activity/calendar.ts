@@ -1,6 +1,6 @@
 import type { ActivityDay, ActivityRange } from '@/features/about/activity-data';
 
-// 全局时区：上海
+// 全局时区：shanghai
 export const ACTIVITY_TIME_ZONE = 'Asia/Shanghai';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {

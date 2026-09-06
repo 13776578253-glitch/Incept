@@ -37,7 +37,7 @@ function getPublishedCollectionLocaleRow({
   return rows.find((row) => row.locale === locale) ?? rows[0];
 }
 
-// 查询当前已发布的 docs library 条目，用于 workspace 内的发布状态总览
+// Query the currently published docs library entries for an overview of the publishing status within the workspace
 export async function listDocsLibraryEntries({
   locale,
 }: {
@@ -128,7 +128,8 @@ export async function listDocsLibraryEntries({
   });
 }
 
-// 查询 docs library 总览页顶部所需的统计信息
+// Query the statistics required for the top of the docs library overview page
+// tip: @param locale 可选的 locale 过滤条件，如果提供则只统计该 locale 下的文档
 export async function getDocsLibraryStats({
   locale,
 }: {

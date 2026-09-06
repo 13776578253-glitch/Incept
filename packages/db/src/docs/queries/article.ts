@@ -2,7 +2,7 @@ import { prisma } from '../../client';
 import type { DbDocsArticleRecord, DbDocsLocale } from '../types';
 import { assertDocsBody, assertDocsSidebar } from './shared';
 
-// 根据 slug 和 locale 查找已发布的文档文章记录
+// 根据 slug 和 locale 查找
 export async function findPublishedDocsArticleBySlug({
   locale,
   slug,
@@ -91,7 +91,8 @@ export async function findPublishedDocsArticleBySlug({
   };
 }
 
-// 查询不挂载到 Docs 路由的内部文章。调用方必须自行完成访问角色校验。
+// !
+// 查询不挂载到 Docs 路由的内部文章  调用方须自行完成访问角色校验
 export async function findPublishedUnlistedDocsArticleByDocumentKey({
   locale,
   documentKey,
@@ -176,7 +177,8 @@ export async function findPublishedUnlistedDocsArticleByDocumentKey({
   };
 }
 
-// 根据 slug 和 locale 查找已发布的随笔记录。随笔只允许 kind=note，避免和 docs 正文互相串路由。
+// 根据 slug 和 locale 查找
+// 随笔只允许 kind=note，避免和 docs 正文互相串路由
 export async function findPublishedNoteBySlug({
   locale,
   slug,
