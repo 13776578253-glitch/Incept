@@ -136,6 +136,10 @@ Examples:
 - deployment steps
 - debugging and recovery procedures
 
+Current Chinese content import manual:
+
+- `docs/runbooks/zh/docs-content-import.md`
+
 ### `decisions/`
 
 Stores architectural and design decisions.

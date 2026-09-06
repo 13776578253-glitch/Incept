@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { importDocsArticleDraft } from '@incept/db/docs';
+import { importDocsArticleDraft, importDocsCollectionDirectory } from '@incept/db/docs';
 import { deleteDocsImportDraft, readDocsImportDraft } from '@/features/docs/importer/draft-store';
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
 
@@ -48,10 +48,17 @@ export async function POST(
     );
   }
 
-  const result = await importDocsArticleDraft({
-    source: draft.source,
-    replace: draft.replace,
-  });
+  // 根据草稿类型执行不同的导入操作
+  const result = draft.draftType === 'collectionDirectory'
+    ? await importDocsCollectionDirectory({
+        sources: draft.collectionSources ?? [draft.source],
+        nodes: draft.collectionNodes ?? [],
+        replace: draft.replace,
+      })
+    : await importDocsArticleDraft({
+        source: draft.source,
+        replace: draft.replace,
+      });
 
   deleteDocsImportDraft(draftId);
 
@@ -64,9 +71,11 @@ export async function POST(
       : `/${targetLocale}/docs/${draft.source.meta.slug}?imported=1`;
 
   return NextResponse.redirect(new URL(redirectPath, _request.url), {
-    status: 303,
+      status: 303,
     headers: {
-      'x-docs-import-document-id': String(result.documentId),
+      'x-docs-import-document-id': String(
+        'documentId' in result ? result.documentId : result.documentIds[0],
+      ),
     },
   });
 }

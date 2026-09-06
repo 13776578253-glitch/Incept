@@ -1,0 +1,249 @@
+// Current Prisma database schema as of 2026-09-04.
+// Paste this file into https://dbdiagram.io to inspect the current model.
+
+Enum DocKind {
+  article
+  reference
+  note
+}
+
+Enum DocLayoutMode {
+  sidebar
+  contentOnly
+}
+
+Enum DocAccessRole {
+  guest
+  pro
+  private
+}
+
+Enum AccessSessionRole {
+  owner
+  pro
+}
+
+Enum AccessGrantType {
+  invitation
+  sharedCode
+}
+
+Enum AccessPrincipalType {
+  invited
+  anonymous
+}
+
+Enum DocStatus {
+  draft
+  published
+  archived
+}
+
+Enum DocsPublicationEventType {
+  published
+  replaced
+}
+
+Enum DocsCollectionItemType {
+  article
+  folder
+}
+
+Table users {
+  id int [pk, increment]
+  username varchar [not null, unique]
+  role varchar [not null, note: 'Content ownership metadata; not a public account role.']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table access_principals {
+  id varchar [pk, note: 'CUID identity for invited or anonymous access.']
+  type AccessPrincipalType [not null]
+  label varchar [not null]
+  expiresAt timestamp
+  revokedAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (type, revokedAt)
+    expiresAt
+  }
+}
+
+Table access_grants {
+  id varchar [pk, note: 'Credential metadata; raw invitation/shared code is never stored.']
+  type AccessGrantType [not null]
+  label varchar [not null]
+  credentialHash varchar [not null, unique]
+  principalId varchar [note: 'Invitation points to a Principal; sharedCode may be null.']
+  expiresAt timestamp
+  revokedAt timestamp
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (type, revokedAt)
+    principalId
+    expiresAt
+  }
+}
+
+Table access_sessions {
+  id varchar [pk, note: 'Server-side session record for owner or pro cookie.']
+  role AccessSessionRole [not null]
+  tokenHash varchar [not null, unique]
+  principalId varchar [note: 'Pro sessions point to a Principal; owner sessions are null.']
+  grantId varchar [note: 'Pro sessions point to the Grant used for access; owner sessions are null.']
+  expiresAt timestamp [note: 'Owner has an explicit expiry; pro validity also checks Principal and Grant.']
+  revokedAt timestamp
+  lastUsedAt timestamp
+  createdAt timestamp [not null]
+
+  Indexes {
+    (role, expiresAt)
+    principalId
+    grantId
+  }
+}
+
+Table docs_documents {
+  id int [pk, increment]
+  documentKey varchar [unique, note: 'Cross-locale stable article identity.']
+  kind DocKind [not null, default: 'article']
+  layoutMode DocLayoutMode [not null, default: 'contentOnly']
+  accessRole DocAccessRole [not null, default: 'guest']
+  isListed boolean [not null, default: true, note: 'False for internal Docs-backed content such as About.']
+  createdById int [note: 'Importer-managed system user.']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    kind
+    layoutMode
+    accessRole
+    isListed
+  }
+}
+
+Table docs_document_locales {
+  id int [pk, increment]
+  documentId int [not null]
+  locale varchar [not null]
+  slug varchar [not null]
+  eyebrow varchar
+  title varchar [not null]
+  summary varchar
+  status DocStatus [not null, default: 'draft']
+  publishedAt timestamp
+  bodyJson json [not null, note: 'Structured Docs body: sections and block unions.']
+  sidebarJson json
+  seoTitle varchar
+  seoDescription varchar
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (documentId, locale) [unique]
+    (locale, slug) [unique]
+    (locale, status, publishedAt)
+  }
+}
+
+Table docs_publication_events {
+  id int [pk, increment]
+  documentId int [not null]
+  type DocsPublicationEventType [not null]
+  locale varchar [note: 'Locale whose import created the event.']
+  occurredAt timestamp [not null, note: 'published uses source time; replaced uses confirmation time.']
+  writingUnits int [not null, note: 'Writing activity snapshot for the event.']
+  createdAt timestamp [not null]
+
+  Indexes {
+    occurredAt
+    (documentId, occurredAt)
+  }
+}
+
+Table docs_collections {
+  id int [pk, increment]
+  collectionKey varchar [unique, note: 'Cross-locale stable collection identity.']
+  accessRole DocAccessRole [not null, default: 'guest']
+  createdById int [note: 'Importer-managed system user.']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    accessRole
+  }
+}
+
+Table docs_collection_locales {
+  id int [pk, increment]
+  collectionId int [not null]
+  locale varchar [not null]
+  slug varchar [not null]
+  eyebrow varchar
+  title varchar [not null]
+  summary varchar
+  status DocStatus [not null, default: 'draft']
+  publishedAt timestamp
+  seoTitle varchar
+  seoDescription varchar
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (collectionId, locale) [unique]
+    (locale, slug) [unique]
+    (locale, status, publishedAt)
+  }
+}
+
+Table docs_collection_items {
+  id int [pk, increment]
+  collectionId int [not null]
+  documentId int [unique, note: 'Null for folder nodes.']
+  parentId int [note: 'Self-reference; null for a root node.']
+  type DocsCollectionItemType [not null, default: 'article']
+  nodeKey varchar [not null, note: 'Stable navigation node identity.']
+  isActive boolean [not null, default: true, note: 'Inactive nodes are retained but hidden after replace cleanup.']
+  position int [not null, note: 'Sibling order from numbered directory prefixes.']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (collectionId, nodeKey) [unique]
+    (collectionId, documentId) [unique]
+    (collectionId, parentId, position)
+  }
+}
+
+Table docs_collection_item_locales {
+  id int [pk, increment]
+  itemId int [not null]
+  locale varchar [not null]
+  label varchar [not null, note: 'Folder display label for this locale.']
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (itemId, locale) [unique]
+    locale
+  }
+}
+
+Ref: access_grants.principalId > access_principals.id [delete: restrict]
+Ref: access_sessions.principalId > access_principals.id [delete: restrict]
+Ref: access_sessions.grantId > access_grants.id [delete: restrict]
+
+Ref: docs_documents.createdById > users.id [delete: set null]
+Ref: docs_document_locales.documentId > docs_documents.id [delete: cascade]
+Ref: docs_publication_events.documentId > docs_documents.id [delete: cascade]
+Ref: docs_collections.createdById > users.id [delete: set null]
+Ref: docs_collection_locales.collectionId > docs_collections.id [delete: cascade]
+Ref: docs_collection_items.collectionId > docs_collections.id [delete: cascade]
+Ref: docs_collection_items.documentId - docs_documents.id [delete: cascade]
+Ref: docs_collection_items.parentId > docs_collection_items.id [delete: cascade]
+Ref: docs_collection_item_locales.itemId > docs_collection_items.id [delete: cascade]

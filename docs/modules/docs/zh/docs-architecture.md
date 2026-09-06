@@ -31,7 +31,9 @@ Docs 是站点的结构化内容发布模块。文章通过 Markdown-like 或 Ty
 - `documentKey` 是可选但推荐的新文章稳定 key；同一 key 的 `en` / `zh` locale 行属于同一文章。
 - `DocsDocumentLocale` 保存 locale 专属 slug、标题、摘要、发布时间、SEO 和 `bodyJson`。
 - `DocsCollection` 与 `DocsCollectionLocale` 对合集采用相同模式；`collectionKey` 是跨语言合集身份。
-- `DocsCollectionItem` 将一个跨语言 `DocsDocument` 以全局 `position` 挂载到一个合集。
+- `DocsCollectionItem` 是合集导航节点：`article` 节点挂载一个跨语言 `DocsDocument`，`folder` 节点只提供分组，不包含正文。
+- `DocsCollectionItem.parentId` 与 `position` 组成导航树；同级节点按 `position` 排序，旧文章迁移后都是顶层 `article` 节点。
+- `DocsCollectionItemLocale` 保存 folder 在各 locale 下的显示名称。
 
 ### 发布历史
 
@@ -50,6 +52,7 @@ Docs 是站点的结构化内容发布模块。文章通过 Markdown-like 或 Ty
 - 首页不显示无权限条目；直接访问无权限详情返回 404。
 - 合集详情同时检查合集和当前文章权限，合集内条目也逐篇过滤。
 - 合集及其文章必须使用一致的 `accessRole`。
+- 合集目录最多三层 folder；文章 URL 仍使用现有 `series/{collectionSlug}/{articleSlug}`，不把 folder 层级编码进 URL。
 
 `users` 表只承载内容系统所有权元数据，不是公开用户账户系统。
 
@@ -97,7 +100,7 @@ flowchart LR
 - `code`：语言、caption、`block` / `compact` 变体。
 - `image`：URL、alt 与可选 caption。
 
-页面右侧 `On this page` 当前只由 section 生成。`##` 到 `####` 已渲染为正文 heading；把它们加入嵌套目录是 backlog B-03，不改变当前写作语法。
+页面右侧 `On this page` 由 section 作为顶层节点，并嵌套 `##` 到 `####` 的正文 heading；所有节点使用正文既有的稳定 anchor ID。长文目录的标题固定在 rail 顶部，列表区域最多占视口约 40%，高度超出后保持可滚动但隐藏原生滚动条，并在底部使用页面背景渐变提示被遮住的后续条目。页面阅读位置进入一个不在可见列表内的 section 时，目录列表会平滑滚动，使当前活动条目回到可见区域。
 
 ## 导入与发布
 
@@ -129,6 +132,8 @@ flowchart LR
 - 非 dry-run 会发布本地媒体镜像并写入 draft。
 - confirm route 校验同源请求和 Owner session；含 error 的 draft 不能确认。
 - `--replace` 仅用于有意覆盖既有 locale 内容。
+- `pnpm docs:import --dir <path> --dry-run` 会递归读取带数字前缀的目录和 `.docs.md` 文件，打印推导出的 folder/article 树。
+- 目录正式导入先生成批次 draft；Owner 仍需在预览页确认，不能由目录扫描直接发布。
 
 完整写作合同见 `apps/web/src/features/docs/importer/docs-push/README.md`。
 
@@ -158,3 +163,4 @@ apps/web/src/app/[locale]
 - Archive 的正式浏览、搜索与主题筛选。
 - 对象存储/CDN 媒体发布适配器和安全媒体清理。
 - 浏览器中的 Docs 创建/编辑器；当前发布入口仍是外部源文件与 preview/confirm。
+- 合集目录批次的跨 locale folder 标题覆盖与更强的批次原子性验证仍需进一步验收。

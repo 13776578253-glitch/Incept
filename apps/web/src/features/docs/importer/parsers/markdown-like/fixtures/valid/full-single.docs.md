@@ -17,6 +17,14 @@ accessRole: private
 
 This paragraph contains ==marked text== and ~~deleted text~~.
 
+### Nested detail
+
+This heading is nested below the section's first body heading.
+
+#### Fine detail
+
+This heading is nested below the level-three heading.
+
 - An unordered item.
 - Another unordered item.
 

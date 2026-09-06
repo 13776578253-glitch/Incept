@@ -7,7 +7,7 @@
   --navbar-height: 64px;
   --docs-sidebar-width: 248px;
   --docs-content-width: 760px;
-  --docs-right-rail-width: 196px;
+  --docs-right-rail-width: 260px;
   --docs-right-rail-edge-padding: 36px;
   --docs-shell-max-width: 1480px;
 
@@ -25,4 +25,3 @@
   --color-gray-700: #404040;
   --color-gray-900: #171717;
 }
-

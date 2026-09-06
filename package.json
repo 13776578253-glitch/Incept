@@ -7,6 +7,7 @@
     "build": "pnpm --filter web build",
     "lint": "pnpm --filter web lint",
     "docs:import": "pnpm --filter @incept/db exec tsx ../../scripts/docs-import.mjs",
+    "docs:check-import-cli": "pnpm --filter @incept/db exec node ../../scripts/docs-import-cli-check.mjs",
     "docs:check-markdown-like": "pnpm --filter @incept/db exec tsx ../../scripts/docs-markdown-like-check.mjs",
     "docs:check-media": "pnpm --filter @incept/db exec tsx ../../scripts/docs-media-check.mjs",
     "docs:check-code-highlighting": "pnpm --filter @incept/db exec tsx ../../scripts/docs-code-highlighting-check.mjs",

@@ -53,9 +53,11 @@ export type DocsSectionModel = {
 
 export type DocsNavItemModel = {
   id: string;
+  type?: 'article' | 'folder';
   label: string;
-  href: string;
+  href?: string;
   active?: boolean;
+  children?: DocsNavItemModel[];
 };
 
 export type DocsNavGroupModel = {
@@ -68,6 +70,8 @@ export type DocsNavGroupModel = {
 export type DocsOutlineItemModel = {
   id: string;
   label: string;
+  level?: 1 | 2 | 3 | 4;
+  children?: DocsOutlineItemModel[];
 };
 
 export type DocsArticlePageModel = {

@@ -11,6 +11,7 @@ import type {
   DocsArticlePageModel,
   DocsHomePageModel,
 } from '@/features/docs/shared/types';
+import type { DbDocsCollectionNavigationNode } from '@incept/db/docs';
 import {
   docsHomeIntro,
   mapDocsArticleRecordToPageModel,
@@ -18,14 +19,12 @@ import {
   mapDocsHomeEntriesToPageGroups,
 } from '@/server/docs/mappers';
 
-// 定义访问角色的等级，确保权限检查的一致性
 const docsRoleRank: Record<DocsAccessRole, number> = {
   guest: 0,
   pro: 1,
   private: 2,
 };
 
-// 根据访问角色判断用户是否有权限访问文档
 export function canAccessDocsArticle(
   viewerRole: DocsAccessRole,
   requiredRole: DocsAccessRole,
@@ -33,7 +32,26 @@ export function canAccessDocsArticle(
   return docsRoleRank[viewerRole] >= docsRoleRank[requiredRole];
 }
 
-// 查询指定 locale 和 slug 的已发布文档，并检查访问权限，返回前端使用的文档页面模型
+function filterCollectionNavigation(
+  nodes: DbDocsCollectionNavigationNode[],
+  viewerRole: DocsAccessRole,
+): DbDocsCollectionNavigationNode[] {
+  return nodes.flatMap((node) => {
+    const children = filterCollectionNavigation(node.children, viewerRole);
+    const articleVisible =
+      node.type === 'folder' ||
+      !node.accessRole ||
+      canAccessDocsArticle(viewerRole, node.accessRole);
+
+    if (!articleVisible || (node.type === 'folder' && !children.length && !node.label)) {
+      return [];
+    }
+
+    return [{ ...node, children }];
+  });
+}
+
+// 查询指定 locale 和 slug 的已发布文档，并检查访问权限，返回文档页面模型
 export async function getDocsArticlePage({
   locale,
   slug,
@@ -82,7 +100,7 @@ export async function getUnlistedDocsArticlePage({
   return mapDocsArticleRecordToPageModel(record);
 }
 
-// 查询指定 locale、系列 slug 和文章 slug 的已发布文档，并检查访问权限，返回前端使用的文档页面模型
+// 查询指定 locale、系列 slug 和文章 slug 的已发布文档，并检查访问权限，返回文档页面模型
 export async function getDocsCollectionArticlePage({
   locale,
   collectionSlug,
@@ -116,10 +134,11 @@ export async function getDocsCollectionArticlePage({
     collectionItems: record.collectionItems.filter((item) =>
       canAccessDocsArticle(viewerRole, item.accessRole),
     ),
+    collectionNavigation: filterCollectionNavigation(record.collectionNavigation, viewerRole),
   });
 }
 
-// 查询主页的已发布文档列表，并根据访问角色过滤，返回前端使用的主页模型
+// 查询主页的已发布文档列表，并根据访问角色过滤，返回主页分组模型
 export async function getDocsHomePage({
   locale,
   viewerRole,

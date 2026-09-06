@@ -76,6 +76,16 @@
   right: max(32px, calc((100vw - (var(--docs-content-width) + var(--docs-right-rail-width) + 48px + 64px)) / 2));
 }
 
+/* Keep long article outlines scrollable without exposing a visual scrollbar. */
+.docs-right-rail-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.docs-right-rail-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .page-shell-docs-import-preview .import-preview-mobile-review {
   display: none;
 }

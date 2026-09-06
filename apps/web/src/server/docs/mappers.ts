@@ -15,6 +15,8 @@ import type {
   DocsOutlineItemModel,
   DocsSectionModel,
 } from '@/features/docs/shared/types';
+import type { DbDocsCollectionNavigationNode } from '@incept/db/docs';
+import { buildDocsOutline } from '@/features/docs/shared/outline';
 
 // 将数据库中的文章记录转换为前端使用的页面模型
 
@@ -28,14 +30,14 @@ export const docsHomeIntro: DocsHomeIntroModel = {
     'Browse published guides, reference notes, and topic-based articles.',
 };
 
-// 将数据库中的内容块转换为前端使用的内容块模型
+// 内容块
 function toDocsContentBlocks(
   blocks: DbDocsArticleRecord['bodyJson']['sections'][number]['blocks'],
 ): DocsContentBlockModel[] {
   return blocks as DocsContentBlockModel[];
 }
 
-// 将数据库中的文章记录转换为前端使用的文档页面模型
+// 文档页面
 function toDocsSections(
   body: DbDocsArticleRecord['bodyJson'],
 ): DocsSectionModel[] {
@@ -47,24 +49,43 @@ function toDocsSections(
   }));
 }
 
-// 将数据库中的文章记录转换为前端使用的目录模型
+// 目录
 function toDocsOutline(
   body: DbDocsArticleRecord['bodyJson'],
 ): DocsOutlineItemModel[] {
-  return body.sections.map((section) => ({
-    id: section.id,
-    label: section.title,
-  }));
+  return buildDocsOutline(
+    body.sections.map((section) => ({
+      id: section.id,
+      title: section.title,
+      blocks: toDocsContentBlocks(section.blocks),
+    })),
+  );
 }
 
-// 将数据库中的侧边栏结构转换为前端使用的导航分组模型
+// 导航分组
 function toDocsSidebarGroups(
   sidebarJson: DbDocsArticleRecord['sidebarJson'],
 ): DocsNavGroupModel[] {
   return sidebarJson?.groups ?? [];
 }
 
-// 将数据库中的文章记录转换为前端使用的singule文档页面模型
+function toDocsCollectionNavItems(
+  nodes: DbDocsCollectionNavigationNode[],
+  collectionSlug: string,
+): DocsNavGroupModel['items'] {
+  return nodes.map((node) => ({
+    id: node.nodeKey,
+    type: node.type,
+    label: node.label ?? node.title ?? node.nodeKey,
+    href: node.slug ? `/docs/series/${collectionSlug}/${node.slug}` : undefined,
+    active: node.active,
+    children: node.children.length
+      ? toDocsCollectionNavItems(node.children, collectionSlug)
+      : undefined,
+  }));
+}
+
+// single文档页面
 export function mapDocsArticleRecordToPageModel(
   record: DbDocsArticleRecord,
 ): DocsArticlePageModel {
@@ -91,7 +112,7 @@ export function mapDocsArticleRecordToPageModel(
   };
 }
 
-// 将数据库中的系列文章记录转换为前端使用的collection文档页面模型 / series 文章具有集合层级，需要额外处理集合信息
+// collection文档页面 / series 文章具有集合层级，需要额外处理集合信息
 export function mapDocsCollectionRecordToPageModel(
   record: DbDocsCollectionRecord,
 ): DocsArticlePageModel {
@@ -119,12 +140,10 @@ export function mapDocsCollectionRecordToPageModel(
         id: `collection-${record.collectionSlug}`,
         label: record.collectionTitle,
         defaultOpen: true,
-        items: record.collectionItems.map((item) => ({
-          id: item.slug,
-          label: item.title,
-          href: `/docs/series/${record.collectionSlug}/${item.slug}`,
-          active: item.slug === record.articleSlug,
-        })),
+        items: toDocsCollectionNavItems(
+          record.collectionNavigation,
+          record.collectionSlug,
+        ),
       },
     ],
     outline: toDocsOutline(record.articleBodyJson),
@@ -152,7 +171,7 @@ function groupDocsHomeEntriesByYear(entries: DbDocsHomeEntryRecord[]) {
     }));
 }
 
-// 将数据库中的主页条目转换为前端使用的主页分组模型
+// 主页分组
 export function mapDocsHomeEntriesToPageGroups(
   entries: DbDocsHomeEntryRecord[],
   viewerRole: DocsAccessRole,

@@ -21,9 +21,9 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 ### B-03 Markdown-like Heading And Section Model
 
 - Source: `document/blocks/index.ts`
-- Status: Active Docs-navigation work.
-- Current behavior is already stable: `#` starts a section, while `##` through `####` become body heading blocks.
-- Add a nested `On this page` outline derived from heading blocks, while preserving section IDs, block IDs, article-writing syntax, and the current section-level outline behavior for existing articles.
+- Status: Implemented; source TODO comment still needs in-place `history:` cleanup.
+- `#` starts a section, while `##` through `####` become body heading blocks and nested `On this page` outline items.
+- Section IDs, block IDs, article-writing syntax, and the existing section-level outline behavior remain unchanged.
 
 ### B-04 Markdown-like Checklist Expansion
 
@@ -37,13 +37,15 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 - Status: Active only after the authoring contract is designed.
 - Image support is complete. The remaining concrete candidate is `table`; embeds, video, timeline, and interactive blocks remain separate proposals rather than implicit additions.
 
-## Deferred
-
 ### B-06 Multi-Article Markdown-like Source
 
 - Sources: `document/state.ts:7`, `document/ids.ts:3`
-- Status: Deferred.
-- Current contract is one source file to one article import. Revisit only with a manifest or collection batch-import design; do not expand IDs pre-emptively.
+- Status: Implemented foundation; real-content acceptance and follow-up hardening remain.
+- One `.docs.md` file remains one independent article. Directory import maps numbered folders to empty navigation folders and numbered files to article nodes.
+- Maximum folder depth is three; numeric prefixes supply sibling order. Batch Preview/Confirm, `created` / `updated` / `unchanged` / `renamed` / `removed` diff, inactive-node cleanup, and strict database transaction handling are implemented.
+- Remaining acceptance: run a real `--replace` batch against an existing collection, verify rollback behavior, and finish cross-locale folder label handling.
+
+## Deferred
 
 ### B-07 Additional Code Palettes
 

@@ -1,5 +1,4 @@
-// TODO: 可以根据需要增加更多类型的内容块，如图片、表格等
-// 目前结构存在缺陷
+// history: image blocks and local media publishing are implemented; table remains B-05.
 
 /**
  * 定义文档内容块的类型，包括段落、列表、提示、标题、引用、代码块和分割线等不同类型的内容块。

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
-import type { DocsNavGroupModel } from '@/features/docs/shared/types';
+import type { DocsNavGroupModel, DocsNavItemModel } from '@/features/docs/shared/types';
 import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 
@@ -36,6 +36,52 @@ export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {
     Object.fromEntries(groups.map((group) => [group.id, group.defaultOpen ?? true])),
   );
 
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
+
+  function renderItems(items: DocsNavItemModel[], depth = 0) {
+    return items.map((item) => {
+      const hasChildren = Boolean(item.children?.length);
+      const isOpen = openItems[item.id] ?? true;
+      const itemContent = item.href ? (
+        <Link
+          href={withLocalePath(locale, item.href)}
+          className={`block rounded-[10px] px-2.5 py-1.5 text-[0.84rem] leading-6 transition-colors ${
+            item.active
+              ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
+              : 'text-[var(--color-text-soft)] hover:text-[var(--color-text-muted)]'
+          }`}
+        >
+          {item.label}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() =>
+            setOpenItems((current) => ({
+              ...current,
+              [item.id]: !isOpen,
+            }))
+          }
+          className="flex w-full items-center justify-between gap-3 px-2.5 py-1.5 text-left text-[0.84rem] leading-6 text-[var(--color-text-soft)] transition-colors hover:text-[var(--color-text)]"
+        >
+          <span>{item.label}</span>
+          {hasChildren ? <ChevronIcon open={isOpen} /> : null}
+        </button>
+      );
+
+      return (
+        <li key={item.id} className="relative">
+          {itemContent}
+          {hasChildren && isOpen ? (
+            <ul className="ml-1.5 space-y-1 pl-2">
+              {renderItems(item.children ?? [], depth + 1)}
+            </ul>
+          ) : null}
+        </li>
+      );
+    });
+  }
+
   return (
     <nav
       aria-label="Docs sidebar"
@@ -65,20 +111,7 @@ export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {
 
               {isOpen ? (
                 <ul className="space-y-1 border-l border-[var(--color-border)] pl-3">
-                  {group.items.map((item) => (
-                    <li key={item.id}>
-                      <Link
-                        href={withLocalePath(locale, item.href)}
-                        className={`block rounded-[10px] px-2.5 py-1.5 text-[0.84rem] leading-6 transition-colors ${
-                          item.active
-                            ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
-                            : 'text-[var(--color-text-soft)] hover:text-[var(--color-text-muted)]'
-                        }`}
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
+                  {renderItems(group.items)}
                 </ul>
               ) : null}
             </section>

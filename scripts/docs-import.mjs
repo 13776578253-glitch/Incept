@@ -17,12 +17,17 @@ function loadDocsImportEnvironment() {
 }
 
 function printUsage() {
-  console.log('Usage: pnpm docs:import --file <path> [--replace] [--dry-run]');
+  console.log('Usage: pnpm docs:import --file <path> | --dir <collection-directory> [--replace] [--dry-run]');
+  console.log('  --file   Import one standalone or collection article source.');
+  console.log('  --dir    Import one complete collection directory batch.');
+  console.log('  --replace Allow updates to existing content when the batch is confirmed.');
+  console.log('  --dry-run Validate and preview without writing a draft, media, or database data.');
 }
 
 function parseArgs(argv) {
   const args = {
     file: '',
+    directory: '',
     replace: false,
     dryRun: false,
   };
@@ -32,6 +37,12 @@ function parseArgs(argv) {
 
     if (current === '--file') {
       args.file = argv[index + 1] ?? '';
+      index += 1;
+      continue;
+    }
+
+    if (current === '--dir') {
+      args.directory = argv[index + 1] ?? '';
       index += 1;
       continue;
     }
@@ -54,7 +65,7 @@ async function main() {
   loadDocsImportEnvironment();
   const args = parseArgs(process.argv.slice(2));
 
-  if (!args.file) {
+  if ((!args.file && !args.directory) || (args.file && args.directory)) {
     printUsage();
     process.exit(1);
   }
@@ -64,6 +75,63 @@ async function main() {
       path.join(projectRoot, 'apps/web/src/features/docs/importer/index.ts'),
     ).href,
   );
+
+  if (args.directory) {
+    const draft = await importerModule.createDocsCollectionDirectoryDraft({
+      directoryPath: args.directory,
+      replace: args.replace,
+      mediaMode: args.dryRun ? 'validate' : 'publish',
+    });
+    const collection = {
+      directoryPath: draft.sourceFilePath,
+      sources: draft.collectionSources ?? [],
+      tree: draft.collectionTree ?? [],
+      issues: draft.issues,
+      mediaOperations: draft.media.operations,
+    };
+
+    console.log('');
+    console.log('Docs collection directory scan');
+    console.log(`- Directory: ${collection.directoryPath}`);
+    console.log(`- Collection key: ${draft.source.meta.collectionKey ?? 'missing'}`);
+    console.log(`- Locale: ${draft.source.meta.locale}`);
+    console.log(`- Articles: ${collection.sources.length}`);
+    printCollectionTree(collection.tree);
+    console.log(`- Errors: ${collection.issues.filter((issue) => issue.level === 'error').length}`);
+    console.log(`- Warnings: ${collection.issues.filter((issue) => issue.level === 'warning').length}`);
+
+    if (draft.collectionChanges?.length) {
+      console.log('');
+      console.log('Batch changes');
+      for (const change of draft.collectionChanges) {
+        console.log(`- ${change.status}: ${change.key} (${change.type})`);
+      }
+    }
+
+    if (collection.mediaOperations.length > 0) {
+      console.log('');
+      console.log('Media operations');
+      for (const operation of collection.mediaOperations) {
+        console.log(`- ${operation.status}: ${operation.sourcePath}`);
+        console.log(`  -> ${operation.targetUrl} (${operation.size} bytes)`);
+      }
+    }
+
+    if (collection.issues.length > 0) {
+      console.log('');
+      console.log('Validation issues:');
+      for (const issue of collection.issues) {
+        console.log(`  - [${issue.level}] ${issue.code}: ${issue.message}${issue.path ? ` (${issue.path})` : ''}`);
+      }
+    }
+
+    if (!args.dryRun) {
+      importerModule.writeDocsImportDraft(draft, projectRoot);
+      console.log(`- Preview URL: http://localhost:3000/${draft.source.meta.locale}/docs/import-preview/${draft.id}`);
+    }
+
+    return;
+  }
 
   const draft = await importerModule.createDocsImportDraft({
     filePath: args.file,
@@ -113,6 +181,14 @@ async function main() {
         `  - [${issue.level}] ${issue.code}: ${issue.message}${issue.path ? ` (${issue.path})` : ''}`,
       );
     }
+  }
+}
+
+function printCollectionTree(nodes, depth = 0) {
+  for (const node of nodes) {
+    const marker = node.type === 'folder' ? 'folder' : 'article';
+    console.log(`${'  '.repeat(depth)}- ${String(node.sortOrder).padStart(2, '0')} ${node.name} (${marker})`);
+    printCollectionTree(node.children, depth + 1);
   }
 }
 

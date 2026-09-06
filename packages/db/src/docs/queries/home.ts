@@ -6,7 +6,7 @@ import type {
 } from '../types';
 import { comparePublishedAtDesc } from './shared';
 
-// 将数据库查询结果转换为首页文档集合记录
+// 数据库查询结果转换
 function toHomeCollectionRecord({
   locale,
   row,
@@ -24,12 +24,14 @@ function toHomeCollectionRecord({
       publishedAt: Date | null;
     }>;
     items: Array<{
+      parentId: number | null;
+      position: number;
       document: {
         accessRole: DbDocsHomeCollectionRecord['firstArticleAccessRole'];
         locales: Array<{
           slug: string;
         }>;
-      };
+      } | null;
     }>;
   };
 }): DbDocsHomeEntryRecord | null {
@@ -39,10 +41,14 @@ function toHomeCollectionRecord({
     return null;
   }
 
-  const firstArticle = row.items.find((item) => item.document.locales[0]?.slug);
-  const firstArticleSlug = firstArticle?.document.locales[0]?.slug;
+  const orderedItems = [...row.items].sort(
+    (left, right) => left.position - right.position,
+  );
+  const firstArticle = orderedItems.find((item) => item.document?.locales[0]?.slug);
+  const firstArticleDocument = firstArticle?.document;
+  const firstArticleSlug = firstArticleDocument?.locales[0]?.slug;
 
-  if (!firstArticleSlug) {
+  if (!firstArticleDocument || !firstArticleSlug) {
     return null;
   }
 
@@ -58,11 +64,11 @@ function toHomeCollectionRecord({
     eyebrow: localeRow.eyebrow,
     accessRole: row.accessRole,
     firstArticleSlug,
-    firstArticleAccessRole: firstArticle.document.accessRole,
+    firstArticleAccessRole: firstArticleDocument.accessRole,
   };
 }
 
-// 查询指定 locale 的已发布文档主页条目，包括单篇文章和集合，并转换为前端使用的主页条目记录
+// 查询 指定 locale 的已发布文档主页条目，转换为主页条目记录
 export async function listPublishedDocsHomeEntries({
   locale,
 }: {
@@ -133,10 +139,13 @@ export async function listPublishedDocsHomeEntries({
           },
         },
         items: {
+          where: { isActive: true },
           orderBy: {
             position: 'asc',
           },
           select: {
+            parentId: true,
+            position: true,
             document: {
               select: {
                 accessRole: true,
@@ -189,7 +198,7 @@ export async function listPublishedDocsHomeEntries({
   return [...standaloneEntries, ...collectionEntries].sort(comparePublishedAtDesc);
 }
 
-// 查询指定 locale 的已发布随笔条目。随笔复用 docs 内容结构，但通过 DocKind.note 与正式 docs 分开。
+// 查询 指定 locale 的已发布随笔主页条目，复用 docs 内容结构，通过 DocKind.note 区分
 export async function listPublishedNotesHomeEntries({
   locale,
 }: {

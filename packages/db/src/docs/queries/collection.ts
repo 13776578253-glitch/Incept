@@ -1,12 +1,13 @@
 import { prisma } from '../../client';
 import type {
   DbDocsCollectionArticleListItem,
+  DbDocsCollectionNavigationNode,
   DbDocsCollectionRecord,
   DbDocsLocale,
 } from '../types';
 import { assertDocsBody } from './shared';
 
-// 将数据库查询结果转换为文档集合文章列表项记录
+// 数据库查询结果转换
 function toCollectionArticleListItems(
   items: Array<{
     document: {
@@ -19,10 +20,14 @@ function toCollectionArticleListItems(
         summary: string | null;
         publishedAt: Date | null;
       }>;
-    };
+    } | null;
   }>,
 ): DbDocsCollectionArticleListItem[] {
   return items.flatMap((item) => {
+    if (!item.document) {
+      return [];
+    }
+
     const localeRow = item.document.locales[0];
 
     if (!localeRow) {
@@ -43,7 +48,66 @@ function toCollectionArticleListItems(
   });
 }
 
-// 根据 collectionSlug 和 articleSlug 查找已发布的文档集合文章记录
+function toCollectionNavigation(
+  items: Array<{
+    id: number;
+    parentId: number | null;
+    nodeKey: string;
+    type: 'article' | 'folder';
+    position: number;
+    locales: Array<{ label: string }>;
+    document: {
+      id: number;
+      accessRole: DbDocsCollectionArticleListItem['accessRole'];
+      locales: Array<{ slug: string; title: string }>;
+    } | null;
+  }>,
+  articleSlug: string,
+): DbDocsCollectionNavigationNode[] {
+  const nodes = items.flatMap((item) => {
+    const articleLocale = item.document?.locales[0];
+
+    if (item.type === 'article' && !articleLocale) {
+      return [];
+    }
+
+    return [{
+      id: item.id,
+      nodeKey: item.nodeKey,
+      type: item.type,
+      position: item.position,
+      label: item.locales[0]?.label ?? articleLocale?.title ?? item.nodeKey,
+      documentId: item.document?.id,
+      accessRole: item.document?.accessRole,
+      slug: articleLocale?.slug,
+      title: articleLocale?.title,
+      active: articleLocale?.slug === articleSlug,
+      children: [] as DbDocsCollectionNavigationNode[],
+      parentId: item.parentId,
+    }];
+  });
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const roots: DbDocsCollectionNavigationNode[] = [];
+
+  for (const node of nodes) {
+    const parent = node.parentId === null ? undefined : byId.get(node.parentId);
+    if (parent) {
+      parent.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  const sortNodes = (nodeList: DbDocsCollectionNavigationNode[]) => {
+    nodeList.sort((left, right) => left.position - right.position);
+    nodeList.forEach((node) => sortNodes(node.children));
+  };
+
+  sortNodes(roots);
+  return roots;
+}
+
+// 根据 collectionSlug 和 articleSlug 查找
 export async function findPublishedDocsCollectionArticleBySlugs({
   locale,
   collectionSlug,
@@ -99,10 +163,21 @@ export async function findPublishedDocsCollectionArticleBySlugs({
         },
       },
       items: {
+        where: { isActive: true },
         orderBy: {
           position: 'asc',
         },
         select: {
+          id: true,
+          parentId: true,
+          type: true,
+          nodeKey: true,
+          position: true,
+          locales: {
+            where: { locale },
+            take: 1,
+            select: { label: true },
+          },
           document: {
             select: {
               id: true,
@@ -148,11 +223,12 @@ export async function findPublishedDocsCollectionArticleBySlugs({
 
   const collectionItems = toCollectionArticleListItems(row.items);
   const currentItem = row.items.find(
-    (item) => item.document.locales[0]?.slug === articleSlug,
+    (item) => item.document?.locales[0]?.slug === articleSlug,
   );
-  const currentLocale = currentItem?.document.locales[0];
+  const currentDocument = currentItem?.document;
+  const currentLocale = currentDocument?.locales[0];
 
-  if (!currentItem || !currentLocale) {
+  if (!currentItem || !currentDocument || !currentLocale) {
     return null;
   }
 
@@ -166,20 +242,21 @@ export async function findPublishedDocsCollectionArticleBySlugs({
     collectionStatus: collectionLocale.status,
     collectionPublishedAt: collectionLocale.publishedAt,
     collectionAccessRole: row.accessRole,
-    articleDocumentId: currentItem.document.id,
-    articleAccessRole: currentItem.document.accessRole,
+    articleDocumentId: currentDocument.id,
+    articleAccessRole: currentDocument.accessRole,
     articleSlug: currentLocale.slug,
     articleTitle: currentLocale.title,
     articleSummary: currentLocale.summary,
     articleEyebrow: currentLocale.eyebrow,
     articlePublishedAt: currentLocale.publishedAt,
     articleLastEditedAt:
-      currentItem.document.publicationEvents[0]?.occurredAt ?? currentLocale.publishedAt,
+      currentDocument.publicationEvents[0]?.occurredAt ?? currentLocale.publishedAt,
     articleBodyJson: assertDocsBody(currentLocale.bodyJson),
     articleStatus: currentLocale.status,
-    articleKind: currentItem.document.kind,
-    articleLayoutMode: currentItem.document.layoutMode,
+    articleKind: currentDocument.kind,
+    articleLayoutMode: currentDocument.layoutMode,
     collectionItems,
+    collectionNavigation: toCollectionNavigation(row.items, articleSlug),
     seoTitle: collectionLocale.seoTitle,
     seoDescription: collectionLocale.seoDescription,
     createdAt: currentLocale.createdAt,

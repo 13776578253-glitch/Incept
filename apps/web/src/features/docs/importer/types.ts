@@ -1,6 +1,8 @@
 import type { DbDocsLocale, DbDocsSection } from '@incept/db/docs';
 import type { DocsAccessRole, DocsArticlePageModel, DocsLayoutMode } from '../shared/types';
 import type { DocsImportMediaResolution } from './media';
+import type { DocsCollectionBatchChange } from '@incept/db/docs';
+import type { DocsCollectionDirectoryNode, DocsCollectionDraftNode } from './collection-directory';
 
 export type DocsImportRouteType = 'singleArticle' | 'collectionArticle';
 
@@ -27,6 +29,8 @@ export type DocsImportArticleMeta = {
   collectionSummary?: string;
   collectionEyebrow?: string;
   position?: number;
+  collectionNodeKey?: string;
+  collectionParentNodeKey?: string;
 };
 
 export type DocsImportArticleBody = {
@@ -68,6 +72,8 @@ export type DocsImportNormalizedMeta = {
   collectionSummary?: string;
   collectionEyebrow?: string;
   position?: number;
+  collectionNodeKey?: string;
+  collectionParentNodeKey?: string;
 };
 
 export type DocsImportNormalizedSource = {
@@ -76,6 +82,7 @@ export type DocsImportNormalizedSource = {
 };
 
 export type DocsImportDraft = {
+  draftType?: 'article' | 'collectionDirectory';
   id: string;
   createdAt: string;
   sourceFilePath: string;
@@ -84,6 +91,10 @@ export type DocsImportDraft = {
   issues: DocsImportValidationIssue[];
   media: DocsImportMediaResolution;
   page: DocsArticlePageModel;
+  collectionTree?: DocsCollectionDirectoryNode[];
+  collectionNodes?: DocsCollectionDraftNode[];
+  collectionSources?: DocsImportNormalizedSource[];
+  collectionChanges?: DocsCollectionBatchChange[];
 };
 
 export type DocsImportPreviewModel = {

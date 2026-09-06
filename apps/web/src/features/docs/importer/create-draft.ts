@@ -1,6 +1,11 @@
 import crypto from 'node:crypto';
+import { previewDocsCollectionDirectory } from '@incept/db/docs';
 import { mapDocsImportSourceToPageModel } from './preview-mapper';
 import { loadDocsImportSource, resolveDocsImportSourceFilePath } from './source-loader';
+import {
+  flattenDocsCollectionDirectoryTree,
+  scanDocsCollectionDirectory,
+} from './collection-directory';
 import { normalizeDocsImportSource } from './validation';
 import type { DocsImportMediaMode } from './media';
 import type { DocsImportDraft } from './types';
@@ -21,6 +26,7 @@ export async function createDocsImportDraft({
   const { normalizedSource, issues } = normalizeDocsImportSource(source);
 
   return {
+    draftType: 'article',
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
     sourceFilePath: resolvedFilePath,
@@ -29,5 +35,51 @@ export async function createDocsImportDraft({
     issues: [...loadedSource.issues, ...issues],
     media: loadedSource.media,
     page: mapDocsImportSourceToPageModel(normalizedSource),
+  };
+}
+
+export async function createDocsCollectionDirectoryDraft({
+  directoryPath,
+  replace,
+  mediaMode = 'validate',
+}: {
+  directoryPath: string;
+  replace: boolean;
+  mediaMode?: DocsImportMediaMode;
+}): Promise<DocsImportDraft> {
+  const collection = await scanDocsCollectionDirectory(directoryPath, { mediaMode });
+  const firstSource = collection.sources[0]?.source;
+
+  if (!firstSource) {
+    throw new Error('Collection directory must contain at least one numbered .docs.md article.');
+  }
+
+  const page = mapDocsImportSourceToPageModel(firstSource);
+  const collectionNodes = flattenDocsCollectionDirectoryTree(
+    collection.tree,
+    firstSource.meta.locale,
+  );
+  const collectionChanges = collection.issues.some((issue) => issue.level === 'error')
+    ? []
+    : await previewDocsCollectionDirectory({
+        sources: collection.sources.map(({ source }) => source),
+        nodes: collectionNodes,
+        replace,
+      });
+
+  return {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    draftType: 'collectionDirectory',
+    sourceFilePath: collection.directoryPath,
+    replace,
+    source: firstSource,
+    collectionSources: collection.sources.map(({ source }) => source),
+    collectionTree: collection.tree,
+    collectionNodes,
+    collectionChanges,
+    issues: collection.issues,
+    media: { operations: collection.mediaOperations },
+    page,
   };
 }

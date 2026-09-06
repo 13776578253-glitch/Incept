@@ -22,6 +22,9 @@ export {
   importDocsArticleDraft,
   upsertDocsSingleArticle,
   upsertDocsCollectionArticle,
+  upsertDocsCollectionFolder,
+  importDocsCollectionDirectory,
+  previewDocsCollectionDirectory,
 } from './import';
 
 export {
@@ -53,6 +56,7 @@ export type {
   DbDocsArticleRecord,
   DbDocsBody,
   DbDocsCollectionArticleListItem,
+  DbDocsCollectionNavigationNode,
   DbDocsCollectionRecord,
   DbDocsSidebar,
   DbDocsHomeArticleRecord,
@@ -72,4 +76,5 @@ export type {
   DocsImportRouteType,
   DocsImportWriteMeta,
   DocsImportWriteSource,
+  DocsCollectionBatchChange,
 } from './import-types';

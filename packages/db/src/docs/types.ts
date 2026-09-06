@@ -1,4 +1,9 @@
-import type { DocAccessRole, DocLayoutMode, DocKind, DocStatus } from '../../generated/client/index.js';
+import type {
+  DocAccessRole,
+  DocLayoutMode,
+  DocKind,
+  DocStatus,
+} from '../../generated/client/index.js';
 
 export type DbDocsLocale = 'en' | 'zh';
 
@@ -160,6 +165,20 @@ export type DbDocsCollectionArticleListItem = {
   publishedAt?: Date | null;
 };
 
+export type DbDocsCollectionNavigationNode = {
+  id: number;
+  nodeKey: string;
+  type: 'article' | 'folder';
+  position: number;
+  label?: string | null;
+  documentId?: number;
+  accessRole?: DocAccessRole;
+  slug?: string;
+  title?: string;
+  active?: boolean;
+  children: DbDocsCollectionNavigationNode[];
+};
+
 export type DbDocsCollectionRecord = {
   collectionId: number;
   locale: DbDocsLocale;
@@ -183,6 +202,7 @@ export type DbDocsCollectionRecord = {
   articleKind: DocKind;
   articleLayoutMode: DocLayoutMode;
   collectionItems: DbDocsCollectionArticleListItem[];
+  collectionNavigation: DbDocsCollectionNavigationNode[];
   seoTitle?: string | null;
   seoDescription?: string | null;
   createdAt: Date;

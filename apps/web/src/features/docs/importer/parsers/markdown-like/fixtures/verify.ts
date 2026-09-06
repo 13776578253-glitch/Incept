@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { parseMarkdownLikeDocsSource } from '../parse';
 import { parseMarkdownLikeDocument } from '../document';
 import { MarkdownLikeParseError } from '../errors';
+import { buildDocsOutline } from '../../../../shared/outline';
+import type { DocsOutlineItemModel } from '../../../../shared/types';
 import { invalidMarkdownLikeFixtures, validMarkdownLikeFixtures } from './manifest';
 
 const fixturesDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -41,6 +43,30 @@ export async function runMarkdownLikeFixtureChecks() {
     assert.equal(source.meta.collectionSlug, fixture.expectedSource.collectionSlug);
     assert.equal(source.meta.position, fixture.expectedSource.position);
     assert.equal(source.body.sections[0]?.blocks[0]?.type, 'paragraph');
+
+    const outline = buildDocsOutline(source.body.sections);
+    for (const [sectionIndex, section] of source.body.sections.entries()) {
+      const headingBlocks = section.blocks.filter((block) => block.type === 'heading');
+      const outlineHeadings = flattenOutline(outline[sectionIndex]?.children ?? []);
+
+      assert.deepEqual(
+        outlineHeadings.map((item) => item.id),
+        headingBlocks.map((block) => block.id),
+        `${fixture.fileName} should preserve heading anchor IDs in outline order.`,
+      );
+      assert.deepEqual(
+        outlineHeadings.map((item) => item.level),
+        headingBlocks.map((block) => block.level),
+        `${fixture.fileName} should preserve heading levels in outline order.`,
+      );
+    }
+
+    const nestedHeadings = outline[0]?.children?.[0]?.children?.[0]?.children;
+    assert.equal(
+      nestedHeadings?.[0]?.label,
+      'Fine detail',
+      `${fixture.fileName} should nest level-four headings below level-three headings.`,
+    );
   }
 
   for (const fixture of invalidMarkdownLikeFixtures) {
@@ -55,4 +81,8 @@ export async function runMarkdownLikeFixtureChecks() {
       `${fixture.fileName} should reject its public parser entry point.`,
     );
   }
+}
+
+function flattenOutline(items: DocsOutlineItemModel[]): DocsOutlineItemModel[] {
+  return items.flatMap((item) => [item, ...(item.children ? flattenOutline(item.children) : [])]);
 }

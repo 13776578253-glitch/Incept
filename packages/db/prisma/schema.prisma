@@ -51,6 +51,11 @@ enum DocsPublicationEventType {
   replaced
 }
 
+enum DocsCollectionItemType {
+  article
+  folder
+}
+
 model User {
   id          Int              @id @default(autoincrement())
   username    String           @unique
@@ -216,17 +221,38 @@ model DocsCollectionLocale {
 }
 
 model DocsCollectionItem {
-  id           Int            @id @default(autoincrement())
+  id           Int                    @id @default(autoincrement())
   collectionId Int
-  documentId   Int            @unique
+  documentId   Int?                   @unique
+  parentId     Int?
+  type         DocsCollectionItemType @default(article)
+  nodeKey      String
+  isActive     Boolean                @default(true)
   position     Int
-  collection   DocsCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  document     DocsDocument   @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  collection   DocsCollection         @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  document     DocsDocument?          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  parent       DocsCollectionItem?    @relation("DocsCollectionItemTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     DocsCollectionItem[]   @relation("DocsCollectionItemTree")
+  locales      DocsCollectionItemLocale[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
 
-  @@unique([collectionId, position])
+  @@unique([collectionId, nodeKey])
   @@unique([collectionId, documentId])
-  @@index([collectionId])
+  @@index([collectionId, parentId, position])
   @@map("docs_collection_items")
+}
+
+model DocsCollectionItemLocale {
+  id       Int                 @id @default(autoincrement())
+  itemId   Int
+  locale   String
+  label    String
+  item     DocsCollectionItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@unique([itemId, locale])
+  @@index([locale])
+  @@map("docs_collection_item_locales")
 }
