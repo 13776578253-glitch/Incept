@@ -19,18 +19,22 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1000px] px-6 md:px-8 xl:pr-10 xl:pl-[5rem] 2xl:pr-12 2xl:pl-[6.75rem]">
-      <DocsHomeIntro intro={intro} />
+    <div className="mx-auto w-full max-w-[920px] px-5 md:px-8">
+      <div className="mx-auto max-w-[720px] pb-16 pt-6 md:pb-20 md:pt-10">
+        <main className="min-w-0">
+          <DocsHomeIntro intro={intro} />
 
-      <div className="space-y-10 pb-16 md:space-y-12 md:pb-20">
-        {page.groups.map((group) => (
-          <DocsHomeGroupSection
-            key={group.id}
-            group={group}
-            sectionId={`docs-home-group-${group.id}`}
-            entriesLabel={t('groups.entries', { count: group.entries.length })}
-          />
-        ))}
+          <div className="space-y-10 md:space-y-12">
+            {page.groups.map((group) => (
+              <DocsHomeGroupSection
+                key={group.id}
+                group={group}
+                sectionId={`docs-home-group-${group.id}`}
+                entriesLabel={t('groups.entries', { count: group.entries.length })}
+              />
+            ))}
+          </div>
+        </main>
       </div>
     </div>
   );

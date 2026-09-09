@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { DocsBlockRenderer } from '@/features/docs/shared/renderers';
 import type { DocsSectionModel } from '@/features/docs/shared/types';
@@ -12,13 +13,18 @@ export function AboutFeature({ sections, activityHref }: AboutFeatureProps) {
   const t = useTranslations('about');
 
   return (
-    <main className="mx-auto w-full max-w-[1000px] px-6 pb-24 md:px-8 md:pb-32 xl:pr-10 xl:pl-[5rem] 2xl:pr-12 2xl:pl-[6.75rem]">
-      <section className="flex min-h-[27rem] flex-col items-center justify-center border-b border-[var(--color-border)] py-10 text-center md:min-h-[34rem] md:py-14">
+    <main className="mx-auto w-full max-w-[var(--docs-shell-max-width)] px-5 pb-20 md:px-8 md:pb-28">
+      <section className="mx-auto flex min-h-[27rem] w-full max-w-[var(--docs-content-width)] flex-col items-center justify-center border-b border-[var(--color-border)] py-10 text-center md:min-h-[34rem] md:py-14">
         <div className="flex flex-col items-center gap-7 md:gap-8">
-          <div className="flex size-32 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-text)_4%,transparent)] p-2 shadow-[0_18px_42px_-30px_color-mix(in_srgb,var(--color-text)_66%,transparent)] md:size-36">
-            <div className="flex size-full items-center justify-center rounded-full border border-[color:color-mix(in_srgb,var(--color-text)_16%,transparent)] text-[1.65rem] font-semibold tracking-[-0.08em] text-[var(--color-text)]">
-              IN
-            </div>
+          <div className="relative size-32 shrink-0 overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[0_18px_42px_-30px_color-mix(in_srgb,var(--color-text)_66%,transparent)] md:size-36">
+            <Image
+              src="/images/about/avatar-test.jpg"
+              alt={t('identity.avatarAlt')}
+              fill
+              sizes="(min-width: 768px) 144px, 128px"
+              className="rounded-full object-cover"
+              priority
+            />
           </div>
 
           <div className="text-center">
@@ -38,7 +44,7 @@ export function AboutFeature({ sections, activityHref }: AboutFeatureProps) {
       {sections.map((section) => (
         <section
           key={section.id}
-          className="max-w-[860px] border-b border-[var(--color-border)] py-8 text-left xl:pl-12 2xl:pl-18 md:py-10"
+          className="mx-auto w-full max-w-[var(--docs-content-width)] border-b border-[var(--color-border)] py-8 text-left md:py-10"
         >
           <div>
             <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] md:text-[1.28rem]">
@@ -53,7 +59,7 @@ export function AboutFeature({ sections, activityHref }: AboutFeatureProps) {
         </section>
       ))}
 
-      <div className="max-w-[860px] pt-8 xl:pl-12 2xl:pl-18 md:pt-10">
+      <div className="mx-auto w-full max-w-[var(--docs-content-width)] pt-8 md:pt-10">
         <Link
           href={activityHref}
           className="inline-flex items-center gap-2 text-[0.82rem] font-medium text-[var(--color-nav-dropdown-description)] transition-colors hover:text-[var(--color-text)]"

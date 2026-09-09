@@ -21,7 +21,7 @@ export function DocsReferenceShell({
 }: DocsReferenceShellProps) {
   return (
     <section
-      className={`page-shell page-shell-docs-reference ${className ?? ''}`.trim()}
+      className={`page-shell page-shell-docs-reference page-shell-docs-reference--${layoutMode} ${className ?? ''}`.trim()}
       data-layout-mode={layoutMode}
       style={style}
     >
