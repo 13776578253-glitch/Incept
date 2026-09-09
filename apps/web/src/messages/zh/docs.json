@@ -10,6 +10,10 @@
   "access": {
     "requiresRole": "需要 {role} 权限"
   },
+  "actions": {
+    "collapse": "收起详情",
+    "expand": "展开详情"
+  },
   "roles": {
     "guest": "访客",
     "pro": "临时准许",

@@ -8,7 +8,7 @@ export type DocsCodePalette = (typeof docsCodePaletteIds)[number];
 // - solarized-light
 // - solarized-dark
 
-// 通过 Shiki 高亮库实现
+// Shiki 高亮库
 export const DOCS_CODE_PALETTE_COOKIE = 'incept-code-palette';
 export const DOCS_CODE_PALETTE_STORAGE_KEY = 'incept-code-palette';
 export const DOCS_CODE_PALETTE_DATA_ATTRIBUTE = 'data-code-palette';

@@ -10,6 +10,10 @@
   "access": {
     "requiresRole": "Requires {role} access"
   },
+  "actions": {
+    "collapse": "Collapse details",
+    "expand": "Expand details"
+  },
   "roles": {
     "guest": "guest",
     "pro": "Temporary access",

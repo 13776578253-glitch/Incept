@@ -13,20 +13,20 @@ export function DocsHomeGroupSection({
   entriesLabel,
 }: DocsHomeGroupSectionProps) {
   return (
-    <section id={sectionId} className="mx-auto max-w-[860px] scroll-mt-28">
-      <div className="xl:pl-12 2xl:pl-18">
-        <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
+    <section id={sectionId} className="scroll-mt-28">
+      <div>
+        <div className="mb-4 flex items-end justify-center gap-150">
+          <div className="text-center">
             <h2 className="text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--color-text)] md:text-[1.1rem]">
               {group.label}
             </h2>
           </div>
-          <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)] md:mr-12 xl:mr-16">
+          <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
             {entriesLabel}
           </p>
         </div>
 
-        <div className="space-y-5 md:space-y-6">
+        <div className="space-y-2">
           {group.entries.map((entry) => (
             <DocsHomeListItem key={entry.id} article={entry} />
           ))}

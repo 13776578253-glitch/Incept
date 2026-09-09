@@ -33,7 +33,8 @@
 }
 
 .page-shell-docs-reference[data-layout-mode='contentOnly'] {
-  grid-template-columns: minmax(0, var(--docs-content-width)) var(--docs-right-rail-width);
+  /* Keep the same three-column coordinate system as collection articles. */
+  grid-template-columns: var(--docs-sidebar-width) minmax(0, var(--docs-content-width)) var(--docs-right-rail-width);
   justify-content: center;
 }
 
@@ -42,7 +43,7 @@
 }
 
 .page-shell-docs-reference[data-layout-mode='contentOnly'] .page-shell-docs-reference-content {
-  grid-column: 1;
+  grid-column: 2;
 }
 
 .page-shell-docs-reference-sidebar {
@@ -73,7 +74,13 @@
 }
 
 .page-shell-docs-reference[data-layout-mode='contentOnly'] .page-shell-docs-reference-aside {
-  right: max(32px, calc((100vw - (var(--docs-content-width) + var(--docs-right-rail-width) + 48px + 64px)) / 2));
+  /* Match collection articles: the outline rail shares one viewport anchor. */
+  right: max(32px, calc((100vw - var(--docs-shell-max-width)) / 2));
+}
+
+/* Single articles use a separate two-column frame; collection articles keep the three-column frame above. */
+.page-shell-docs-reference--contentOnly .page-shell-docs-reference-content {
+  grid-column: 2;
 }
 
 /* Keep long article outlines scrollable without exposing a visual scrollbar. */
@@ -139,7 +146,7 @@
   }
 
   .page-shell-docs-reference[data-layout-mode='contentOnly'] {
-    grid-template-columns: minmax(0, var(--docs-content-width));
+    grid-template-columns: var(--docs-sidebar-width) minmax(0, var(--docs-content-width));
     justify-content: center;
   }
 }

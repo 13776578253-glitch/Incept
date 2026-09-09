@@ -1,4 +1,6 @@
+ 'use client';
 import Link from 'next/link';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
@@ -56,6 +58,9 @@ function ArticleIcon() {
 }
 
 export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
+  const [expanded, setExpanded] = useState(false);
+  // TODO: Replace eyebrow with the future article tag collection when the tag system is available.
+  const tags = article.eyebrow ? [article.eyebrow] : [];
   const locale = useLocale() as AppLocale;
   const t = useTranslations('docs');
   const roleLabel = t(`roles.${article.requiredRole}`);
@@ -64,17 +69,13 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
 
   const content = (
     <article
-      className="grid gap-2 md:grid-cols-[6.75rem_minmax(0,1fr)_6.5rem] md:gap-x-7 md:gap-y-2"
+      className="flex min-h-11 items-center justify-between gap-4 rounded-[11px] border border-transparent bg-[color-mix(in_srgb,var(--color-nav-item-hover)_62%,transparent)] px-4 py-2.5 transition-colors md:px-5"
       aria-label={article.title}
     >
-      <div className="text-[0.92rem] leading-7 text-[var(--color-nav-dropdown-description)] md:pt-0.5">
-        {formatPublishedDate(article.publishedAt, locale)}
-      </div>
-
       <div className="min-w-0">
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <h3
-            className={`max-w-[30ch] text-[1.1rem] font-medium leading-8 tracking-[-0.025em] md:text-[1.18rem] ${
+            className={`max-w-[42ch] text-[0.98rem] font-medium leading-6 tracking-[-0.015em] md:text-[1rem] ${
               isLocked
                 ? 'text-[color-mix(in_srgb,var(--color-text)_82%,transparent)]'
                 : 'text-[var(--color-text)]'
@@ -88,47 +89,46 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
             </span>
           </h3>
 
-          <p
-            className={`max-w-[52ch] text-[0.95rem] leading-7 ${
-              isLocked
-                ? 'text-[color-mix(in_srgb,var(--color-nav-dropdown-description)_78%,transparent)] blur-[1.15px]'
-                : 'text-[var(--color-nav-dropdown-description)]'
-            }`}
-          >
-            {article.summary}
-          </p>
-
           {isLocked ? (
-            <p className="text-[0.78rem] leading-6 text-[var(--color-nav-muted)]">
+            <p className="text-[0.72rem] leading-5 text-[var(--color-nav-muted)]">
               {t('access.requiresRole', { role: roleLabel })}
             </p>
           ) : null}
         </div>
       </div>
 
-      {isLocked ? (
-        <div className="hidden items-start pt-1 md:-ml-7 md:flex md:justify-self-start">
+      <div className="flex shrink-0 items-center gap-3 text-[0.72rem] text-[var(--color-nav-muted)]">
+        <span>{formatPublishedDate(article.publishedAt, locale)}</span>
+        {isLocked ? (
           <span className="inline-flex items-center gap-1 text-[0.74rem] text-[var(--color-nav-muted)]">
             <LockIcon />
             <span>{roleLabel}</span>
           </span>
-        </div>
-      ) : (
-        <div className="hidden md:block" />
-      )}
+        ) : null}
+        <button type="button" aria-expanded={expanded} aria-label={expanded ? t('actions.collapse') : t('actions.expand')} onClick={(event) => { event.preventDefault(); event.stopPropagation(); setExpanded((value) => !value); }} className="flex size-6 shrink-0 items-center justify-end text-base transition-colors hover:text-[var(--color-text)]">
+          <span className={`inline-block text-[0.9rem] transition-transform ${expanded ? 'rotate-90' : ''}`}>›</span>
+        </button>
+      </div>
     </article>
   );
+
+  const details = expanded ? (
+    <div className="px-4 pb-4 pt-2 md:px-5">
+      {/* TODO: Render tags from the tag system here; keep this area borderless until then. */}
+      {tags.length ? tags.map((tag) => <span key={tag} className="mt-2 mr-2 inline-flex rounded-full bg-[var(--color-nav-item-active)] px-2.5 py-1 text-[0.7rem] text-[var(--color-nav-muted)]">{tag}</span>) : null}
+    </div>
+  ) : null;
 
   if (!href || isLocked) {
     return content;
   }
 
   return (
-    <Link
+    <div className="overflow-hidden rounded-[12px]">
+      <Link
       href={href}
-      className="block rounded-[18px] transition-opacity hover:opacity-90"
-    >
-      {content}
-    </Link>
+      className="block rounded-[12px] transition-transform hover:-translate-y-px"
+      >{content}</Link>{details}
+    </div>
   );
 }
