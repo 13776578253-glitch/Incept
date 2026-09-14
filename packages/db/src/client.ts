@@ -7,6 +7,7 @@ declare global {
 }
 
 // Bump this when Prisma schema changes so Next development HMR does not retain a stale runtime model.
+// TODO: This still reports the 2026-07-26 revision although the 2026-09-01 nested collection navigation and 2026-09-02 collection item active schema changes already landed; bump it when those models are accepted.
 const prismaSchemaRevision = '2026-07-26-docs-listing';
 const hasCurrentPrismaClient =
   globalThis.__inceptPrisma__ &&

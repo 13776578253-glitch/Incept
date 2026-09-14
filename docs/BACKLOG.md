@@ -21,25 +21,26 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 ### B-03 Markdown-like Heading And Section Model
 
 - Source: `document/blocks/index.ts`
-- Status: Implemented; source TODO comment still needs in-place `history:` cleanup.
+- Status: Implemented; the line-12 heading note is already `history:`, but `blocks/index.ts:13` still carries a live TODO about mapping heading blocks into the nested `On this page` outline, so it is not a completed-work cleanup candidate.
 - `#` starts a section, while `##` through `####` become body heading blocks and nested `On this page` outline items.
 - Section IDs, block IDs, article-writing syntax, and the existing section-level outline behavior remain unchanged.
 
 ### B-04 Markdown-like Checklist Expansion
 
-- Source: `document/state.ts:64-65`
+- Source: `document/state.ts:63-64`
 - Status: Active parser-design work.
 - Decide multiline checklist item syntax and whether nested checklist items are supported. Do not change IDs independently of the parser grammar.
 
 ### B-05 Structured Content Extensions
 
-- Source: `block-system/schema/docs-block-types.ts:1`
+- Source: `block-system/schema/docs-block-types.ts` (`DocsBlockType` union), `block-system/examples/docs-block-style-lab-page.ts:12-13`
+- Note: the former `docs-block-types.ts:1` marker is already an in-place `history:` note; `table` remains unimplemented across the block union, the renderers, and the importer.
 - Status: Active only after the authoring contract is designed.
 - Image support is complete. The remaining concrete candidate is `table`; embeds, video, timeline, and interactive blocks remain separate proposals rather than implicit additions.
 
 ### B-06 Multi-Article Markdown-like Source
 
-- Sources: `document/state.ts:7`, `document/ids.ts:3`
+- Sources: `document/state.ts:6`, `document/ids.ts:3`
 - Status: Implemented foundation; real-content acceptance and follow-up hardening remain.
 - One `.docs.md` file remains one independent article. Directory import maps numbered folders to empty navigation folders and numbered files to article nodes.
 - Maximum folder depth is three; numeric prefixes supply sibling order. Batch Preview/Confirm, `created` / `updated` / `unchanged` / `renamed` / `removed` diff, inactive-node cleanup, and strict database transaction handling are implemented.
@@ -53,6 +54,40 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 - Status: Deferred.
 - Current `vscode`, `github`, and `vitesse` palettes plus the eye-comfort override are sufficient. Add palettes only with a named UX need and matching light/dark Shiki themes.
 
+## Code-Level Follow-Ups
+
+Registered while verifying `NEXT.md` against the working tree. These are source TODOs, not product features.
+
+### B-10 Prisma Schema Revision Not Bumped
+
+- Source: `packages/db/src/client.ts:10`
+- The revision still reports `2026-07-26-docs-listing` after the 2026-09-01 nested collection navigation and 2026-09-02 collection item active schema changes. Bump it when those models are accepted.
+
+### B-11 Collection Folder Depth Limit Only Warns
+
+- Source: `apps/web/src/features/docs/importer/collection-directory.ts:181-188`
+- A folder deeper than three levels reports an issue, but the scan still recurses and builds deeper nodes.
+
+### B-12 Directory Import Requires An Overridden Position
+
+- Source: `apps/web/src/features/docs/importer/validation.ts:273-280`
+- Directory sources must provide an integer `meta.position` that the numeric directory prefix then overrides.
+
+### B-13 Redundant Collection Preview Status
+
+- Source: `packages/db/src/docs/import.ts:1089-1090`
+- Both branches of the replace check resolve to `updated`.
+
+### B-14 Cross-Locale Collection Replace Shares Node Keys
+
+- Source: `packages/db/src/docs/import.ts:1224-1226`
+- `nodeKey` is shared across locales, so a single-locale `--replace` that shrinks the tree also deactivates nodes the other locale still needs. This is unverified against real content.
+
+### B-15 Article Tag Contract Placeholder
+
+- Sources: `apps/web/src/features/docs/shared/types.ts`, `packages/db/src/docs/types.ts`
+- An optional `tags?: string[]` contract placeholder exists with no data model, query, or renderer consuming it. The expandable Docs home row still falls back to `eyebrow`.
+
 ## Review Before Any Code Decision
 
 ### B-09 Retained Style Lab And Block Catalog
@@ -64,18 +99,26 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 
 ## History Candidates
 
-These comments appear to describe work already completed. Do not edit them until the corresponding cleanup task is approved; then replace the original TODO text in place with the stated `history:` note.
+These comments describe work already completed. Do not edit them until the corresponding cleanup task is approved; then replace the original TODO text in place with the stated `history:` note.
+
+### Verified Already Converted
+
+Verified against the working tree: these sources already carry the planned in-place `history:` note, so no further edit is pending.
+
+| Source | In-place note now present |
+| --- | --- |
+| `features/docs/block-system/examples/docs-code-example-utils.ts:1-3` | `history:` Shiki highlighting note plus a `Deferred:` builder note. |
+| `features/docs/block-system/schema/docs-block-types.ts:1` | `history: image blocks and local media publishing are implemented; table remains B-05.` |
+| `features/docs/block-system/catalog/docs-block-catalog.ts:36-37` | `history:` real-media pipeline note plus the retained Style Lab fixture note. |
+| `apps/web/src/server/docs/mappers.ts:23-24` | `history:` annual-description removal and mapper-consolidation notes. |
+| `packages/db/src/docs/types.ts:10-11` | `history:` block-union note. The earlier `:6` reference pointed at an import statement, not a comment. |
+| `document/state.ts:5` | `history: # creates a section and ## through #### already parse as body heading blocks.` |
+
+### Remaining
 
 | Source | Planned in-place history note | Evidence |
 | --- | --- | --- |
-| `features/docs/block-system/examples/docs-code-example-utils.ts:1-40` | `history: Shiki highlighting and language coverage were implemented; this helper remains a small code-string utility.` | Highlighter is no longer a future plan. |
-| `features/docs/block-system/schema/docs-block-types.ts:1` image portion | `history: image blocks and local media publishing are implemented.` | Real Markdown-like image import was verified. |
-| `features/docs/block-system/catalog/docs-block-catalog.ts:37` real-media portion | `history: real image import and preview validation now use the external content-root media pipeline.` | Placeholder catalog images are no longer the only validation path. |
-| `document/state.ts:5-6` | `history: # creates a section and ## through #### already parse as body heading blocks.` | Existing parser behavior already covers the original TODO. |
-| `document/state.ts:7` and `document/ids.ts:3` duplicate wording | `history: duplicated multi-article-source TODO consolidated under B-06.` | One deferred import-model item remains. |
-| `server/docs/mappers.ts` annual descriptions | `history: Docs Home no longer renders per-year descriptions; the obsolete static description map was removed.` | The simplified Docs Home does not consume `group.description`. |
-| `server/docs/mappers.ts` mapper consolidation | `history: Single-article and collection mappers remain separate because their route and sidebar contracts differ.` | The current split matches distinct route and sidebar contracts. |
-| `packages/db/src/docs/types.ts:6` | `history: The current block union matches the implemented renderer and importer contract.` | The generic TODO had no actionable acceptance condition. |
+| `document/state.ts:6` and `document/ids.ts:3` duplicate wording | `history: duplicated multi-article-source TODO consolidated under B-06.` | Both TODOs still exist and are the live B-06 source markers; convert them only once B-06 real-content acceptance closes. |
 
 ## Execution Order
 

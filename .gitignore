@@ -22,3 +22,6 @@ packages/db/generated
 packages/db/node_modules
 .docs-import-drafts
 apps/web/src/features/docs/importer/docs-push/
+
+.agents
+.commandcode

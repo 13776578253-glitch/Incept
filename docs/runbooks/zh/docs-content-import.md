@@ -323,6 +323,14 @@ account-access\
 ![Principal flow](./assets/principal-flow.png)
 ```
 
+如果图片与文章同级放在 `assets/` 目录，也可以只写文件名，导入器会在文章目录和文章同级的 `assets/` 目录中依次查找：
+
+```md
+![Principal flow](principal-flow.png)
+```
+
+显式的相对路径优先；建议新文章使用 `./assets/name.png`，裸文件名主要用于兼容已有文章。
+
 嵌套文章引用合集根目录共享图片：
 
 ```md

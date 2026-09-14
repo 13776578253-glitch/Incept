@@ -75,3 +75,7 @@ Environment limitations:
 - 修改了 Docs/Notes 列表、Docs 阅读壳层及共享布局样式，保留隐藏导航与独立页面路由，单篇与 collection 文章继续使用可区分的布局语义。
 - 遗留问题: 需要在真实 Docs 单篇/collection 路由及桌面、平板、移动视口完成视觉对齐验收；构建 TypeScript 阶段受 Windows `spawn EPERM` 影响，lint 受仓库缺少 ESLint 9 flat config 影响。
 - Commit 建议: `refactor(web): align docs notes and about surfaces`
+
+## Archive Note
+
+Archived to `finish-task/` on 2026-09-10. The work described above was committed as `0edc55d refactor(web): align docs notes and about surfaces` and merged into `main` through PR #1 (`1e6be8c`), so the "not been committed yet" status no longer applies. The follow-up visual alignment review, the temporary avatar replacement, and the `eyebrow` tag fallback replacement remain open; the tag contract placeholder is now tracked as B-15.

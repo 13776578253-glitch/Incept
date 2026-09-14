@@ -58,6 +58,13 @@ try {
     dryRun.media.operations[0]?.targetUrl,
   );
 
+  const conventionSourcePath = await writeSource('convention.docs.md', 'diagram.png');
+  const convention = await importerModule.loadDocsImportSource(conventionSourcePath, {
+    mediaMode: 'validate',
+  });
+  assert.deepEqual(convention.issues, []);
+  assert.equal(convention.media.operations[0]?.targetUrl, dryRun.media.operations[0]?.targetUrl);
+
   const published = await importerModule.loadDocsImportSource(validSourcePath, {
     mediaMode: 'publish',
   });

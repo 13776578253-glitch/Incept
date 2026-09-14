@@ -270,6 +270,7 @@ export function normalizeDocsImportSource(
       });
     }
 
+    // TODO: Directory import requires this integer position and then overrides it with the numeric directory prefix; decide whether directory sources should still require meta.position.
     if (typeof source.meta.position !== 'number' || !Number.isInteger(source.meta.position)) {
       issues.push({
         level: 'error',

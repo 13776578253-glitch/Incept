@@ -27,6 +27,10 @@ function isSiteAbsoluteUrl(src: string) {
   return src.startsWith('/');
 }
 
+function isBareLocalImageReference(src: string) {
+  return !src.includes('/') && !src.includes('\\');
+}
+
 function mediaIssue(
   code: string,
   message: string,
@@ -82,8 +86,12 @@ async function resolveLocalImage({
     };
   }
 
-  const candidatePath = path.resolve(sourceDirectory, src);
-  if (!isPathInside(contentRoot, candidatePath)) {
+  const candidatePaths = [path.resolve(sourceDirectory, src)];
+  if (isBareLocalImageReference(src)) {
+    candidatePaths.push(path.resolve(sourceDirectory, 'assets', src));
+  }
+
+  if (candidatePaths.some((candidatePath) => !isPathInside(contentRoot, candidatePath))) {
     return {
       issue: mediaIssue(
         'local_media_path_outside_root',
@@ -93,7 +101,7 @@ async function resolveLocalImage({
     };
   }
 
-  const extension = path.extname(candidatePath).toLowerCase();
+  const extension = path.extname(src).toLowerCase();
   if (!supportedImageExtensions.has(extension)) {
     return {
       issue: mediaIssue(
@@ -104,37 +112,45 @@ async function resolveLocalImage({
     };
   }
 
-  let resolvedPath: string;
-  try {
-    resolvedPath = await fs.realpath(candidatePath);
-    if (!isPathInside(contentRoot, resolvedPath)) {
-      return {
-        issue: mediaIssue(
-          'local_media_path_outside_root',
-          'Image src resolves outside DOCS_CONTENT_ROOT.',
-          line,
-        ),
-      };
+  let resolvedPath: string | undefined;
+  for (const candidatePath of candidatePaths) {
+    try {
+      resolvedPath = await fs.realpath(candidatePath);
+      break;
+    } catch {
+      // Try the convention-based assets fallback for a bare file name.
     }
+  }
 
-    const stats = await fs.stat(resolvedPath);
-    if (!stats.isFile()) {
-      return {
-        issue: mediaIssue('invalid_local_media_file', 'Image src must reference a file.', line),
-      };
-    }
-    if (stats.size > maxLocalImageBytes) {
-      return {
-        issue: mediaIssue(
-          'local_media_too_large',
-          `Local image files must not exceed ${maxLocalImageBytes / 1024 / 1024} MB.`,
-          line,
-        ),
-      };
-    }
-  } catch {
+  if (!resolvedPath) {
     return {
       issue: mediaIssue('local_media_not_found', `Local image file was not found: ${src}`, line),
+    };
+  }
+
+  if (!isPathInside(contentRoot, resolvedPath)) {
+    return {
+      issue: mediaIssue(
+        'local_media_path_outside_root',
+        'Image src resolves outside DOCS_CONTENT_ROOT.',
+        line,
+      ),
+    };
+  }
+
+  const stats = await fs.stat(resolvedPath);
+  if (!stats.isFile()) {
+    return {
+      issue: mediaIssue('invalid_local_media_file', 'Image src must reference a file.', line),
+    };
+  }
+  if (stats.size > maxLocalImageBytes) {
+    return {
+      issue: mediaIssue(
+        'local_media_too_large',
+        `Local image files must not exceed ${maxLocalImageBytes / 1024 / 1024} MB.`,
+        line,
+      ),
     };
   }
 

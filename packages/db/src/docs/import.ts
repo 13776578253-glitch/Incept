@@ -1086,6 +1086,7 @@ export async function previewDocsCollectionDirectory({
     changes.push({
       key: source.meta.documentKey ?? source.meta.slug,
       type: 'article',
+      // TODO: Both branches of the replace check resolve to 'updated'; collapse this once the renamed and removed statuses are final.
       status: unchanged ? 'unchanged' : replace ? 'updated' : 'updated',
     });
   }
@@ -1221,6 +1222,7 @@ export async function importDocsCollectionDirectory({
     }
 
     if (replace) {
+      // TODO: nodeKey is shared across locales, so a single-locale --replace that shrinks the tree also deactivates nodes the other locale still needs; scope this removal per locale before acceptance.
       const desiredNodeKeys = new Set(nodes.map((node) => node.nodeKey));
       const activeItems = await db.docsCollectionItem.findMany({
         where: { collectionId, isActive: true },

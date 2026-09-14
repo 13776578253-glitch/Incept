@@ -83,6 +83,8 @@ export type DocsArticlePageModel = {
   layoutMode: DocsLayoutMode;
   locale: 'en' | 'zh';
   eyebrow?: string;
+  // TODO: Tags are an unused contract placeholder until the tag data model exists; the article header still renders the eyebrow only.
+  tags?: string[];
   title: string;
   description?: string;
   publishedAt?: string;
@@ -105,6 +107,8 @@ export type DocsHomeArticleItemModel = {
   publishedAt: string;
   requiredRole: DocsAccessRole;
   eyebrow?: string;
+  // TODO: Tags are an unused contract placeholder until the tag data model exists; the expandable row still falls back to the eyebrow tag.
+  tags?: string[];
   isAccessible: boolean;
   href?: string;
 };

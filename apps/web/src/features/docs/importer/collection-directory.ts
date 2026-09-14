@@ -184,6 +184,7 @@ async function scanDirectory(
           `Collection folders cannot be nested deeper than ${maxCollectionFolderDepth} levels.`,
           relativePath,
         );
+        // TODO: The depth limit only reports an issue; the scan still recurses and builds deeper nodes, so confirm whether a directory import should stop at the limit.
       }
 
       const nodeKey = parentNodeKey

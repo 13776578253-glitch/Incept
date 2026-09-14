@@ -32,3 +32,7 @@ Still required before considering the collection path accepted:
 - Confirm Docs Home ordering remains based on first publication time.
 
 Standalone article replacement is the established behavior. Collection article replacement remains explicitly unverified with real content.
+
+## Archive Note
+
+Archived to `finish-task/` on 2026-09-10. The change described above was committed as `45bc70c fix: preserve original publication date on replace`, so the "prepared for the next Git commit" status no longer applies. The remaining real-database acceptance for collection `--replace` is still open under B-06 and the 2026-09-01 collection navigation milestone.

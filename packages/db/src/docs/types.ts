@@ -142,6 +142,8 @@ export type DbDocsArticleRecord = {
   locale: DbDocsLocale;
   slug: string;
   eyebrow?: string | null;
+  // TODO: Tags are an unused contract placeholder until the tag data model exists; no query populates this yet.
+  tags?: string[];
   title: string;
   summary?: string | null;
   status: DocStatus;
@@ -218,6 +220,8 @@ export type DbDocsHomeArticleRecord = {
   publishedAt: Date;
   requiredRole: DocAccessRole;
   eyebrow?: string | null;
+  // TODO: Tags are an unused contract placeholder until the tag data model exists; no query populates this yet.
+  tags?: string[];
   accessRole: DocAccessRole;
 };
 
