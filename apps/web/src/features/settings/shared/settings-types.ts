@@ -36,7 +36,7 @@ export type SettingsRow = {
 };
 
 export type SettingsSection = {
-  id: 'appearance' | 'language' | 'account' | 'ai';
+  id: 'appearance' | 'language' | 'account' | 'plugin' | 'ai';
   label: string;
   description?: string;
   visibility: SettingsVisibility;

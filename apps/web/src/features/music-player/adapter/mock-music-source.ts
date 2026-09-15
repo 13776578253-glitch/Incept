@@ -11,26 +11,49 @@ export type ResolvedTrackSource = {
 };
 
 // 本期只提供 mock 音源：core 不持有可播放 URL，资源解析一律留在这里。
-const mockTrackRows: PlayerTrackRow[] = [
-  {
-    track: { id: 'mock-01', title: 'Sample Track 01 · A3 220 Hz', artist: 'Mock Audio', durationHint: 6 },
-    publishedAt: '2026-04-26',
-  },
-  {
-    track: { id: 'mock-02', title: 'Sample Track 02 · C#4 277 Hz', artist: 'Mock Audio', durationHint: 8 },
-    publishedAt: '2026-03-22',
-  },
-  {
-    track: { id: 'mock-03', title: 'Sample Track 03 · E4 330 Hz', artist: 'Mock Audio', durationHint: 10 },
-    publishedAt: '2026-01-17',
-  },
+//
+// 列表刻意造到 27 条（与参考图的条目量一致），用来验证长列表的滚动与行高；
+// 但只生成 3 段真实音频，按索引轮转复用——列表长度和音频资源数是两件事。
+const MOCK_TRACK_COUNT = 27;
+
+const MOCK_AUDIO_FILES = [
+  '/mock/audio/mock-track-01.wav',
+  '/mock/audio/mock-track-02.wav',
+  '/mock/audio/mock-track-03.wav',
 ];
 
-const audioUrlByTrackId: Record<string, string> = {
-  'mock-01': '/mock/audio/mock-track-01.wav',
-  'mock-02': '/mock/audio/mock-track-02.wav',
-  'mock-03': '/mock/audio/mock-track-03.wav',
-};
+const MOCK_AUDIO_LABELS = ['A3 220 Hz', 'C#4 277 Hz', 'E4 330 Hz'];
+
+const MOCK_AUDIO_DURATIONS = [6, 8, 10];
+
+// 与参考图一致：日期自 2026-04-26 起按固定步长递减，纯 UTC 运算以保证结果稳定。
+function buildMockPublishedAt(index: number): string {
+  const dayInMilliseconds = 24 * 60 * 60 * 1000;
+  const date = new Date(Date.UTC(2026, 3, 26) - index * 11 * dayInMilliseconds);
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dayOfMonth = String(date.getUTCDate()).padStart(2, '0');
+
+  return `${date.getUTCFullYear()}-${month}-${dayOfMonth}`;
+}
+
+const mockTrackRows: PlayerTrackRow[] = Array.from({ length: MOCK_TRACK_COUNT }, (_unused, index) => {
+  const ordinal = String(index + 1).padStart(2, '0');
+  const audioIndex = index % MOCK_AUDIO_FILES.length;
+
+  return {
+    track: {
+      id: `mock-${ordinal}`,
+      title: `Sample Track ${ordinal} · ${MOCK_AUDIO_LABELS[audioIndex]}`,
+      artist: 'Mock Audio',
+      durationHint: MOCK_AUDIO_DURATIONS[audioIndex],
+    },
+    publishedAt: buildMockPublishedAt(index),
+  };
+});
+
+const audioUrlByTrackId: Record<string, string> = Object.fromEntries(
+  mockTrackRows.map((row, index) => [row.track.id, MOCK_AUDIO_FILES[index % MOCK_AUDIO_FILES.length]]),
+);
 
 const publishedAtByTrackId: Record<string, string> = Object.fromEntries(
   mockTrackRows.map((row) => [row.track.id, row.publishedAt]),

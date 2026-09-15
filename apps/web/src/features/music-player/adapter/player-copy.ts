@@ -23,7 +23,7 @@ export type PlayerCopy = {
 };
 
 const zhCopy: PlayerCopy = {
-  formatPlaylistHeading: (count) => `播客列表（${count}）`,
+  formatPlaylistHeading: (count) => `列表（${count}）`,
   emptyQueue: '暂时没有可播放的内容',
   play: '播放',
   pause: '暂停',
@@ -92,6 +92,16 @@ export function getPlayerCopy(locale: string): PlayerCopy {
 
 export function formatPlaybackRate(rate: number): string {
   return `${Number(rate.toFixed(2))}x`;
+}
+
+// 可选的倍速档位。1x 必须在列表里，否则循环一圈回不到正常速度。
+// 每一档都落在 core 的 [MIN_PLAYBACK_RATE, MAX_PLAYBACK_RATE] 内，因此 playbackRateRequested 全部会被接受。
+export const PLAYBACK_RATE_OPTIONS = [0.5, 0.8, 1, 1.5, 2] as const;
+
+export function getNextPlaybackRate(current: number): number {
+  const index = PLAYBACK_RATE_OPTIONS.findIndex((rate) => Math.abs(rate - current) < 0.001);
+
+  return PLAYBACK_RATE_OPTIONS[(index + 1) % PLAYBACK_RATE_OPTIONS.length];
 }
 
 export function formatClock(seconds: number): string {

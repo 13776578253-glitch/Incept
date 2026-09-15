@@ -2,9 +2,15 @@
 
 import { usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
-import { formatClock, formatPlaybackRate, formatTrackDate, getPlayerCopy } from '../adapter/player-copy';
+import {
+  formatClock,
+  formatPlaybackRate,
+  formatTrackDate,
+  getNextPlaybackRate,
+  getPlayerCopy,
+} from '../adapter/player-copy';
 import { getTrackPublishedAt } from '../adapter/mock-music-source';
 import { isMusicPlayerHiddenRoute } from '../adapter/player-route-policy';
 import { useFloatingPosition } from '../hooks/use-floating-position';
@@ -23,6 +29,7 @@ export function MusicPlayerFloating() {
   const { mode: viewport, isReady: isViewportReady } = usePlayerViewport();
 
   const isMobile = viewport === 'mobile';
+  const isHiddenRoute = isMusicPlayerHiddenRoute(pathname);
 
   const { elementRef, placement, geometry, isDragging, setMode, dragHandlers } = useFloatingPosition({
     draggable: !isMobile,
@@ -53,9 +60,17 @@ export function MusicPlayerFloating() {
     [locale, state.queue, state.currentTrackId],
   );
 
-  // 工具型页面只隐藏 UI，不碰播放：Runtime 挂在 [locale] 之上，音频会继续，
-  // 回到普通页面时仍从原进度接着放。
-  if (isMusicPlayerHiddenRoute(pathname)) {
+  // 工具型页面不显示播放器，所以必须在这里把声音停掉——否则用户会听到音乐却没有控件可停。
+  // 只暂停、不重置：currentTime 与 restartToken 都不动，回到普通页面按播放是从原进度继续。
+  useEffect(() => {
+    if (!isHiddenRoute) {
+      return;
+    }
+
+    sendIntent({ type: 'pauseRequested' });
+  }, [isHiddenRoute, sendIntent]);
+
+  if (isHiddenRoute) {
     return null;
   }
 
@@ -68,9 +83,15 @@ export function MusicPlayerFloating() {
     sendIntent({ type: 'playRequested' });
   };
 
-  // TODO: nextRequested / previousRequested / seekRequested / playbackRateRequested / repeatModeRequested
-  // 已在 @incept/music-player-core 实现并有测试覆盖，但本期刻意不接入 UI。
-  // 首版只交付播放、暂停与列表选择；接入这五项属于后续阶段，不要误当成已交付能力。
+  // 倍速：点一次进一档。档位定义在 adapter，且全部落在 core 的合法区间内。
+  const handleCycleRate = () => {
+    sendIntent({ type: 'playbackRateRequested', rate: getNextPlaybackRate(state.playbackRate) });
+  };
+
+  // TODO: nextRequested / previousRequested / seekRequested / repeatModeRequested
+  // 已在 @incept/music-player-core 实现并有测试覆盖，但本期刻意不接入播放器 UI。
+  // 用户偏好类调整（例如默认倍速）计划移到 settings 界面，之后单独讨论。
+  // 不要把这四项误当成已交付能力。
 
   // 内部错误码在 adapter 里映射成本地化文案，不把浏览器原始 Error message 直接抛给用户。
   const errorText =
@@ -94,6 +115,7 @@ export function MusicPlayerFloating() {
         title={title}
         clock={clock}
         rateLabel={rateLabel}
+        rateCycleLabel={copy.playbackRate}
         playLabel={copy.play}
         pauseLabel={copy.pause}
         collapseLabel={copy.collapse}
@@ -106,6 +128,7 @@ export function MusicPlayerFloating() {
         onTogglePlay={handleTogglePlay}
         onCollapse={() => setMode('orb')}
         onToggleList={() => setMode('expanded')}
+        onCycleRate={handleCycleRate}
       />
     ) : (
       <PlayerExpanded
@@ -115,6 +138,7 @@ export function MusicPlayerFloating() {
         title={title}
         clock={clock}
         rateLabel={rateLabel}
+        rateCycleLabel={copy.playbackRate}
         isPlaying={isPlaying}
         fullWidth={isMobile}
         showOrbToggle={!isMobile}
@@ -122,6 +146,7 @@ export function MusicPlayerFloating() {
         onSelect={handleSelect}
         onCollapse={() => setMode('orb')}
         onCollapseList={() => setMode('compact')}
+        onCycleRate={handleCycleRate}
       />
     );
 

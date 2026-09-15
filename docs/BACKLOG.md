@@ -91,8 +91,9 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 ### B-16 Music Player Controls Not Wired To The UI
 
 - Source: `apps/web/src/features/music-player/components/music-player-floating.tsx`
-- `nextRequested`, `previousRequested`, `seekRequested`, `playbackRateRequested`, and `repeatModeRequested` are implemented and tested in `@incept/music-player-core`, but the first delivered version intentionally exposes only play, pause, and track selection.
-- Wire them in the post-first-version phase. Until then the player must not be described as having previous/next, speed, repeat, or seek controls.
+- `nextRequested`, `previousRequested`, `seekRequested`, and `repeatModeRequested` are implemented and tested in `@incept/music-player-core`, but the player UI intentionally exposes only play, pause, track selection, and playback rate.
+- `playbackRateRequested` is now wired to the speed control, which cycles `PLAYBACK_RATE_OPTIONS` from `adapter/player-copy.ts`.
+- Wire the remaining four in a later phase. User-preference settings such as a default speed belong in the settings section rather than the floating player. Until then the player must not be described as having previous/next, repeat, or seek controls.
 
 ## Review Before Any Code Decision
 

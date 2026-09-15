@@ -12,6 +12,7 @@ type PlayerExpandedProps = {
   title: string;
   clock: string;
   rateLabel: string;
+  rateCycleLabel: string;
   isPlaying: boolean;
   fullWidth: boolean;
   showOrbToggle: boolean;
@@ -19,6 +20,7 @@ type PlayerExpandedProps = {
   onSelect: (trackId: string) => void;
   onCollapse: () => void;
   onCollapseList: () => void;
+  onCycleRate: () => void;
 };
 
 export function PlayerExpanded({
@@ -28,6 +30,7 @@ export function PlayerExpanded({
   title,
   clock,
   rateLabel,
+  rateCycleLabel,
   isPlaying,
   fullWidth,
   showOrbToggle,
@@ -35,6 +38,7 @@ export function PlayerExpanded({
   onSelect,
   onCollapse,
   onCollapseList,
+  onCycleRate,
 }: PlayerExpandedProps) {
   return (
     // 面板头部 + 列表 + 底栏同属一个表面：底栏用 bare 变体，不再嵌套第二个胶囊。
@@ -64,6 +68,7 @@ export function PlayerExpanded({
           title={title}
           clock={clock}
           rateLabel={rateLabel}
+          rateCycleLabel={rateCycleLabel}
           playLabel={copy.play}
           pauseLabel={copy.pause}
           collapseLabel={copy.collapse}
@@ -77,6 +82,7 @@ export function PlayerExpanded({
           onTogglePlay={onTogglePlay}
           onCollapse={onCollapse}
           onToggleList={onCollapseList}
+          onCycleRate={onCycleRate}
         />
       </div>
     </section>

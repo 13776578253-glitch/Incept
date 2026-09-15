@@ -14,6 +14,7 @@ type PlayerCompactProps = {
   collapseLabel: string;
   expandListLabel: string;
   collapseListLabel: string;
+  rateCycleLabel: string;
   isPlaying: boolean;
   fullWidth: boolean;
   listExpanded: boolean;
@@ -23,6 +24,7 @@ type PlayerCompactProps = {
   onTogglePlay: () => void;
   onCollapse: () => void;
   onToggleList: () => void;
+  onCycleRate: () => void;
 };
 
 // 圆形封面/时长：与播放按钮同尺寸，配色用表面色 + 前景色，而不是反相的主按钮样式。
@@ -38,6 +40,7 @@ export function PlayerCompact({
   collapseLabel,
   expandListLabel,
   collapseListLabel,
+  rateCycleLabel,
   isPlaying,
   fullWidth,
   listExpanded,
@@ -46,6 +49,7 @@ export function PlayerCompact({
   onTogglePlay,
   onCollapse,
   onToggleList,
+  onCycleRate,
 }: PlayerCompactProps) {
   const widthClass = fullWidth ? 'w-full' : playerSurfaceWidthClass;
 
@@ -66,23 +70,20 @@ export function PlayerCompact({
         {isPlaying ? <PlayerPauseIcon className="h-4 w-4" /> : <PlayerPlayIcon className="h-4 w-4" />}
       </button>
 
-      {/* 点击标题展开列表；按住并移动超过阈值仍由宿主拖拽接管。 */}
-      <span
-        role="button"
-        tabIndex={0}
-        onClick={onToggleList}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            onToggleList();
-          }
-        }}
-        className="min-w-0 flex-1 cursor-pointer truncate text-[0.82rem] font-medium text-[var(--color-text)]"
-      >
-        {title}
-      </span>
+      {/* 标题是纯文本，不承担任何点击行为，也不是可聚焦控件。
+          展开列表的唯一入口是右边的箭头按钮；标题只作为拖拽起点。 */}
+      <span className="min-w-0 flex-1 truncate text-[0.82rem] font-medium text-[var(--color-text)]">{title}</span>
 
-      <span className="shrink-0 text-[0.72rem] tabular-nums text-[var(--color-text-soft)]">{rateLabel}</span>
+      {/* 倍速：点一次进一档。档位定义在 adapter，且都在 core 的合法区间内。 */}
+      <button
+        type="button"
+        data-player-interactive
+        onClick={onCycleRate}
+        aria-label={`${rateCycleLabel} ${rateLabel}`}
+        className="shrink-0 cursor-pointer rounded-full px-1.5 py-1 text-[0.72rem] tabular-nums text-[var(--color-text-soft)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]"
+      >
+        {rateLabel}
+      </button>
 
       {/* 箭头只管列表：折叠时朝下、展开时朝上，与参考图一致。 */}
       <button

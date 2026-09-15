@@ -249,7 +249,11 @@ Hidden prefixes: `/settings`, `/workspace`, `/studio`, `/docs/style-lab`, `/docs
 
 These are the tool-shaped surfaces. A floating overlay adds nothing on a page the visitor is using to do a specific task, and it covers content.
 
-**Deliberate behaviour: only the UI is hidden.** The runtime lives above `[locale]`, so audio keeps playing and its position is preserved; returning to a normal page resumes control from the same spot instead of restarting. If the intent is instead that playback should stop on these routes, that is a single `pauseRequested` dispatch at the same early-return point — but it would also throw away the listener's position every time they open settings.
+**Behaviour: the UI is hidden and playback is paused, with the position preserved.**
+
+Hidden routes dispatch `pauseRequested` from an effect that is registered before the early return, since hooks cannot run after it. Only the UI is removed; nothing touches `currentTime` or `restartToken`, so the listener's position survives and pressing play on a normal page resumes from that spot instead of restarting the track.
+
+Revision note: the first version of this policy hid the UI but left audio playing. It was reversed by an explicit decision, because a page that emits sound with no visible control is worse than one that stops — the visitor hears music and has nothing to stop it with. Auto-resume was deliberately not added: returning to a normal page leaves the player paused, so sound never starts on its own.
 
 ### Verified in the browser
 
@@ -261,7 +265,73 @@ These are the tool-shaped surfaces. A floating overlay adds nothing on a page th
 | `/zh/docs/import-preview/` | hidden | present |
 | `/zh/docs` (control) | shown | present |
 
-Client-side navigation was verified as well: with track 01 playing, navigating from `/zh` to `/zh/settings` hid the UI while playback continued — `currentTime` went 1.28 → 2.69 without restarting. A DOM probe also confirmed the compact title is a plain `SPAN` and not nested in a button; the accessibility snapshot labels it `button`, which is an artifact of the snapshot tool's role inference, not a defect.
+The pause-and-preserve behaviour was verified as a full round trip, not as a single reading:
+
+| Step | Path | Player UI | `paused` | `currentTime` |
+| --- | --- | --- | --- | --- |
+| initial | `/zh` | shown | true | 0 |
+| after pressing play | `/zh` | shown | false | 1.95 |
+| after entering settings | `/zh/settings` | hidden | true | 2.09 |
+| after returning home | `/zh` | shown | true | 2.09 |
+| after pressing play again | `/zh` | shown | false | 4.11 |
+
+Entering `/settings` flipped `paused` to true and left `currentTime` at 2.09 rather than 0. Returning home kept that position with playback still paused, and pressing play resumed from 2.09 to 4.11 over a 1.9 s wait — it did not restart the track.
+
+The compact title was also inspected in this round. See the correction under "Expand interaction" below: the first reading of that probe was wrong and the title really was interactive.
+
+Test-method note for future rounds: `agent-browser open` clears the element ref table, so a real click must be preceded by a fresh `snapshot` in the same session. A click against a stale ref silently fails with `Unknown ref`, which produces an all-paused reading that looks like a code defect.
+
+## Playback Rate, Long List And Interaction Fixes
+
+### Playback rate
+
+- `PLAYBACK_RATE_OPTIONS` lives in `adapter/player-copy.ts` and cycles `0.5 → 0.8 → 1 → 1.5 → 2`. The requested set was `0.5 / 0.8 / 1.5 / 2`; `1` was added because a cycle without it can never return to normal speed. Removing it is a one-element edit.
+- Every option sits inside core's `[MIN_PLAYBACK_RATE, MAX_PLAYBACK_RATE]` range, so `playbackRateRequested` accepts all of them and core needed no change.
+- Core **rejects** an out-of-range rate instead of clamping it, which is why the option list is the only place that decides what the user can pick. A rate that is not one of the five is simply unreachable.
+- Verified: the label reads `1x`, and one click advances it to `1.5x`.
+
+### Long list
+
+- `mock-music-source.ts` now builds 27 tracks, matching the reference image's count. Only three real WAV files exist; they are reused by index. List length and audio asset count are independent concerns.
+- The playlist exposes exactly five rows: rows are fixed at `h-11` (44px) and the list is capped at `13.75rem` (220px) with `overflow-y-auto`. A fixed row height is what makes "at most five visible" a real constraint rather than an estimate that drifts with content.
+- Verified: 27 items, `clientHeight` 220, `scrollHeight` 1214, so the list scrolls rather than growing the panel.
+
+### Expand interaction
+
+- The compact title is a plain `<span>` again. It previously carried `role="button"`, `tabIndex={0}`, and an `onClick` that expanded the list, which made the title and the chevron two entry points for the same transition.
+- Only the chevron toggles the list now; the title is a drag surface and nothing else.
+- Verified: the title reports `role: null` and `tabindex: null`, and clicking it leaves the mode at `compact`.
+
+Correction to an earlier entry in this document: a previous round concluded that the accessibility snapshot labelling the title `button` was a tool artifact, because a DOM probe found `titleTag: SPAN` and `titleInsideButton: false`. **That conclusion was wrong.** The element genuinely was interactive — it carried `role="button"` and a click handler, neither of which the probe checked. The snapshot was reporting the element accurately and the probe was too narrow.
+
+### Heading
+
+The section heading dropped its leading word and now renders `列表（27）` / `List (27)` through `formatPlaylistHeading`.
+
+## Settings Plugin Section
+
+A settings section was added so plugin preferences have a home instead of accumulating inside the floating player.
+
+- Section id `plugin`, registered between `account` and `ai`, so the sidebar order is Appearance → Language → Account → Plugin → Model.
+- Files: `features/settings/plugin/plugin-schema.ts` is new; `shared/settings-schema.ts` registers it and `shared/settings-types.ts` widens the `id` union.
+- The section is `visibility: 'public'` with three read-only `status` rows: whether the floating player is enabled, the current speed with a `Pending` badge, and the remembered floating position.
+- **No dead controls.** Values that cannot be configured yet are shown as status rows rather than as switches that do nothing when clicked. This follows the existing `ai` section, which already ships three locked rows, so the shape is an established pattern rather than a new compromise.
+- Interactive preferences — default speed, edge snapping, and whatever the music source and storage decision produces — wait for that decision.
+
+### Verified in the browser
+
+| Check | Result |
+| --- | --- |
+| Sidebar order (zh) | 主题 → 语言 → 账户 → 插件 → 模型 |
+| Sidebar order (en) | Appearance → Language → Account → Plugin → Model |
+| Selected heading | 插件 / Plugin |
+| Row labels | 悬浮播放器, 默认倍速, 悬浮位置 / Floating player, Default speed, Floating position |
+
+Note: a selected section's rows appear twice in the DOM because the desktop branch renders only the selected panel while the mobile branch renders every section; which copy is visible is decided by `lg:block` versus `lg:hidden`. That duplication is pre-existing behaviour for every section, not something this change introduced.
+
+## Next Round
+
+The real music source and storage design is the next discussion. It is deliberately not started here: the player currently reads from `adapter/mock-music-source.ts`, which resolves a track id to one of three generated WAV files and holds the publish dates that core does not know about. Whatever replaces it has to decide the schema, the access rules, and whether the default-speed preference becomes a persisted setting.
 
 ## Verification Closure
 
