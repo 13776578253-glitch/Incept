@@ -88,6 +88,12 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 - Sources: `apps/web/src/features/docs/shared/types.ts`, `packages/db/src/docs/types.ts`
 - An optional `tags?: string[]` contract placeholder exists with no data model, query, or renderer consuming it. The expandable Docs home row still falls back to `eyebrow`.
 
+### B-16 Music Player Controls Not Wired To The UI
+
+- Source: `apps/web/src/features/music-player/components/music-player-floating.tsx`
+- `nextRequested`, `previousRequested`, `seekRequested`, `playbackRateRequested`, and `repeatModeRequested` are implemented and tested in `@incept/music-player-core`, but the first delivered version intentionally exposes only play, pause, and track selection.
+- Wire them in the post-first-version phase. Until then the player must not be described as having previous/next, speed, repeat, or seek controls.
+
 ## Review Before Any Code Decision
 
 ### B-09 Retained Style Lab And Block Catalog

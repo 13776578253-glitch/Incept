@@ -5,6 +5,8 @@
   --radius-md: 14px;
   --radius-lg: 20px;
   --navbar-height: 64px;
+  /* 悬浮播放器层级：位于固定侧栏(20)与 Toast(40) 之上、Header(50) 之下。 */
+  --z-music-player: 45;
   --docs-sidebar-width: 248px;
   --docs-content-width: 760px;
   --docs-right-rail-width: 260px;
