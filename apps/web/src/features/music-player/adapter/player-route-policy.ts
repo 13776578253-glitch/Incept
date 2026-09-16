@@ -1,13 +1,16 @@
 import { localeConfig } from '@/i18n/config/locales';
 
-// 播放器不出现的路由。
+// Routes where the player does not appear.
 //
-// 这些都是"工具型"页面：读者/所有者在页面上做具体操作（改设置、审草稿、看组件目录），
-// 一个浮层既会挡住内容，也没有"边听边读"的场景。
+// These are all "tool" pages: the reader/owner performs concrete actions on the
+// page (changing settings, reviewing drafts, browsing the component catalog).
+// An overlay would block the content, and there is no "listen while reading"
+// scenario anyway.
 //
-// 判据：把 locale 前缀去掉后，路径等于该前缀、或以 "前缀/" 开头都算命中。
-// 因此 /en/studio/docs/library 与 /zh/settings?returnTo=... 都会被覆盖，
-// 查询串不参与匹配（usePathname 本来也不返回它）。
+// Criterion: after stripping the locale prefix, a path matches if it equals that
+// prefix or starts with "prefix/". So /en/studio/docs/library and
+// /zh/settings?returnTo=... are both covered, and the query string does not
+// participate in matching (usePathname doesn't return it anyway).
 const HIDDEN_ROUTE_PREFIXES = [
   '/settings',
   '/workspace',
@@ -16,7 +19,7 @@ const HIDDEN_ROUTE_PREFIXES = [
   '/docs/import-preview',
 ];
 
-// 与 use-language 内部那份逻辑一致：把 /zh/docs/x 折成 /docs/x，把 /zh 折成 /。
+// Consistent with the logic inside use-language: folds /zh/docs/x into /docs/x and /zh into /.
 export function toLocaleFreePath(pathname: string): string {
   const matchedLocale = localeConfig.locales.find(
     (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),

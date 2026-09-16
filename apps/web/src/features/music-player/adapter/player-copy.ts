@@ -20,6 +20,9 @@ export type PlayerCopy = {
   repeatModes: Record<RepeatMode, string>;
   playRejected: string;
   audioError: string;
+  catalogLoading: string;
+  catalogError: string;
+  catalogRetry: string;
 };
 
 const zhCopy: PlayerCopy = {
@@ -45,6 +48,9 @@ const zhCopy: PlayerCopy = {
   },
   playRejected: '浏览器阻止了自动播放，请再次点击播放',
   audioError: '音频加载失败',
+  catalogLoading: '正在载入曲目',
+  catalogError: '曲目列表加载失败',
+  catalogRetry: '重试',
 };
 
 const enCopy: PlayerCopy = {
@@ -70,6 +76,9 @@ const enCopy: PlayerCopy = {
   },
   playRejected: 'The browser blocked autoplay. Press play again.',
   audioError: 'Audio failed to load',
+  catalogLoading: 'Loading tracks',
+  catalogError: 'Track list failed to load',
+  catalogRetry: 'Retry',
 };
 
 const copies: Record<PlayerLocale, PlayerCopy> = {
@@ -94,8 +103,7 @@ export function formatPlaybackRate(rate: number): string {
   return `${Number(rate.toFixed(2))}x`;
 }
 
-// 可选的倍速档位。1x 必须在列表里，否则循环一圈回不到正常速度。
-// 每一档都落在 core 的 [MIN_PLAYBACK_RATE, MAX_PLAYBACK_RATE] 内，因此 playbackRateRequested 全部会被接受。
+// 倍速档位
 export const PLAYBACK_RATE_OPTIONS = [0.5, 0.8, 1, 1.5, 2] as const;
 
 export function getNextPlaybackRate(current: number): number {
@@ -117,7 +125,8 @@ export function formatClock(seconds: number): string {
 }
 
 export function formatTrackDate(locale: string, isoDate: string): string {
-  const [year, month, day] = isoDate.split('-').map((part) => Number(part));
+  // 接口返回完整的 ISO 时间戳，只取日期部分；纯日期字符串同样适用。
+  const [year, month, day] = isoDate.slice(0, 10).split('-').map((part) => Number(part));
 
   if (!year || !month || !day) {
     return isoDate;

@@ -11,7 +11,7 @@ import {
   getNextPlaybackRate,
   getPlayerCopy,
 } from '../adapter/player-copy';
-import { getTrackPublishedAt } from '../adapter/mock-music-source';
+import { findCatalogPublishedAt } from '../adapter/music-source';
 import { isMusicPlayerHiddenRoute } from '../adapter/player-route-policy';
 import { useFloatingPosition } from '../hooks/use-floating-position';
 import { useMusicPlayer } from '../hooks/use-music-player';
@@ -25,7 +25,8 @@ export function MusicPlayerFloating() {
   const pathname = usePathname();
   const locale = useLocale();
   const copy = useMemo(() => getPlayerCopy(locale), [locale]);
-  const { state, sendIntent, currentTrack, errorKind } = useMusicPlayer();
+  const { state, sendIntent, playTrack, reloadCatalog, currentTrack, errorKind, catalog, catalogStatus } =
+    useMusicPlayer();
   const { mode: viewport, isReady: isViewportReady } = usePlayerViewport();
 
   const isMobile = viewport === 'mobile';
@@ -36,11 +37,11 @@ export function MusicPlayerFloating() {
     isReadyToPosition: isViewportReady,
   });
 
-  // 移动端固定底部，没有独立气泡态。
   const viewMode = isMobile && placement.mode === 'orb' ? 'compact' : placement.mode;
   const isPlaying = state.status === 'playing';
 
-  const title = currentTrack?.title ?? copy.emptyQueue;
+  const title =
+    currentTrack?.title ?? (catalogStatus === 'loading' ? copy.catalogLoading : copy.emptyQueue);
   const clock = formatClock(state.duration > 0 ? state.duration : currentTrack?.durationHint ?? 0);
   const rateLabel = formatPlaybackRate(state.playbackRate);
   const heading = copy.formatPlaylistHeading(state.queue.length);
@@ -48,7 +49,7 @@ export function MusicPlayerFloating() {
   const items = useMemo<PlayerPlaylistItem[]>(
     () =>
       state.queue.map((track) => {
-        const publishedAt = getTrackPublishedAt(track.id);
+        const publishedAt = findCatalogPublishedAt(catalog, track.id);
 
         return {
           id: track.id,
@@ -57,7 +58,7 @@ export function MusicPlayerFloating() {
           isCurrent: track.id === state.currentTrackId,
         };
       }),
-    [locale, state.queue, state.currentTrackId],
+    [catalog, locale, state.queue, state.currentTrackId],
   );
 
   // 工具型页面不显示播放器，所以必须在这里把声音停掉——否则用户会听到音乐却没有控件可停。
@@ -78,33 +79,48 @@ export function MusicPlayerFloating() {
     sendIntent(isPlaying ? { type: 'pauseRequested' } : { type: 'playRequested' });
   };
 
+  // 走原子的"选中并播放"路径：连续派发两个 intent 会让第二次读到尚未更新的 currentTrackId，
+  // 从而在用户手势里启动旧音源。
   const handleSelect = (trackId: string) => {
-    sendIntent({ type: 'selectTrackRequested', trackId });
-    sendIntent({ type: 'playRequested' });
+    playTrack(trackId);
   };
 
-  // 倍速：点一次进一档。档位定义在 adapter，且全部落在 core 的合法区间内。
   const handleCycleRate = () => {
     sendIntent({ type: 'playbackRateRequested', rate: getNextPlaybackRate(state.playbackRate) });
   };
 
-  // TODO: nextRequested / previousRequested / seekRequested / repeatModeRequested
-  // 已在 @incept/music-player-core 实现并有测试覆盖，但本期刻意不接入播放器 UI。
-  // 用户偏好类调整（例如默认倍速）计划移到 settings 界面，之后单独讨论。
-  // 不要把这四项误当成已交付能力。
+  // TODO: nextRequested / previousRequested / seekRequested / repeatModeRequested 由
+  // @incept/music-player-core 实现并测试覆盖，没有播放器 UI 入口。首版交付播放、暂停、选曲与倍速；
+  // 用户偏好类调整（例如默认倍速）归 settings 界面。登记在 BACKLOG B-16。
 
   // 内部错误码在 adapter 里映射成本地化文案，不把浏览器原始 Error message 直接抛给用户。
   const errorText =
     errorKind === 'playRejected' ? copy.playRejected : errorKind === 'audioError' ? copy.audioError : null;
 
-  const errorNotice = errorText ? (
-    <p
+  // 目录状态与音频错误分开呈现：两者故障来源不同，合并显示会让人分不清是列表没取到还是音频放不出来。
+  // 加载中不单独提示，它已经体现在标题上。
+  const catalogText = catalogStatus === 'error' ? copy.catalogError : null;
+  const statusText = errorText ?? catalogText;
+
+  const errorNotice = statusText ? (
+    <div
       role="status"
       aria-live="polite"
-      className="mt-2 max-w-[22rem] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] px-3 py-2 text-[0.72rem] leading-5 text-[var(--color-text-muted)] shadow-[var(--shadow-nav-dropdown)]"
+      className="mt-2 flex max-w-[22rem] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] px-3 py-2 text-[0.72rem] leading-5 text-[var(--color-text-muted)] shadow-[var(--shadow-nav-dropdown)]"
     >
-      {errorText}
-    </p>
+      <span className="min-w-0 flex-1">{statusText}</span>
+      {/* 只有目录错误提供重试：音频错误重试没有意义，同一份音源仍会失败。 */}
+      {catalogStatus === 'error' ? (
+        <button
+          type="button"
+          data-player-interactive
+          onClick={reloadCatalog}
+          className="shrink-0 cursor-pointer rounded-full px-2 py-1 text-[0.68rem] text-[var(--color-text)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)]"
+        >
+          {copy.catalogRetry}
+        </button>
+      ) : null}
+    </div>
   ) : null;
 
   const surface =

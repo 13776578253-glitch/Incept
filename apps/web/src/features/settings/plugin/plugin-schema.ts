@@ -1,11 +1,12 @@
 import type { AppLocale } from '@/i18n/config/locales';
 import type { SettingsSection } from '../shared/settings-types';
 
-// 插件分区。
-//
-// 形状对齐 ai 分区：本阶段只提供"板块本身 + 诚实的只读状态行"，
+// 插件分区
+
 // 交互式偏好（默认倍速、吸附位置等）等音乐来源与存储方案确定后再接入。
 // 这里刻意不放假开关——不可配置的值就用 status 展示，而不是做一个点了没反应的控件。
+
+// TODO: 未来可能有更多插件，分区 ID 与行 ID 需要考虑命名空间冲突问题。
 export function getPluginSettingsSection(locale: AppLocale): SettingsSection {
   if (locale === 'zh') {
     return {

@@ -272,3 +272,88 @@ test('restartToken bumps when the queue advances to another track', () => {
   assert.equal(next.currentTrackId, 'c');
   assert.equal(next.restartToken, state.restartToken + 1);
 });
+
+test('tracksLoaded keeps the current track, its status and its position', () => {
+  const state = createState({ currentTrackId: 'b', status: 'playing', currentTime: 7.5 });
+  const reloaded: MusicTrack[] = [
+    { id: 'a', title: 'Alpha' },
+    { id: 'b', title: 'Beta' },
+    { id: 'd', title: 'Delta' },
+  ];
+  const next = reducePlayerState(state, { type: 'tracksLoaded', tracks: reloaded }, firstValue);
+
+  assert.equal(next.currentTrackId, 'b');
+  assert.equal(next.status, 'playing');
+  assert.equal(next.currentTime, 7.5);
+  assert.equal(next.restartToken, state.restartToken);
+  assert.deepEqual(
+    next.queue.map((track) => track.id),
+    ['a', 'b', 'd'],
+  );
+});
+
+test('tracksLoaded falls back to the new queue head when the current track is gone', () => {
+  const state = createState({ currentTrackId: 'b', status: 'playing', currentTime: 7.5 });
+  const reloaded: MusicTrack[] = [
+    { id: 'd', title: 'Delta' },
+    { id: 'e', title: 'Epsilon' },
+  ];
+  const next = reducePlayerState(state, { type: 'tracksLoaded', tracks: reloaded }, firstValue);
+
+  assert.equal(next.currentTrackId, 'd');
+  assert.equal(next.currentTime, 0);
+  assert.equal(next.restartToken, state.restartToken + 1);
+  // 原本在播放，因此新队首延续播放；这里只判定状态，不断言真的播出了。
+  assert.equal(next.status, 'loading');
+});
+
+test('tracksLoaded from an empty queue selects the first track without starting playback', () => {
+  const empty = createInitialPlayerState();
+  const next = reducePlayerState(empty, { type: 'tracksLoaded', tracks }, firstValue);
+
+  assert.equal(next.currentTrackId, 'a');
+  assert.equal(next.status, 'paused');
+  assert.notEqual(next.status, 'playing');
+});
+
+test('tracksLoaded onto an empty queue clears the cursor and returns to idle', () => {
+  const state = createState({ currentTrackId: 'b', status: 'playing', currentTime: 7.5 });
+  const next = reducePlayerState(state, { type: 'tracksLoaded', tracks: [] }, firstValue);
+
+  assert.equal(next.currentTrackId, null);
+  assert.equal(next.queue.length, 0);
+  assert.equal(next.status, 'idle');
+  assert.equal(next.currentTime, 0);
+});
+
+test('a catalog reload never introduces the audio error state', () => {
+  // 目录加载失败在 core 里没有对应输入。这条测试固化该边界：
+  // 健康状态下发生任何队列切换，都不会产生 errored 或 errorMessage。
+  const healthyStates = [
+    createState({ currentTrackId: 'b', status: 'playing' }),
+    createInitialPlayerState(),
+  ];
+  const payloads: MusicTrack[][] = [tracks, [], [{ id: 'z', title: 'Zeta' }]];
+
+  for (const state of healthyStates) {
+    for (const payload of payloads) {
+      const next = reducePlayerState(state, { type: 'tracksLoaded', tracks: payload }, firstValue);
+
+      assert.notEqual(next.status, 'errored');
+      assert.equal(next.errorMessage, undefined);
+    }
+  }
+});
+
+test('a catalog reload leaves an existing audio error untouched', () => {
+  // 两个故障源必须保持独立：目录事件既不制造音频错误，也不清除真实的音频错误。
+  const state = createState({
+    currentTrackId: 'b',
+    status: 'errored',
+    errorMessage: 'audio_element_error',
+  });
+  const next = reducePlayerState(state, { type: 'tracksLoaded', tracks }, firstValue);
+
+  assert.equal(next.status, 'errored');
+  assert.equal(next.errorMessage, 'audio_element_error');
+});

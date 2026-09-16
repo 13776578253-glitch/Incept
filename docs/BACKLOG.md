@@ -102,6 +102,17 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 - `playbackRateRequested` is now wired to the speed control, which cycles `PLAYBACK_RATE_OPTIONS` from `adapter/player-copy.ts`.
 - Wire the remaining four in a later phase. User-preference settings such as a default speed belong in the settings section rather than the floating player. Until then the player must not be described as having previous/next, repeat, or seek controls.
 
+### B-18 Music Pipeline Follow-Ups
+
+- Sources: `scripts/music-import.mjs`, `apps/web/src/features/music-player/adapter/music-source.ts`, `apps/web/src/server/music/media-store.ts`
+- Status: Open. Registered when the import pipeline was closed as a staged milestone: the chain runs end to end, the player is not feature-complete.
+- An empty manifest is rejected by default, but the `--allow-empty` escape hatch is not wired, so a deliberate full deactivation is currently impossible.
+- `toCatalogEntries` does not reject duplicate `trackKey`, negative durations, malformed dates, or an `audioUrl` that is neither site-relative nor https.
+- The catalogue failure path and the provider wiring have no automated tests because `apps/web` has no test runner.
+- Two P1 fixes await browser re-verification: selecting a track while paused must play the new source, and a catalogue refetch must not interrupt playback.
+- Mirror reuse reads the whole file to verify SHA-256, so import time scales with the size of the library.
+- `apps/web/public/mock/audio/` and `scripts/music-mock-audio.mjs` are development fixtures only. They are no longer the player's data source; the database is.
+
 ## Review Before Any Code Decision
 
 ### B-09 Retained Style Lab And Block Catalog

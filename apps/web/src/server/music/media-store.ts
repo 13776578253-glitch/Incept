@@ -2,17 +2,16 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-// 这里刻意用相对导入而不是 @/ 别名：本模块同时被 Next 和 scripts/ 下的导入 CLI 加载，
-// 而 CLI 在 packages/db 目录下运行，解析不到 apps/web 的路径映射。
+// 使用相对导入而不是 @/ 别名：本模块同时被 Next 和 scripts/ 下的导入 CLI 加载，而 CLI 在 packages/db 目录下运行，解析不到 apps/web 的路径映射
 import { findRepoRoot } from '../../features/docs/importer/paths';
 
 export const musicMediaPublicPath = '/_music-media';
 
-// 音频与图片不是一个量级：无损单曲可以到 100 MB 以上，所以上限比 docs 镜像的 10 MB 宽松得多。
+// 镜像最大值 128 MB
 const maxAudioBytes = 128 * 1024 * 1024;
 
-// 扩展名统一转小写后成为文件名的一部分，因此"同内容不同扩展名"会被视为两个对象。
-// 这是刻意的取舍：文件名完全由内容摘要与扩展名决定，避免扩展名归一化带来的歧义。
+// 扩展名统一转小写后成为文件名的一部分，因此"同内容不同扩展名"会被视为两个对象
+// 这是刻意的取舍：文件名完全由内容摘要与扩展名决定，避免扩展名归一化带来的歧义
 const musicAudioFormats = {
   '.mp3': 'audio/mpeg',
   '.wav': 'audio/wav',
@@ -35,6 +34,7 @@ export type MusicMediaOperation = MusicSourceInfo & {
   fileName: string;
   targetUrl: string;
   status: MusicMediaStatus;
+  repaired?: boolean;
   hash: string;
 };
 
@@ -42,8 +42,8 @@ export function isMusicAudioExtension(extension: string): extension is MusicAudi
   return Object.prototype.hasOwnProperty.call(musicAudioFormats, extension.toLowerCase());
 }
 
-// 校验单个清单条目：解析、防符号链接逃逸、检查扩展名与体积。
-// 只 stat 不读内容，这样导入器可以在写任何东西之前把所有条目先验一遍。
+// 校验单个清单条目：解析、防符号链接逃逸、检查扩展名与体积
+// 只 stat 不读内容，这样导入器可以在写任何东西之前把所有条目先验一遍
 export async function inspectMusicSource(
   contentRoot: string,
   relativeFile: string,
@@ -58,7 +58,7 @@ export async function inspectMusicSource(
     throw new Error(`Music file not found under MUSIC_CONTENT_ROOT: ${relativeFile}`);
   }
 
-  // 用 realpath 之后的结果做包含性判断：字符串前缀比较挡不住指向根目录外的符号链接。
+  // 用 realpath 之后的结果做包含性判断：字符串前缀比较挡不住指向根目录外的符号链接
   const relativeToRoot = path.relative(contentRoot, realSourcePath);
 
   if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) {
@@ -93,8 +93,7 @@ export async function inspectMusicSource(
   };
 }
 
-// 内容寻址发布：文件名 = sha256 + 小写扩展名。
-// 已存在即复用，不重写；dry-run 只报告将要发布什么。
+// 内容寻址发布：文件名: sha256 + 小写扩展名
 export async function publishMusicMedia({
   source,
   mode,
@@ -117,20 +116,33 @@ export async function publishMusicMedia({
     hash,
   };
 
-  try {
-    await fs.access(targetPath);
+  // 存在不等于正确：文件名是内容哈希，因此必须重新校验字节。
+  // 只检查存在会让损坏或被截断的文件被静默复用，而服务端会一直把这份坏文件发出去。
+  const existingBytes = await fs.readFile(targetPath).catch(() => null);
 
-    return { ...operation, status: 'reuse' };
-  } catch {
-    if (mode === 'publish') {
-      await fs.mkdir(path.dirname(targetPath), { recursive: true });
-      await fs.writeFile(targetPath, bytes, { flag: 'wx' }).catch(async (error: unknown) => {
-        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-          throw error;
-        }
-      });
+  if (existingBytes !== null) {
+    const existingHash = crypto.createHash('sha256').update(existingBytes).digest('hex');
+    const isIntact = existingHash === hash && existingBytes.byteLength === bytes.byteLength;
+
+    if (isIntact) {
+      return { ...operation, status: 'reuse' };
     }
 
-    return operation;
+    if (mode === 'publish') {
+      await fs.writeFile(targetPath, bytes);
+    }
+
+    return { ...operation, repaired: true };
   }
+
+  if (mode === 'publish') {
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.writeFile(targetPath, bytes, { flag: 'wx' }).catch(async (error: unknown) => {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+        throw error;
+      }
+    });
+  }
+
+  return operation;
 }

@@ -237,8 +237,8 @@ export function useFloatingPosition(options: UseFloatingPositionOptions): UseFlo
   }, []);
 
   // 模式切换会立刻改变元素尺寸，必须在同一个绘制帧内重新测量并重新定位。
-  // 若等到 ResizeObserver 回调或下一次绘制，收起时会先按旧尺寸落位，
-  // orb 会短暂停在展开面板原来的位置，看起来就是右侧残留的残影。
+  // 若改为等待 ResizeObserver 回调或下一次绘制，收起时会有一帧按旧尺寸落位，
+  // 该帧内 orb 出现在展开面板的左上角，而不是右边缘。
   useLayoutEffect(() => {
     measureElement();
   }, [measureElement, placement.mode]);
