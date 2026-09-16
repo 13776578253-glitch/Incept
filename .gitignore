@@ -17,6 +17,7 @@ Thumbs.db
 
 apps/web/*.log
 apps/web/public/_docs-media/
+apps/web/public/_music-media/
 apps/web/public/mock/audio/
 
 packages/db/generated
