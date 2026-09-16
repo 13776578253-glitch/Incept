@@ -256,3 +256,29 @@ model DocsCollectionItemLocale {
   @@index([locale])
   @@map("docs_collection_item_locales")
 }
+
+// 音乐曲目。公开内容，不做 access 分级。
+//
+// trackKey 表示内容身份，由 music.json 清单显式提供，不从文件名或哈希推导；
+// audioUrl 表示当前发布位置，只存站点 URL，绝不存本机绝对路径；
+// contentHash / mimeType / fileSize 描述当前文件，便于导入校验与将来迁移到对象存储。
+// position 允许重复，排序固定为 position ASC, id ASC（配合 isActive 过滤与下方索引）。
+model MusicTrack {
+  id              String    @id @default(cuid())
+  trackKey        String    @unique
+  title           String
+  artist          String?
+  audioUrl        String
+  contentHash     String?
+  mimeType        String?
+  fileSize        Int?
+  durationSeconds Int?
+  publishedAt     DateTime?
+  position        Int
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([isActive, position])
+  @@map("music_tracks")
+}

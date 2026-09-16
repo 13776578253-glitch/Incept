@@ -54,6 +54,13 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 - Status: Deferred.
 - Current `vscode`, `github`, and `vitesse` palettes plus the eye-comfort override are sufficient. Add palettes only with a named UX need and matching light/dark Shiki themes.
 
+### B-17 Unmanaged Collection Item Index
+
+- Source: `packages/db/prisma/schema.prisma` (`DocsCollectionItem`)
+- Status: Deferred database cleanup.
+- `docs_collection_items_collectionId_idx` currently exists in the database but is not declared in the Prisma schema. `20260916010002_add_music_track` intentionally does not drop it.
+- Decide separately later: create a standalone migration to drop it if it is not needed, or add it back to the schema if it is.
+
 ## Code-Level Follow-Ups
 
 Registered while verifying `NEXT.md` against the working tree. These are source TODOs, not product features.
