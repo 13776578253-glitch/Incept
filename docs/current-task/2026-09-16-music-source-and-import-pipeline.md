@@ -4,7 +4,7 @@
 
 **Staged milestone.** The import-to-playback chain runs end to end on real data. The player itself is not feature-complete, and this round must not be described as a finished music feature.
 
-**Committed as `1d77175`**, with the media store in `75f1ec4` and the table in `0df59c1`. The branch `feat/music-Plugin` is four commits ahead of its upstream and none of them are pushed; the fourth is `f87e07b`, the speed control, list fixes and settings section.
+**Committed as `1d77175`**, with the media store in `75f1ec4` and the table in `0df59c1`. The follow-up layer landed as `1c09f27`, which hardened the catalogue and added duration extraction at import; the preference channel (`01b3549`), the zh copy sweep (`393369c`) and the documentation (`8b43e46`) follow it. The branch `feat/music-Plugin` is eight commits ahead of its upstream and none of them is pushed.
 
 ## What this round delivered
 

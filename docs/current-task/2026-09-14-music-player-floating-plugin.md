@@ -2,9 +2,9 @@
 
 ## Status
 
-Implemented and committed: the player landed as `8e481fe feat(web): add the floating music player with a DOM-free core package`, and the speed control, list fixes and settings section as `f87e07b`. Neither commit is pushed; the branch `feat/music-Plugin` is four commits ahead of its upstream.
+Implemented and committed: the player landed as `8e481fe feat(web): add the floating music player with a DOM-free core package`, the speed control, list fixes and settings section as `f87e07b`, and the preference channel as `01b3549 feat(web): add the music player preference channel`. None of them is pushed; the branch `feat/music-Plugin` is eight commits ahead of its upstream.
 
-The preference channel described below is **not** committed yet. It is part of the uncommitted working-tree layer. Its browser verification was completed on 2026-09-17 and is recorded under "Preference Channel"; the one behaviour left open there is a product question, not a missing check.
+The preference channel described below is committed as `01b3549`. Its browser verification was completed on 2026-09-17 and is recorded under "Preference Channel"; the one behaviour left open there is a product question, not a missing check.
 
 ## Scope
 
