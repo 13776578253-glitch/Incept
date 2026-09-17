@@ -20,7 +20,7 @@ Four constraints shaped the outcome.
 - **A library is a row and membership is a row.** `music_libraries` (key, title, position, isActive) plus `music_library_items` (libraryId, trackId) with `@@unique([libraryId, trackId])`.
 - **A track may belong to several libraries.** This is why membership is a join table rather than a column: curated and cross-listed groupings are a real requirement.
 - **Order inside a library comes from the track's own `position`.** After filtering, the relative order is already correct, so the manifest gains no ordering field and the join row needs no position column. Per-library ordering can be added later as one nullable column.
-- **The manifest gains two optional fields.** A top-level `libraries: [{ key, title, position }]`, and per track `libraries: ["key", ...]`.
+- **The manifest gains two optional fields, and the generator writes them.** A top-level `libraries: [{ key, title, position }]`, and per track `libraries: ["key", ...]`. Neither is meant to be authored by hand; see "Authoring" below.
 - **Referencing a library that was not declared is an error.** A misspelled key must be loud rather than silently creating a library.
 - **An empty `libraries` array on a track is an error.** "Belongs nowhere" is almost always a mistake; omitting the field and passing an empty array do not mean the same thing.
 - **A manifest with no `libraries` at all uses the implicit default library.** Tracks without the field land in a library whose key is `default`; other libraries and their memberships are left untouched. An existing manifest therefore imports without errors and without moving any row.
@@ -30,6 +30,17 @@ Four constraints shaped the outcome.
 - **The selected library is a preference.** It is stored through the preference channel, and "all" is a view rather than a library.
 - **The switcher lives in the expanded panel header**, and it includes the "all" view.
 - **Every track belongs to at least one library**, so both "all" and each library view are well defined.
+
+## Authoring: folders are libraries
+
+The manifest is generated, not hand-written. `pnpm music:manifest` scans `MUSIC_CONTENT_ROOT` and derives membership from the directory layout, so creating a library means creating a folder.
+
+- **The first path segment under the content root is the library.** `podcast/episode-01.mp3` belongs to `podcast`, and `music/album/track.flac` also belongs to `music`; deeper folders are free organisation inside one library.
+- **Files directly under the content root belong to the default library**, which is why a manifest carrying no library information at all is still valid.
+- **The key comes from the folder name**, slugified the same way a `trackKey` is; the title is the folder name as written.
+- **A numeric prefix orders the libraries.** `01-podcast/` sorts before `02-music/`, and the prefix is stripped from both the key and the title, matching how the docs importer reads numeric prefixes.
+- **Hand-written values still win.** A `libraries` array or a library title written by hand survives a re-run the same way a hand-edited track title does, and a library that only a hand-written array references is still emitted — with its key as the title — so the manifest stays importable. Hand-writing is the only way to express multi-membership, which folders cannot.
+- **`scripts/music-manifest.mjs` therefore changes as part of this work.** It writes `{ tracks }` today and rebuilds every entry field by field, so any library information put there by hand is dropped on the next run: the field has to be produced by the generator rather than written.
 
 ## Rejected alternatives
 
@@ -48,3 +59,5 @@ Four constraints shaped the outcome.
 - Deactivating a library deletes neither tracks nor media; memberships are rewritten from the manifest on every import.
 - `--validate` reports a library that would be deactivated and a manifest that references an unknown library.
 - The list heading counts the visible view, so `列表（27）` becomes the selected library's count once one is selected.
+- **Renaming a library folder is not a rename.** The folder name is part of every `file` path inside it, so the generator sees new files: new `trackKey` values, while the previous entries stay in the manifest as missing-on-disk and are deactivated on the next import. Rename the `title` instead when only the display name should change.
+- The generator, the import CLI, the API, the adapter and the player all move together in B-19; the runbook's directory layout section changes with them.

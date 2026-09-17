@@ -12,26 +12,37 @@
 
 ## 目录布局
 
+**文件夹就是曲库**——`pnpm music:manifest` 从路径推导归属，所以新增曲库 = 新建文件夹，不需要手写 JSON。
+
 ```
 <MUSIC_CONTENT_ROOT>/
-  music.json            ← 清单，导入的唯一输入
-  episodes/
+  music.json            ← 清单，导入的唯一输入；由生成器写入
+  播客/
     episode-01.flac
     episode-02.mp3
+  音乐/
+    album/
+      track-01.mp3      ← 更深的目录只是组织方式，仍属于"音乐"
+  intro.mp3             ← 直接在根目录：归入默认曲库
 ```
 
-清单格式：
+清单格式（生成器写出的形状）：
 
 ```json
 {
+  "libraries": [
+    { "key": "播客", "title": "播客", "position": 1 },
+    { "key": "音乐", "title": "音乐", "position": 2 }
+  ],
   "tracks": [
     {
-      "trackKey": "episode-01",
-      "file": "episodes/episode-01.flac",
+      "trackKey": "播客-episode-01",
+      "file": "播客/episode-01.flac",
       "title": "第一集",
       "artist": "可选",
       "publishedAt": "2026-09-15",
-      "position": 1
+      "position": 1,
+      "libraries": ["播客"]
     }
   ]
 }
@@ -41,12 +52,25 @@
 
 - `trackKey` 必填且在清单内唯一。它是**内容身份**——文件内容变了就换一个新 key，不要改同一个 key 下面的内容
 - `file` 必填，相对内容根；realpath 之后必须仍在根内（指向根外的符号链接与目录联接会被拒绝）
-- `title` 必填；`position` 是必填整数，决定列表顺序
+- `title` 必填；`position` 是必填整数，决定列表顺序——也是各曲库内部的顺序
 - `artist` 与 `publishedAt` 可省略；`publishedAt` 显示在列表行右侧，省略时改显示时长
+- `libraries`（每首）由生成器按文件所在文件夹写入。手工写的值会被保留，而这是把一首放进多个曲库的唯一方式
+- 引用未声明的曲库、或给一个空数组，都会让导入报错——拼错的 key 必须吵，而不是静默造出一个曲库
 
 允许的扩展名：`.mp3`、`.wav`、`.flac`。单文件上限 128 MB。
 
 **不要让 `file` 指向仓库内的文件。** 内容寻址会把字节复制成镜像，指向仓库会让"内容根在仓库外"这条约束失去意义。
+
+## 新增与调整曲库
+
+| 想做的事 | 怎么做 |
+| --- | --- |
+| 新增曲库 | 在内容根下新建文件夹、放入音频，重跑 `pnpm music:manifest` 与 `pnpm music:import` |
+| 改显示名 | 改清单里的 `libraries[].title`；重跑生成器不会覆盖 |
+| 调顺序 | 给文件夹加数字前缀（`01-播客`），或改 `libraries[].position`（同样不会被覆盖） |
+| 让一首进多个曲库 | 手工在该首上加 `libraries: ["a", "b"]`，重跑生成器仍会保留 |
+
+**不要为了改显示名去改文件夹名。** 文件夹名是里面每个 `file` 路径的一部分：改名会让生成器把它们当成新文件（新的 `trackKey`），旧条目留在清单里报"磁盘上不存在"，并在下次导入时被停用。
 
 ## 日常流程
 

@@ -12,26 +12,37 @@ The content root stays outside the repository. Only the published mirror (`apps/
 
 ## Directory layout
 
+**Folders are libraries.** `pnpm music:manifest` derives membership from the path, so adding a library means adding a folder — no hand-written JSON.
+
 ```
 <MUSIC_CONTENT_ROOT>/
-  music.json            ← the manifest, the import's only input
-  episodes/
+  music.json            ← the manifest, the import's only input; written by the generator
+  podcast/
     episode-01.flac
     episode-02.mp3
+  music/
+    album/
+      track-01.mp3      ← deeper folders are organisation only; this still belongs to "music"
+  intro.mp3             ← directly under the root: the default library
 ```
 
-Manifest format:
+Manifest format (the shape the generator writes):
 
 ```json
 {
+  "libraries": [
+    { "key": "podcast", "title": "podcast", "position": 1 },
+    { "key": "music", "title": "music", "position": 2 }
+  ],
   "tracks": [
     {
-      "trackKey": "episode-01",
-      "file": "episodes/episode-01.flac",
+      "trackKey": "podcast-episode-01",
+      "file": "podcast/episode-01.flac",
       "title": "Episode One",
       "artist": "Optional",
       "publishedAt": "2026-09-15",
-      "position": 1
+      "position": 1,
+      "libraries": ["podcast"]
     }
   ]
 }
@@ -41,12 +52,25 @@ Field rules:
 
 - `trackKey` is required and must be unique within the manifest. It is the **content identity** — when a file's content changes, issue a new key rather than changing what an existing key points at
 - `file` is required and relative to the content root. After `realpath` it must still resolve inside the root, so symlinks and directory junctions pointing outside are rejected
-- `title` is required; `position` is a required integer and decides list order
+- `title` is required; `position` is a required integer and decides list order — and, inside a library, the order of that library's tracks
 - `artist` and `publishedAt` are optional. `publishedAt` renders on the right of the list row; when it is absent the row shows the duration instead
+- `libraries` on a track is written by the generator from the folder the file sits in. A value written by hand is preserved, and it is the only way to put one track in several libraries
+- Referencing a library that was not declared, or passing an empty array, makes the import fail: a misspelled key has to be loud rather than silently creating a library
 
 Allowed extensions: `.mp3`, `.wav`, `.flac`. Single file limit: 128 MB.
 
 **Do not point `file` at something inside the repository.** Content addressing copies the bytes into the mirror, and pointing at the repository defeats the point of keeping the content root outside it.
+
+## Adding and adjusting libraries
+
+| What you want | How |
+| --- | --- |
+| Add a library | Create a folder under the content root, put audio in it, run `pnpm music:manifest` and `pnpm music:import` again |
+| Change the display name | Edit `libraries[].title` in the manifest; a re-run does not overwrite it |
+| Change the order | Prefix the folder with a number (`01-podcast`), or edit `libraries[].position`, which is also preserved |
+| Put one track in several libraries | Add `libraries: ["a", "b"]` to that track by hand; a re-run keeps it |
+
+**Do not rename a folder to change a display name.** The folder name is part of every `file` path inside it: renaming makes the generator treat those files as new (new `trackKey` values), while the previous entries stay in the manifest as missing-on-disk and are deactivated on the next import.
 
 ## Daily flow
 
