@@ -36,7 +36,7 @@ The previous session (`e557b148`, 2026-09-10 → 2026-09-16) degraded: frequent 
 
 - `docs/current-task/2026-09-16-music-source-and-import-pipeline.md` — pipeline state, not-delivered list, commit proposal.
 - `docs/current-task/2026-09-14-music-player-floating-plugin.md` — player and preference channel.
-- Open human decisions: approval of `docs/decisions/{en,zh}/music-source-storage-and-import.md`; whether to add a React test environment to `apps/web` (B-18).
+- Open human decisions: whether to add a React test environment to `apps/web` (B-18), and the queue behaviour when a listener switches libraries (B-19). The music source, storage and import decision was accepted on 2026-09-17.
 - Repository status at handoff: 48 changed files, nothing committed this session.
 
 ## Lifecycle
