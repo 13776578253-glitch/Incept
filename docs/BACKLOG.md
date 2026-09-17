@@ -117,9 +117,9 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 ### B-19 Music Libraries
 
 - Source: not yet implemented.
-- Status: Open, discussed separately from the settings work.
-- The player currently holds one flat track list. Grouping tracks into libraries is a data-model change, not a preference: it needs a new table and migration, a library field in the manifest contract, library-filtered API responses, and an answer to what happens to the queue when the listener switches libraries while a track is playing.
-- Scope when it is picked up: manifest grouping, a library filter on `GET /api/music/tracks`, and a library switcher in the player surface.
+- Status: **Design accepted 2026-09-17**, recorded in `docs/decisions/en/music-libraries.md` and its Chinese counterpart. Implementation has not started.
+- The player currently holds one flat track list. Grouping tracks into libraries is a data-model change, not a preference: it needs a `music_libraries` table plus a membership table, a `libraries` field in the manifest contract, library and membership data in `GET /api/music/tracks`, and a library switcher in the player surface that replaces the queue through `tracksLoaded`.
+- Decided: a track may belong to several libraries; order inside a library reuses the track's own `position`; a manifest with no `libraries` falls back to an implicit default library; the switcher offers an "all" view; switching follows core's existing queue semantics.
 
 ## Review Before Any Code Decision
 
