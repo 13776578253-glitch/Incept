@@ -98,20 +98,28 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 ### B-16 Music Player Controls Not Wired To The UI
 
 - Source: `apps/web/src/features/music-player/components/music-player-floating.tsx`
-- `nextRequested`, `previousRequested`, `seekRequested`, and `repeatModeRequested` are implemented and tested in `@incept/music-player-core`, but the player UI intentionally exposes only play, pause, track selection, and playback rate.
-- `playbackRateRequested` is now wired to the speed control, which cycles `PLAYBACK_RATE_OPTIONS` from `adapter/player-copy.ts`.
-- Wire the remaining four in a later phase. User-preference settings such as a default speed belong in the settings section rather than the floating player. Until then the player must not be described as having previous/next, repeat, or seek controls.
+- `nextRequested`, `previousRequested` and `seekRequested` are implemented and tested in `@incept/music-player-core`, but the player UI intentionally exposes only play, pause, track selection and the speed control.
+- `playbackRateRequested` is wired to the speed control, which cycles `PLAYBACK_RATE_OPTIONS` from `adapter/player-copy.ts`. The speed ships locked at 1x by default, so the button is inert until the lock is turned off under Settings → Plugin.
+- `repeatModeRequested` is dispatched from the persisted default-playback-mode preference (`MusicPlayerPreferencesProvider`) and applied in the floating component, so repeat is reachable from Settings → Plugin and has no player control.
+- Wire the remaining three in a later phase. Until then the player must not be described as having previous/next or seek controls, and repeat must be described as a settings preference rather than a player control.
+- **Default speed is still not a preference.** What exists is a lock at 1x, not a stored default value, so a listener cannot choose a different starting speed.
 
 ### B-18 Music Pipeline Follow-Ups
 
 - Sources: `scripts/music-import.mjs`, `apps/web/src/features/music-player/adapter/music-source.ts`, `apps/web/src/server/music/media-store.ts`
 - Status: Open. Registered when the import pipeline was closed as a staged milestone: the chain runs end to end, the player is not feature-complete.
-- An empty manifest is rejected by default, but the `--allow-empty` escape hatch is not wired, so a deliberate full deactivation is currently impossible.
-- `toCatalogEntries` does not reject duplicate `trackKey`, negative durations, malformed dates, or an `audioUrl` that is neither site-relative nor https.
-- The catalogue failure path and the provider wiring have no automated tests because `apps/web` has no test runner.
-- Two P1 fixes await browser re-verification: selecting a track while paused must play the new source, and a catalogue refetch must not interrupt playback.
 - Mirror reuse reads the whole file to verify SHA-256, so import time scales with the size of the library.
+- Duration is read at import time (`music-metadata`) and stored on the row. A track imported before that was added carries a null `durationSeconds` and shows no length in the player until `pnpm music:import` runs again, since the importer now treats a changed duration as a change worth writing.
 - `apps/web/public/mock/audio/` and `scripts/music-mock-audio.mjs` are development fixtures only. They are no longer the player's data source; the database is.
+- Automated coverage is partial. `pnpm music:check-adapter` covers the catalogue validation rules, and the core package covers the queue and state machine. What remains untested is anything requiring a DOM: the provider wiring, the effect ordering, and the catalogue failure path. Reaching those needs a React test environment, which `apps/web` does not have; the runner for the existing adapter tests is borrowed from `packages/db`, which is why no new dependency was needed. This is the reason those paths can only be verified in a browser.
+- Closed since registration: the `--allow-empty` escape hatch is wired; `toCatalogEntries` rejects duplicate `trackKey`, non-positive durations, unparsable dates, and an `audioUrl` that is neither site-relative nor https; both P1 fixes passed manual review.
+
+### B-19 Music Libraries
+
+- Source: not yet implemented.
+- Status: Open, discussed separately from the settings work.
+- The player currently holds one flat track list. Grouping tracks into libraries is a data-model change, not a preference: it needs a new table and migration, a library field in the manifest contract, library-filtered API responses, and an answer to what happens to the queue when the listener switches libraries while a track is playing.
+- Scope when it is picked up: manifest grouping, a library filter on `GET /api/music/tracks`, and a library switcher in the player surface.
 
 ## Review Before Any Code Decision
 

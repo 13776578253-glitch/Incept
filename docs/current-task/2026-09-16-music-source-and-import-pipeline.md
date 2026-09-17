@@ -4,7 +4,7 @@
 
 **Staged milestone.** The import-to-playback chain runs end to end on real data. The player itself is not feature-complete, and this round must not be described as a finished music feature.
 
-Prepared for the next Git commit. Not pushed.
+**Committed as `1d77175`**, with the media store in `75f1ec4` and the table in `0df59c1`. The branch `feat/music-Plugin` is four commits ahead of its upstream and none of them are pushed; the fourth is `f87e07b`, the speed control, list fixes and settings section.
 
 ## What this round delivered
 
@@ -15,7 +15,7 @@ Prepared for the next Git commit. Not pushed.
 | 2 | Content-addressed `media-store` under `public/_music-media` | Committed `75f1ec4` |
 | 3 | `music:manifest` generator and `music:import` CLI | Functional acceptance passed |
 | 3.5 | Core `tracksLoaded` runtime event | Acceptance passed |
-| 4 | API route, catalogue hook, provider wiring | Chain verified; two P1 fixes pending re-verification |
+| 4 | API route, catalogue hook, provider wiring | Chain verified; both P1 fixes passed manual review |
 
 ## Verified
 
@@ -30,17 +30,15 @@ Prepared for the next Git commit. Not pushed.
 
 The following are **not implemented** and must not be described as available:
 
-1. **Four playback controls have no UI.** `nextRequested`, `previousRequested`, `seekRequested` and `repeatModeRequested` exist in core with test coverage but nothing dispatches them. Registered as B-16.
+1. **Three playback controls have no entry point.** `nextRequested`, `previousRequested` and `seekRequested` exist in core with test coverage but nothing dispatches them. Registered as B-16. `repeatModeRequested` is no longer part of this item: it is dispatched from the persisted default-playback-mode preference, which is reachable from Settings → Plugin rather than from the player.
 2. **No volume control.**
-3. **No duration extraction.** `durationSeconds` is always null; the player reads duration from the audio element.
-4. **No artwork.** The catalogue carries no image, and the orb and list rows render tonal circles.
-5. **No transcoding.** FLAC and WAV are published as-is, so a single track can reach 100 MB. Recorded as deferred, not as a non-goal.
-6. **Local delivery only.** The deployment platform is still undecided, so HTTP Range support is unverified. The object storage and CDN step is a release requirement, not an optimisation.
-7. **No access control.** Music is public by decision. Files under `public/` cannot be gated, so this is a deliberate limit rather than an oversight.
-8. **Empty manifests are rejected by default,** and the `--allow-empty` escape hatch is not wired, so a deliberate full deactivation is currently impossible.
-9. **Catalogue response validation is not hardened.** Duplicate `trackKey`, negative durations, malformed dates and off-site URLs are still accepted.
-10. **Two P1 fixes await browser re-verification.** Selecting a track while paused must play the new source, and a catalogue refetch must not interrupt playback. Both are implemented; neither is confirmed in a browser.
-11. **No automated tests for the catalogue path or the provider wiring.** `apps/web` has no test runner, so this logic can only be exercised in a browser today.
+3. **No artwork.** The catalogue carries no image, and the orb and list rows render tonal circles.
+4. **No transcoding.** FLAC and WAV are published as-is, so a single track can reach 100 MB. Recorded as deferred, not as a non-goal.
+5. **Local delivery only.** The deployment platform is still undecided, so HTTP Range support is unverified. The object storage and CDN step is a release requirement, not an optimisation.
+6. **No access control.** Music is public by decision. Files under `public/` cannot be gated, so this is a deliberate limit rather than an oversight.
+7. **DOM-level paths still have no automated tests.** Catalogue validation and the source-change decision are covered by `pnpm music:check-adapter`, and the queue and state machine by `pnpm music:check-core`. What remains is the provider wiring, effect ordering and the catalogue failure path, none of which can be reached without a React test environment that `apps/web` does not have.
+
+Closed since this list was first written: duration extraction runs during import and fills `durationSeconds`; the `--allow-empty` escape hatch is wired; `toCatalogEntries` rejects duplicate `trackKey`, non-positive durations, unparsable dates and unusable URLs; both P1 fixes passed manual review.
 
 ## Known trade-offs
 
@@ -49,8 +47,6 @@ The following are **not implemented** and must not be described as available:
 - **Renaming a file makes it a new track.** Manifest entries are matched by `file`, and entries whose file disappeared are kept rather than pruned, because pruning would silently deactivate them on the next import.
 - **No automatic publication dates.** File modification times were rejected as machine-dependent.
 
-## Commit proposal
+## Commit record
 
-`feat: add the content-addressed music source and import pipeline`
-
-Body: the media store, import CLI, manifest generator, the `tracksLoaded` core input, the public tracks API and the catalogue-driven player wiring, with the boundaries above stated in the commit note so the staged scope is unambiguous.
+`feat: add the content-addressed music source and import pipeline` — landed as `1d77175`, subject unchanged. The body covers the media store, import CLI, manifest generator, the `tracksLoaded` core input, the public tracks API and the catalogue-driven player wiring, with the boundaries above stated in the commit note so the staged scope is unambiguous.
