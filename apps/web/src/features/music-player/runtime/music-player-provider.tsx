@@ -6,6 +6,7 @@ import {
   type MusicTrack,
   type PlayerInput,
   type PlayerIntent,
+  type PlayerRuntimeEvent,
   type PlayerState,
 } from '@incept/music-player-core';
 import {
@@ -143,6 +144,37 @@ export function MusicPlayerProvider({
     audio.load();
   }, []);
 
+  // 运行时事件的唯一入口：audio 元素事件与 play() 拒绝都从这里进入，errorKind 只在这里设置。
+  // 把 dispatch 直接交给 requestAudioPlay 会绕过这里，让被拒绝的播放没有错误提示
+  const handleRuntimeEvent = useCallback((event: PlayerRuntimeEvent) => {
+    // 切换音源时浏览器补发的 pause 不是用户意图，忽略
+    if (event.type === 'playPaused' && suspendPauseEventsRef.current) {
+      return;
+    }
+
+    switch (event.type) {
+      case 'playStarted':
+        suspendPauseEventsRef.current = false;
+        setErrorKind(null);
+        break;
+      case 'playRejected':
+        suspendPauseEventsRef.current = false;
+        setErrorKind('playRejected');
+        break;
+      case 'audioErrored':
+        suspendPauseEventsRef.current = false;
+        setErrorKind('audioError');
+        break;
+      case 'trackLoaded':
+        suspendPauseEventsRef.current = false;
+        break;
+      default:
+        break;
+    }
+
+    dispatch(event);
+  }, []);
+
   // 播放启动的唯一出口：applySource 在此同步： play() 始终落在调用方的调用栈内：用户点击路径因此保留 transient user activation，不依赖后续 effect 补发
   const startPlayback = useCallback(
     (trackId: string | null) => {
@@ -156,9 +188,9 @@ export function MusicPlayerProvider({
       // 已在播放时重复调用没有意义，避免点击路径与调和路径重复触发
       if (!audio.paused) return;
 
-      requestAudioPlay(audio, dispatch);
+      requestAudioPlay(audio, handleRuntimeEvent);
     },
-    [applySource],
+    [applySource, handleRuntimeEvent],
   );
 
   // 原子路径：选中并播放指定曲目 / 不拆成两个 intent 连续派发，因为第二次派发时 stateRef 尚未更新，会拿旧 currentTrackId 去启动播放
@@ -176,37 +208,10 @@ export function MusicPlayerProvider({
     const audio = audioRef.current;
     if (!audio) return;
 
-    const driver = attachAudioDriver(audio, (event) => {
-      // 切换音源时浏览器补发的 pause 不是用户意图，忽略
-      if (event.type === 'playPaused' && suspendPauseEventsRef.current) {
-        return;
-      }
-
-      switch (event.type) {
-        case 'playStarted':
-          suspendPauseEventsRef.current = false;
-          setErrorKind(null);
-          break;
-        case 'playRejected':
-          suspendPauseEventsRef.current = false;
-          setErrorKind('playRejected');
-          break;
-        case 'audioErrored':
-          suspendPauseEventsRef.current = false;
-          setErrorKind('audioError');
-          break;
-        case 'trackLoaded':
-          suspendPauseEventsRef.current = false;
-          break;
-        default:
-          break;
-      }
-
-      dispatch(event);
-    });
+    const driver = attachAudioDriver(audio, handleRuntimeEvent);
 
     return () => driver.dispose();
-  }, []);
+  }, [handleRuntimeEvent]);
 
   // 音源写入：目录换引用会重新进入，未变化的音源由 applySource 空操作处理
   useEffect(() => {

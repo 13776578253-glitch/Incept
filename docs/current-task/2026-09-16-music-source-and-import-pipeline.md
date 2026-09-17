@@ -36,7 +36,7 @@ The following are **not implemented** and must not be described as available:
 4. **No transcoding.** FLAC and WAV are published as-is, so a single track can reach 100 MB. Recorded as deferred, not as a non-goal.
 5. **Local delivery only.** The deployment platform is still undecided, so HTTP Range support is unverified. The object storage and CDN step is a release requirement, not an optimisation.
 6. **No access control.** Music is public by decision. Files under `public/` cannot be gated, so this is a deliberate limit rather than an oversight.
-7. **DOM-level paths still have no automated tests.** Catalogue validation and the source-change decision are covered by `pnpm music:check-adapter`, and the queue and state machine by `pnpm music:check-core`. What remains is the provider wiring, effect ordering and the catalogue failure path, none of which can be reached without a React test environment that `apps/web` does not have.
+7. **DOM-level paths are covered by `pnpm test`.** The web suite (Vitest + jsdom + Testing Library) covers the provider wiring, the effect ordering and the catalogue failure path, plus the adapter rules, the preference channel and the settings renderer; `pnpm test` aggregates web and core. Real playback, autoplay policy, pointer capture and geometry measurement remain browser-only, and the geometry hooks still have no tests (see B-18).
 
 Closed since this list was first written: duration extraction runs during import and fills `durationSeconds`; the `--allow-empty` escape hatch is wired; `toCatalogEntries` rejects duplicate `trackKey`, non-positive durations, unparsable dates and unusable URLs; both P1 fixes passed manual review.
 
