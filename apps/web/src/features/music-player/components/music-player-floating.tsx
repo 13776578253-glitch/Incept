@@ -11,11 +11,15 @@ import {
   getNextPlaybackRate,
   getPlayerCopy,
 } from '../adapter/player-copy';
+
 import { findCatalogPublishedAt } from '../adapter/music-source';
 import { isMusicPlayerHiddenRoute } from '../adapter/player-route-policy';
+
+import { useMusicPlayerPreferences } from '@/hooks/use-music-player-preferences';
 import { useFloatingPosition } from '../hooks/use-floating-position';
 import { useMusicPlayer } from '../hooks/use-music-player';
 import { usePlayerViewport } from '../hooks/use-player-viewport';
+
 import { PlayerCompact } from './player-compact';
 import { PlayerExpanded } from './player-expanded';
 import { PlayerOrb } from './player-orb';
@@ -28,6 +32,12 @@ export function MusicPlayerFloating() {
   const { state, sendIntent, playTrack, reloadCatalog, currentTrack, errorKind, catalog, catalogStatus } =
     useMusicPlayer();
   const { mode: viewport, isReady: isViewportReady } = usePlayerViewport();
+  const {
+    playbackRateLocked,
+    rememberPlacement,
+    playbackMode,
+    isReady: isMusicPreferencesReady,
+  } = useMusicPlayerPreferences();
 
   const isMobile = viewport === 'mobile';
   const isHiddenRoute = isMusicPlayerHiddenRoute(pathname);
@@ -35,14 +45,23 @@ export function MusicPlayerFloating() {
   const { elementRef, placement, geometry, isDragging, setMode, dragHandlers } = useFloatingPosition({
     draggable: !isMobile,
     isReadyToPosition: isViewportReady,
+    rememberPlacement,
+    isPreferenceReady: isMusicPreferencesReady,
   });
+
+  // 播放模式是持久化偏好，core 的重播模式是会话内的；偏好变化时套用给 core
+  useEffect(() => {
+    sendIntent({ type: 'repeatModeRequested', mode: playbackMode });
+  }, [playbackMode, sendIntent]);
 
   const viewMode = isMobile && placement.mode === 'orb' ? 'compact' : placement.mode;
   const isPlaying = state.status === 'playing';
 
   const title =
     currentTrack?.title ?? (catalogStatus === 'loading' ? copy.catalogLoading : copy.emptyQueue);
-  const clock = formatClock(state.duration > 0 ? state.duration : currentTrack?.durationHint ?? 0);
+  // clock ：当前位置 / totalClock ：总时长
+  const totalClock = formatClock(state.duration > 0 ? state.duration : currentTrack?.durationHint ?? 0);
+  const clock = formatClock(state.currentTime);
   const rateLabel = formatPlaybackRate(state.playbackRate);
   const heading = copy.formatPlaylistHeading(state.queue.length);
 
@@ -54,23 +73,20 @@ export function MusicPlayerFloating() {
         return {
           id: track.id,
           title: track.title,
-          meta: publishedAt ? formatTrackDate(locale, publishedAt) : formatClock(track.durationHint ?? 0),
+          // 时长未知留空
+          meta: publishedAt
+            ? formatTrackDate(locale, publishedAt)
+            : track.durationHint
+              ? formatClock(track.durationHint)
+              : '',
           isCurrent: track.id === state.currentTrackId,
         };
       }),
     [catalog, locale, state.queue, state.currentTrackId],
   );
 
-  // 工具型页面不显示播放器，所以必须在这里把声音停掉——否则用户会听到音乐却没有控件可停。
-  // 只暂停、不重置：currentTime 与 restartToken 都不动，回到普通页面按播放是从原进度继续。
-  useEffect(() => {
-    if (!isHiddenRoute) {
-      return;
-    }
-
-    sendIntent({ type: 'pauseRequested' });
-  }, [isHiddenRoute, sendIntent]);
-
+  // 隐藏路由（见 player-route-policy）只隐藏 UI，不中断播放
+  // history：实测结论反转了先前的判断：这些页面通常停留很短，为它们暂停会把一段收听切成两段，而"继续播放"的代价只是暂时看不见控件
   if (isHiddenRoute) {
     return null;
   }
@@ -79,26 +95,30 @@ export function MusicPlayerFloating() {
     sendIntent(isPlaying ? { type: 'pauseRequested' } : { type: 'playRequested' });
   };
 
-  // 走原子的"选中并播放"路径：连续派发两个 intent 会让第二次读到尚未更新的 currentTrackId，
-  // 从而在用户手势里启动旧音源。
+  // 走原子的"选中并播放"路径：连续派发两个 intent 会让第二次读到尚未更新的 currentTrackId，从而在用户手势里启动旧音源
   const handleSelect = (trackId: string) => {
     playTrack(trackId);
   };
 
   const handleCycleRate = () => {
+    // 锁定态下按钮保留但点击不改变档位
+    if (playbackRateLocked) {
+      return;
+    }
+
     sendIntent({ type: 'playbackRateRequested', rate: getNextPlaybackRate(state.playbackRate) });
   };
 
-  // TODO: nextRequested / previousRequested / seekRequested / repeatModeRequested 由
-  // @incept/music-player-core 实现并测试覆盖，没有播放器 UI 入口。首版交付播放、暂停、选曲与倍速；
-  // 用户偏好类调整（例如默认倍速）归 settings 界面。登记在 BACKLOG B-16。
+  // TODO: nextRequested / previousRequested / seekRequested 由 @incept/music-player-core 实现并测试覆盖，
+  // 播放器 UI 没有入口；repeatModeRequested 已由 settings 的"默认播放模式"偏好驱动，不走播放器 UI
+  // 登记在 BACKLOG B-16。
 
-  // 内部错误码在 adapter 里映射成本地化文案，不把浏览器原始 Error message 直接抛给用户。
+  // 内部错误码在 adapter 里映射成本地化文案，不把浏览器原始 Error message 直接抛给用户
   const errorText =
     errorKind === 'playRejected' ? copy.playRejected : errorKind === 'audioError' ? copy.audioError : null;
 
   // 目录状态与音频错误分开呈现：两者故障来源不同，合并显示会让人分不清是列表没取到还是音频放不出来。
-  // 加载中不单独提示，它已经体现在标题上。
+  // 加载中不单独提示
   const catalogText = catalogStatus === 'error' ? copy.catalogError : null;
   const statusText = errorText ?? catalogText;
 
@@ -109,7 +129,7 @@ export function MusicPlayerFloating() {
       className="mt-2 flex max-w-[22rem] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] px-3 py-2 text-[0.72rem] leading-5 text-[var(--color-text-muted)] shadow-[var(--shadow-nav-dropdown)]"
     >
       <span className="min-w-0 flex-1">{statusText}</span>
-      {/* 只有目录错误提供重试：音频错误重试没有意义，同一份音源仍会失败。 */}
+      {/* 只有目录错误提供重试：音频错误重试没有意义，同一份音源仍会失败 */}
       {catalogStatus === 'error' ? (
         <button
           type="button"
@@ -125,11 +145,11 @@ export function MusicPlayerFloating() {
 
   const surface =
     viewMode === 'orb' ? (
-      <PlayerOrb label={copy.expand} clock={clock} onClick={() => setMode('compact')} />
+      <PlayerOrb label={copy.expand} clock={clock} totalClock={totalClock} onClick={() => setMode('compact')} />
     ) : viewMode === 'compact' ? (
       <PlayerCompact
         title={title}
-        clock={clock}
+        clock={clock} totalClock={totalClock}
         rateLabel={rateLabel}
         rateCycleLabel={copy.playbackRate}
         playLabel={copy.play}
@@ -152,7 +172,7 @@ export function MusicPlayerFloating() {
         heading={heading}
         items={items}
         title={title}
-        clock={clock}
+        clock={clock} totalClock={totalClock}
         rateLabel={rateLabel}
         rateCycleLabel={copy.playbackRate}
         isPlaying={isPlaying}

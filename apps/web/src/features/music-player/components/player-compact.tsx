@@ -8,6 +8,7 @@ export const playerSurfaceWidthClass = 'w-[min(22rem,calc(100vw-2.5rem))]';
 type PlayerCompactProps = {
   title: string;
   clock: string;
+  totalClock: string;
   rateLabel: string;
   playLabel: string;
   pauseLabel: string;
@@ -29,11 +30,12 @@ type PlayerCompactProps = {
 
 // 圆形封面/时长：与播放按钮同尺寸，配色用表面色 + 前景色，而不是反相的主按钮样式。
 const clockClassName =
-  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-nav-item-active)] text-[0.62rem] font-medium tabular-nums text-[var(--color-text)]';
+  'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-nav-item-active)] text-[0.62rem] font-medium tabular-nums text-[var(--color-text)]';
 
 export function PlayerCompact({
   title,
   clock,
+  totalClock,
   rateLabel,
   playLabel,
   pauseLabel,
@@ -70,11 +72,11 @@ export function PlayerCompact({
         {isPlaying ? <PlayerPauseIcon className="h-4 w-4" /> : <PlayerPlayIcon className="h-4 w-4" />}
       </button>
 
-      {/* 标题是纯文本，不承担任何点击行为，也不是可聚焦控件。
-          展开列表的唯一入口是右边的箭头按钮；标题只作为拖拽起点。 */}
+      {/* 标题是纯文本，不承担任何点击行为，也不是可聚焦控件
+          展开列表的唯一入口是右边的箭头按钮；标题只作为拖拽起点 */}
       <span className="min-w-0 flex-1 truncate text-[0.82rem] font-medium text-[var(--color-text)]">{title}</span>
 
-      {/* 倍速：点一次进一档。档位定义在 adapter，且都在 core 的合法区间内。 */}
+      {/* 倍速：档位定义在 adapter，在 core 的合法区间 */}
       <button
         type="button"
         data-player-interactive
@@ -85,7 +87,7 @@ export function PlayerCompact({
         {rateLabel}
       </button>
 
-      {/* 箭头只管列表：折叠时朝下、展开时朝上，与参考图一致。 */}
+      {/* 箭头：折叠时朝下、展开时朝上 */}
       <button
         type="button"
         data-player-interactive
@@ -104,13 +106,27 @@ export function PlayerCompact({
           data-player-interactive
           onClick={onCollapse}
           aria-label={collapseLabel}
-          className={`${clockClassName} cursor-pointer transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)]`}
+          className={`${clockClassName} group cursor-pointer transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)]`}
         >
-          {clock}
+          {/* 默认显示播放位置，悬浮切换为总时长 */}
+          <span className="transition-opacity duration-[var(--duration-fast)] group-hover:opacity-0">
+            {clock}
+          </span>
+          <span
+            aria-hidden
+            className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-[var(--duration-fast)] group-hover:opacity-100"
+          >
+            {totalClock}
+          </span>
         </button>
       ) : (
-        <span aria-hidden className={clockClassName}>
-          {clock}
+        <span aria-hidden className={`${clockClassName} group`}>
+          <span className="transition-opacity duration-[var(--duration-fast)] group-hover:opacity-0">
+            {clock}
+          </span>
+          <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-[var(--duration-fast)] group-hover:opacity-100">
+            {totalClock}
+          </span>
         </span>
       )}
     </div>

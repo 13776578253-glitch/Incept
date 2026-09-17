@@ -21,8 +21,7 @@ export function PlayerPlaylist({ items, emptyLabel, playLabel, onSelect }: Playe
     return <p className="px-4 py-6 text-center text-[0.78rem] text-[var(--color-text-soft)]">{emptyLabel}</p>;
   }
 
-  // 行高固定 h-11（44px），列表最多露出 5 行（5 × 44 = 13.75rem），超出滚动。
-  // 固定行高是"最多 5 首"这个约束能成立的前提：行高随内容变化就数不准可见条数。
+  // 行高固定 h-11（44px），列表最多露出 5 行（5 × 44 = 13.75rem），超出滚动
   return (
     <ul className="max-h-[13.75rem] overflow-y-auto overscroll-contain [scrollbar-color:var(--color-border)_transparent] [scrollbar-width:thin]">
       {items.map((item) => (

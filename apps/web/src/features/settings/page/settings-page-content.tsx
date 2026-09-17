@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
 import { useDocsCodePaletteContext } from '@/components/base/docs-code-palette-provider';
 import { useLanguage } from '@/hooks/use-language';
+import { useMusicPlayerPreferences } from '@/hooks/use-music-player-preferences';
+import type { MusicPlaybackMode } from '@/components/base/music-player-preferences-provider';
+
 import { localeConfig, type AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
+
 import { AccountSettingsPanel } from '../account/account-settings-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
@@ -67,6 +72,15 @@ export function SettingsPageContent({
     setCodePalette,
     isCodePaletteReady,
   } = useDocsCodePaletteContext();
+  const {
+    playbackRateLocked: musicPlaybackRateLocked,
+    rememberPlacement: musicRememberPlacement,
+    playbackMode: musicPlaybackMode,
+    isReady: isMusicPreferencesReady,
+    setPlaybackRateLocked: setMusicPlaybackRateLocked,
+    setRememberPlacement: setMusicRememberPlacement,
+    setPlaybackMode: setMusicPlaybackMode,
+  } = useMusicPlayerPreferences();
   const page = getSettingsPageData(language);
   const requestedSection = searchParams.get('section');
   const returnTo = searchParams.get('returnTo');
@@ -85,6 +99,14 @@ export function SettingsPageContent({
     isCodePaletteReady,
     language,
     setLanguage,
+    musicPlaybackRateLocked,
+    setMusicPlaybackRateLocked,
+    musicRememberPlacement,
+    setMusicRememberPlacement,
+    musicPlaybackMode,
+    // 渲染层的分段控件只认识 string；收窄回播放模式，避免把窄类型函数直接塞进宽类型槽位
+    setMusicPlaybackMode: (value: string) => setMusicPlaybackMode(value as MusicPlaybackMode),
+    isMusicPreferencesReady,
   };
   const handleBack = () => {
     const returnPath = getLocalizedReturnPath(returnTo, language);

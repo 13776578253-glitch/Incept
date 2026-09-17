@@ -36,7 +36,7 @@ export function attachAudioDriver(audio: HTMLAudioElement, bridge: AudioEventBri
   };
 }
 
-// play() 的 Promise rejection 是浏览器拒绝播放的唯一可靠信号，必须转成运行时事件。
+// play() 的 Promise rejection 是浏览器拒绝播放的唯一可靠信号，必须转成运行时事件
 export function requestAudioPlay(audio: HTMLAudioElement, bridge: AudioEventBridge): void {
   void audio.play().catch((error: unknown) => {
     bridge({

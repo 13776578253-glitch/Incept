@@ -11,6 +11,7 @@ type PlayerExpandedProps = {
   items: PlayerPlaylistItem[];
   title: string;
   clock: string;
+  totalClock: string;
   rateLabel: string;
   rateCycleLabel: string;
   isPlaying: boolean;
@@ -29,6 +30,7 @@ export function PlayerExpanded({
   items,
   title,
   clock,
+  totalClock,
   rateLabel,
   rateCycleLabel,
   isPlaying,
@@ -41,7 +43,7 @@ export function PlayerExpanded({
   onCycleRate,
 }: PlayerExpandedProps) {
   return (
-    // 面板头部 + 列表 + 底栏同属一个表面：底栏用 bare 变体，不再嵌套第二个胶囊。
+    // 头部 + 列表 + 底栏同属一个表面：底栏用 bare 变体
     <section
       aria-label={copy.expandList}
       className={`overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] shadow-[var(--shadow-nav-dropdown)] ${
@@ -67,6 +69,7 @@ export function PlayerExpanded({
         <PlayerCompact
           title={title}
           clock={clock}
+          totalClock={totalClock}
           rateLabel={rateLabel}
           rateCycleLabel={rateCycleLabel}
           playLabel={copy.play}

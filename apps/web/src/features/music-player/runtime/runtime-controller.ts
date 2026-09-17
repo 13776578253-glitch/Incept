@@ -7,9 +7,8 @@ export type PlayerSideEffect =
   | { kind: 'playbackRate'; rate: number }
   | { kind: 'none' };
 
-// 这里只解析"需要立刻对 <audio> 做的事"。
-// 播放启动不在其中：所有启动都走 provider 的调和 effect，
-// 保证"等音源就绪再播放"这条规则只有唯一实现点。
+// 只解析立刻作用于 <audio> 的意图
+// 播放启动不在其中：唯一出口是 provider 的 startPlayback——点击路径：在用户手势的调用栈内直接调用它，自动续播与重播由调和 effect 调用，两条路径共用同一个实现点
 export function resolveIntentSideEffect(intent: PlayerIntent, state: PlayerState): PlayerSideEffect {
   switch (intent.type) {
     case 'pauseRequested':

@@ -7,7 +7,7 @@ import type { PlaybackRandom, PlayerState } from './types';
 
 export type PlayerInput = PlayerIntent | PlayerRuntimeEvent;
 
-// 用户意图只表达意图；运行时事实（浏览器播放事件与目录加载结果）才更新真实状态。
+// 用户意图只表达意图；运行时事实（浏览器播放事件与目录加载结果）才更新真实状态
 export function reducePlayerState(
   state: PlayerState,
   input: PlayerInput,
@@ -70,8 +70,8 @@ export function reducePlayerState(
       return { ...state, status: 'errored', errorMessage: input.message };
 
     case 'tracksLoaded':
-      // 直接复用队列替换语义，不另写一套：当前曲目仍在队列中时保留曲目、状态与播放位置；
-      // 已被移除时游标回到新队首；空队列与非空队列之间的切换也由同一处处理。
+      // 直接复用队列替换语义：当前曲目仍在队列中时保留曲目、状态与播放位置；
+      // 已被移除时游标回到新队首；空队列与非空队列之间的切换也由同一处处理
       return setQueue(state, input.tracks);
   }
 }
@@ -101,7 +101,7 @@ function resolveTrackEnded(state: PlayerState, random: PlaybackRandom): PlayerSt
     return { ...state, currentTime: 0, status: 'paused' };
   }
 
-  // 曲目自然播放结束只可能发生在播放中，因此无论此前是否收到过 pause 事件都要继续播放。
+  // 曲目自然结束只可能发生在播放中：即使浏览器先补发了一次 pause（pause-before-ended 竞态），也必须继续播放，所以不读 status
   return moveSelection(state, nextIndex, true);
 }
 

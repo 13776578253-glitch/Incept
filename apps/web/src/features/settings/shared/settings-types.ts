@@ -8,7 +8,10 @@ export type SettingsControlType =
   | 'select'
   | 'button'
   | 'status'
-  | 'input';
+  | 'input'
+  | 'plugin-rate-lock-toggle'
+  | 'plugin-placement-toggle'
+  | 'plugin-playback-mode-segmented';
 
 export type SettingsRowState =
   | 'interactive'
@@ -33,6 +36,8 @@ export type SettingsRow = {
   badge?: string;
   disabledHint?: string;
   options?: SettingsOption[];
+  // 二级分组标题：同一分区内连续同组的行归为一段，段前渲染二级标题
+  group?: string;
 };
 
 export type SettingsSection = {

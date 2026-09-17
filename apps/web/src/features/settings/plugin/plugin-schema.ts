@@ -3,45 +3,59 @@ import type { SettingsSection } from '../shared/settings-types';
 
 // 插件分区
 
-// 交互式偏好（默认倍速、吸附位置等）等音乐来源与存储方案确定后再接入。
-// 这里刻意不放假开关——不可配置的值就用 status 展示，而不是做一个点了没反应的控件。
+// 这三项偏好由 MusicPlayerPreferencesProvider 持有并持久化：
+// 设置页与正在运行的播放器读的是同一份值，所以改动会立刻作用到播放中的曲目。
 
-// TODO: 未来可能有更多插件，分区 ID 与行 ID 需要考虑命名空间冲突问题。
+// TODO: 二级分组（group 字段与分段渲染）已经可用，但行 ID 仍没有插件命名空间——
+// 加入第二个插件时需要处理 ID 冲突，或给行 ID 加上来源前缀。
 export function getPluginSettingsSection(locale: AppLocale): SettingsSection {
   if (locale === 'zh') {
     return {
       id: 'plugin',
       label: '插件',
-      description: '全站插件与其偏好。',
+      description: '全站插件与偏好',
       visibility: 'public',
       rows: [
         {
-          id: 'plugin-floating-player',
-          label: '悬浮播放器',
-          description: '全站常驻的悬浮音乐播放器。在设置、工作台、导入预览等工具型页面会自动隐藏并暂停播放。',
-          controlType: 'status',
-          state: 'locked',
+          id: 'plugin-rate-lock',
+          group: '音乐播放器',
+          label: '倍速锁定',
+          description: '锁定后播放器固定在 1x，速度按钮仍可见但点击不会改变档位；解除后可切换 0.5x 到 2x',
+          controlType: 'plugin-rate-lock-toggle',
+          state: 'interactive',
           visibility: 'public',
-          value: '已启用',
+          options: [
+            { id: 'enabled', label: '锁定' },
+            { id: 'disabled', label: '切换' },
+          ],
         },
         {
-          id: 'plugin-default-rate',
-          label: '默认倍速',
-          description: '倍速目前只跟随当前播放，刷新后回到 1x。默认倍速偏好在音乐来源与存储方案确定后接入。',
-          controlType: 'status',
-          state: 'locked',
+          id: 'plugin-placement-memory',
+          group: '音乐播放器',
+          label: '记住悬浮位置',
+          description: '记住播放器的吸附边、垂直位置与收起形态；关闭后回到默认位置，并且不再记忆',
+          controlType: 'plugin-placement-toggle',
+          state: 'interactive',
           visibility: 'public',
-          value: '1x',
-          badge: '待接入',
+          options: [
+            { id: 'enabled', label: '开启' },
+            { id: 'disabled', label: '关闭' },
+          ],
         },
         {
-          id: 'plugin-placement',
-          label: '悬浮位置',
-          description: '吸附边、垂直位置与收起形态按浏览器记忆，不随账号同步。',
-          controlType: 'status',
-          state: 'locked',
+          id: 'plugin-playback-mode',
+          group: '音乐播放器',
+          label: '默认播放模式',
+          description: '顺序播放在列表播完后暂停；列表循环回到第一首继续；单曲循环重复当前一首；随机播放永不停止',
+          controlType: 'plugin-playback-mode-segmented',
+          state: 'interactive',
           visibility: 'public',
-          value: '右侧 · 记住位置',
+          options: [
+            { id: 'off', label: '顺序' },
+            { id: 'all', label: '循环' },
+            { id: 'one', label: '单曲' },
+            { id: 'shuffle', label: '随机' },
+          ],
         },
       ],
     };
@@ -50,38 +64,52 @@ export function getPluginSettingsSection(locale: AppLocale): SettingsSection {
   return {
     id: 'plugin',
     label: 'Plugin',
-    description: 'Site-wide plugins and their preferences.',
+    description: 'Site-wide plugins and preferences',
     visibility: 'public',
     rows: [
       {
-        id: 'plugin-floating-player',
-        label: 'Floating player',
+        id: 'plugin-rate-lock',
+        group: 'Music player',
+        label: 'Speed lock',
         description:
-          'The site-wide floating music player. It hides itself and pauses playback on tool pages such as settings, workspace and import preview.',
-        controlType: 'status',
-        state: 'locked',
+          'Locked pins the player at 1x: the speed control stays visible but pressing it changes nothing; unlocking restores the 0.5x to 2x cycle',
+        controlType: 'plugin-rate-lock-toggle',
+        state: 'interactive',
         visibility: 'public',
-        value: 'Enabled',
+        options: [
+          { id: 'enabled', label: 'Locked' },
+          { id: 'disabled', label: 'Switch' },
+        ],
       },
       {
-        id: 'plugin-default-rate',
-        label: 'Default speed',
+        id: 'plugin-placement-memory',
+        group: 'Music player',
+        label: 'Remember floating position',
         description:
-          'The speed only applies to the current playback and returns to 1x on reload. A default-speed preference will follow the music source and storage decision.',
-        controlType: 'status',
-        state: 'locked',
+          'Remembers the edge, vertical offset and collapsed shape; turning it off returns the player to its default position and stops remembering',
+        controlType: 'plugin-placement-toggle',
+        state: 'interactive',
         visibility: 'public',
-        value: '1x',
-        badge: 'Pending',
+        options: [
+          { id: 'enabled', label: 'On' },
+          { id: 'disabled', label: 'Off' },
+        ],
       },
       {
-        id: 'plugin-placement',
-        label: 'Floating position',
-        description: 'Edge, vertical offset and collapsed shape are remembered per browser, not synced across devices.',
-        controlType: 'status',
-        state: 'locked',
+        id: 'plugin-playback-mode',
+        group: 'Music player',
+        label: 'Default playback mode',
+        description:
+          'Sequential pauses when the list ends, repeat list continues from the first track, repeat one holds the current track, and shuffle never stops',
+        controlType: 'plugin-playback-mode-segmented',
+        state: 'interactive',
         visibility: 'public',
-        value: 'Right · remembered',
+        options: [
+          { id: 'off', label: 'Sequential' },
+          { id: 'all', label: 'Repeat list' },
+          { id: 'one', label: 'Repeat one' },
+          { id: 'shuffle', label: 'Shuffle' },
+        ],
       },
     ],
   };
