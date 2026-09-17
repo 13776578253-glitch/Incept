@@ -33,7 +33,7 @@ export function getAppearanceSettingsSection(locale: AppLocale): SettingsSection
           id: 'appearance-code-palette',
           label: '代码块配色',
           description: '为代码块选择成组的亮色与暗色编辑器配色',
-          disabledHint: '护眼模式开启时，代码块固定使用 Rosé Pine Dawn；当前选择会保留，并在关闭护眼后恢复。',
+          disabledHint: '护眼模式开启时，代码块固定使用 Rosé Pine Dawn；当前选择会保留，并在关闭护眼后恢复',
           controlType: 'code-palette-segmented',
           state: 'interactive',
           visibility: 'public',

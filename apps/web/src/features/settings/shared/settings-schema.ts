@@ -11,7 +11,7 @@ export function getSettingsPageData(locale: AppLocale): SettingsPageData {
 
   return {
     title: isZh ? '基础设置' : 'Basic Settings',
-    description: isZh ? '用户使用偏好。' : 'User preferences.',
+    description: isZh ? '用户使用偏好' : 'User preferences.',
     sections: [
       getAppearanceSettingsSection(locale),
       getLanguageSettingsSection(locale),

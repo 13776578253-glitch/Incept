@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 // owner：显示 Owner 状态并可退出。
 // Owner secret 仍没有放入设置页，仍只能调用原有 Owner API
 
-//
 type AccountViewerRole = 'guest' | 'pro' | 'owner';
 
 function getCopy(language: 'zh' | 'en', viewerRole: AccountViewerRole) {
@@ -15,7 +14,7 @@ function getCopy(language: 'zh' | 'en', viewerRole: AccountViewerRole) {
     if (viewerRole === 'owner') {
       return {
         title: '站点所有者',
-        description: '当前浏览器拥有内部管理与全部阅读权限。',
+        description: '当前浏览器拥有内部管理与全部阅读权限',
         action: '退出登录',
       };
     }
@@ -23,18 +22,18 @@ function getCopy(language: 'zh' | 'en', viewerRole: AccountViewerRole) {
     if (viewerRole === 'pro') {
       return {
         title: '临时访问已启用',
-        description: '当前浏览器可阅读 guest 与 pro 内容。',
+        description: '当前浏览器可阅读 guest 与 pro 内容',
         action: '退出访问',
       };
     }
 
     return {
       title: '共享访问码',
-      description: '输入有效访问码后，此浏览器可阅读 pro 内容。',
+      description: '输入有效访问码后，此浏览器可阅读 pro 内容',
       placeholder: '输入共享访问码',
       action: '启用访问',
-      invalid: '访问码无效、已过期或已撤销。',
-      unavailable: '暂时无法启用访问，请稍后重试。',
+      invalid: '访问码无效、已过期或已撤销',
+      unavailable: '暂时无法启用访问，请稍后重试',
     };
   }
 
@@ -122,7 +121,7 @@ export function AccountSettingsPanel({
           {language === 'zh' ? '账户' : 'Account'}
         </h2>
         <p className="max-w-3xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-          {language === 'zh' ? '身份与受控访问。' : 'Identity and controlled access.'}
+          {language === 'zh' ? '身份与受控访问' : 'Identity and controlled access.'}
         </p>
       </header>
 
