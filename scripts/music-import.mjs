@@ -17,14 +17,16 @@ function loadEnvironment() {
 }
 
 function printUsage() {
-  console.log('Usage: pnpm music:import [--manifest <path>] [--dry-run] [--validate]');
-  console.log('  --manifest  Path to music.json. Defaults to <MUSIC_CONTENT_ROOT>/music.json.');
-  console.log('  --dry-run   Validate the manifest and report the plan without writing media or database rows.');
-  console.log('  --validate  Compare the mirror and the database against the manifest. Writes nothing.');
+  console.log('Usage: pnpm music:import [--manifest <path>] [--dry-run] [--validate] [--allow-empty]');
+  console.log('  --manifest    Path to music.json. Defaults to <MUSIC_CONTENT_ROOT>/music.json.');
+  console.log('  --dry-run     Validate the manifest and report the plan without writing media or database rows.');
+  console.log('  --validate    Compare the mirror and the database against the manifest. Writes nothing.');
+  console.log('  --allow-empty Accept a manifest with no tracks. Without this flag an empty manifest is');
+  console.log('                rejected, because importing one deactivates every existing track.');
 }
 
 function parseArgs(argv) {
-  const args = { manifest: '', dryRun: false, validate: false };
+  const args = { manifest: '', dryRun: false, validate: false, allowEmpty: false };
 
   for (let index = 0; index < argv.length; index += 1) {
     const current = argv[index];
@@ -42,6 +44,11 @@ function parseArgs(argv) {
 
     if (current === '--validate') {
       args.validate = true;
+      continue;
+    }
+
+    if (current === '--allow-empty') {
+      args.allowEmpty = true;
       continue;
     }
 
@@ -80,7 +87,10 @@ async function main() {
     pathToFileURL(path.join(projectRoot, 'apps/web/src/server/music/import-runner.ts')).href
   );
 
-  const plan = await runner.planMusicImport({ manifestPath: args.manifest || undefined });
+  const plan = await runner.planMusicImport({
+    manifestPath: args.manifest || undefined,
+    allowEmpty: args.allowEmpty,
+  });
 
   console.log(`content root: ${plan.contentRoot}`);
   console.log(`manifest:     ${plan.manifestPath}`);
@@ -124,8 +134,7 @@ async function main() {
   try {
     summary = await runner.commitMusicImport({ plan, operations });
   } catch (error) {
-    // 数据库部分在单事务里，失败时没有行被改动。镜像已经复制好了，
-    // 因为按内容寻址，重跑必然复用它们 —— 所以这里只报告清单，不删除文件。
+    // history：数据库部分在单事务里，失败时没有行被改动 / 镜像已经复制好了，因为按内容寻址，重跑必然复用它们 —— 所以这里只报告清单，不删除文件
     console.error('\nThe database write failed. No rows were changed.');
     console.error('Media copied by this run is content-addressed and will be reused on the next run:');
     describeCopiedMedia(operations);

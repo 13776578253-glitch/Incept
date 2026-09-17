@@ -13,7 +13,7 @@ export type MusicTrackRecord = {
   isActive: boolean;
 };
 
-// 导入器写入的形状：audioUrl 由媒体镜像产出，绝不来自本机路径
+// 导入器写入的形状：audioUrl 由媒体镜像产出，不来自本机路径
 export type MusicTrackImportEntry = {
   trackKey: string;
   title: string;
@@ -22,6 +22,7 @@ export type MusicTrackImportEntry = {
   contentHash: string;
   mimeType: string;
   fileSize: number;
+  durationSeconds: number | null;
   publishedAt: Date | null;
   position: number;
 };

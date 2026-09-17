@@ -8,6 +8,7 @@
     "lint": "pnpm --filter web lint",
     "typecheck": "pnpm --filter web typecheck && pnpm --filter @incept/music-player-core typecheck",
     "music:check-core": "pnpm --filter @incept/music-player-core test",
+    "music:check-adapter": "pnpm --filter @incept/db exec node --import tsx --test ../../apps/web/src/features/music-player/adapter/__tests__/music-source.test.ts",
     "music:typecheck-core": "pnpm --filter @incept/music-player-core typecheck",
     "music:mock-audio": "node scripts/music-mock-audio.mjs",
     "music:manifest": "pnpm --filter @incept/db exec tsx ../../scripts/music-manifest.mjs",

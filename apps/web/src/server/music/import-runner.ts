@@ -4,6 +4,8 @@ import path from 'node:path';
 import { importMusicTracks, listAllMusicTracks } from '@incept/db/music';
 import type { MusicImportSummary, MusicTrackImportEntry } from '@incept/db/music';
 
+import { parseFile } from 'music-metadata';
+
 import { findRepoRoot } from '../../features/docs/importer/paths';
 import { getMusicContentRoot } from './content-root';
 import { inspectMusicSource, musicMediaPublicPath, publishMusicMedia } from './media-store';
@@ -177,10 +179,12 @@ export async function commitMusicImport({
   plan: MusicImportPlan;
   operations: MusicMediaOperation[];
 }): Promise<MusicImportSummary> {
-  const dbEntries: MusicTrackImportEntry[] = plan.entries.map((entry, index) => {
+  const dbEntries: MusicTrackImportEntry[] = [];
+
+  for (const [index, entry] of plan.entries.entries()) {
     const operation = operations[index];
 
-    return {
+    dbEntries.push({
       trackKey: entry.trackKey,
       title: entry.title,
       artist: entry.artist,
@@ -188,12 +192,31 @@ export async function commitMusicImport({
       contentHash: operation.hash,
       mimeType: operation.mimeType,
       fileSize: operation.size,
+      durationSeconds: await readAudioDurationSeconds(entry.source.sourcePath),
       publishedAt: entry.publishedAt,
       position: entry.position,
-    };
-  });
+    });
+  }
 
   return importMusicTracks(dbEntries);
+}
+
+// 时长只在导入时读一次并落库：列表需要在音频加载之前就知道它，
+// 而浏览器要等元数据加载完才拿得到，所以不能靠运行时补。
+async function readAudioDurationSeconds(sourcePath: string): Promise<number | null> {
+  try {
+    const metadata = await parseFile(sourcePath);
+    const duration = metadata.format.duration;
+
+    if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0) {
+      return null;
+    }
+
+    return Math.round(duration);
+  } catch {
+    // 读不到时长不阻断导入：曲目照样能播，只是列表少一列信息。
+    return null;
+  }
 }
 
 // 一致性检查：镜像与数据库谁多谁少。停用行仍引用自己的镜像，所以只有"没有任何行引用"的文件才算孤儿
