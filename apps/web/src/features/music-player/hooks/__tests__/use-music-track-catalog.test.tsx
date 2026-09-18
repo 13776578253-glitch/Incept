@@ -41,6 +41,7 @@ it('loads the catalogue and reports ready', async () => {
   await waitFor(() => expect(result.current.status).toBe('ready'));
 
   expect(result.current.entries.map((entry) => entry.track.id)).toEqual(['demo-01']);
+  expect(result.current.libraries).toEqual([{ key: 'default', title: 'default', position: 1 }]);
   expect(fetchMock).toHaveBeenCalledWith(
     '/api/music/tracks',
     expect.objectContaining({ signal: expect.any(AbortSignal) }),
@@ -77,6 +78,16 @@ it('reports error when the payload fails validation', async () => {
   await waitFor(() => expect(result.current.status).toBe('error'));
 });
 
+it('reports error when a track refers to an undeclared library', async () => {
+  stubFetch(async () => jsonResponse(makeCatalogPayload({ libraries: ['missing'] })));
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+
+  const { result } = renderHook(() => useMusicTrackCatalog());
+
+  await waitFor(() => expect(result.current.status).toBe('error'));
+  expect(result.current.libraries).toEqual([]);
+});
+
 it('returns to loading on reload and swaps in the new entries', async () => {
   const secondCall = deferred<Response>();
   let call = 0;
@@ -101,7 +112,15 @@ it('returns to loading on reload and swaps in the new entries', async () => {
   await act(async () => {
     secondCall.resolve(
       jsonResponse({
-        tracks: [{ ...validCatalogTrack, trackKey: 'demo-02', audioUrl: '/_music-media/track-02.wav' }],
+        libraries: [{ key: 'default', title: 'default', position: 1 }],
+        tracks: [
+          {
+            ...validCatalogTrack,
+            trackKey: 'demo-02',
+            audioUrl: '/_music-media/track-02.wav',
+            libraries: ['default'],
+          },
+        ],
       }),
     );
   });

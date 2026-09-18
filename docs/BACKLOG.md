@@ -58,7 +58,7 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 
 - Source: `packages/db/prisma/schema.prisma` (`DocsCollectionItem`)
 - Status: Deferred database cleanup.
-- `docs_collection_items_collectionId_idx` currently exists in the database but is not declared in the Prisma schema. `20260916010002_add_music_track` intentionally does not drop it.
+- `docs_collection_items_collectionId_idx` currently exists in the database but is not declared in the Prisma schema. `20260916010002_add_music_track` and `20260917133912_add_music_libraries` both generated a `DROP INDEX` for it and both had it removed by hand, so the decision stays open rather than landing inside an unrelated migration.
 - Decide separately later: create a standalone migration to drop it if it is not needed, or add it back to the schema if it is.
 
 ## Code-Level Follow-Ups
@@ -117,13 +117,6 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 - **Two runners are accepted, not unified:** core and db use `node:test`, web uses Vitest. Infrastructure lives in `apps/web/vitest.config.mts` and `apps/web/src/test/` — `setup.ts` for the true global gaps, `media-element.ts` for per-test audio stubs, `music-fixtures.ts` for the catalogue payload shape that the libraries work will extend.
 - Environment note: this machine exports `NODE_ENV=production`, which makes React resolve its production build (it does not export `act`) and breaks Testing Library at import time. The Vitest config pins `NODE_ENV=test` for the test run.
 - Closed since registration: the `--allow-empty` escape hatch is wired; `toCatalogEntries` rejects duplicate `trackKey`, non-positive durations, unparsable dates, and an `audioUrl` that is neither site-relative nor https; both P1 fixes passed manual review.
-
-### B-19 Music Libraries
-
-- Source: not yet implemented.
-- Status: **Design accepted 2026-09-17**, recorded in `docs/decisions/en/music-libraries.md` and its Chinese counterpart. Implementation has not started.
-- The player currently holds one flat track list. Grouping tracks into libraries is a data-model change, not a preference: it needs a `music_libraries` table plus a membership table, a `libraries` field in the manifest contract, `scripts/music-manifest.mjs` deriving membership from the folder layout, library and membership data in `GET /api/music/tracks`, and a library switcher in the player surface that replaces the queue through `tracksLoaded`.
-- Decided: a track may belong to several libraries; order inside a library reuses the track's own `position`; a manifest with no `libraries` falls back to an implicit default library; the switcher offers an "all" view; switching follows core's existing queue semantics.
 
 ## Review Before Any Code Decision
 

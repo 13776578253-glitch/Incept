@@ -24,6 +24,7 @@ import {
   findCatalogAudioUrl,
   resolveSourceChange,
   toMusicTracks,
+  type MusicLibraryCatalogEntry,
   type MusicTrackCatalogEntry,
 } from '../adapter/music-source';
 import type { TrackCatalogStatus } from '../hooks/use-music-track-catalog';
@@ -45,7 +46,10 @@ export type MusicPlayerContextValue = {
   reloadCatalog: () => void;
   currentTrack: MusicTrack | null;
   errorKind: PlayerErrorKind | null;
+  // 已按选中曲库过滤过的可见目录
   catalog: MusicTrackCatalogEntry[];
+  // 全部启用中的曲库，供切换器渲染
+  libraries: MusicLibraryCatalogEntry[];
   catalogStatus: TrackCatalogStatus;
 };
 
@@ -53,6 +57,7 @@ export const MusicPlayerContext = createContext<MusicPlayerContextValue | null>(
 
 type MusicPlayerProviderProps = {
   catalog: MusicTrackCatalogEntry[];
+  libraries: MusicLibraryCatalogEntry[];
   catalogStatus: TrackCatalogStatus;
   onReloadCatalog: () => void;
   children: ReactNode;
@@ -63,6 +68,7 @@ type SourceApplyResult = 'applied' | 'unchanged' | 'replaced' | 'unavailable';
 
 export function MusicPlayerProvider({
   catalog,
+  libraries,
   catalogStatus,
   onReloadCatalog,
   children,
@@ -297,9 +303,10 @@ export function MusicPlayerProvider({
       currentTrack: index >= 0 ? state.queue[index] : null,
       errorKind,
       catalog,
+      libraries,
       catalogStatus,
     };
-  }, [state, sendIntent, playTrack, onReloadCatalog, errorKind, catalog, catalogStatus]);
+  }, [state, sendIntent, playTrack, onReloadCatalog, errorKind, catalog, libraries, catalogStatus]);
 
   return (
     <MusicPlayerContext.Provider value={value}>

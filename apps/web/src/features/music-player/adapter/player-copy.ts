@@ -23,6 +23,9 @@ export type PlayerCopy = {
   catalogLoading: string;
   catalogError: string;
   catalogRetry: string;
+  librarySwitcherLabel: string;
+  allLibraries: string;
+  defaultLibraryLabel: string;
 };
 
 const zhCopy: PlayerCopy = {
@@ -51,6 +54,9 @@ const zhCopy: PlayerCopy = {
   catalogLoading: '正在载入曲目',
   catalogError: '曲目列表加载失败',
   catalogRetry: '重试',
+  librarySwitcherLabel: '曲库',
+  allLibraries: '全部',
+  defaultLibraryLabel: '默认',
 };
 
 const enCopy: PlayerCopy = {
@@ -79,6 +85,9 @@ const enCopy: PlayerCopy = {
   catalogLoading: 'Loading tracks',
   catalogError: 'Track list failed to load',
   catalogRetry: 'Retry',
+  librarySwitcherLabel: 'Libraries',
+  allLibraries: 'All',
+  defaultLibraryLabel: 'Default',
 };
 
 const copies: Record<PlayerLocale, PlayerCopy> = {
@@ -101,6 +110,14 @@ export function getPlayerCopy(locale: string): PlayerCopy {
 
 export function formatPlaybackRate(rate: number): string {
   return `${Number(rate.toFixed(2))}x`;
+}
+
+// default 是清单里的机械 key（根目录文件的归属），界面显示本地化文案
+export function formatLibraryLabel(
+  library: { key: string; title: string },
+  copy: PlayerCopy,
+): string {
+  return library.key === 'default' ? copy.defaultLibraryLabel : library.title;
 }
 
 // 倍速档位

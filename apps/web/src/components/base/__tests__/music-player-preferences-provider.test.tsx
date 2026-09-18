@@ -15,6 +15,7 @@ const DEFAULT_PREFERENCES = {
   playbackRateLocked: true,
   rememberPlacement: true,
   playbackMode: 'off',
+  selectedLibrary: null,
 };
 
 function storedPreferences() {
@@ -105,8 +106,47 @@ it('persists a changed preference', () => {
   expect(storedPreferences()).toMatchObject({ playbackMode: 'all' });
 });
 
+it('starts on the all view and rejects an unusable stored library', () => {
+  const latest = renderPreferences();
+
+  expect(latest.current!.selectedLibrary).toBeNull();
+
+  localStorage.clear();
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ ...DEFAULT_PREFERENCES, selectedLibrary: 42 }),
+  );
+
+  const invalid = renderPreferences();
+
+  expect(invalid.current!.selectedLibrary).toBeNull();
+});
+
+it('persists the selected library and clears it again for the all view', () => {
+  const latest = renderPreferences();
+
+  act(() => {
+    latest.current!.setSelectedLibrary('播客');
+  });
+
+  expect(latest.current!.selectedLibrary).toBe('播客');
+  expect(storedPreferences()).toMatchObject({ selectedLibrary: '播客' });
+
+  act(() => {
+    latest.current!.setSelectedLibrary(null);
+  });
+
+  expect(latest.current!.selectedLibrary).toBeNull();
+  expect(storedPreferences()).toMatchObject({ selectedLibrary: null });
+});
+
 it('does not overwrite stored preferences with defaults while hydrating', () => {
-  const stored = { playbackRateLocked: false, rememberPlacement: false, playbackMode: 'shuffle' };
+  const stored = {
+    playbackRateLocked: false,
+    rememberPlacement: false,
+    playbackMode: 'shuffle',
+    selectedLibrary: '播客',
+  };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 

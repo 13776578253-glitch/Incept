@@ -12,7 +12,7 @@ import {
   getPlayerCopy,
 } from '../adapter/player-copy';
 
-import { findCatalogPublishedAt } from '../adapter/music-source';
+import { findCatalogPublishedAt, resolveLibrarySelection } from '../adapter/music-source';
 import { isMusicPlayerHiddenRoute } from '../adapter/player-route-policy';
 
 import { useMusicPlayerPreferences } from '@/hooks/use-music-player-preferences';
@@ -29,13 +29,15 @@ export function MusicPlayerFloating() {
   const pathname = usePathname();
   const locale = useLocale();
   const copy = useMemo(() => getPlayerCopy(locale), [locale]);
-  const { state, sendIntent, playTrack, reloadCatalog, currentTrack, errorKind, catalog, catalogStatus } =
+  const { state, sendIntent, playTrack, reloadCatalog, currentTrack, errorKind, catalog, libraries, catalogStatus } =
     useMusicPlayer();
   const { mode: viewport, isReady: isViewportReady } = usePlayerViewport();
   const {
     playbackRateLocked,
     rememberPlacement,
     playbackMode,
+    selectedLibrary,
+    setSelectedLibrary,
     isReady: isMusicPreferencesReady,
   } = useMusicPlayerPreferences();
 
@@ -64,6 +66,8 @@ export function MusicPlayerFloating() {
   const clock = formatClock(state.currentTime);
   const rateLabel = formatPlaybackRate(state.playbackRate);
   const heading = copy.formatPlaylistHeading(state.queue.length);
+  // 存储的库已被删除或改名时先按"全部"显示；runtime mount 会在目录就绪后把偏好写回 null
+  const selectedLibraryKey = resolveLibrarySelection(libraries, selectedLibrary);
 
   const items = useMemo<PlayerPlaylistItem[]>(
     () =>
@@ -178,6 +182,9 @@ export function MusicPlayerFloating() {
         isPlaying={isPlaying}
         fullWidth={isMobile}
         showOrbToggle={!isMobile}
+        libraries={libraries}
+        selectedLibrary={selectedLibraryKey}
+        onSelectLibrary={setSelectedLibrary}
         onTogglePlay={handleTogglePlay}
         onSelect={handleSelect}
         onCollapse={() => setMode('orb')}

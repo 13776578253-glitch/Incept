@@ -8,7 +8,6 @@ This is the short entry point for active product work. Detailed source-code acce
 - **Checklist grammar (B-04):** Define multiline and nested Markdown-like checklist behavior.
 - **Structured content (B-05):** Design the authoring and rendering contract for tables before adding the block.
 - **Collection navigation (B-06):** Run real-content acceptance for directory batch replace, rollback, and cross-locale folder labels on top of the implemented folder/article tree.
-- **Music libraries (B-19):** Implement the accepted design — the library and membership tables, the `libraries` manifest field, library data in the tracks API, and a switcher in the player. Design: [decisions/en/music-libraries.md](./decisions/en/music-libraries.md).
 
 ## Boundaries
 

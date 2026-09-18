@@ -1,4 +1,4 @@
-import { listActiveMusicTracks } from '@incept/db/music';
+import { listActiveMusicCatalog } from '@incept/db/music';
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -8,17 +8,25 @@ export const dynamic = 'force-dynamic';
 //
 // trackKey 而不是 cuid 作为对外身份：契约要求内容变化时换用新的 trackKey，
 // 因此它正好是队列需要的稳定标识，而数据库主键不承担这个语义。
+//
+// 曲库与归属由 listActiveMusicCatalog 一次取回：关联组装留在 db 边界，这里只做 JSON 序列化。
 export async function GET() {
-  const rows = await listActiveMusicTracks();
+  const catalog = await listActiveMusicCatalog();
 
   return NextResponse.json({
-    tracks: rows.map((row) => ({
-      trackKey: row.trackKey,
-      title: row.title,
-      artist: row.artist,
-      audioUrl: row.audioUrl,
-      durationSeconds: row.durationSeconds,
-      publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+    libraries: catalog.libraries.map((library) => ({
+      key: library.key,
+      title: library.title,
+      position: library.position,
+    })),
+    tracks: catalog.tracks.map((track) => ({
+      trackKey: track.trackKey,
+      title: track.title,
+      artist: track.artist,
+      audioUrl: track.audioUrl,
+      durationSeconds: track.durationSeconds,
+      publishedAt: track.publishedAt ? track.publishedAt.toISOString() : null,
+      libraries: track.libraries,
     })),
   });
 }

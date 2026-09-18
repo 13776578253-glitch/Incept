@@ -1,10 +1,14 @@
-import { act, render, waitFor } from '@testing-library/react';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { installMediaElementMocks, type MediaElementMocks } from '@/test/media-element';
-import { makeCatalogEntries, validCatalogTrack } from '@/test/music-fixtures';
+import { makeCatalog, makeMixedCatalog, validCatalogTrack } from '@/test/music-fixtures';
 
-import { toCatalogEntries, type MusicTrackCatalogEntry } from '../../adapter/music-source';
+import {
+  filterCatalogByLibrary,
+  toMusicCatalog,
+  type MusicCatalog,
+} from '../../adapter/music-source';
 import { useMusicPlayer } from '../../hooks/use-music-player';
 import { MusicPlayerProvider, type MusicPlayerContextValue } from '../music-player-provider';
 
@@ -15,10 +19,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // 先卸载再还原桩：卸载过程中或卸载后落地的浏览器调用不能打到真实的 jsdom 实现上（那会打出 "Not implemented" 噪声）
+  cleanup();
   media.restore();
 });
 
-function renderPlayer(catalog: MusicTrackCatalogEntry[]) {
+function renderPlayer(catalog: MusicCatalog) {
   const latest: { current: MusicPlayerContextValue | null } = { current: null };
   const onReloadCatalog = vi.fn();
 
@@ -27,10 +33,11 @@ function renderPlayer(catalog: MusicTrackCatalogEntry[]) {
     return null;
   }
 
-  function tree(nextCatalog: MusicTrackCatalogEntry[]) {
+  function tree(nextCatalog: MusicCatalog) {
     return (
       <MusicPlayerProvider
-        catalog={nextCatalog}
+        catalog={nextCatalog.entries}
+        libraries={nextCatalog.libraries}
         catalogStatus="ready"
         onReloadCatalog={onReloadCatalog}
       >
@@ -50,18 +57,19 @@ function renderPlayer(catalog: MusicTrackCatalogEntry[]) {
     latest,
     onReloadCatalog,
     audio,
-    rerender: (nextCatalog: MusicTrackCatalogEntry[]) => view.rerender(tree(nextCatalog)),
+    rerender: (nextCatalog: MusicCatalog) => view.rerender(tree(nextCatalog)),
   };
 }
 
-function catalogWithAudioUrl(audioUrl: string) {
-  return toCatalogEntries({
-    tracks: [{ ...validCatalogTrack, trackKey: 'demo-01', audioUrl }],
+function catalogWithAudioUrl(audioUrl: string): MusicCatalog {
+  return toMusicCatalog({
+    libraries: [{ key: 'default', title: 'default', position: 1 }],
+    tracks: [{ ...validCatalogTrack, trackKey: 'demo-01', audioUrl, libraries: ['default'] }],
   });
 }
 
 it('loads the catalog into the queue and applies the first source without playing', () => {
-  const { latest, audio } = renderPlayer(makeCatalogEntries(3));
+  const { latest, audio } = renderPlayer(makeCatalog(3));
 
   expect(latest.current!.state.queue.map((track) => track.id)).toEqual([
     'demo-01',
@@ -76,7 +84,7 @@ it('loads the catalog into the queue and applies the first source without playin
 });
 
 it('starts playback on the click path and reports playing only after the play event', () => {
-  const { latest, audio } = renderPlayer(makeCatalogEntries(2));
+  const { latest, audio } = renderPlayer(makeCatalog(2));
 
   act(() => {
     latest.current!.playTrack('demo-02');
@@ -95,7 +103,7 @@ it('starts playback on the click path and reports playing only after the play ev
 });
 
 it('surfaces a rejected play() through the runtime error kind', async () => {
-  const { latest, audio } = renderPlayer(makeCatalogEntries(1));
+  const { latest, audio } = renderPlayer(makeCatalog(1));
 
   media.play.mockRejectedValue(new Error('NotAllowedError'));
 
@@ -118,7 +126,7 @@ it('surfaces a rejected play() through the runtime error kind', async () => {
 });
 
 it('surfaces an audio element error', () => {
-  const { latest, audio } = renderPlayer(makeCatalogEntries(1));
+  const { latest, audio } = renderPlayer(makeCatalog(1));
 
   act(() => {
     media.dispatch(audio, 'error');
@@ -180,12 +188,12 @@ it('ignores the pause event the browser emits during a source swap', () => {
 });
 
 it('does not reload the source when an equal catalog array replaces it', () => {
-  const entries = makeCatalogEntries(2);
+  const entries = makeCatalog(2);
   const { audio, rerender } = renderPlayer(entries);
 
   const loadCalls = media.load.mock.calls.length;
 
-  rerender([...entries]);
+  rerender({ ...entries, entries: [...entries.entries] });
 
   expect(media.load.mock.calls.length).toBe(loadCalls);
   expect(media.play).not.toHaveBeenCalled();
@@ -193,11 +201,12 @@ it('does not reload the source when an equal catalog array replaces it', () => {
 });
 
 it('releases the source when the queue empties', () => {
-  const { latest, audio, rerender } = renderPlayer(makeCatalogEntries(1));
+  const catalog = makeCatalog(1);
+  const { latest, audio, rerender } = renderPlayer(catalog);
 
   expect(audio.hasAttribute('src')).toBe(true);
 
-  rerender([]);
+  rerender({ ...catalog, entries: [] });
 
   expect(audio.hasAttribute('src')).toBe(false);
   expect(latest.current!.state.status).toBe('idle');
@@ -205,7 +214,7 @@ it('releases the source when the queue empties', () => {
 });
 
 it('routes pauseRequested to the audio element', () => {
-  const { latest } = renderPlayer(makeCatalogEntries(1));
+  const { latest } = renderPlayer(makeCatalog(1));
 
   act(() => {
     latest.current!.sendIntent({ type: 'pauseRequested' });
@@ -215,7 +224,7 @@ it('routes pauseRequested to the audio element', () => {
 });
 
 it('seeks through the element once a duration is known', () => {
-  const { latest, audio } = renderPlayer(makeCatalogEntries(1));
+  const { latest, audio } = renderPlayer(makeCatalog(1));
 
   act(() => {
     latest.current!.sendIntent({ type: 'seekRequested', seconds: 42 });
@@ -234,7 +243,7 @@ it('seeks through the element once a duration is known', () => {
 });
 
 it('applies an in-range playback rate and ignores an out-of-range one', () => {
-  const { latest, audio } = renderPlayer(makeCatalogEntries(1));
+  const { latest, audio } = renderPlayer(makeCatalog(1));
 
   act(() => {
     latest.current!.sendIntent({ type: 'playbackRateRequested', rate: 1.5 });
@@ -252,11 +261,65 @@ it('applies an in-range playback rate and ignores an out-of-range one', () => {
 });
 
 it('forwards reloadCatalog to its owner', () => {
-  const { latest, onReloadCatalog } = renderPlayer(makeCatalogEntries(1));
+  const { latest, onReloadCatalog } = renderPlayer(makeCatalog(1));
 
   act(() => {
     latest.current!.reloadCatalog();
   });
 
   expect(onReloadCatalog).toHaveBeenCalledTimes(1);
+});
+
+it('exposes the libraries to the player surface', () => {
+  const { latest } = renderPlayer(makeMixedCatalog());
+
+  expect(latest.current!.libraries.map((library) => library.key)).toEqual(['播客', '音乐']);
+});
+
+it('swaps the queue when the visible library changes and keeps the current track', () => {
+  const catalog = makeMixedCatalog();
+  const { latest, audio, rerender } = renderPlayer(catalog);
+
+  expect(latest.current!.state.queue.map((track) => track.id)).toEqual([
+    'pod-01',
+    'music-01',
+    'both-01',
+  ]);
+
+  act(() => {
+    latest.current!.playTrack('both-01');
+  });
+  act(() => {
+    media.dispatch(audio, 'play');
+  });
+
+  expect(latest.current!.state.status).toBe('playing');
+
+  rerender({ ...catalog, entries: filterCatalogByLibrary(catalog.entries, '播客') });
+
+  expect(latest.current!.state.queue.map((track) => track.id)).toEqual(['pod-01', 'both-01']);
+  expect(latest.current!.state.currentTrackId).toBe('both-01');
+  expect(latest.current!.state.status).toBe('playing');
+  expect(audio.getAttribute('src')).toBe('/_music-media/both-01.wav');
+});
+
+it('moves the cursor to the new head when the current track leaves the view', () => {
+  const catalog = makeMixedCatalog();
+  const { latest, audio, rerender } = renderPlayer(catalog);
+
+  act(() => {
+    latest.current!.playTrack('music-01');
+  });
+  act(() => {
+    media.dispatch(audio, 'play');
+  });
+
+  expect(latest.current!.state.status).toBe('playing');
+
+  rerender({ ...catalog, entries: filterCatalogByLibrary(catalog.entries, '播客') });
+
+  // 换了曲目仍继续播：核心的 setQueue 语义，决策文档已记为后果
+  expect(latest.current!.state.currentTrackId).toBe('pod-01');
+  expect(latest.current!.state.status).toBe('loading');
+  expect(audio.getAttribute('src')).toBe('/_music-media/pod-01.wav');
 });

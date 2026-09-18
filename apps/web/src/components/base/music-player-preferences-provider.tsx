@@ -16,16 +16,20 @@ export type MusicPlayerPreferencesValue = {
   playbackRateLocked: boolean;
   rememberPlacement: boolean;
   playbackMode: MusicPlaybackMode;
+  // 选中的曲库 key；null 表示"全部"视图
+  selectedLibrary: string | null;
   isReady: boolean;
   setPlaybackRateLocked: (locked: boolean) => void;
   setRememberPlacement: (remember: boolean) => void;
   setPlaybackMode: (mode: MusicPlaybackMode) => void;
+  setSelectedLibrary: (key: string | null) => void;
 };
 
 type StoredPreferences = {
   playbackRateLocked: boolean;
   rememberPlacement: boolean;
   playbackMode: MusicPlaybackMode;
+  selectedLibrary: string | null;
 };
 
 const STORAGE_KEY = 'incept-music-player-preferences';
@@ -35,6 +39,7 @@ const DEFAULT_PREFERENCES: StoredPreferences = {
   playbackRateLocked: true,
   rememberPlacement: true,
   playbackMode: 'off',
+  selectedLibrary: null,
 };
 
 const PLAYBACK_MODES: MusicPlaybackMode[] = ['off', 'all', 'one', 'shuffle'];
@@ -57,6 +62,7 @@ function readStoredPreferences(): StoredPreferences {
 
     const record = parsed as Partial<Record<keyof StoredPreferences, unknown>>;
     const playbackMode = record.playbackMode;
+    const selectedLibrary = record.selectedLibrary;
 
     return {
       playbackRateLocked:
@@ -71,6 +77,9 @@ function readStoredPreferences(): StoredPreferences {
         typeof playbackMode === 'string' && PLAYBACK_MODES.includes(playbackMode as MusicPlaybackMode)
           ? (playbackMode as MusicPlaybackMode)
           : DEFAULT_PREFERENCES.playbackMode,
+      // 库里是否真的存在由目录决定；这里只保证类型，失效的 key 由播放器在目录就绪后清理
+      selectedLibrary:
+        typeof selectedLibrary === 'string' && selectedLibrary.trim() !== '' ? selectedLibrary : null,
     };
   } catch {
     // 存储不可用或内容损坏时退回默认值
@@ -119,6 +128,10 @@ export function MusicPlayerPreferencesProvider({ children }: { children: ReactNo
     (mode: MusicPlaybackMode) => update({ playbackMode: mode }),
     [update],
   );
+  const setSelectedLibrary = useCallback(
+    (key: string | null) => update({ selectedLibrary: key }),
+    [update],
+  );
 
   const value = useMemo<MusicPlayerPreferencesValue>(
     () => ({
@@ -127,8 +140,16 @@ export function MusicPlayerPreferencesProvider({ children }: { children: ReactNo
       setPlaybackRateLocked,
       setRememberPlacement,
       setPlaybackMode,
+      setSelectedLibrary,
     }),
-    [preferences, isReady, setPlaybackRateLocked, setRememberPlacement, setPlaybackMode],
+    [
+      preferences,
+      isReady,
+      setPlaybackRateLocked,
+      setRememberPlacement,
+      setPlaybackMode,
+      setSelectedLibrary,
+    ],
   );
 
   return (

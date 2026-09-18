@@ -1,8 +1,10 @@
 'use client';
 
 import type { PlayerCopy } from '../adapter/player-copy';
+import type { MusicLibraryCatalogEntry } from '../adapter/music-source';
 import { PlayerCloseIcon } from './player-icons';
 import { PlayerCompact, playerSurfaceWidthClass } from './player-compact';
+import { PlayerLibrarySwitcher } from './player-library-switcher';
 import { PlayerPlaylist, type PlayerPlaylistItem } from './player-playlist';
 
 type PlayerExpandedProps = {
@@ -17,6 +19,9 @@ type PlayerExpandedProps = {
   isPlaying: boolean;
   fullWidth: boolean;
   showOrbToggle: boolean;
+  libraries: MusicLibraryCatalogEntry[];
+  selectedLibrary: string | null;
+  onSelectLibrary: (key: string | null) => void;
   onTogglePlay: () => void;
   onSelect: (trackId: string) => void;
   onCollapse: () => void;
@@ -36,6 +41,9 @@ export function PlayerExpanded({
   isPlaying,
   fullWidth,
   showOrbToggle,
+  libraries,
+  selectedLibrary,
+  onSelectLibrary,
   onTogglePlay,
   onSelect,
   onCollapse,
@@ -62,6 +70,16 @@ export function PlayerExpanded({
           <PlayerCloseIcon className="h-3.5 w-3.5" />
         </button>
       </header>
+
+      {/* 只有一个曲库时"全部"与它完全相同，切换器没有意义 */}
+      {libraries.length >= 2 ? (
+        <PlayerLibrarySwitcher
+          copy={copy}
+          libraries={libraries}
+          selected={selectedLibrary}
+          onSelect={onSelectLibrary}
+        />
+      ) : null}
 
       <PlayerPlaylist items={items} emptyLabel={copy.emptyQueue} playLabel={copy.play} onSelect={onSelect} />
 

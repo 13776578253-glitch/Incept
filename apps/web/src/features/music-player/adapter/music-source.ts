@@ -1,10 +1,23 @@
 import type { MusicTrack } from '@incept/music-player-core';
 
-// 目录条目：core 只认识 MusicTrack，发布日期与可播放 URL 是站点侧字段，留在 adapter，与列表行右侧的日期同源
+export type MusicLibraryCatalogEntry = {
+  key: string;
+  title: string;
+  position: number;
+};
+
+// 目录条目：core 只认识 MusicTrack，发布日期、可播放 URL 与曲库归属是站点侧字段，留在 adapter，与列表行右侧的日期同源
 export type MusicTrackCatalogEntry = {
   track: MusicTrack;
   audioUrl: string;
   publishedAt: string | null;
+  // 该曲目所属的曲库 key，顺序与曲库列表一致
+  libraries: string[];
+};
+
+export type MusicCatalog = {
+  libraries: MusicLibraryCatalogEntry[];
+  entries: MusicTrackCatalogEntry[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -16,15 +29,80 @@ function isUsableAudioUrl(value: string): boolean {
   return value.startsWith('/') || value.startsWith('https://');
 }
 
+function toLibraryEntries(value: unknown): MusicLibraryCatalogEntry[] {
+  if (!Array.isArray(value)) {
+    throw new Error('music catalogue response must be an object with a libraries array');
+  }
+
+  const seenKeys = new Set<string>();
+
+  return value.map((item, index) => {
+    if (!isRecord(item)) {
+      throw new Error(`music catalogue library ${index} is not an object`);
+    }
+
+    const key = typeof item.key === 'string' ? item.key.trim() : '';
+    const title = typeof item.title === 'string' ? item.title.trim() : '';
+
+    if (key === '' || title === '') {
+      throw new Error(`music catalogue library ${index} must carry key and title`);
+    }
+
+    if (seenKeys.has(key)) {
+      throw new Error(`music catalogue carries a duplicate library key: ${key}`);
+    }
+
+    seenKeys.add(key);
+
+    if (typeof item.position !== 'number' || !Number.isInteger(item.position)) {
+      throw new Error(`music catalogue library ${key} has an unusable position`);
+    }
+
+    return { key, title, position: item.position };
+  });
+}
+
+function toTrackLibraries(value: unknown, trackKey: string, declaredKeys: Set<string>): string[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`music catalogue track ${trackKey} must carry a libraries array`);
+  }
+
+  const keys: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    if (typeof item !== 'string' || item.trim() === '') {
+      throw new Error(`music catalogue track ${trackKey} has an unusable library key`);
+    }
+
+    const key = item.trim();
+
+    if (seen.has(key)) {
+      throw new Error(`music catalogue track ${trackKey} repeats the library key: ${key}`);
+    }
+
+    if (!declaredKeys.has(key)) {
+      throw new Error(`music catalogue track ${trackKey} refers to an undeclared library: ${key}`);
+    }
+
+    seen.add(key);
+    keys.push(key);
+  }
+
+  return keys;
+}
+
 // 接口响应属于外部输入，逐字段校验通过后才进入应用，与 db 包对 JSON 字段的要求一致
-export function toCatalogEntries(payload: unknown): MusicTrackCatalogEntry[] {
+export function toMusicCatalog(payload: unknown): MusicCatalog {
   if (!isRecord(payload) || !Array.isArray(payload.tracks)) {
     throw new Error('music catalogue response must be an object with a tracks array');
   }
 
+  const libraries = toLibraryEntries(payload.libraries);
+  const declaredKeys = new Set(libraries.map((library) => library.key));
   const seenTrackKeys = new Set<string>();
 
-  return payload.tracks.map((item, index) => {
+  const entries = payload.tracks.map((item, index) => {
     if (!isRecord(item)) {
       throw new Error(`music catalogue track ${index} is not an object`);
     }
@@ -79,12 +157,39 @@ export function toCatalogEntries(payload: unknown): MusicTrackCatalogEntry[] {
       track: { id: trackKey, title, artist, durationHint },
       audioUrl,
       publishedAt,
+      libraries: toTrackLibraries(item.libraries, trackKey, declaredKeys),
     };
   });
+
+  return { libraries, entries };
 }
 
 export function toMusicTracks(entries: MusicTrackCatalogEntry[]): MusicTrack[] {
   return entries.map((entry) => entry.track);
+}
+
+// null 表示"全部"视图：它是一个视图而不是一个曲库
+export function filterCatalogByLibrary(
+  entries: MusicTrackCatalogEntry[],
+  libraryKey: string | null,
+): MusicTrackCatalogEntry[] {
+  if (libraryKey === null) {
+    return entries;
+  }
+
+  return entries.filter((entry) => entry.libraries.includes(libraryKey));
+}
+
+// 存储的库可能已经被删掉或改名：此时回到"全部"，并让调用方据此清理偏好
+export function resolveLibrarySelection(
+  libraries: MusicLibraryCatalogEntry[],
+  storedKey: string | null,
+): string | null {
+  if (storedKey === null) {
+    return null;
+  }
+
+  return libraries.some((library) => library.key === storedKey) ? storedKey : null;
 }
 
 // history：音源查找取代了先前的异步解析接缝：数据库已经保存站点 URL，再解析一次是多余的间接层
