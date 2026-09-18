@@ -257,12 +257,12 @@ model DocsCollectionItemLocale {
   @@map("docs_collection_item_locales")
 }
 
-// 音乐曲目。公开内容，不做 access 分级。
+// 音乐曲目 / 公开内容，不做 access 分级。
 //
 // trackKey 表示内容身份，由 music.json 清单显式提供，不从文件名或哈希推导；
 // audioUrl 表示当前发布位置，只存站点 URL，绝不存本机绝对路径；
-// contentHash / mimeType / fileSize 描述当前文件，便于导入校验与将来迁移到对象存储。
-// position 允许重复，排序固定为 position ASC, id ASC（配合 isActive 过滤与下方索引）。
+// contentHash / mimeType / fileSize 描述当前文件，便于导入校验与将来迁移到对象存储
+// position 允许重复，排序固定为 position ASC, id ASC（配合 isActive 过滤与下方索引）
 model MusicTrack {
   id              String    @id @default(cuid())
   trackKey        String    @unique
@@ -276,9 +276,44 @@ model MusicTrack {
   publishedAt     DateTime?
   position        Int
   isActive        Boolean   @default(true)
+  libraryItems    MusicLibraryItem[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([isActive, position])
   @@map("music_tracks")
+}
+
+// 曲库 / 只是标签：改名或重新分组都不改变曲目的 trackKey 与它的媒体
+//
+// key 由清单提供，是曲库的对外身份；position 只决定曲库自身的顺序
+// （读取固定为 position ASC, id ASC），库内曲目顺序复用曲目自己的 position
+// 导入时清单里未声明的曲库停用而非删除，与曲目一致；因此列表要按 isActive 过滤
+model MusicLibrary {
+  id        String             @id @default(cuid())
+  key       String             @unique
+  title     String
+  position  Int
+  isActive  Boolean            @default(true)
+  items     MusicLibraryItem[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([isActive, position])
+  @@map("music_libraries")
+}
+
+// 成员关系 / 清单是权威：每次导入按清单整体重写，所以这里只有 createdAt，没有 updatedAt
+// 一首曲目可属多个曲库，故用中间表而不是曲目上的字符串列
+model MusicLibraryItem {
+  id        String       @id @default(cuid())
+  libraryId String
+  trackId   String
+  library   MusicLibrary @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  track     MusicTrack   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@unique([libraryId, trackId])
+  @@index([trackId])
+  @@map("music_library_items")
 }

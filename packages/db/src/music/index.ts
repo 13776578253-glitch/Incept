@@ -1,8 +1,21 @@
-export { importMusicTracks } from './import';
-export { listActiveMusicTracks, listAllMusicTracks } from './queries/list';
+export { importMusicCatalog } from './import';
+export { planMusicImport } from './plan';
+export {
+  listActiveMusicCatalog,
+  listActiveMusicTracks,
+  listAllMusicLibraries,
+  listAllMusicTracks,
+  listMusicLibraryMemberships,
+} from './queries/list';
 
+export type { MusicCatalogRecord, MusicCatalogTrackRecord } from './queries/list';
+export type { ExistingMusicState, MusicImportMode, MusicImportPlan, MusicImportPlanInput } from './plan';
 export type {
   MusicImportSummary,
+  MusicLibraryImportEntry,
+  MusicLibraryMembershipRecord,
+  MusicLibraryRecord,
   MusicTrackImportEntry,
   MusicTrackRecord,
+  MusicTrackRowEntry,
 } from './types';

@@ -95,6 +95,13 @@ async function main() {
   console.log(`content root: ${plan.contentRoot}`);
   console.log(`manifest:     ${plan.manifestPath}`);
   console.log(`entries:      ${plan.entries.length}`);
+  console.log(
+    `libraries:    ${
+      plan.mode === 'legacy'
+        ? 'none declared (legacy manifest: the default library is used)'
+        : `${plan.libraries.length} declared`
+    }`,
+  );
 
   if (args.validate) {
     const issues = await runner.validateMusicMirror({ plan });
@@ -144,8 +151,12 @@ async function main() {
   }
 
   console.log(
-    `database: ${summary.created} created, ${summary.updated} updated, ${summary.unchanged} unchanged, ${summary.deactivated} deactivated`,
+    `tracks:       ${summary.created} created, ${summary.updated} updated, ${summary.unchanged} unchanged, ${summary.deactivated} deactivated`,
   );
+  console.log(
+    `libraries:    ${summary.libraries.created} created, ${summary.libraries.updated} updated, ${summary.libraries.unchanged} unchanged, ${summary.libraries.deactivated} deactivated`,
+  );
+  console.log(`memberships:  ${summary.memberships.added} added, ${summary.memberships.removed} removed`);
 
   for (const warning of summary.warnings) {
     console.log(`  warning: ${warning}`);

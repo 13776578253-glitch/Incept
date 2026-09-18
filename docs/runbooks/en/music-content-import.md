@@ -17,14 +17,16 @@ The content root stays outside the repository. Only the published mirror (`apps/
 ```
 <MUSIC_CONTENT_ROOT>/
   music.json            ← the manifest, the import's only input; written by the generator
-  podcast/
+  01-podcast/
     episode-01.flac
     episode-02.mp3
-  music/
+  02-music/
     album/
       track-01.mp3      ← deeper folders are organisation only; this still belongs to "music"
   intro.mp3             ← directly under the root: the default library
 ```
+
+A first-level folder that holds audio has to be numbered (`01-podcast`). The generator stops with an error for an unnumbered folder, a repeated number, or two folders that derive the same library key, instead of guessing an order.
 
 Manifest format (the shape the generator writes):
 
@@ -36,8 +38,8 @@ Manifest format (the shape the generator writes):
   ],
   "tracks": [
     {
-      "trackKey": "podcast-episode-01",
-      "file": "podcast/episode-01.flac",
+      "trackKey": "01-podcast-episode-01",
+      "file": "01-podcast/episode-01.flac",
       "title": "Episode One",
       "artist": "Optional",
       "publishedAt": "2026-09-15",
@@ -52,10 +54,13 @@ Field rules:
 
 - `trackKey` is required and must be unique within the manifest. It is the **content identity** — when a file's content changes, issue a new key rather than changing what an existing key points at
 - `file` is required and relative to the content root. After `realpath` it must still resolve inside the root, so symlinks and directory junctions pointing outside are rejected
-- `title` is required; `position` is a required integer and decides list order — and, inside a library, the order of that library's tracks
+- `title` is required; `position` is a required integer and decides list order — and, inside a library, the order of that library's tracks. `libraries[].position` orders the libraries themselves
 - `artist` and `publishedAt` are optional. `publishedAt` renders on the right of the list row; when it is absent the row shows the duration instead
-- `libraries` on a track is written by the generator from the folder the file sits in. A value written by hand is preserved, and it is the only way to put one track in several libraries
+- `libraries` on a track is written by the generator from the folder the file sits in. A value written by hand is preserved, and it is the only way to put one track in several libraries — but every key it names has to exist: a numbered folder derives it, or the top-level array declares it. A key that does neither stops the generator instead of quietly creating a library
 - Referencing a library that was not declared, or passing an empty array, makes the import fail: a misspelled key has to be loud rather than silently creating a library
+- A top-level `libraries` array makes the manifest **authoritative**: a library missing from it is deactivated, and memberships are rewritten to match. Without that array the manifest is a **legacy** one — `default` is created or reactivated, this manifest's tracks are added to it, and nothing is removed or deactivated
+- Omitting a track's `libraries` means `default`, so an authoritative manifest has to declare `default`
+- Files directly under the content root belong to the `default` library; the player shows that library as 默认 / Default
 
 Allowed extensions: `.mp3`, `.wav`, `.flac`. Single file limit: 128 MB.
 
@@ -65,10 +70,11 @@ Allowed extensions: `.mp3`, `.wav`, `.flac`. Single file limit: 128 MB.
 
 | What you want | How |
 | --- | --- |
-| Add a library | Create a folder under the content root, put audio in it, run `pnpm music:manifest` and `pnpm music:import` again |
+| Add a library | Create a numbered folder under the content root, put audio in it, run `pnpm music:manifest` and `pnpm music:import` again |
 | Change the display name | Edit `libraries[].title` in the manifest; a re-run does not overwrite it |
-| Change the order | Prefix the folder with a number (`01-podcast`), or edit `libraries[].position`, which is also preserved |
-| Put one track in several libraries | Add `libraries: ["a", "b"]` to that track by hand; a re-run keeps it |
+| Change the order of existing libraries | Edit `libraries[].position`. Renumbering a folder only sets the initial position of a new library, and an existing library keeps its own |
+| Put one track in several libraries | Add `libraries: ["a", "b"]` to that track by hand; a re-run keeps it. Both keys have to exist already: add the numbered folder, or declare the library in the top-level array first — a hand-added declaration survives the next run |
+| Remove a library | Delete the folder **and** remove the manifest entries that still name it: while one entry names the library it survives, because missing-on-disk entries are kept |
 
 **Do not rename a folder to change a display name.** The folder name is part of every `file` path inside it: renaming makes the generator treat those files as new (new `trackKey` values), while the previous entries stay in the manifest as missing-on-disk and are deactivated on the next import.
 
@@ -77,19 +83,23 @@ Allowed extensions: `.mp3`, `.wav`, `.flac`. Single file limit: 128 MB.
 ```bash
 pnpm db:deploy              # make sure migrations are applied
 pnpm music:manifest         # scan the content root, create or update music.json
-# edit titles, dates and order as needed — the generator preserves your edits
+#   --root <dir> scans another directory instead; --dry-run reports without writing
+# edit titles, dates, order and library names as needed — the generator preserves your edits
 pnpm music:import --dry-run # validate everything and report the plan, writing nothing
 pnpm music:import           # the real run
 pnpm music:import --validate
 ```
 
-`--validate` reports five kinds of inconsistency and exits with status 1, so it works in scripts:
+`--validate` reports eight kinds of inconsistency and exits with status 1, so it works in scripts:
 
 - `orphanMirror` — a file in the mirror that no database row references
 - `missingMirror` — a database row whose file is not in the mirror
 - `notImported` — present in the manifest, absent from the database
 - `willDeactivate` — an active database row no longer in the manifest; the next import will deactivate it
 - `staleAudioUrl` — the file name the manifest implies does not match the URL recorded in the database, which means **the content changed without rotating the `trackKey`**. That breaks the contract and the server keeps serving the old bytes, so it has to be dealt with
+- `libraryNotImported` — a library declared in the manifest that the database is missing, has deactivated, or holds with a different title or position
+- `membershipMismatch` — a track's libraries differ between the manifest and the database. A legacy manifest only reports missing `default` memberships, because that mode removes nothing
+- `willDeactivateLibrary` — an active library that the manifest no longer declares
 
 ## Flags
 
@@ -116,6 +126,6 @@ pnpm music:import --validate
 
 ## Boundaries
 
-This is a **local and internal** solution. The database stores only the site URL (`/_music-media/<sha256>.<ext>`) and never a machine path, so moving to object storage and a CDN means replacing the publishing implementation and the URL prefix while the manifest contract, the database columns and the player stay unchanged.
+This is a **local and internal** solution. The database stores only the site URL (`/_music-media/<sha256>.<ext>`) and never a machine path, so moving to object storage and a CDN means replacing the publishing implementation and the URL prefix. The manifest contract, the database tables and the player carry the library model added in B-19 and do not change for that move.
 
 Replacing it before release is not optional: files under `public/` **cannot be access-controlled**, and audio is far larger than images, so range requests and CDN caching have to be verified on the real deployment platform rather than assumed from a development environment.

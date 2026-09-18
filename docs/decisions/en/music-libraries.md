@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted on 2026-09-17. Not implemented yet: the schema, the manifest contract, the import semantics and the player wiring below are the agreed shape for B-19.
+Accepted and implemented on 2026-09-17 (B-19). The schema, the manifest contract, the import semantics and the player wiring below all describe shipped behaviour.
 
 ## Context
 
@@ -28,19 +28,23 @@ Four constraints shaped the outcome.
 - **The API returns libraries and membership in one response.** `GET /api/music/tracks` returns `libraries` alongside each track's `libraries` key array. The adapter keeps its field-level validation and also rejects a track that references an unknown library.
 - **Switching libraries is a `tracksLoaded`.** The adapter filters the list and dispatches it; core does not change. If the current track is in the new list it keeps playing; otherwise the cursor moves to the new head and playback continues.
 - **The selected library is a preference.** It is stored through the preference channel, and "all" is a view rather than a library.
-- **The switcher lives in the expanded panel header**, and it includes the "all" view.
+- **The switcher lives in the expanded panel header**, and it includes the "all" view. It is a row of segmented chips with "all" first, scrolling sideways rather than wrapping, and it is hidden while only one library exists, because "all" and that library would then be the same view.
+- **The default library is mechanical in the manifest and localized in the player.** The generator writes `default` as both key and title; the switcher renders localized copy for that key (默认 / Default).
+- **A library with no folder left and no entry referencing it is removed** from the manifest by the generator, which reports it, so the next import deactivates the library instead of deleting it. Entries whose files are missing on disk are kept, so deleting a folder alone does not remove a library while stale entries still name it.
 - **Every track belongs to at least one library**, so both "all" and each library view are well defined.
+- **Two import modes are distinguished by the top-level field alone.** A manifest without `libraries` is legacy: only the `default` library is created or reactivated, memberships are added for this manifest's tracks, and nothing is removed or deactivated. A manifest with `libraries` is authoritative: a track that omits the per-track field means `['default']` and the manifest must declare `default`, undeclared libraries are deactivated, and memberships are rewritten wholesale.
 
 ## Authoring: folders are libraries
 
 The manifest is generated, not hand-written. `pnpm music:manifest` scans `MUSIC_CONTENT_ROOT` and derives membership from the directory layout, so creating a library means creating a folder.
 
-- **The first path segment under the content root is the library.** `podcast/episode-01.mp3` belongs to `podcast`, and `music/album/track.flac` also belongs to `music`; deeper folders are free organisation inside one library.
+- **The first path segment under the content root is the library.** `01-podcast/episode-01.mp3` belongs to `podcast`, and `02-music/album/track.flac` also belongs to `music`; deeper folders are free organisation inside one library.
+- **A first-level folder that contains audio must carry a numeric prefix.** `01-podcast`, not `podcast`: the prefix keeps the order explicit and matches how the docs importer numbers its collections. An unnumbered folder, a repeated number, or two folders that derive the same key all fail the generator instead of being resolved silently.
 - **Files directly under the content root belong to the default library**, which is why a manifest carrying no library information at all is still valid.
 - **The key comes from the folder name**, slugified the same way a `trackKey` is; the title is the folder name as written.
-- **A numeric prefix orders the libraries.** `01-podcast/` sorts before `02-music/`, and the prefix is stripped from both the key and the title, matching how the docs importer reads numeric prefixes.
-- **Hand-written values still win.** A `libraries` array or a library title written by hand survives a re-run the same way a hand-edited track title does, and a library that only a hand-written array references is still emitted — with its key as the title — so the manifest stays importable. Hand-writing is the only way to express multi-membership, which folders cannot.
-- **`scripts/music-manifest.mjs` therefore changes as part of this work.** It writes `{ tracks }` today and rebuilds every entry field by field, so any library information put there by hand is dropped on the next run: the field has to be produced by the generator rather than written.
+- **The numeric prefix is stripped from key and title, and only orders new libraries.** `01-podcast/` sorts before `02-music/`; the prefix never enters the key. It decides the *initial* position only: an existing library keeps its `position` after a folder is renumbered, so renumbering is not how an existing library is reordered.
+- **Hand-written values still win, but a hand-written key has to exist.** A `libraries` array or a library title written by hand survives a re-run the same way a hand-edited track title does. A key that no numbered folder derives and that the previous manifest does not declare is an error: silently emitting it would turn a typo into a library and the importer's "undeclared library" check would never fire. A library without a folder is added by declaring it in the manifest's `libraries` array first — from the next run on it counts as declared. Hand-writing is the only way to express multi-membership, which folders cannot.
+- **The generator owns the field.** `scripts/music-manifest.mjs` writes `{ libraries, tracks }`, and `apps/web/src/server/music/manifest-builder.ts` holds the derivation plus the merge with the previous manifest, which is what makes hand-written titles, positions and memberships survive a re-run. The generator's `--root <dir>` flag scans a directory other than `MUSIC_CONTENT_ROOT`, which is how the derivation is exercised without touching real content.
 
 ## Rejected alternatives
 
@@ -57,7 +61,8 @@ The manifest is generated, not hand-written. `pnpm music:manifest` scans `MUSIC_
 
 - Switching libraries keeps playing when the current track is in the selected library; otherwise core's existing rule applies and the cursor moves to the new head, still playing. The listener hears a different track. If that turns out to be wrong in use, pausing on a switch needs a new core input, because core cannot currently replace a queue and stay paused.
 - Deactivating a library deletes neither tracks nor media; memberships are rewritten from the manifest on every import.
-- `--validate` reports a library that would be deactivated and a manifest that references an unknown library.
+- `--validate` reports eight problem kinds in total: the original five plus `libraryNotImported`, `membershipMismatch` and `willDeactivateLibrary`. A manifest that references an unknown library is still a hard parse error rather than a reported issue.
+- **Deleting a folder does not by itself remove its library.** Missing-on-disk entries are kept, so as long as one of them still names the library the library stays; those entries have to leave the manifest as well before the library is dropped and deactivated.
 - The list heading counts the visible view, so `列表（27）` becomes the selected library's count once one is selected.
 - **Renaming a library folder is not a rename.** The folder name is part of every `file` path inside it, so the generator sees new files: new `trackKey` values, while the previous entries stay in the manifest as missing-on-disk and are deactivated on the next import. Rename the `title` instead when only the display name should change.
-- The generator, the import CLI, the API, the adapter and the player all move together in B-19; the runbook's directory layout section changes with them.
+- The generator, the import CLI, the API, the adapter and the player shipped together in B-19; the runbook's directory layout, validation list and boundaries sections were updated with them.

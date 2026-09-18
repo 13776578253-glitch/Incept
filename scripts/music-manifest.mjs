@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const projectRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 
@@ -20,10 +20,42 @@ function loadEnvironment() {
 }
 
 function printUsage() {
-  console.log('Usage: pnpm music:manifest [--dry-run]');
-  console.log('  Scans MUSIC_CONTENT_ROOT for audio files and writes <root>/music.json.');
-  console.log('  Existing entries are kept as-is, so hand-edited titles, dates and positions survive.');
-  console.log('  --dry-run  Report what would be written without touching the manifest.');
+  console.log('Usage: pnpm music:manifest [--root <dir>] [--dry-run]');
+  console.log('  Scans the content root for audio files and writes <root>/music.json.');
+  console.log('  Libraries come from the first folder segment; hand-edited titles, dates, positions');
+  console.log('  and library memberships are kept as they are.');
+  console.log('  --root <dir>  Scan this directory instead of MUSIC_CONTENT_ROOT (for dry checks and tests).');
+  console.log('  --dry-run     Report what would be written without touching the manifest.');
+}
+
+function parseArgs(argv) {
+  const args = { root: '', dryRun: false };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const current = argv[index];
+
+    if (current === '--root') {
+      args.root = argv[index + 1] ?? '';
+      index += 1;
+      continue;
+    }
+
+    if (current === '--dry-run') {
+      args.dryRun = true;
+      continue;
+    }
+
+    if (current === '--help' || current === '-h') {
+      printUsage();
+      process.exit(0);
+    }
+
+    console.error(`Unknown argument: ${current}`);
+    printUsage();
+    process.exit(1);
+  }
+
+  return args;
 }
 
 async function collectAudioFiles(root, directory = root) {
@@ -47,43 +79,14 @@ async function collectAudioFiles(root, directory = root) {
   return files.sort();
 }
 
-function trackKeyFromFile(file) {
-  const withoutExtension = file.slice(0, file.length - path.extname(file).length);
-
-  return withoutExtension
-    .split('/')
-    .join('-')
-    .toLowerCase()
-    .replace(/[^0-9a-z\u4e00-\u9fff_-]+/gu, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
-function uniqueTrackKey(base, taken) {
-  const fallback = base === '' ? 'track' : base;
-
-  if (!taken.has(fallback)) return fallback;
-
-  let suffix = 2;
-  while (taken.has(`${fallback}-${suffix}`)) suffix += 1;
-
-  return `${fallback}-${suffix}`;
-}
-
-function titleFromFile(file) {
-  const base = path.basename(file, path.extname(file));
-
-  return base.replace(/[-_]+/g, ' ').trim() || base;
-}
-
 async function main() {
   loadEnvironment();
 
-  const dryRun = process.argv.slice(2).includes('--dry-run');
-  const configuredRoot = process.env.MUSIC_CONTENT_ROOT?.trim();
+  const args = parseArgs(process.argv.slice(2));
+  const configuredRoot = (args.root || process.env.MUSIC_CONTENT_ROOT || '').trim();
 
   if (!configuredRoot) {
-    console.error('MUSIC_CONTENT_ROOT is not set. Add it to apps/web/.env.local.');
+    console.error('MUSIC_CONTENT_ROOT is not set. Add it to apps/web/.env.local or pass --root <dir>.');
     process.exit(1);
   }
 
@@ -96,70 +99,54 @@ async function main() {
     process.exit(1);
   }
 
-  const existing = await fs
-    .readFile(manifestPath, 'utf8')
-    .then((raw) => JSON.parse(raw))
-    .catch(() => null);
-  const previousEntries = Array.isArray(existing?.tracks) ? existing.tracks : [];
-  const previousByFile = new Map(previousEntries.map((entry) => [entry.file, entry]));
-
-  const takenKeys = new Set();
-  let kept = 0;
-  let added = 0;
-
-  const entries = files.map((file, index) => {
-    const previous = previousByFile.get(file);
-
-    if (previous?.trackKey) {
-      takenKeys.add(previous.trackKey);
-    }
-
-    return { file, previous, index };
-  }).map(({ file, previous, index }) => {
-    if (previous) {
-      kept += 1;
-    } else {
-      added += 1;
-    }
-
-    const trackKey = previous?.trackKey ?? uniqueTrackKey(trackKeyFromFile(file), takenKeys);
-    takenKeys.add(trackKey);
-
-    return {
-      trackKey,
-      file,
-      title: previous?.title ?? titleFromFile(file),
-      ...(previous?.artist ? { artist: previous.artist } : {}),
-      ...(previous?.publishedAt ? { publishedAt: previous.publishedAt } : {}),
-      position: previous?.position ?? index + 1,
-    };
+  const existingRaw = await fs.readFile(manifestPath, 'utf8').catch((error) => {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
   });
 
-  // 清单里有、磁盘上已不在的条目：保留而不是删除。
-  // 删掉会让下一次导入把它们静默停用，而文件消失通常只是路径改了名或挪了位置。
-  const missing = previousEntries.filter((entry) => !files.includes(entry.file));
+  let previous = null;
 
-  for (const entry of missing) {
-    entries.push(entry);
+  if (existingRaw !== null) {
+    try {
+      previous = JSON.parse(existingRaw);
+    } catch {
+      // 解析失败不能当作"没有上一版清单"：那会静默丢掉手写的标题、顺序与归属
+      throw new Error(`${manifestPath} is not valid JSON. Fix or remove it before regenerating.`);
+    }
   }
 
-  console.log(`content root: ${contentRoot}`);
-  console.log(`audio files:  ${files.length}`);
-  console.log(`kept:         ${kept}`);
-  console.log(`added:        ${added}`);
+  const builder = await import(
+    pathToFileURL(path.join(projectRoot, 'apps/web/src/server/music/manifest-builder.ts')).href
+  );
+  const { document, report } = builder.buildMusicManifest({ files, previous });
 
-  if (missing.length > 0) {
-    console.log(`\n${missing.length} entr(ies) are in the manifest but missing on disk and were kept as-is:`);
-    for (const entry of missing) console.log(`  ${entry.file}`);
+  console.log(`content root: ${contentRoot}`);
+  console.log(`audio files:  ${report.files}`);
+  console.log(`kept:         ${report.kept}`);
+  console.log(`added:        ${report.added}`);
+  console.log(`libraries:    ${document.libraries.length}`);
+
+  if (report.librariesAdded.length > 0) {
+    console.log(`libraries added:   ${report.librariesAdded.join(', ')}`);
+  }
+
+  if (report.librariesRemoved.length > 0) {
+    console.log(`libraries removed: ${report.librariesRemoved.join(', ')}`);
+    console.log('  No folder matches them and no track entry refers to them; the next import deactivates them.');
+  }
+
+  if (report.missing.length > 0) {
+    console.log(`\n${report.missing.length} entr(ies) are in the manifest but missing on disk and were kept as-is:`);
+    for (const file of report.missing) console.log(`  ${file}`);
     console.log('Remove them by hand if the files are really gone.');
   }
 
-  if (dryRun) {
+  if (args.dryRun) {
     console.log('\ndry run: music.json was not written.');
     return;
   }
 
-  await fs.writeFile(manifestPath, `${JSON.stringify({ tracks: entries }, null, 2)}\n`, 'utf8');
+  await fs.writeFile(manifestPath, `${JSON.stringify(document, null, 2)}\n`, 'utf8');
   console.log(`\nwrote ${manifestPath}`);
 }
 

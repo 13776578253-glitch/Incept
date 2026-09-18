@@ -19,8 +19,13 @@ function createMediaQueryList(query: string): MediaQueryList {
 }
 
 afterEach(() => {
+  // @vitest-environment node 的服务端测试没有 DOM，没有需要清理的渲染与存储
+  if (typeof window === 'undefined') return;
+
   cleanup();
   localStorage.clear();
 });
 
-window.matchMedia = ((query: string) => createMediaQueryList(query)) as typeof window.matchMedia;
+if (typeof window !== 'undefined') {
+  window.matchMedia = ((query: string) => createMediaQueryList(query)) as typeof window.matchMedia;
+}
