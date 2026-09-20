@@ -14,8 +14,12 @@ import { localeConfig, type AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 
 import { AccountSettingsPanel } from '../account/account-settings-panel';
+import { MusicAdminPanel } from '../plugin/music/music-admin-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
+
+import type { MusicAdminData } from '@/server/music/music-admin';
+import type { SettingsSection } from '../shared/settings-types';
 
 function useMounted() {
   const [mounted, setMounted] = useState(false);
@@ -52,10 +56,30 @@ function getLocalizedReturnPath(returnTo: string | null, locale: AppLocale) {
   return query ? `${localizedPath}?${query}` : localizedPath;
 }
 
+// 曲目与曲库管理挂在插件分区下面，只对 owner 出现（数据由服务端页面传下来，非 owner 为 null）
+function PluginManagerBlock({
+  section,
+  locale,
+  data,
+}: {
+  section: SettingsSection;
+  locale: AppLocale;
+  data: MusicAdminData | null;
+}) {
+  if (section.id !== 'plugin' || data === null) {
+    return null;
+  }
+
+  return <MusicAdminPanel locale={locale} data={data} />;
+}
+
 export function SettingsPageContent({
   viewerRole,
+  musicAdminData,
 }: {
   viewerRole: 'guest' | 'pro' | 'owner';
+  // 只有 owner 会拿到；其余角色为 null，管理区不渲染
+  musicAdminData: MusicAdminData | null;
 }) {
   const mounted = useMounted();
   const router = useRouter();
@@ -104,7 +128,7 @@ export function SettingsPageContent({
     musicRememberPlacement,
     setMusicRememberPlacement,
     musicPlaybackMode,
-    // 渲染层的分段控件只认识 string；收窄回播放模式，避免把窄类型函数直接塞进宽类型槽位
+    // history：渲染层的分段控件只认识 string；收窄回播放模式，避免把窄类型函数直接塞进宽类型槽位
     setMusicPlaybackMode: (value: string) => setMusicPlaybackMode(value as MusicPlaybackMode),
     isMusicPreferencesReady,
   };
@@ -144,7 +168,10 @@ export function SettingsPageContent({
         {selectedSection.id === 'account' ? (
           <AccountSettingsPanel language={language} viewerRole={viewerRole} />
         ) : (
-          <SettingsSectionPanel section={selectedSection} {...interactions} />
+          <div className="space-y-8">
+            <SettingsSectionPanel section={selectedSection} {...interactions} />
+            <PluginManagerBlock section={selectedSection} locale={language} data={musicAdminData} />
+          </div>
         )}
       </div>
 
@@ -153,7 +180,10 @@ export function SettingsPageContent({
           section.id === 'account' ? (
             <AccountSettingsPanel key={section.id} language={language} viewerRole={viewerRole} />
           ) : (
-            <SettingsSectionPanel key={section.id} section={section} {...interactions} />
+            <div key={section.id} className="space-y-8">
+              <SettingsSectionPanel section={section} {...interactions} />
+              <PluginManagerBlock section={section} locale={language} data={musicAdminData} />
+            </div>
           )
         ))}
       </div>

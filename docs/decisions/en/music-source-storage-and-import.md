@@ -4,6 +4,8 @@
 
 Accepted on 2026-09-17. The pipeline it describes is implemented and committed: the table in `0df59c1`, the media store in `75f1ec4`, the source and import pipeline in `1d77175`, and catalogue hardening with import-time duration extraction in `1c09f27`. The boundaries below still hold — the local mirror is a staging shape, and object storage plus a CDN remains a release requirement.
 
+> **Since 2026-09-18:** daily authoring moved to the web (see [music-authoring-in-the-web.md](./music-authoring-in-the-web.md)): uploads and edits write the database and the mirror directly, and the manifest and CLI are used only to migrate or rebuild. What this document keeps — the data shape, the content-addressed mirror, `trackKey` as identity and the import pipeline rules — is unchanged.
+
 ## Context
 
 The floating music player needed real audio instead of a module of mock tracks. The repository already had exactly one media precedent: the docs image pipeline. That pipeline keeps originals outside the repository, publishes content-addressed copies into `apps/web/public/_docs-media/`, and stores only the resulting site URL in the database. Anything the player needed had to either follow that shape or justify diverging from it.

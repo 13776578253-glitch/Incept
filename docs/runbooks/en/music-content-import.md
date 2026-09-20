@@ -2,6 +2,8 @@
 
 For whoever runs the import. Covers turning audio files into tracks the player can read, and what to do when it fails.
 
+Daily authoring — uploading, editing tracks, managing libraries — happens in the web: see [music-library-management.md](./music-library-management.md). **This page covers bulk migration and rebuilding only**: moving to another machine, rebuilding the database, or importing a set of existing folders in one go.
+
 ## Prerequisites
 
 - PostgreSQL is running (`docker compose --env-file .env.docker up -d`)
@@ -66,7 +68,9 @@ Allowed extensions: `.mp3`, `.wav`, `.flac`. Single file limit: 128 MB.
 
 **Do not point `file` at something inside the repository.** Content addressing copies the bytes into the mirror, and pointing at the repository defeats the point of keeping the content root outside it.
 
-## Adding and adjusting libraries
+## Adding and adjusting libraries (bulk migration path)
+
+> This section applies only when migrating with a content root and a manifest. Day-to-day create/read/update/delete lives in the web (Settings → Plugin → Tracks and libraries, owner only); `pnpm music:import` **deactivates** anything the manifest does not describe, so clear it out first or accept that.
 
 | What you want | How |
 | --- | --- |

@@ -65,11 +65,6 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 
 Registered while verifying `NEXT.md` against the working tree. These are source TODOs, not product features.
 
-### B-10 Prisma Schema Revision Not Bumped
-
-- Source: `packages/db/src/client.ts:10`
-- The revision still reports `2026-07-26-docs-listing` after the 2026-09-01 nested collection navigation and 2026-09-02 collection item active schema changes. Bump it when those models are accepted.
-
 ### B-11 Collection Folder Depth Limit Only Warns
 
 - Source: `apps/web/src/features/docs/importer/collection-directory.ts:181-188`
@@ -114,9 +109,25 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 - **Automated coverage now reaches the DOM-level paths.** `apps/web` has a React test environment (Vitest 5 + jsdom + Testing Library), and the repository gained one aggregate entry: `pnpm test` runs every workspace that owns a `test` script, `pnpm test:web` / `pnpm test:core` narrow it, `pnpm test:watch:web` watches. `music:check-core` and `music:check-adapter` remain as compatibility aliases, and the adapter test that used to borrow `packages/db`'s `tsx` now runs under Vitest inside `apps/web`.
 - Five suites landed: catalogue adapter (payload shape, duplicate identity, URL, dates), catalogue hook (request, retry, failure, stale entries retained, unmount abort), player provider (core↔audio wiring, effect ordering, source swaps, play races), preference channel (storage read, write gate, corrupt values) and the settings renderer (controls, gating, grouping).
 - **Still not covered:** the geometry hooks (`use-floating-position`, `use-player-viewport`) and `music-player-floating.tsx` — the only module that needs `next/navigation` + `next-intl` mocks. Real playback, autoplay policy, pointer capture and geometry measurement stay browser-only, so the browser acceptance round still stands; in jsdom a geometry test can only assert which placement was written, because `getBoundingClientRect` is always zero.
-- **Two runners are accepted, not unified:** core and db use `node:test`, web uses Vitest. Infrastructure lives in `apps/web/vitest.config.mts` and `apps/web/src/test/` — `setup.ts` for the true global gaps, `media-element.ts` for per-test audio stubs, `music-fixtures.ts` for the catalogue payload shape that the libraries work will extend.
+- **Two runners are accepted, not unified:** core and db use `node:test`, web uses Vitest. Infrastructure lives in `apps/web/vitest.config.mts` and `apps/web/src/test/` — `setup.ts` for the true global gaps, `media-element.ts` for per-test audio stubs, `music-fixtures.ts` for the catalogue payload shape the libraries work extended.
 - Environment note: this machine exports `NODE_ENV=production`, which makes React resolve its production build (it does not export `act`) and breaks Testing Library at import time. The Vitest config pins `NODE_ENV=test` for the test run.
-- Closed since registration: the `--allow-empty` escape hatch is wired; `toCatalogEntries` rejects duplicate `trackKey`, non-positive durations, unparsable dates, and an `audioUrl` that is neither site-relative nor https; both P1 fixes passed manual review.
+- Closed since registration: the `--allow-empty` escape hatch is wired; `toMusicCatalog` rejects duplicate `trackKey`, non-positive durations, unparsable dates, an `audioUrl` that is neither site-relative nor https, and undeclared or repeated library keys; both P1 fixes passed manual review.
+
+### B-20 Music Library Management Follow-Ups
+
+- Source: `apps/web/src/features/settings/plugin/music/` (was `music-library-manager.tsx`)
+- Status: Closed on 2026-09-18. The settings page now writes the database directly and covers creating, renaming, reordering, deactivating and restoring libraries, so "creation and folder-backed removal are not offered" no longer holds. See `docs/decisions/en/music-authoring-in-the-web.md`.
+- Kept for history: creating a library used to require the generator to own the key, and a folder-backed library could not be removed because the next generator run brought it back.
+
+### B-21 Web Authoring Follow-Ups
+
+- Source: `apps/web/src/server/music/`, `apps/web/src/features/settings/plugin/music/`
+- Status: Open. Registered when authoring moved to the web; each item is a deliberate boundary, not an oversight.
+- **Media files are never deleted.** Deactivating a track or a library keeps every byte, so disk usage only grows; the only cleanup is `pnpm music:import --validate` reporting unreferenced mirror files plus a manual delete. A UI cleanup entry with a dry run is the follow-up.
+- **Uploads have no resume, no chunking and no transcoding**, and the 128 MB cap is hard — a failed large flac/wav upload starts over.
+- **Every edit is its own request with no concurrency guard**: owner-only, one transaction per request, later write wins. A second editor or a stale tab can silently overwrite an earlier edit.
+- **Order is the track's own `position`**: a track in two libraries shares one order, and the arrow buttons are the only affordance (no drag-and-drop, no bulk edit).
+- **The admin read returns every row** (`listAllMusicTracks` plus all memberships) on each settings-page load, and the payload is serialised to the client. Fine for tens of tracks; it needs paging or a server-side filter past a few hundred.
 
 ## Review Before Any Code Decision
 

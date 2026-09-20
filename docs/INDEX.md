@@ -141,6 +141,8 @@ Current content import manuals:
 - `docs/runbooks/zh/docs-content-import.md`
 - `docs/runbooks/en/music-content-import.md`
 - `docs/runbooks/zh/music-content-import.md`
+- `docs/runbooks/en/music-library-management.md`
+- `docs/runbooks/zh/music-library-management.md`
 
 ### `decisions/`
 

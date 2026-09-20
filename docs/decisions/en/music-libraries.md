@@ -34,7 +34,9 @@ Four constraints shaped the outcome.
 - **Every track belongs to at least one library**, so both "all" and each library view are well defined.
 - **Two import modes are distinguished by the top-level field alone.** A manifest without `libraries` is legacy: only the `default` library is created or reactivated, memberships are added for this manifest's tracks, and nothing is removed or deactivated. A manifest with `libraries` is authoritative: a track that omits the per-track field means `['default']` and the manifest must declare `default`, undeclared libraries are deactivated, and memberships are rewritten wholesale.
 
-## Authoring: folders are libraries
+## Authoring: folders are libraries (CLI bulk migration only)
+
+> **Since 2026-09-18 daily authoring happens in the web** (see [music-authoring-in-the-web.md](./music-authoring-in-the-web.md)): uploads and edits write the database and the mirror directly, and libraries are created, renamed, deactivated and restored from the UI. The rules below describe the `pnpm music:manifest` bulk path — moving to another machine, rebuilding, or importing a set of existing folders in one go.
 
 The manifest is generated, not hand-written. `pnpm music:manifest` scans `MUSIC_CONTENT_ROOT` and derives membership from the directory layout, so creating a library means creating a folder.
 
@@ -45,6 +47,10 @@ The manifest is generated, not hand-written. `pnpm music:manifest` scans `MUSIC_
 - **The numeric prefix is stripped from key and title, and only orders new libraries.** `01-podcast/` sorts before `02-music/`; the prefix never enters the key. It decides the *initial* position only: an existing library keeps its `position` after a folder is renumbered, so renumbering is not how an existing library is reordered.
 - **Hand-written values still win, but a hand-written key has to exist.** A `libraries` array or a library title written by hand survives a re-run the same way a hand-edited track title does. A key that no numbered folder derives and that the previous manifest does not declare is an error: silently emitting it would turn a typo into a library and the importer's "undeclared library" check would never fire. A library without a folder is added by declaring it in the manifest's `libraries` array first — from the next run on it counts as declared. Hand-writing is the only way to express multi-membership, which folders cannot.
 - **The generator owns the field.** `scripts/music-manifest.mjs` writes `{ libraries, tracks }`, and `apps/web/src/server/music/manifest-builder.ts` holds the derivation plus the merge with the previous manifest, which is what makes hand-written titles, positions and memberships survive a re-run. The generator's `--root <dir>` flag scans a directory other than `MUSIC_CONTENT_ROOT`, which is how the derivation is exercised without touching real content.
+
+## Management surface
+
+> **Superseded on 2026-09-18.** The screen is no longer a manifest editor: it writes the database directly and covers uploads, track editing, and creating / renaming / deactivating libraries. The manifest hash and its conflict handling retired with the manifest. The full rules are in [music-authoring-in-the-web.md](./music-authoring-in-the-web.md).
 
 ## Rejected alternatives
 

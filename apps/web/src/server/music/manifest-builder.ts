@@ -1,5 +1,7 @@
 import path from 'node:path';
 
+import { slugifyMusicKey, titleFromFileName, uniqueMusicKey } from './music-key';
+
 export type ManifestLibraryEntry = {
   key: string;
   title: string;
@@ -49,36 +51,15 @@ const DEFAULT_LIBRARY_KEY = 'default';
 // 与 docs 导入器同一约定：数字前缀决定顺序，前缀不属于名字
 const NUMBERED_FOLDER_PATTERN = /^(\d+)-(.+)$/;
 
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^0-9a-z\u4e00-\u9fff_-]+/gu, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
 function trackKeyFromFile(file: string): string {
   const extension = path.extname(file);
   const withoutExtension = extension === '' ? file : file.slice(0, file.length - extension.length);
 
-  return slugify(withoutExtension.split('/').join('-'));
-}
-
-function uniqueTrackKey(base: string, taken: Set<string>): string {
-  const fallback = base === '' ? 'track' : base;
-
-  if (!taken.has(fallback)) return fallback;
-
-  let suffix = 2;
-  while (taken.has(`${fallback}-${suffix}`)) suffix += 1;
-
-  return `${fallback}-${suffix}`;
+  return slugifyMusicKey(withoutExtension.split('/').join('-'));
 }
 
 function titleFromFile(file: string): string {
-  const base = path.basename(file, path.extname(file));
-
-  return base.replace(/[-_]+/g, ' ').trim() || base;
+  return titleFromFileName(file);
 }
 
 function numberedFolderParts(folder: string): { prefix: number; base: string } {
@@ -101,7 +82,7 @@ function membershipKeyForFile(file: string): string {
     return DEFAULT_LIBRARY_KEY;
   }
 
-  const key = slugify(numberedFolderParts(segments[0]).base);
+  const key = slugifyMusicKey(numberedFolderParts(segments[0]).base);
 
   if (key === '') {
     throw new Error(`The folder "${segments[0]}" has no usable characters for a library key.`);
@@ -119,7 +100,7 @@ function missingMembershipKey(file: string, allowedKeys: Set<string>): string {
   }
 
   const match = NUMBERED_FOLDER_PATTERN.exec(segments[0]);
-  const key = slugify(match ? match[2] : segments[0]);
+  const key = slugifyMusicKey(match ? match[2] : segments[0]);
 
   return key !== '' && allowedKeys.has(key) ? key : DEFAULT_LIBRARY_KEY;
 }
@@ -163,7 +144,7 @@ function deriveFolderLibraries(files: string[]): {
 
     prefixOwner.set(entry.prefix, entry.folder);
 
-    const key = slugify(entry.base);
+    const key = slugifyMusicKey(entry.base);
 
     if (key === '') {
       throw new Error(`The folder "${entry.folder}" has no usable characters for a library key.`);
@@ -198,6 +179,11 @@ function deriveFolderLibraries(files: string[]): {
   }
 
   return { derivedByKey };
+}
+
+// 供管理界面判断"哪些曲库由文件夹提供"：这些库不能从清单里被移除，因为下一次生成会把它带回来
+export function deriveFolderLibraryKeys(files: string[]): Set<string> {
+  return new Set(deriveFolderLibraries(files).derivedByKey.keys());
 }
 
 // 构建：给定扫描到的文件与上一版清单，产出新的清单文档。文件系统与打印由调用方负责
@@ -249,7 +235,7 @@ export function buildMusicManifest(input: {
       ? previousTrack.libraries.map((key) => requireAllowedKey(key, file))
       : [membershipKeyForFile(file)];
 
-    const trackKey = previousTrack?.trackKey ?? uniqueTrackKey(trackKeyFromFile(file), takenKeys);
+    const trackKey = previousTrack?.trackKey ?? uniqueMusicKey(trackKeyFromFile(file), takenKeys);
     takenKeys.add(trackKey);
 
     tracks.push({

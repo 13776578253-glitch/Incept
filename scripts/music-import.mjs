@@ -121,6 +121,26 @@ async function main() {
     return;
   }
 
+  // 网页新增的内容不在清单里，而清单导入是权威的：先说清楚这次会停用多少它不认识的行
+  const pendingIssues = await runner.validateMusicMirror({ plan });
+  const deactivations = pendingIssues.filter(
+    (issue) => issue.kind === 'willDeactivate' || issue.kind === 'willDeactivateLibrary',
+  );
+
+  if (deactivations.length > 0) {
+    console.log(
+      `\nwarning: this manifest does not describe ${deactivations.length} row(s) that are currently active; importing deactivates them:`,
+    );
+
+    for (const issue of deactivations) {
+      console.log(`  ${issue.kind}: ${issue.detail}`);
+    }
+
+    console.log(
+      '  Content created from the web UI is not in the manifest. Continue only if this manifest is meant to be authoritative.',
+    );
+  }
+
   const operations = await runner.publishMusicImportMedia({
     plan,
     mode: args.dryRun ? 'dry-run' : 'publish',

@@ -1,13 +1,8 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const projectRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-
-// 与 media-store 的白名单一致。这里刻意不导入 app 模块：生成器只处理路径与 JSON，
-// 不需要为此承担类型耦合，代价是这份三元素白名单要与之同步。
-const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac'];
 
 function loadEnvironment() {
   const envFilePath = path.join(projectRoot, 'apps', 'web', '.env.local');
@@ -58,27 +53,6 @@ function parseArgs(argv) {
   return args;
 }
 
-async function collectAudioFiles(root, directory = root) {
-  const dirents = await fs.readdir(directory, { withFileTypes: true });
-  const files = [];
-
-  for (const dirent of dirents) {
-    const absolute = path.join(directory, dirent.name);
-
-    if (dirent.isDirectory()) {
-      files.push(...(await collectAudioFiles(root, absolute)));
-      continue;
-    }
-
-    if (dirent.isFile() && AUDIO_EXTENSIONS.includes(path.extname(dirent.name).toLowerCase())) {
-      // 清单里的路径一律用正斜杠，保证跨平台一致。
-      files.push(path.relative(root, absolute).split(path.sep).join('/'));
-    }
-  }
-
-  return files.sort();
-}
-
 async function main() {
   loadEnvironment();
 
@@ -91,33 +65,27 @@ async function main() {
   }
 
   const contentRoot = path.resolve(configuredRoot);
-  const manifestPath = path.join(contentRoot, 'music.json');
-  const files = await collectAudioFiles(contentRoot);
+  const serverMusic = (name) =>
+    import(pathToFileURL(path.join(projectRoot, 'apps/web/src/server/music', name)).href);
+
+  const [builder, scan, manifestFile] = await Promise.all([
+    serverMusic('manifest-builder.ts'),
+    serverMusic('source-scan.ts'),
+    serverMusic('manifest-file.ts'),
+  ]);
+
+  const files = await scan.collectMusicAudioFiles(contentRoot);
 
   if (files.length === 0) {
-    console.error(`No ${AUDIO_EXTENSIONS.join(' / ')} files found under ${contentRoot}.`);
+    console.error(
+      `No ${scan.MUSIC_AUDIO_EXTENSIONS.join(' / ')} files found under ${contentRoot}.`,
+    );
     process.exit(1);
   }
 
-  const existingRaw = await fs.readFile(manifestPath, 'utf8').catch((error) => {
-    if (error?.code === 'ENOENT') return null;
-    throw error;
-  });
+  // 读清单：文件不存在是"没有上一版"；JSON 无效必须报错，否则会静默丢掉手写的标题、顺序与归属
+  const { previous } = await manifestFile.readMusicManifestFile(contentRoot);
 
-  let previous = null;
-
-  if (existingRaw !== null) {
-    try {
-      previous = JSON.parse(existingRaw);
-    } catch {
-      // 解析失败不能当作"没有上一版清单"：那会静默丢掉手写的标题、顺序与归属
-      throw new Error(`${manifestPath} is not valid JSON. Fix or remove it before regenerating.`);
-    }
-  }
-
-  const builder = await import(
-    pathToFileURL(path.join(projectRoot, 'apps/web/src/server/music/manifest-builder.ts')).href
-  );
   const { document, report } = builder.buildMusicManifest({ files, previous });
 
   console.log(`content root: ${contentRoot}`);
@@ -146,8 +114,8 @@ async function main() {
     return;
   }
 
-  await fs.writeFile(manifestPath, `${JSON.stringify(document, null, 2)}\n`, 'utf8');
-  console.log(`\nwrote ${manifestPath}`);
+  await manifestFile.writeMusicManifestFile(contentRoot, document);
+  console.log(`\nwrote ${manifestFile.getMusicManifestPath(contentRoot)}`);
 }
 
 main().catch((error) => {

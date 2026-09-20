@@ -38,7 +38,7 @@ export type MusicImportPlan = {
 
 const DEFAULT_LIBRARY_KEY = 'default';
 
-// 成员关系不属于曲目行，写入前必须剥离，否则 Prisma 会收到未知字段
+// 成员关系不属于曲目行，剥离，否则 Prisma 会收到未知字段
 function toTrackRow(entry: MusicTrackImportEntry): MusicTrackRowEntry {
   return {
     trackKey: entry.trackKey,
@@ -99,7 +99,7 @@ export function planMusicImport(input: MusicImportPlanInput): MusicImportPlan {
       continue;
     }
 
-    // 契约要求内容变化时换用新的 trackKey。此处不阻断导入（重新编码是合法操作），只记录警告，使契约被违反这件事可见
+    // 契约要求内容变化时换用新的 trackKey / 此处不阻断导入（重新编码是合法操作），只记录警告，使契约被违反这件事可见
     if (current.contentHash && current.contentHash !== entry.contentHash) {
       warnings.push(
         `content changed under an unchanged trackKey "${entry.trackKey}"; the contract is to issue a new trackKey`,

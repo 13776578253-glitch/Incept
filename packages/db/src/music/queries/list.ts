@@ -5,7 +5,7 @@ import type {
   MusicTrackRecord,
 } from '../types';
 
-const musicTrackSelection = {
+export const musicTrackSelection = {
   id: true,
   trackKey: true,
   title: true,
@@ -23,7 +23,7 @@ const musicTrackSelection = {
 // 排序固定为 position ASC, id ASC：position 允许重复 / 与表上的 (isActive, position) 索引配合
 const musicTrackOrder = [{ position: 'asc' }, { id: 'asc' }] as const;
 
-const musicLibrarySelection = {
+export const musicLibrarySelection = {
   id: true,
   key: true,
   title: true,
