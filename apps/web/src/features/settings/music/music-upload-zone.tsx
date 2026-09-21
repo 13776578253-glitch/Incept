@@ -291,22 +291,24 @@ export function MusicUploadZone({
         />
       </div>
 
+      {/* 一个巨型目录里选出来的无关文件可能有几百个：只留一行概括（首个文件名 + 数量 + 原因），
+          完整名单收在折叠里，默认不占版面 */}
       {skipped.length > 0 ? (
-        <div className="rounded-[10px] border border-[var(--color-nav-dropdown-border)] px-3 py-2">
-          <p className="text-[0.75rem] font-medium text-[var(--color-text)]">
-            {copy.uploadSkipped} ({skipped.length})
-          </p>
-          <ul className="mt-1 space-y-1">
+        <details className="rounded-[10px] border border-[var(--color-nav-dropdown-border)] px-3 py-2">
+          <summary className="cursor-pointer truncate text-[0.75rem] text-[var(--color-text)]">
+            {copy.formatUploadSkipped(skipped[0].filename, skipped.length)}
+          </summary>
+          <ul className="mt-1 max-h-40 space-y-1 overflow-y-auto">
             {skipped.map((entry) => (
-              <li key={entry.id} className="flex items-center gap-2 text-[0.75rem]">
-                <span className="min-w-0 flex-1 truncate text-[var(--color-nav-dropdown-description)]">
-                  {entry.filename}
-                </span>
-                <span className="text-[var(--color-nav-muted)]">{copy.uploadSkippedReason}</span>
+              <li
+                key={entry.id}
+                className="truncate text-[0.75rem] text-[var(--color-nav-dropdown-description)]"
+              >
+                {entry.filename}
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       ) : null}
 
       {items.length > 0 ? (

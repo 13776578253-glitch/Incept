@@ -24,6 +24,19 @@ The owner's review accepted the pipeline and refused two edges; both are closed 
 - **The `.ncm` path published before it validated.** `storeMusicAudioBytes` had no validation hook, so a container that decrypts to a magic-only shell was written to the mirror and the parse failure came afterwards, leaving an orphan — against this round's "unparseable files never enter the mirror" target. It now takes the same staged `validate` callback as the streaming path: the temp file is parsed first and the file is published only after that succeeds. `apps/web/src/test/ncm-fixture.ts` holds the shared in-process container builder so the route suite can drive the real flow.
 - **The per-row permanent delete still removed media in the request path.** `deleteMusicTrack` decided inside its own transaction that nothing referenced the file and the route removed it, which has the same interleaving as the failure path: an upload that reused that file and commits afterwards points at a deleted file. The owner chose the architecture-closing option: **the API never deletes content-addressed media** — the row and its memberships go, the file stays. Reclamation is a single entry point, `pnpm music:cleanup` (report by default, `--apply` to delete), meant to run while nothing is uploading; it also became the only safe way to reclaim failed-upload orphans, and `removeMusicMediaByUrl` — the one deletion primitive, with its path guard — is now used only there.
 
+## Follow-up (2026-09-21, after the commit): skipped files become one line
+
+The commit landed as `e48ab21`. Two things came out of the owner's review of it:
+
+- **A folder with hundreds of unrelated files turned the panel into a log.** One row per skipped file was exact but unreadable at that scale. The skip list is now a single collapsed `<details>` line — `<first name> 等 N 个文件不符合格式要求` / `<first name> and N-1 more are not supported audio` — with the full names inside (scroll-capped when opened) and the per-file upload rows unchanged. The files are still never sent, and a folder without candidates still creates no library.
+- **Merging two rows that a human has confirmed to be one song stays a manual step for now.** The hint is informational by design, and resolving one means deleting the extra row and re-adding its memberships by hand; the action that would do it properly is registered as **B-24** (keeper choice, membership union, active-if-either, source file left for the cleanup entry).
+
+| Check | Evidence |
+| --- | --- |
+| Unit suites | `pnpm test` — core 73, web **183** across 21 files; the upload-zone suite asserts the summary line, the details being closed by default, and that all 30 skipped names remain in the DOM; `pnpm typecheck` (web + core + db) and `git diff --check` clean |
+| Browser | Selecting 49 unrelated files (17 jpg + 16 lrc + 16 txt) plus one wav through the real file input produced exactly one summary line, `cover-01.jpg 等 49 个文件不符合格式要求`, collapsed by default, next to one normal `完成` row for `track.wav`; clicking the line expanded the full list |
+| Repo state | The verification row and its file were removed again (`DELETE` + `pnpm music:cleanup --apply`), which also reclaimed one earlier orphan; the mirror and the database are back in step (12 files / 12 rows, `--validate` reporting no `orphanMirror` or `missingMirror`) |
+
 ## Decisions
 
 - **The real format wins, and it is decided by bytes.** The extension is the first gate only. The sniff (`fLaC` / `RIFF....WAVE` / `ID3` or bare frame sync) picks the `music-metadata` parser (via `parseStream` with that format's MIME type — `parseFile` trusts the file extension, which misreads a wav named `.mp3`), the parse must succeed and report a sample rate, and the sniffed format names the mirror file and the MIME. Tag-less files are accepted and fall back to the file name.

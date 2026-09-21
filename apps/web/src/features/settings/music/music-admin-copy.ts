@@ -16,8 +16,7 @@ export type MusicAdminCopy = {
   uploadDoneExisting: string;
   uploadDoneMembershipAdded: string;
   uploadDoneDeactivated: string;
-  uploadSkipped: string;
-  uploadSkippedReason: string;
+  formatUploadSkipped: (first: string, count: number) => string;
   formatUploadDuplicateHint: (titles: string[]) => string;
   tracksHeading: string;
   searchPlaceholder: string;
@@ -80,8 +79,8 @@ const zhCopy: MusicAdminCopy = {
   uploadDoneExisting: '已存在，未新增',
   uploadDoneMembershipAdded: '已加入该曲库',
   uploadDoneDeactivated: '已存在但已停用，请先恢复',
-  uploadSkipped: '已跳过',
-  uploadSkippedReason: '不是支持的音频格式',
+  formatUploadSkipped: (first, count) =>
+    count === 1 ? `${first} 不符合格式要求` : `${first} 等 ${count} 个文件不符合格式要求`,
   formatUploadDuplicateHint: (titles) => `疑似重复：《${titles.join('、')}》`,
   tracksHeading: '曲目',
   searchPlaceholder: '搜索标题、作者或 key',
@@ -144,8 +143,8 @@ const enCopy: MusicAdminCopy = {
   uploadDoneExisting: 'Already in the library',
   uploadDoneMembershipAdded: 'Added to this library',
   uploadDoneDeactivated: 'Exists but is deactivated; restore it first',
-  uploadSkipped: 'Skipped',
-  uploadSkippedReason: 'Not a supported audio file',
+  formatUploadSkipped: (first, count) =>
+    count === 1 ? `${first} is not a supported audio file` : `${first} and ${count - 1} more are not supported audio`,
   formatUploadDuplicateHint: (titles) => `Possible duplicate of ${titles.join(', ')}`,
   tracksHeading: 'Tracks',
   searchPlaceholder: 'Search title, artist or key',

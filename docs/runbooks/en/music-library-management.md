@@ -51,7 +51,7 @@ Open **Settings → Music → Tracks and libraries** and use the upload zone:
 | Watch progress and results | One row per file: queued → uploading x% → done / failed (with the server's reason); a "done" row says which kind of success it was (uploaded, reused the existing file, already in the library, added to this library, or exists-but-deactivated), and uploads run one after another |
 
 - Title, artist and length come from the audio tags; a missing tag falls back to the file name. The panel shows what the tags gave it (hand editing titles is not offered — see B-22).
-- `.mp3` / `.wav` / `.flac` only, 128 MB per file, no transcoding and no chunking. Anything else is listed under **Skipped**, with its reason, instead of being sent — and a folder that carries no audio creates no library.
+- `.mp3` / `.wav` / `.flac` only, 128 MB per file, no transcoding and no chunking. Anything else is summarised in one line (`<first file> and N more are not supported audio`, click to expand the full list) instead of being sent — and a folder that carries no audio creates no library.
 - **The bytes must really be audio.** The name's extension is only the first gate: the server sniffs the header, parses the file and requires an audio stream, so a text file or an image with an audio name is refused with a reason (nothing reaches the mirror), and a wav named `.mp3` is stored — and served — as a wav.
 - **Uploading the same bytes again adds nothing.** The row is reused: the same library answers "Already in the library", another library gets only a membership ("Added to this library") — that is the normal way to put an existing song into a second library. `.ncm` and `.mp3` of the same song count as the same bytes.
 - A song that is *similar* but not byte-identical (another encoding, another bitrate) is uploaded as its own row, and the file's row adds "Possible duplicate of …". Nothing is merged automatically.
@@ -115,7 +115,7 @@ pnpm music:cleanup --apply   # delete them
 | Symptom | Cause and what to do |
 | --- | --- |
 | No management block in settings | You are not the owner: run the console step above and reopen the page |
-| A file sits under "Skipped" in the upload list | Its extension is not `.mp3` / `.wav` / `.flac` / `.ncm`; nothing was sent, and no library was created for it |
+| The upload list says "… and N more are not supported audio" | Those files were filtered by extension and never sent; click the line to see the full list. No library was created for them |
 | Upload says "The file is not MP3, WAV or FLAC audio" or "no readable audio stream" | The bytes are not audio, or only a container shell: the file was refused and never reached the mirror |
 | Upload says "Unsupported music file extension" | The extension is not `.mp3` / `.wav` / `.flac` (the picker normally filters this out; a `.ncm` is the fourth accepted extension) |
 | Upload says "Already in the library" / "Added to this library" / "reused the existing file" | Not an error: the content already existed, so the row (or the mirror file) was reused — see the dedup bullets above |

@@ -149,6 +149,15 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 - **The manifest builder can still emit duplicate content.** Two manifest entries pointing at byte-identical files (the same song copied into two library folders, for example) now make `pnpm music:import` refuse the manifest with both `trackKey`s named. Folding them into one key plus memberships in the generator is the other half.
 - **Nothing scans the existing library.** The hints run on upload only; a one-off "find near-duplicates in the table" view would need the same rules surfaced in the admin read.
 
+### B-24 Merge Two Rows Confirmed To Be One Song
+
+- Source: `packages/db/src/music/upload.ts` (`findMusicDuplicateCandidates`), `apps/web/src/features/settings/music/music-upload-zone.tsx`
+- Status: Open. Registered on 2026-09-21, right after the owner confirmed a hinted duplicate by hand. The hint is informational by design — two encodings are legitimately two rows — but once a human has confirmed "this is the same song", the only way to resolve it today is to delete the extra row and re-add its memberships by hand, which loses the memberships and can as easily delete the better-sounding version. The owner chose to keep that manual path for now.
+- **Proposed shape:** a `POST /api/internal/music/tracks/[trackKey]/merge` action taking `{ into }`, guarded by a pure `planMusicTrackMerge`: refusing a row merged into itself, requiring both rows to exist, requiring the membership union to stay non-empty, and requiring the confirmation click. The keeper keeps its own file, title/artist/duration, position and publishedAt; the source's libraries join the keeper's through `music_library_items` (de-duplicated); the merged row stays active when either row was active, which the union guarantees to satisfy; the source row is deleted and its file is left for `pnpm music:cleanup`, like every other deletion.
+- **Entry points:** the row's right-click menu grows a "merge into…" step listing the rows that look like the same song (the same normalized title / artist / duration rule, with the full list as a fallback when nothing is flagged), and the upload list's "possible duplicate of …" hint gets a shortcut into the same action.
+- **One home for the rule:** the panel would compute that candidate list offline, so `findMusicDuplicateCandidates` has to move into a module with no Prisma import and be exported through its own subpath of the db package (the `./music` barrel pulls in the client, which the browser bundle cannot take).
+- B-23 remains the detection half; this item only handles what to do after the human says yes.
+
 ## Review Before Any Code Decision
 
 ### B-09 Retained Style Lab And Block Catalog

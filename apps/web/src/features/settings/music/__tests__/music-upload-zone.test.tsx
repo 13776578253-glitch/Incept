@@ -43,7 +43,7 @@ function renderZone() {
   const ensureLibrary = vi.fn(async (name: string) => name);
   const onUploaded = vi.fn();
 
-  render(
+  const view = render(
     <MusicUploadZone
       copy={copy}
       libraries={[library]}
@@ -54,7 +54,7 @@ function renderZone() {
     />,
   );
 
-  return { ensureLibrary, onUploaded };
+  return { ensureLibrary, onUploaded, container: view.container };
 }
 
 afterEach(() => {
@@ -62,7 +62,7 @@ afterEach(() => {
   uploadMusicFile.mockReset();
 });
 
-it('lists the files it will not upload instead of dropping them silently', async () => {
+it('summarises the files it will not upload instead of dropping them silently', async () => {
   uploadMusicFile.mockResolvedValue(result());
   const user = userEvent.setup();
 
@@ -74,11 +74,33 @@ it('lists the files it will not upload instead of dropping them silently', async
     makeFile('song.mp3'),
   ]);
 
-  await waitFor(() => expect(screen.getByText(/已跳过/u)).toBeInTheDocument());
+  const summary = await screen.findByText(copy.formatUploadSkipped('cover.jpg', 2));
+
+  expect(summary.tagName).toBe('SUMMARY');
+  // 名单没有丢，只是收进了折叠里
   expect(screen.getByText('cover.jpg')).toBeInTheDocument();
   expect(screen.getByText('lyrics.lrc')).toBeInTheDocument();
   expect(uploadMusicFile).toHaveBeenCalledTimes(1);
   expect((uploadMusicFile.mock.calls[0][0] as File).name).toBe('song.mp3');
+});
+
+it('collapses a long list of skipped files into one summary line', async () => {
+  uploadMusicFile.mockResolvedValue(result());
+  const user = userEvent.setup();
+
+  const { container } = renderZone();
+  const extras = Array.from({ length: 30 }, (_, index) => makeFile(`extra-${index}.jpg`));
+
+  await user.upload(screen.getByLabelText('选择文件'), [...extras, makeFile('song.mp3')]);
+
+  await waitFor(() => expect(uploadMusicFile).toHaveBeenCalledTimes(1));
+
+  const summary = screen.getByText(copy.formatUploadSkipped('extra-0.jpg', 30));
+
+  // 300 个无关文件也只占一行：折叠着，明细可展开
+  expect(summary.tagName).toBe('SUMMARY');
+  expect(summary.closest('details')).not.toHaveAttribute('open');
+  expect(container.querySelectorAll('details li')).toHaveLength(30);
 });
 
 it('creates a library only for the folders that actually carry audio', async () => {
@@ -107,7 +129,9 @@ it('leaves the libraries alone when a folder holds nothing but images', async ()
     makeFile('info.txt', '01-图片/info.txt'),
   ]);
 
-  await waitFor(() => expect(screen.getByText(/已跳过/u)).toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.getByText(copy.formatUploadSkipped('cover.jpg', 2))).toBeInTheDocument(),
+  );
   expect(ensureLibrary).not.toHaveBeenCalled();
   expect(uploadMusicFile).not.toHaveBeenCalled();
 });
