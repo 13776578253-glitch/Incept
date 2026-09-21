@@ -12,7 +12,7 @@ export function getAiSettingsSection(locale: AppLocale): SettingsSection {
         {
           id: 'ai-provider-key',
           label: 'AI Key',
-          description: '后续这里会管理模型服务密钥与默认来源。',
+          description: '后续这里会管理模型服务密钥与默认来源',
           controlType: 'input',
           state: 'locked',
           visibility: 'admin',
@@ -23,7 +23,7 @@ export function getAiSettingsSection(locale: AppLocale): SettingsSection {
         {
           id: 'ai-default-provider',
           label: '默认提供方',
-          description: '为后续多模型或多服务接入预留。',
+          description: '为后续多模型或多服务接入预留',
           controlType: 'select',
           state: 'locked',
           visibility: 'admin',
@@ -32,7 +32,7 @@ export function getAiSettingsSection(locale: AppLocale): SettingsSection {
         {
           id: 'ai-workspace-note',
           label: 'Workspace 能力',
-          description: '未来会把这里的配置同步给 workspace 中的 AI 工具使用。',
+          description: '未来会把这里的配置同步给 workspace 中的 AI 工具使用',
           controlType: 'status',
           state: 'locked',
           visibility: 'admin',

@@ -6,9 +6,8 @@ declare global {
   var __inceptPrismaSchemaRevision__: string | undefined;
 }
 
-// Bump this when Prisma schema changes so Next development HMR does not retain a stale runtime model.
-// TODO: This still reports the 2026-07-26 revision although the 2026-09-01 nested collection navigation and 2026-09-02 collection item active schema changes already landed; bump it when those models are accepted.
-const prismaSchemaRevision = '2026-07-26-docs-listing';
+// schema 每次变化都要改：Next dev 的 HMR 会留住旧的运行时模型
+const prismaSchemaRevision = '2026-09-21-add-music-content-hash-key';
 const hasCurrentPrismaClient =
   globalThis.__inceptPrisma__ &&
   globalThis.__inceptPrismaSchemaRevision__ === prismaSchemaRevision;

@@ -256,3 +256,63 @@ model DocsCollectionItemLocale {
   @@index([locale])
   @@map("docs_collection_item_locales")
 }
+
+/* 音乐曲目 / 公开内容，不做 access 分级。
+   trackKey = 内容身份，清单显式提供，不从文件名或哈希推导。
+   audioUrl = 当前发布位置，只存站点 URL，不存本机路径。
+   contentHash / mimeType / fileSize 描述当前文件，供导入校验。
+   contentHash 唯一：一段字节一行，旧行为 NULL，可重复。
+   position 允许重复，排序固定为 position ASC, id ASC。 */
+model MusicTrack {
+  id              String    @id @default(cuid())
+  trackKey        String    @unique
+  title           String
+  artist          String?
+  audioUrl        String
+  contentHash     String?   @unique
+  mimeType        String?
+  fileSize        Int?
+  durationSeconds Int?
+  publishedAt     DateTime?
+  position        Int
+  isActive        Boolean   @default(true)
+  libraryItems    MusicLibraryItem[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([isActive, position])
+  @@map("music_tracks")
+}
+
+/* 曲库 / 只是标签：改名与重新分组都不动曲目的 trackKey 与媒体。
+   key = 对外身份，清单提供；position 只决定曲库自身顺序。
+   库内曲目顺序复用曲目自己的 position。
+   清单未声明的曲库停用而非删除，列表按 isActive 过滤。 */
+model MusicLibrary {
+  id        String             @id @default(cuid())
+  key       String             @unique
+  title     String
+  position  Int
+  isActive  Boolean            @default(true)
+  items     MusicLibraryItem[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([isActive, position])
+  @@map("music_libraries")
+}
+
+// 成员关系 / 清单是权威：每次导入整体重写，只有 createdAt
+// 一首可属多库，故用中间表
+model MusicLibraryItem {
+  id        String       @id @default(cuid())
+  libraryId String
+  trackId   String
+  library   MusicLibrary @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  track     MusicTrack   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@unique([libraryId, trackId])
+  @@index([trackId])
+  @@map("music_library_items")
+}

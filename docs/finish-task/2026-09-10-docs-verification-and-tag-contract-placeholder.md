@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented in the working tree. Prepared for the next Git commit.
+Committed as `fd3384b chore: register verification todos and the tag contract placeholder`, which added this document together with the changes it describes.
 
 ## Scope
 
@@ -47,9 +47,9 @@ This task records the verification pass over `docs/NEXT.md` and `docs/BACKLOG.md
 - Close B-06 real-content acceptance before converting its source TODO markers to `history:` notes.
 - Bump `prismaSchemaRevision` when the collection navigation models are accepted.
 
-## Commit proposal
+## Commit record
 
-`chore(docs): verify next backlog and register tag contract placeholder`
+Landed as `fd3384b chore: register verification todos and the tag contract placeholder`. The proposed subject differed slightly (`chore(docs): verify next backlog and register tag contract placeholder`); the committed subject is the one above.
 
 [2026-09-10 19:24] - Update by AI完成改动:
 - 修改了 `docs/BACKLOG.md`，修正 B-04/B-05/B-06 的失效行号与来源，拆分 History Candidates 为「已验证转换」与「剩余」，并新增 B-10 至 B-15 的代码级 TODO 登记。

@@ -5,7 +5,7 @@
   "archivePage": {
     "eyebrow": "归档",
     "title": "归档页",
-    "description": "归档页用于集中查看不同时期发布的文章、说明和参考资料。完整的时间线筛选会在后续版本中继续完善。"
+    "description": "归档页用于集中查看不同时期发布的文章、说明和参考资料，完整的时间线筛选会在后续版本中继续完善"
   },
   "access": {
     "requiresRole": "需要 {role} 权限"
@@ -33,12 +33,12 @@
   "importFeedback": {
     "eyebrow": "导入完成",
     "title": "文章已发布到 docs",
-    "description": "这份草稿已经写入数据库，现在正通过正式 docs 路由加载。"
+    "description": "这份草稿已经写入数据库，现在正通过正式 docs 路由加载"
   },
   "library": {
     "eyebrow": "工作台",
     "title": "Docs 发布总览",
-    "description": "用于查看当前 docs 里到底发布了什么、每篇文章挂载到了哪里，以及哪些正式路由现在已经生效。",
+    "description": "用于查看当前 docs 里到底发布了什么、每篇文章挂载到了哪里，以及哪些正式路由现在已经生效",
     "roles": {
       "guest": "访客",
       "pro": "临时准许",
@@ -59,31 +59,31 @@
     "stats": {
       "total": {
         "label": "已发布行",
-        "description": "当前所有已发布的文章 locale 行。"
+        "description": "当前所有已发布的文章 locale 行"
       },
       "standalone": {
         "label": "单篇文章",
-        "description": "当前未挂载到合集中的已发布文章。"
+        "description": "当前未挂载到合集中的已发布文章"
       },
       "collectionArticles": {
         "label": "合集文章",
-        "description": "当前挂载在合集中的已发布文章。"
+        "description": "当前挂载在合集中的已发布文章"
       },
       "collections": {
         "label": "合集数",
-        "description": "当前至少暴露了已发布内容的合集。"
+        "description": "当前至少暴露了已发布内容的合集"
       },
       "recentlyUpdated": {
         "label": "30 天更新",
-        "description": "最近 30 天内更新过的已发布文章 locale 行。"
+        "description": "最近 30 天内更新过的已发布文章 locale 行"
       }
     },
     "table": {
       "eyebrow": "当前状态",
       "title": "已发布 docs 条目",
-      "description": "用这张表快速确认每篇已发布 docs 文章当前的正式路由、合集挂载、position 和权限边界。",
+      "description": "用这张表快速确认每篇已发布 docs 文章当前的正式路由、合集挂载、position 和权限边界",
       "results": "{count} 条可见记录",
-      "empty": "当前筛选条件下没有匹配的已发布 docs 条目。",
+      "empty": "当前筛选条件下没有匹配的已发布 docs 条目",
       "none": "无",
       "unknownCollection": "未知合集"
     },

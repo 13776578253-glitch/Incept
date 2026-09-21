@@ -11,12 +11,17 @@ coverage
 .env.local
 .env.docker
 .env.*.local
+.env.production
+.env.development
+.env.test
 
 .DS_Store
 Thumbs.db
 
 apps/web/*.log
 apps/web/public/_docs-media/
+apps/web/public/_music-media/
+apps/web/public/mock/audio/
 
 packages/db/generated
 packages/db/node_modules

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { RootProvider } from '@/components/base/root-provider';
 import { AppShell } from '@/components/layouts/containers/app-shell';
+import { MusicPlayerFloatingMount } from '@/features/music-player';
 
 import { hasLocale } from 'next-intl';
 import { notFound } from 'next/navigation';
@@ -30,6 +31,7 @@ export default async function LocaleLayout({
       timeZone={localeConfig.timeZone}
     >
       <AppShell>{children}</AppShell>
+      <MusicPlayerFloatingMount />
     </RootProvider>
   );
 }

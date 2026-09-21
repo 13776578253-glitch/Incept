@@ -18,6 +18,13 @@ type SettingsInteractionProps = {
   isCodePaletteReady: boolean;
   language: string;
   setLanguage: (value: 'zh' | 'en') => void;
+  musicPlaybackRateLocked: boolean;
+  setMusicPlaybackRateLocked: (value: boolean) => void;
+  musicRememberPlacement: boolean;
+  setMusicRememberPlacement: (value: boolean) => void;
+  musicPlaybackMode: string;
+  setMusicPlaybackMode: (value: string) => void;
+  isMusicPreferencesReady: boolean;
 };
 
 function SettingsSegmentedControl({
@@ -160,6 +167,18 @@ function SettingsBooleanToggle({
   );
 }
 
+// 开关文案由各分区在 options 里给出：同一个开关控件在不同分区含义不同，不能写死。
+// 兜底值只在分区漏配时生效。
+function resolveToggleLabels(row: SettingsRow, enabledFallback: string, disabledFallback: string) {
+  const enabled = row.options?.find((option) => option.id === 'enabled')?.label;
+  const disabled = row.options?.find((option) => option.id === 'disabled')?.label;
+
+  return {
+    enabled: enabled ?? enabledFallback,
+    disabled: disabled ?? disabledFallback,
+  };
+}
+
 function SettingsRowControl({
   row,
   theme,
@@ -173,6 +192,13 @@ function SettingsRowControl({
   isCodePaletteReady,
   language,
   setLanguage,
+  musicPlaybackRateLocked,
+  setMusicPlaybackRateLocked,
+  musicRememberPlacement,
+  setMusicRememberPlacement,
+  musicPlaybackMode,
+  setMusicPlaybackMode,
+  isMusicPreferencesReady,
 }: { row: SettingsRow } & SettingsInteractionProps) {
   if (row.controlType === 'theme-segmented') {
     const options: SettingsOption[] = row.options ?? [
@@ -228,6 +254,39 @@ function SettingsRowControl({
     );
   }
 
+  if (row.controlType === 'music-rate-lock-toggle') {
+    return (
+      <SettingsBooleanToggle
+        enabled={musicPlaybackRateLocked}
+        onToggle={() => setMusicPlaybackRateLocked(!musicPlaybackRateLocked)}
+        isInteractive={isMusicPreferencesReady}
+        labels={resolveToggleLabels(row, 'Locked', 'Unlocked')}
+      />
+    );
+  }
+
+  if (row.controlType === 'music-placement-toggle') {
+    return (
+      <SettingsBooleanToggle
+        enabled={musicRememberPlacement}
+        onToggle={() => setMusicRememberPlacement(!musicRememberPlacement)}
+        isInteractive={isMusicPreferencesReady}
+        labels={resolveToggleLabels(row, 'Remembered', 'Default')}
+      />
+    );
+  }
+
+  if (row.controlType === 'music-playback-mode-segmented') {
+    return (
+      <SettingsSegmentedControl
+        options={row.options ?? []}
+        selected={isMusicPreferencesReady ? musicPlaybackMode : ''}
+        onSelect={setMusicPlaybackMode}
+        isInteractive={isMusicPreferencesReady}
+      />
+    );
+  }
+
   return <SettingsStaticControl row={row} />;
 }
 
@@ -266,10 +325,40 @@ function SettingsRows({
   section,
   ...interactions
 }: { section: SettingsSection } & SettingsInteractionProps) {
+  // 二级分组：按出现顺序把连续同组的行切成若干段，段前插一个二级标题
+  // 未标 group 的行沿用原来的一段连续列表，所以既有分区不受影响
+  const rowGroups = section.rows.reduce<Array<{ label: string | null; rows: SettingsRow[] }>>(
+    (accumulator, row) => {
+      const label = row.group ?? null;
+      const last = accumulator[accumulator.length - 1];
+
+      if (last && last.label === label) {
+        last.rows.push(row);
+        return accumulator;
+      }
+
+      accumulator.push({ label, rows: [row] });
+      return accumulator;
+    },
+    [],
+  );
+
   const rows = (
-    <div className="max-w-[760px] divide-y divide-[var(--color-nav-dropdown-border)]">
-      {section.rows.map((row) => (
-        <SettingsRowView key={row.id} row={row} {...interactions} />
+    <div className="max-w-[760px]">
+      {rowGroups.map((group, index) => (
+        // 首段不加上间距，否则分区标题下会多出一块空白
+        <div key={group.label ?? `ungrouped-${index}`} className={index === 0 ? undefined : 'pt-8'}>
+          {group.label ? (
+            <h3 className="pb-3 text-[1.0625rem] font-semibold tracking-[-0.01em] text-[var(--color-text)]">
+              {group.label}
+            </h3>
+          ) : null}
+          <div className="divide-y divide-[var(--color-nav-dropdown-border)]">
+            {group.rows.map((row) => (
+              <SettingsRowView key={row.id} row={row} {...interactions} />
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -283,7 +372,7 @@ function SettingsRows({
       <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-4 text-[0.8125rem] text-[var(--color-nav-dropdown-description)] transition-colors">
         <p>
           {interactions.language === 'zh'
-            ? '访客默认折叠显示，后续验证管理员身份后可解锁真实操作。'
+            ? '访客默认折叠显示，后续验证管理员身份后可解锁真实操作'
             : 'Collapsed for visitors. Administrator verification will unlock these controls later.'}
         </p>
         <span className="shrink-0 text-xs uppercase tracking-[0.12em] text-[var(--color-nav-muted)] group-open:hidden">
