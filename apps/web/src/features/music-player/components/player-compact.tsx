@@ -2,7 +2,7 @@
 
 import { PlayerChevronIcon, PlayerPauseIcon, PlayerPlayIcon } from './player-icons';
 
-/** compact 胶囊与展开卡片共用同一宽度：两种状态只改高度，横向零位移。 */
+/** compact 胶囊与展开卡片共用的宽度 */
 export const playerSurfaceWidthClass = 'w-[min(22rem,calc(100vw-2.5rem))]';
 
 type PlayerCompactProps = {
@@ -20,7 +20,7 @@ type PlayerCompactProps = {
   fullWidth: boolean;
   listExpanded: boolean;
   showOrbToggle: boolean;
-  /** pill 自带边框与圆角；bare 用于展开卡片内部，避免“卡片里再嵌一个胶囊”。 */
+  /** pill 自带边框与圆角；bare 用于展开卡片内部 */
   variant?: 'pill' | 'bare';
   onTogglePlay: () => void;
   onCollapse: () => void;
@@ -28,7 +28,7 @@ type PlayerCompactProps = {
   onCycleRate: () => void;
 };
 
-// 圆形封面/时长：与播放按钮同尺寸，配色用表面色 + 前景色，而不是反相的主按钮样式。
+// 圆形封面/时长：与播放按钮同尺寸，配色用表面色 + 前景色
 const clockClassName =
   'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-nav-item-active)] text-[0.62rem] font-medium tabular-nums text-[var(--color-text)]';
 
@@ -72,8 +72,7 @@ export function PlayerCompact({
         {isPlaying ? <PlayerPauseIcon className="h-4 w-4" /> : <PlayerPlayIcon className="h-4 w-4" />}
       </button>
 
-      {/* 标题是纯文本，不承担任何点击行为，也不是可聚焦控件
-          展开列表的唯一入口是右边的箭头按钮；标题只作为拖拽起点 */}
+      {/* 标题是纯文本，不作为展开列表的入口 */}
       <span className="min-w-0 flex-1 truncate text-[0.82rem] font-medium text-[var(--color-text)]">{title}</span>
 
       {/* 倍速：档位定义在 adapter，在 core 的合法区间 */}

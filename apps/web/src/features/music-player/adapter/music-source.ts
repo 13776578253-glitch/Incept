@@ -6,7 +6,7 @@ export type MusicLibraryCatalogEntry = {
   position: number;
 };
 
-// 目录条目：core 只认识 MusicTrack，发布日期、可播放 URL 与曲库归属是站点侧字段，留在 adapter，与列表行右侧的日期同源
+// 目录条目：core 只认识 MusicTrack；发布日期、可播放 URL 与曲库归属是站点侧字段
 export type MusicTrackCatalogEntry = {
   track: MusicTrack;
   audioUrl: string;
@@ -92,7 +92,7 @@ function toTrackLibraries(value: unknown, trackKey: string, declaredKeys: Set<st
   return keys;
 }
 
-// 接口响应属于外部输入，逐字段校验通过后才进入应用，与 db 包对 JSON 字段的要求一致
+// 接口响应属于外部输入，逐字段校验通过后才进入应用
 export function toMusicCatalog(payload: unknown): MusicCatalog {
   if (!isRecord(payload) || !Array.isArray(payload.tracks)) {
     throw new Error('music catalogue response must be an object with a tracks array');
@@ -168,7 +168,7 @@ export function toMusicTracks(entries: MusicTrackCatalogEntry[]): MusicTrack[] {
   return entries.map((entry) => entry.track);
 }
 
-// null 表示"全部"视图：它是一个视图而不是一个曲库
+// null = "全部"视图，它不是曲库
 export function filterCatalogByLibrary(
   entries: MusicTrackCatalogEntry[],
   libraryKey: string | null,
@@ -180,7 +180,7 @@ export function filterCatalogByLibrary(
   return entries.filter((entry) => entry.libraries.includes(libraryKey));
 }
 
-// 存储的库可能已经被删掉或改名：此时回到"全部"，并让调用方据此清理偏好
+// 存储的库已删或改名：回到"全部"，由调用方据此清理偏好
 export function resolveLibrarySelection(
   libraries: MusicLibraryCatalogEntry[],
   storedKey: string | null,
@@ -192,7 +192,7 @@ export function resolveLibrarySelection(
   return libraries.some((library) => library.key === storedKey) ? storedKey : null;
 }
 
-// history：音源查找取代了先前的异步解析接缝：数据库已经保存站点 URL，再解析一次是多余的间接层
+// 按曲目 id 在目录里查音频 URL
 // 查不到返回 null，由调用方决定如何处理：目录缺项不会上升为音频播放错误
 export function findCatalogAudioUrl(
   entries: MusicTrackCatalogEntry[],

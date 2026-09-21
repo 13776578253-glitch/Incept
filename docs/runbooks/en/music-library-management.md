@@ -120,7 +120,7 @@ pnpm music:cleanup --apply   # delete them
 | Upload says "Unsupported music file extension" | The extension is not `.mp3` / `.wav` / `.flac` (the picker normally filters this out; a `.ncm` is the fourth accepted extension) |
 | Upload says "Already in the library" / "Added to this library" / "reused the existing file" | Not an error: the content already existed, so the row (or the mirror file) was reused — see the dedup bullets above |
 | Upload says "Exists but is deactivated" | The content is already a row that is deactivated: restore it in the table, then upload again if you want it in this library too |
-| Upload says the file is too large | Over 128 MB per file; transcode or trim it — chunked upload is not implemented |
+| Upload says "The file exceeds the 128 MB limit." | Over 128 MB per file; transcode or trim it — chunked upload is not implemented |
 | Upload says "does not exist or is deactivated" | The target library was deactivated: restore it, or pick another |
 | An uploaded file is missing from the player | It went into a deactivated library, or the browser cached the catalogue: reload the page |
 | The library's "Deactivate" button will not press | It is the last active library — at least one must remain |

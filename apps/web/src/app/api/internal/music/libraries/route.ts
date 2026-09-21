@@ -15,8 +15,7 @@ function readBody(body: unknown): { name: string } | null {
   return trimmed === '' ? null : { name: trimmed };
 }
 
-// 按名字建库；同名（key 相同）时返回已有的那个，因此"上传文件夹前先确保曲库存在"是幂等的。
-// key 永远由服务端从名字派生，客户端不能指定。
+// 按名字建库，同名直接返回已有的那个；key 由服务端从名字派生，客户端不指定
 export async function POST(request: Request) {
   if (!hasSameOrigin(request)) {
     return NextResponse.json({ error: 'Not found.' }, { status: 404 });

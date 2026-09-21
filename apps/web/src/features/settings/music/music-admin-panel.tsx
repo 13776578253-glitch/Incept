@@ -163,7 +163,7 @@ export function MusicAdminPanel({ locale, data }: { locale: string; data: MusicA
     return library.key;
   };
 
-  // 永久删除：行（与没有别的行再引用的镜像文件）直接消失，和"停用"是两条路。
+  // 永久删除：只删行与成员关系，与停用是两条路
   // 只有右键菜单里的二次确认会走到这里，服务端还会再校验一次（owner + 同源）。
   const deleteTrack = async (trackKey: string) => {
     const payload = await request(`/api/internal/music/tracks/${encodeURIComponent(trackKey)}`, {

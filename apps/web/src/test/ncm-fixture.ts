@@ -1,6 +1,6 @@
 import { createCipheriv, randomBytes } from 'node:crypto';
 
-// history： .ncm 容器：编码步骤与 ncm-decode 的解码器互为逆运算，与 ncm-converter 的 fixture 脚本同一套做法；不把真实歌曲字节带进仓库
+// 测试用 .ncm 容器：编码步骤与 ncm-decode 的解码器互为逆运算（不把真实歌曲字节带进仓库）
 const coreKey = Buffer.from('687a4852416d736f356b496e62617857', 'hex');
 const metaKey = Buffer.from('2331346c6a6b5f215c5d2630553c2728', 'hex');
 

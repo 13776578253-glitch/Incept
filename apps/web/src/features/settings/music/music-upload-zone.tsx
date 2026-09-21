@@ -151,7 +151,7 @@ export function MusicUploadZone({
   const handleFileList = async (files: File[]) => {
     if (files.length === 0 || !canUpload) return;
 
-    // 白名单之外的先分流：列进「已跳过」而不是静默丢弃，不参与建库与上传
+    // 白名单之外的先分流：只汇总提示，不参与建库与上传
     const { candidates, skipped: skippedFiles } = partitionMusicUploadFiles(files);
 
     if (skippedFiles.length > 0) {
@@ -291,8 +291,7 @@ export function MusicUploadZone({
         />
       </div>
 
-      {/* 一个巨型目录里选出来的无关文件可能有几百个：只留一行概括（首个文件名 + 数量 + 原因），
-          完整名单收在折叠里，默认不占版面 */}
+      {/* 无关文件只留一行概括，完整名单收在折叠里 */}
       {skipped.length > 0 ? (
         <details className="rounded-[10px] border border-[var(--color-nav-dropdown-border)] px-3 py-2">
           <summary className="cursor-pointer truncate text-[0.75rem] text-[var(--color-text)]">

@@ -79,9 +79,7 @@ function isTrackChanged(current: MusicTrackRecord, entry: MusicTrackImportEntry)
   );
 }
 
-// contentHash 在数据库里唯一：两个 trackKey 不能指向同一段字节。
-// 清单内部的冲突、以及清单与"留在库里的旧行"（从清单消失只是停用，行和哈希都还在）之间的冲突，
-// 都在这里一次性报出来——否则写事务会在中途撞唯一索引回滚，报错还看不出是哪两个 key。
+// contentHash 在库里唯一：清单内部与现存行之间的重复一次报清
 function assertUniqueContentHashes(input: MusicImportPlanInput): void {
   const manifestTrackKeys = new Set(input.tracks.map((entry) => entry.trackKey));
   const hashOwner = new Map<string, string>();
@@ -132,7 +130,7 @@ export function planMusicImport(input: MusicImportPlanInput): MusicImportPlan {
       continue;
     }
 
-    // 契约要求内容变化时换用新的 trackKey / 此处不阻断导入（重新编码是合法操作），只记录警告，使契约被违反这件事可见
+    // 契约是内容变化就换 trackKey；这里只警告，不阻断导入
     if (current.contentHash && current.contentHash !== entry.contentHash) {
       warnings.push(
         `content changed under an unchanged trackKey "${entry.trackKey}"; the contract is to issue a new trackKey`,
@@ -147,7 +145,7 @@ export function planMusicImport(input: MusicImportPlanInput): MusicImportPlan {
     unchangedTracks += 1;
   }
 
-  // 从清单里消失的曲目只是停用，不删除：行和镜像都保留，历史可追溯
+  // 从清单里消失的曲目只停用，不删除
   const trackDeactivations = input.existing.tracks
     .filter((row) => row.isActive && !manifestTrackKeys.has(row.trackKey))
     .map((row) => row.trackKey);

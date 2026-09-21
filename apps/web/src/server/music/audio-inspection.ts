@@ -5,7 +5,7 @@ import { parseStream } from 'music-metadata';
 
 export type MusicAudioFormat = 'mp3' | 'wav' | 'flac';
 
-// 真实格式对应的扩展名
+// 真实格式 → 扩展名
 export const musicAudioFormatExtensions = {
   mp3: '.mp3',
   wav: '.wav',
@@ -24,7 +24,7 @@ export type UploadedAudioInspection =
 
 const headerBytes = 12;
 
-// music-metadata 会先按扩展名猜解析器：文件名说 .mp3、内容是 WAV 时它读不出音频流
+// 真实格式 → music-metadata 的解析 MIME
 const formatMimeTypes: Record<MusicAudioFormat, string> = {
   mp3: 'audio/mpeg',
   wav: 'audio/wav',
@@ -59,8 +59,7 @@ export function sniffMusicAudioFormat(header: Buffer): MusicAudioFormat | null {
   return null;
 }
 
-// 上传后的最终校验：签名必须命中三种格式之一，music-metadata 还必须能解析
-// 解析成功但没有标签是允许的（title/artist 为 null，界面回退到文件名）；解析失败一律拒绝，不放进曲库
+// 上传后的最终校验：签名命中三种格式之一，且解析得出音频流
 export async function inspectUploadedAudio(storedPath: string): Promise<UploadedAudioInspection> {
   let header: Buffer;
 
@@ -85,11 +84,11 @@ export async function inspectUploadedAudio(storedPath: string): Promise<Uploaded
   }
 
   try {
-    // parseStream ：parseFile 只按扩展名挑解析器，文件名说 .mp3、内容是 WAV 时读不出音频流；告诉它用哪种解析器
+    // 显式给定 MIME：parseStream 不按扩展名猜解析器
     const metadata = await parseStream(createReadStream(storedPath), formatMimeTypes[format]);
     const sampleRate = metadata.format.sampleRate;
 
-    // 解析出音频流（采样率）：只剩一个 ID3 头、或截断到只剩容器壳的文件，music-metadata 不报错但给不出采样率
+    // 解析出采样率才算真的有音频流
     if (typeof sampleRate !== 'number' || !Number.isFinite(sampleRate) || sampleRate <= 0) {
       return { ok: false, error: 'The file has no readable audio stream.' };
     }

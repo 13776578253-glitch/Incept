@@ -70,8 +70,7 @@ export function reducePlayerState(
       return { ...state, status: 'errored', errorMessage: input.message };
 
     case 'tracksLoaded':
-      // 直接复用队列替换语义：当前曲目仍在队列中时保留曲目、状态与播放位置；
-      // 已被移除时游标回到新队首；空队列与非空队列之间的切换也由同一处处理
+      // 复用队列替换语义（见 queue.ts）
       return setQueue(state, input.tracks);
   }
 }
@@ -101,7 +100,7 @@ function resolveTrackEnded(state: PlayerState, random: PlaybackRandom): PlayerSt
     return { ...state, currentTime: 0, status: 'paused' };
   }
 
-  // 曲目自然结束只可能发生在播放中：即使浏览器先补发了一次 pause（pause-before-ended 竞态），也必须继续播放，所以不读 status
+  // 曲目自然结束视为继续播放，不读 status（浏览器可能先补发一次 pause）
   return moveSelection(state, nextIndex, true);
 }
 

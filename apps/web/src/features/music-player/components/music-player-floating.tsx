@@ -89,8 +89,7 @@ export function MusicPlayerFloating() {
     [catalog, locale, state.queue, state.currentTrackId],
   );
 
-  // 隐藏路由（见 player-route-policy）只隐藏 UI，不中断播放
-  // history：实测结论反转了先前的判断：这些页面通常停留很短，为它们暂停会把一段收听切成两段，而"继续播放"的代价只是暂时看不见控件
+  // 隐藏路由（见 player-route-policy）：只隐藏 UI，不中断播放
   if (isHiddenRoute) {
     return null;
   }
@@ -113,11 +112,10 @@ export function MusicPlayerFloating() {
     sendIntent({ type: 'playbackRateRequested', rate: getNextPlaybackRate(state.playbackRate) });
   };
 
-  // TODO: nextRequested / previousRequested / seekRequested 由 @incept/music-player-core 实现并测试覆盖，
-  // 播放器 UI 没有入口；repeatModeRequested 已由 settings 的"默认播放模式"偏好驱动，不走播放器 UI
-  // 登记在 BACKLOG B-16。
+  /* TODO: nextRequested / previousRequested / seekRequested 已在 core 实现并有测试覆盖，播放器 UI 依然没有入口；
+     repeatModeRequested 由设置里的「默认播放模式」驱动，不走播放器 UI。登记在 BACKLOG B-16。 */
 
-  // 内部错误码在 adapter 里映射成本地化文案，不把浏览器原始 Error message 直接抛给用户
+  // 错误码在 adapter 里映射成本地化文案，不外抛浏览器的原始 message
   const errorText =
     errorKind === 'playRejected' ? copy.playRejected : errorKind === 'audioError' ? copy.audioError : null;
 

@@ -43,7 +43,7 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 - Sources: `document/state.ts:6`, `document/ids.ts:3`
 - Status: Implemented foundation; real-content acceptance and follow-up hardening remain.
 - One `.docs.md` file remains one independent article. Directory import maps numbered folders to empty navigation folders and numbered files to article nodes.
-- Maximum folder depth is three; numeric prefixes supply sibling order. Batch Preview/Confirm, `created` / `updated` / `unchanged` / `renamed` / `removed` diff, inactive-node cleanup, and strict database transaction handling are implemented.
+- Maximum folder depth is three; numeric prefixes supply sibling order. Batch Preview/Confirm, the `created` / `updated` / `unchanged` diff, inactive-node cleanup, and strict database transaction handling are implemented. The `renamed` / `removed` statuses are not: both branches of the replace check in `packages/db/src/docs/import.ts` resolve to `updated` (B-13).
 - Remaining acceptance: run a real `--replace` batch against an existing collection, verify rollback behavior, and finish cross-locale folder label handling.
 
 ## Deferred
@@ -115,8 +115,9 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 
 ### B-20 Music Library Management Follow-Ups
 
-- Source: `apps/web/src/features/settings/plugin/music/` (was `music-library-manager.tsx`)
-- Status: Closed on 2026-09-18. The settings page now writes the database directly and covers creating, renaming, reordering, deactivating and restoring libraries, so "creation and folder-backed removal are not offered" no longer holds. See `docs/decisions/en/music-authoring-in-the-web.md`.
+- Source: `apps/web/src/features/settings/music/` (earlier `settings/plugin/music/music-library-manager.tsx`; `settings/plugin/` no longer exists)
+- Status: Closed on 2026-09-18 and superseded further by `ccd0d62` (authoring from the settings page), `0d2f532` (own settings section, row deletion, `.ncm` uploads) and `e48ab21` (validation, content dedup, cleanup). Kept as history, not an open item.
+- The settings page now writes the database directly and covers creating, renaming, reordering, deactivating, restoring and deleting libraries, so "creation and folder-backed removal are not offered" no longer holds. See `docs/decisions/en/music-authoring-in-the-web.md`.
 - Kept for history: creating a library used to require the generator to own the key, and a folder-backed library could not be removed because the next generator run brought it back.
 
 ### B-21 Web Authoring Follow-Ups
@@ -134,7 +135,7 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 ### B-22 Music Metadata Recognition
 
 - Source: `apps/web/src/server/music/audio-inspection.ts` (`inspectUploadedAudio`), `scripts/music-import.mjs`
-- Status: Open. Registered on 2026-09-20, when the panel stopped offering hand editing of track titles and artists: a missing value renders as the copy's `unknownValue` (`—`), and the answer to a wrong or missing one is better recognition rather than a text field.
+- Status: Open. Registered on 2026-09-20, when the panel stopped offering hand editing of track titles and artists: a missing value renders as the copy's `unknownValue` (`-`), and the answer to a wrong or missing one is better recognition rather than a text field.
 - Today the read is `music-metadata`'s `common.title` / `common.artist`, with the file name as the title fallback. The real files here carry no artist tag and a title that already reads `artist, artist   title` (`GUMI,一之瀬ユウ   心做し`), so the panel shows an artist dash and a title with the performers glued on.
 - Candidates: split a title that carries that shape, fall back to `albumartist` and the other tag frames before giving up, and report per-run recognition counts so a batch can be judged. A split rewrites what the player displays, so it must be reviewable and opt-in.
 - **New NetEase imports already read correctly.** An `.ncm` upload takes `musicName` and `artist` from the container (see [music-authoring-in-the-web.md](./decisions/en/music-authoring-in-the-web.md)), so the songs imported before that support still carry the glued tag title and a blank artist. Re-uploading the original `.ncm` produces a correct row, and the stale one can be removed with the row's right-click delete — which is the practical fix today; the heuristics above stay the answer for non-NetEase sources.
@@ -189,6 +190,20 @@ Verified against the working tree: these sources already carry the planned in-pl
 | Source | Planned in-place history note | Evidence |
 | --- | --- | --- |
 | `document/state.ts:6` and `document/ids.ts:3` duplicate wording | `history: duplicated multi-article-source TODO consolidated under B-06.` | Both TODOs still exist and are the live B-06 source markers; convert them only once B-06 real-content acceptance closes. |
+
+### Cleaned On 2026-09-21 During The Comment Pass
+
+The music comments added by `0d2f532` / `e48ab21` / `8d34309` were reviewed and reduced to one-line flow notes: rationale was moved into `docs/current-task/2026-09-21-music-upload-dedup.md` and `docs/decisions/{en,zh}/music-authoring-in-the-web.md`, and the `history:`-prefixed design notes in that subsystem were removed because they recorded change history rather than replacing a TODO.
+
+| Source | What it carried | Outcome |
+| --- | --- | --- |
+| `apps/web/src/server/music/{media-store,audio-inspection,ncm-decode,import-runner,manifest-builder,manifest-file,music-admin,source-scan}.ts` | Multi-line "why" prose and `history:` notes | One-line flow notes; rationale now in the task document and the decision record |
+| `packages/db/src/music/{keys,upload,plan,manage,import}.ts`, `queries/list.ts`, `types.ts`, `packages/db/src/client.ts` | Same, plus a dangling `BACKLOG B-10` reference | Trimmed; the `prismaSchemaRevision` changelog is gone (the migration directory is the record) |
+| `apps/web/src/features/settings/music/*`, `apps/web/src/features/music-player/**`, `packages/music-player-core/src/*` | Same, including two "the earlier decision was reversed" notes | Trimmed; no change-history notes remain |
+| `packages/db/prisma/schema.prisma` | Field contract notes | Kept (data contract), one redundant clause removed |
+| `apps/web/src/server/docs/access.ts:81`, `apps/web/src/features/docs/importer/parsers/markdown-like/document/inline.ts:82` | `history:` prefix with no TODO behind it | Prefix removed |
+
+Not touched: the `history:` notes the backlog's two tables above declare as intended conversions (block system, `document/state.ts:5`, `packages/db/src/docs/types.ts:10`).
 
 ## Execution Order
 

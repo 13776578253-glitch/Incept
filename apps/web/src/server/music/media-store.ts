@@ -6,7 +6,7 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 
-// 使用相对导入而不是 @/ 别名：本模块同时被 Next 和 scripts/ 下的导入 CLI 加载，而 CLI 在 packages/db 目录下运行，解析不到 apps/web 的路径映射
+// 相对导入：本模块也被 scripts/ 下的 CLI 加载，它解析不到 @/ 别名
 import { findRepoRoot } from '../../features/docs/importer/paths';
 
 export const musicMediaPublicPath = '/_music-media';
@@ -14,7 +14,7 @@ export const musicMediaPublicPath = '/_music-media';
 // 镜像最大值 128 MB
 export const musicMediaMaxBytes = 128 * 1024 * 1024;
 
-// history：扩展名统一转小写后成为文件名的一部分
+// 白名单：扩展名 → MIME；小写扩展名同时是镜像文件名的后缀
 const musicAudioFormats = {
   '.mp3': 'audio/mpeg',
   '.wav': 'audio/wav',
@@ -26,8 +26,7 @@ export type MusicAudioExtension = keyof typeof musicAudioFormats;
 export type MusicMediaMode = 'publish' | 'dry-run';
 export type MusicMediaStatus = 'publish' | 'reuse';
 
-// 目标文件是不是就是本次这份字节：文件名本身就是内容哈希，但仍然重新读一遍再算一次哈希。
-// 只比尺寸的话，外部把文件换成"尺寸相同的错误内容"时会被判成完好，服务端会一直把坏文件发出去。
+// 复用前重新哈希目标：哈希一致才算同一份字节，尺寸相同不算
 async function readMusicMediaHash(targetPath: string): Promise<string | null> {
   const existing = await fs.readFile(targetPath).catch(() => null);
 
@@ -36,8 +35,7 @@ async function readMusicMediaHash(targetPath: string): Promise<string | null> {
 
 const musicPublishAttempts = 3;
 
-// 把临时文件放到最终位置。两个并发上传同一份内容时，这个"先删再改名"会和对方的改名打架
-// （Windows 上 rename 覆盖已存在的文件直接 EPERM）：失败后重新哈希目标，已经是同一份就当对方赢了、按复用收场，否则再试一次。
+// 发布临时文件：改名冲突就重新哈希目标，已是同一份就按复用收场
 async function publishMusicTempFile(input: {
   tempPath: string;
   targetPath: string;
@@ -84,12 +82,12 @@ export function isMusicAudioExtension(extension: string): extension is MusicAudi
   return Object.prototype.hasOwnProperty.call(musicAudioFormats, extension.toLowerCase());
 }
 
-// 白名单的文案只有一份：上传路由要在读请求体之前就拒绝，store 里保留同一道检查作为兜底
+// 扩展名被拒时的文案，上传路由与 store 共用
 export function musicAudioExtensionError(extension: string): string {
   return `Unsupported music file extension "${extension || '(none)'}". Allowed: ${Object.keys(musicAudioFormats).join(', ')}.`;
 }
 
-// 镜像目录与文件名的唯一来源：清单导入（publishMusicMedia）与网页上传（storeMusicUpload）共用
+// 镜像目录的唯一来源：清单导入与网页上传共用
 export function musicMediaMirrorDirectory(): string {
   return path.join(findRepoRoot(), 'apps', 'web', 'public', '_music-media');
 }
@@ -99,7 +97,6 @@ export function musicMediaFileName(hash: string, extension: string): string {
 }
 
 // 校验单个清单条目：解析、防符号链接逃逸、检查扩展名与体积
-// 只 stat 不读内容，这样导入器可以在写任何东西之前把所有条目先验一遍
 export async function inspectMusicSource(
   contentRoot: string,
   relativeFile: string,
@@ -114,7 +111,7 @@ export async function inspectMusicSource(
     throw new Error(`Music file not found under MUSIC_CONTENT_ROOT: ${relativeFile}`);
   }
 
-  // 用 realpath 之后的结果做包含性判断：字符串前缀比较挡不住指向根目录外的符号链接
+  // 用 realpath 的结果做包含性判断：字符串前缀挡不住指向根目录外的符号链接
   const relativeToRoot = path.relative(contentRoot, realSourcePath);
 
   if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) {
@@ -172,7 +169,7 @@ export async function publishMusicMedia({
     hash,
   };
 
-  // history：重新校验字节，只检查存在会让损坏或被截断的文件被静默复用，而服务端会一直把这份坏文件发出去
+  // 目标已存在就重新校验：不一致直接覆盖重写
   const existingBytes = await fs.readFile(targetPath).catch(() => null);
 
   if (existingBytes !== null) {
@@ -202,7 +199,7 @@ export async function publishMusicMedia({
   return operation;
 }
 
-// history：删除镜像里的一个文件：只接受镜像目录下的裸文件名，任何路径成分都拒绝 / 内容寻址 文件名就是哈希，因此这里负责"文件能不能删"，由调用方先确认没有行再引用它
+// 删除镜像里的一个文件：只接受裸文件名，任何路径成分都拒绝
 // 目录可注入，便于用临时目录测试；生产调用走默认镜像目录（清理入口）
 export async function removeMusicMediaByUrl(url: string, directory?: string): Promise<boolean> {
   const prefix = `${musicMediaPublicPath}/`;
@@ -242,9 +239,7 @@ export type MusicUploadResult = {
   status: MusicMediaStatus;
 };
 
-// 网页上传：一个请求一个文件，请求体就是原始字节
-// 边写临时文件边算哈希与计数，超过上限立刻中断——不能把 128 MB 读进内存
-// 临时文件与目标同目录，因此最后的 rename 是原子的；失败一律删掉临时文件
+// 网页上传：边写临时文件边算哈希与计数，超限立刻中断；临时文件与目标同目录，改名是原子的
 export async function storeMusicUpload(input: {
   stream: ReadableStream<Uint8Array>;
   filename: string;
@@ -252,8 +247,7 @@ export async function storeMusicUpload(input: {
   directory?: string;
   // 可注入，便于测试超限路径；默认沿用镜像上限
   maxBytes?: number;
-  // 落盘前的最终校验：拿到临时文件后确认它真的是音频，并返回真实格式。
-  // 抛错时临时文件会被删掉，垃圾文件绝不进入镜像目录；返回的扩展名用于命名与 MIME，因此"按真实格式存储"
+  // 落盘前的最终校验：返回真实格式，抛错时临时文件被删掉
   resolveExtension?: (tempPath: string) => Promise<MusicAudioExtension>;
 }): Promise<MusicUploadResult> {
   const extension = path.extname(input.filename).toLowerCase();
@@ -323,7 +317,7 @@ export async function storeMusicUpload(input: {
   return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status };
 }
 
-// 整个上传体读进内存：整体解密/解析的输入（NCM）/普通音频流式落盘
+// 整块读进内存：NCM 解密需要完整字节
 export async function readMusicUploadBytes(input: {
   stream: ReadableStream<Uint8Array>;
   maxBytes?: number;
@@ -352,8 +346,7 @@ export async function readMusicUploadBytes(input: {
   return Buffer.concat(chunks);
 }
 
-// 存一份已经在内存里解密好的音频：与 storeMusicUpload 共用同一套内容寻址语义（目标重新哈希后一致才复用，否则先写临时文件再原子改名）
-// validate 在发布之前跑，和普通上传的 resolveExtension 同一套"先验后发"：解码结果只有魔数对、解析不出音频流时，镜像里不会留下任何东西
+// 存已解密好的音频：内容寻址语义与 storeMusicUpload 相同，validate 在发布前跑
 export async function storeMusicAudioBytes(input: {
   bytes: Buffer;
   extension: string;

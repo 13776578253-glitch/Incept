@@ -2,8 +2,7 @@ import { prisma } from '../client';
 import { planMusicImport } from './plan';
 import type { MusicImportSummary, MusicLibraryImportEntry, MusicTrackImportEntry } from './types';
 
-// history：数据库部分是单事务的 / 镜像写入无法并入同一个事务（它是文件系统），但镜像按内容寻址、重复运行必然复用，所以"镜像已写、数据库失败"是可恢复的：重跑会复用同一批文件，只重做数据库这一步，并且 --validate 能查出落单的镜像
-// 由 planMusicImport 决定（纯函数，两条模式的差异都在那里）；执行：曲目 → 曲库 → 成员关系 → 停用
+// 按 planMusicImport 的结果执行（曲目 → 曲库 → 成员关系 → 停用），单事务
 export async function importMusicCatalog(input: {
   // null 表示清单没有声明曲库：旧清单模式
   libraries: MusicLibraryImportEntry[] | null;
@@ -89,7 +88,7 @@ export async function importMusicCatalog(input: {
           const libraryId = libraryIdByKey.get(pair.libraryKey);
           const trackId = trackIdByKey.get(pair.trackKey);
 
-          // key 来自刚刚写入或读到的行；缺失说明调用方绕过了前置校验（这是导出的 DB API），静默过滤会让 summary 报出并未发生的写入
+          // 缺少对应行就抛错：静默过滤会让 summary 报出没有发生的写入
           if (!libraryId || !trackId) {
             throw new Error(
               `music import plan references an unknown ${libraryId ? 'track' : 'library'}: ${pair.libraryKey} / ${pair.trackKey}`,

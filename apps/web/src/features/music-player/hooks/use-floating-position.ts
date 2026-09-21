@@ -25,7 +25,7 @@ export type ElementSize = {
 // 保存悬浮块的 UI 位置
 export const MUSIC_PLAYER_PLACEMENT_STORAGE_KEY = 'incept-music-player:v1:floating-ui';
 
-// 比例映射在"底边锚定"的区间上：1 表示贴到底边，留出与左右相同的 20px 边距
+// 比例映射到底边锚定区间：1 贴底边，与左右留同样的 20px
 export const DEFAULT_FLOATING_PLACEMENT: FloatingPlacement = {
   edge: 'right',
   offsetRatio: 1,
@@ -175,7 +175,7 @@ export type UseFloatingPositionOptions = {
   draggable: boolean;
   isReadyToPosition: boolean;
   rememberPlacement: boolean;
-  /** 偏好层读完存储之前不定位，否则会先按存储值画一帧，再跳到它该在的位置 */
+  /** 偏好层读完存储之前不定位 */
   isPreferenceReady: boolean;
 };
 
@@ -213,8 +213,7 @@ export function useFloatingPosition(options: UseFloatingPositionOptions): UseFlo
   const [isDragging, setIsDragging] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // 位置要么来自存储 / 默认值，取决于"记住位置"是否开启，开关本身也要等偏好层读完存储才知道，所以这里等它就绪再决定
-  // 依赖里刻意不放 rememberPlacement：它变化时不该重新读存储，否则会盖掉用户刚拖到的位置
+  // "记住位置"决定用存储值还是默认值；开关就绪后才读
   useEffect(() => {
     if (!isPreferenceReady) return;
 
@@ -244,19 +243,13 @@ export function useFloatingPosition(options: UseFloatingPositionOptions): UseFlo
     );
   }, []);
 
-  // 模式切换会立刻改变元素尺寸，必须在同一个绘制帧内重新测量并重新定位。
-  // 若改为等待 ResizeObserver 回调或下一次绘制，收起时会有一帧按旧尺寸落位，
-  // 该帧内 orb 出现在展开面板的左上角，而不是右边缘。
-  //
-  // 因此这里每次渲染都测量，而不只在 mode 变化时：元素可能晚于本 effect 首次执行才挂上
-  // ——从隐藏路由导航到普通页面时浮动组件在那之前一直返回 null——此时若不重测，
-  // 尺寸会永远停在 0，几何按 0×0 计算，元素被放到视口边缘之外。
-  // measureElement 自带等值判断，尺寸未变时不写 state，所以不会形成渲染循环。
+  // 模式切换会立刻改变元素尺寸，必须在同一绘制帧内重新测量并重新定位
+  // 每次渲染都测量：元素可能晚于本 effect 首次执行才挂上，measureElement 内部有等值判断
   useLayoutEffect(() => {
     measureElement();
   });
 
-  // ResizeObserver 只负责 React 渲染之外引起的尺寸变化（字体加载、文本重排等），统一走同一个测量函数
+  // ResizeObserver 处理渲染之外的尺寸变化（字体加载、文本重排等）
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
@@ -297,11 +290,8 @@ export function useFloatingPosition(options: UseFloatingPositionOptions): UseFlo
     setPlacement((current) => (current.mode === mode ? current : { ...current, mode }));
   }, []);
 
-  // 持久化放在 effect 里，让状态更新函数保持纯粹：StrictMode 下更新函数会被重复调用，
-  // 在更新函数里写 localStorage 等于把副作用塞进了 reducer。
-  //
-  // 关闭"记住位置"只做两件事：开关翻转的那一刻回到默认位置，以及此后不再写入。
-  // 判断依据必须是开关的"变化"而不是 placement 本身——挂在 placement 上会让每次拖拽都被立刻重置，那就等于"关闭记忆就不能移动播放器"，而这不是这个开关的含义。
+  // 持久化放在 effect 里：状态更新函数在 StrictMode 下会被重复调用
+  // 关闭"记住位置"：开关翻转的那一刻回到默认位置，此后不再写入
   useEffect(() => {
     if (!isHydrated) return;
 
@@ -345,7 +335,7 @@ export function useFloatingPosition(options: UseFloatingPositionOptions): UseFlo
         moved: false,
       };
 
-      // 刻意不在这里 setPointerCapture：立即捕获会让子按钮收不到 pointer/click，只有确认是拖动（越过阈值）之后才接管指针
+      // 不在这里 setPointerCapture：会让子按钮收不到 pointer/click，越过拖动阈值后才接管
     },
     [draggable],
   );

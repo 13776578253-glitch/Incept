@@ -6,10 +6,8 @@ import {
 } from './queries/list';
 import type { MusicLibraryRecord, MusicTrackRecord } from './types';
 
-// 曲目与曲库的日常管理入口（网页上传、表格编辑）
-// 批量导入走 plan.ts / import.ts：那条路径以清单为期望状态，这条路径以请求为期望状态
-
-// 判断在纯函数里，Prisma 只负责执行——与 plan.ts 同一套分法，便于测试
+// 日常管理入口（网页上传、表格编辑）；批量导入走 plan.ts / import.ts
+// 判断在纯函数里，Prisma 只负责执行
 
 function nextPosition(rows: Array<{ position: number }>): number {
   return rows.reduce((highest, row) => Math.max(highest, row.position), 0) + 1;
@@ -175,7 +173,7 @@ export function planMusicLibraryUpdate(input: {
       (library) => library.isActive && library.id !== input.library.id,
     );
 
-    // 至少留一个活跃曲库：否则活跃曲目会没有归属，播放器的读取会直接报错
+    // 至少留一个活跃曲库
     if (remaining.length === 0) {
       throw new Error('The last active library cannot be deactivated.');
     }
@@ -198,9 +196,7 @@ export function planMusicLibraryUpdate(input: {
   return { moveMembersTo: null };
 }
 
-// 永久删除：行与成员关系直接删掉，不像停用那样留痕。
-// 镜像文件：不在这里、也不在调用方 删除：并发上传可能正在复用同一份文件，请求路径里删它就会留下指向已删文件的行。
-// 无引用的媒体由清理入口（`pnpm music:cleanup`）在没有写入者时回收。
+// 永久删除：只删行与成员关系；镜像文件由清理入口（`pnpm music:cleanup`）回收
 export async function deleteMusicTrack(input: { trackKey: string }): Promise<{ trackKey: string }> {
   return prisma.$transaction(async (transaction) => {
     const track = await transaction.musicTrack.findUnique({

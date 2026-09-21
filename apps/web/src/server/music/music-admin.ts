@@ -32,8 +32,7 @@ export type MusicAdminData = {
   tracks: MusicAdminTrack[];
 };
 
-// 管理界面要看到全部行 /含停用，且不依赖内容根：网页是唯一写入路径之后，
-// 曲目与曲库的真相在数据库里，播放器那条读取（listActiveMusicCatalog）保持不变。
+// 管理界面看全部行（含停用）；真相在数据库，不依赖内容根
 export async function readMusicAdminData(): Promise<MusicAdminData> {
   try {
     const [tracks, libraries, memberships] = await Promise.all([

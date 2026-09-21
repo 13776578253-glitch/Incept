@@ -24,7 +24,7 @@ function readError(payload: string, fallback: string): string {
   }
 }
 
-// 上传用 XMLHttpRequest ：报告上传进度 / 一个请求一个文件，请求体就是文件本身 / 服务端按流落盘，不整块进内存
+// 用 XMLHttpRequest 上传：能报进度；一个请求一个文件，请求体就是文件本身
 export function uploadMusicFile(
   file: File,
   libraryKey: string,

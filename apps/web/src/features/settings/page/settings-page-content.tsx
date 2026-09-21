@@ -128,7 +128,7 @@ export function SettingsPageContent({
     musicRememberPlacement,
     setMusicRememberPlacement,
     musicPlaybackMode,
-    // history：渲染层的分段控件只认识 string；收窄回播放模式，避免把窄类型函数直接塞进宽类型槽位
+    // 渲染层的分段控件只接受 string，这里把值收窄回播放模式
     setMusicPlaybackMode: (value: string) => setMusicPlaybackMode(value as MusicPlaybackMode),
     isMusicPreferencesReady,
   };

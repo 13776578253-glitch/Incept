@@ -77,7 +77,7 @@ it('reports a truncated container instead of decoding garbage', () => {
   const fixture = buildNcmContainer({ audio: id3Audio, metadata: neteaseMetadata() });
 
   expect(() => decodeNcmAudio(fixture.subarray(0, 40))).toThrow(/Unexpected end of file/u);
-  // history：正好切在音频开始处：容器还在，但没有音频载荷
+  // 正好切在音频开始处：容器还在，但没有音频载荷
   expect(() =>
     decodeNcmAudio(fixture.subarray(0, fixture.length - id3Audio.length)),
   ).toThrow(/no audio payload/u);

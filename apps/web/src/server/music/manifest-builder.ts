@@ -23,7 +23,7 @@ export type MusicManifestDocument = {
   tracks: ManifestTrackEntry[];
 };
 
-// history：上一版清单：libraries 可能整体缺失（B-19 之前的清单），单条曲目的 libraries 同理
+// 上一版清单：顶层 libraries 与单条的 libraries 都可能缺失
 export type PreviousManifestTrackEntry = Omit<ManifestTrackEntry, 'libraries'> & {
   libraries?: string[];
 };
@@ -91,7 +91,7 @@ function membershipKeyForFile(file: string): string {
   return key;
 }
 
-// history：缺失磁盘的条目：路径不再有文件夹可核对，所以宽松地派生一次，并且只在"目录仍在（派生过）或上一版声明过"时采用；否则回落到 default，不为一个已经消失的路径造新曲库
+// 缺失磁盘的条目：宽松派生一次，key 不在允许集合就回落到 default
 function missingMembershipKey(file: string, allowedKeys: Set<string>): string {
   const segments = file.split('/');
 
@@ -181,7 +181,7 @@ function deriveFolderLibraries(files: string[]): {
   return { derivedByKey };
 }
 
-// 供管理界面判断"哪些曲库由文件夹提供"：这些库不能从清单里被移除，因为下一次生成会把它带回来
+// 文件夹派生的曲库 key：这些库不能从清单移除，下一次生成会带回来
 export function deriveFolderLibraryKeys(files: string[]): Set<string> {
   return new Set(deriveFolderLibraries(files).derivedByKey.keys());
 }
@@ -203,8 +203,7 @@ export function buildMusicManifest(input: {
   let added = 0;
 
   const { derivedByKey } = deriveFolderLibraries(files);
-  // 清单里允许出现的曲库 key：目录派生的，或上一版顶层声明过的；default 是唯一可以凭空存在的曲库。
-  // 其他 key 一律报错:把拼错的 key 静默合成一个新曲库，会让导入端的"引用未声明曲库"永远不会触发
+  // 清单里允许出现的曲库 key：目录派生的、上一版声明的，加上 default
   const allowedKeys = new Set<string>([
     ...derivedByKey.keys(),
     ...previousLibraryByKey.keys(),
@@ -230,7 +229,7 @@ export function buildMusicManifest(input: {
       added += 1;
     }
 
-    // 手写的 libraries 优先：文件夹表达不了"一首属于多个曲库"
+    // 手写的 libraries 优先于目录派生
     const libraries = previousTrack?.libraries?.length
       ? previousTrack.libraries.map((key) => requireAllowedKey(key, file))
       : [membershipKeyForFile(file)];
@@ -250,7 +249,6 @@ export function buildMusicManifest(input: {
   }
 
   // 清单里有、磁盘上已不在的条目：保留而不是删除
-  // 删掉会让下一次导入把它们静默停用，而文件消失通常只是路径改了名或挪了位置
   const onDisk = new Set(files);
   const missing = previousTracks.filter((track) => !onDisk.has(track.file));
 

@@ -112,7 +112,7 @@ export function formatPlaybackRate(rate: number): string {
   return `${Number(rate.toFixed(2))}x`;
 }
 
-// default 是清单里的机械 key（根目录文件的归属），界面显示本地化文案
+// default 是清单里的机械 key，界面显示本地化文案
 export function formatLibraryLabel(
   library: { key: string; title: string },
   copy: PlayerCopy,
@@ -142,7 +142,7 @@ export function formatClock(seconds: number): string {
 }
 
 export function formatTrackDate(locale: string, isoDate: string): string {
-  // 接口返回完整的 ISO 时间戳，只取日期部分；纯日期字符串同样适用。
+  // 只取 ISO 时间戳的日期部分
   const [year, month, day] = isoDate.slice(0, 10).split('-').map((part) => Number(part));
 
   if (!year || !month || !day) {

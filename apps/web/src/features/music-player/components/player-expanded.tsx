@@ -51,7 +51,7 @@ export function PlayerExpanded({
   onCycleRate,
 }: PlayerExpandedProps) {
   return (
-    // 头部 + 列表 + 底栏同属一个表面：底栏用 bare 变体
+    // 底栏复用 compact 的 bare 变体
     <section
       aria-label={copy.expandList}
       className={`overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] shadow-[var(--shadow-nav-dropdown)] ${

@@ -8,8 +8,7 @@ import {
 } from './queries/list';
 import type { MusicLibraryRecord, MusicTrackRecord } from './types';
 
-// 网页上传的写入路径：先按 contentHash 精确去重，再决定建行还是补归属
-// 判断在纯函数里，Prisma 只负责执行——与 plan.ts / manage.ts 同一套分法，便于测试
+// 网页上传的写入路径：先按 contentHash 精确去重，命中就补归属、否则建行
 
 export type MusicUploadStatus = 'created' | 'existing' | 'membership-added' | 'deactivated';
 
@@ -54,7 +53,7 @@ export function planMusicUploadDecision(input: {
 
   const libraryKeys = libraryKeysOf(match.id, input.libraries, input.memberships);
 
-  // 停用行只报告，不自动恢复、也不补归属：恢复是列表里的显式操作
+  // 停用行只报告：不自动恢复，也不补归属
   if (!match.isActive) {
     return { kind: 'deactivated', track: match, libraryKeys };
   }
@@ -89,7 +88,7 @@ export type MusicDuplicateHint = {
 
 const duplicateHintLimit = 5;
 
-// 归一化只用于比较：大小写、空白、标点都不该让"看起来就是同一首"的两行互相认不出来
+// 归一化只用于比较：大小写、空白、标点都不参与
 function tokensOf(value: string): string[] {
   const normalized = value
     .toLowerCase()
@@ -109,7 +108,7 @@ function containsTokens(haystack: string[], needle: string[]): boolean {
   return false;
 }
 
-// 相等，或一方是另一方的连续 token 子串：后者主要接住"歌手被粘进标题"的标签形态
+// 相等，或一方是另一方的连续 token 子串（接住歌手粘进标题的标签）
 function textLooksAlike(left: string, right: string): boolean {
   const leftTokens = tokensOf(left);
   const rightTokens = tokensOf(right);
@@ -121,7 +120,7 @@ function textLooksAlike(left: string, right: string): boolean {
 }
 
 function artistsLookAlike(left: string | null, right: string | null): boolean {
-  // 缺失的一方不参与否决：真实文件里歌手常常是空的
+  // 缺失的一方不参与否决
   if (left === null || right === null) return true;
 
   return textLooksAlike(left, right);
@@ -133,8 +132,7 @@ function durationsLookAlike(left: number | null, right: number | null): boolean 
   return Math.abs(left - right) <= Math.max(3, Math.max(left, right) * 0.05);
 }
 
-// 只是提示，绝不合并：不同码率/编码的同一首歌本来就应该能各留一行，误合并会丢版本信息。
-// 命中的前提是标题相近、歌手不冲突、时长接近——不做字符串之外的猜测（指纹留作后续）。
+// 疑似重复只提示、绝不合并：标题相近 + 歌手不冲突 + 时长接近才算命中
 export function findMusicDuplicateCandidates(
   input: { title: string; artist: string | null; durationSeconds: number | null; contentHash: string },
   tracks: MusicTrackRecord[],
@@ -167,7 +165,7 @@ export type MusicUploadOutcome = {
 };
 
 const uniqueViolationCode = 'P2002';
-// 并发上传同一份内容时重试一次就够：重试会读到对方已提交的行，改走复用分支
+// 并发上传同一份内容时重试一次
 const uploadAttempts = 2;
 
 export function isMusicUniqueConflict(error: unknown): boolean {
@@ -195,7 +193,7 @@ export async function uploadMusicTrack(input: {
     try {
       return await runUploadAttempt(input);
     } catch (error) {
-      // 两个请求同时进来时，后到的那次查询看不见对方未提交的插入，插入会撞唯一索引（contentHash 或 trackKey）
+      // 并发插入会撞唯一索引（contentHash 或 trackKey）
       if (!isMusicUniqueConflict(error)) throw error;
 
       lastError = error;

@@ -1,8 +1,7 @@
 import type { AppLocale } from '@/i18n/config/locales';
 import type { SettingsSection } from '../shared/settings-types';
 
-// 音乐分区：播放器偏好与曲库管理。
-// 这三项偏好由 MusicPlayerPreferencesProvider 持有并持久化：设置页与正在运行的播放器读的是同一份值，所以改动会立刻作用到播放中的曲目
+// 音乐分区：播放器偏好与曲库管理
 export function getMusicSettingsSection(locale: AppLocale): SettingsSection {
   if (locale === 'zh') {
     return {

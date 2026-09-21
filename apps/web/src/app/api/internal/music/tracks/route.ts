@@ -39,8 +39,7 @@ type StoredUpload = {
 
 type InspectionHolder = { metadata: UploadedAudioMetadata | null };
 
-// 普通音频与 NCM 解码结果共用的落盘前校验：解析成功：返回真实格式并把标签留给调用方 / 失败：直接抛。
-// 失败时临时文件由 store 删除
+// 普通音频与 NCM 解码结果共用的落盘前校验：返回真实格式，标签留给调用方
 async function inspectStagedAudio(
   tempPath: string,
   holder: InspectionHolder,
@@ -57,7 +56,7 @@ async function inspectStagedAudio(
 }
 
 function heldMetadata(holder: InspectionHolder): UploadedAudioMetadata {
-  // history: 校验闭包在 store 返回之前跑过；这里把类型收窄
+  // 校验闭包在 store 返回之前跑过，这里把类型收窄
   if (holder.metadata === null) {
     throw new Error('The upload was not validated.');
   }
@@ -65,8 +64,7 @@ function heldMetadata(holder: InspectionHolder): UploadedAudioMetadata {
   return holder.metadata;
 }
 
-// 普通音频：流式落盘，落盘前先验真实格式: 签名不通或解析失败直接拒绝
-// 通过时返回扩展名为真实格式
+// 普通音频：流式落盘，落盘前先验真实格式
 async function storePlainAudio(
   stream: ReadableStream<Uint8Array>,
   filename: string,
@@ -90,7 +88,7 @@ async function storePlainAudio(
   };
 }
 
-// NCM 解码结果“先在临时文件上解析，成功之后发布进镜像
+// NCM 解码结果：先在临时文件上解析，成功之后发布进镜像
 async function storeDecodedAudio(decoded: NcmAudio): Promise<StoredUpload> {
   const holder: InspectionHolder = { metadata: null };
 
@@ -114,12 +112,9 @@ async function storeDecodedAudio(decoded: NcmAudio): Promise<StoredUpload> {
 }
 
 /*
-一个请求一个文件，请求体就是原始字节：音频流式落盘，ncm 整体读进内存解密
-history：
-文件名与目标曲库走查询参数；去重按解码后的字节哈希（contentHash）走，命中已有内容就复用行、只补归属
-写库失败时不删除刚发布的镜像文件：内容寻址的文件可能正被另一个并发请求复用，此刻按"没有行引用"判定并删除，会让对方随后提交出
-一条 audioUrl 指向已删文件的行：库里有曲目、镜像却没有文件
-失败的发布由 `pnpm music:import --validate` 报告，人工或后续清理命令在安全时机处理
+一个请求一个文件：音频流式落盘，.ncm 整体读进内存解密
+文件名与目标曲库走查询参数；去重只看解码后的字节哈希，命中就复用行、只补归属
+发布之后才失败也不删镜像文件：回收只有 `pnpm music:cleanup` 一条路，`--validate` 只负责报告
 */
 export async function POST(request: Request) {
   if (!hasSameOrigin(request)) {
@@ -164,7 +159,7 @@ export async function POST(request: Request) {
 
   try {
     if (isNcm) {
-      // .ncm 是加密容器：读到内存里解密成原始 mp3/flac，再走与普通音频同一套的入镜像流程；静默转换
+      // .ncm：读到内存解密成原始 mp3/flac，再走与普通音频同一套入镜像流程
       const bytes = await readMusicUploadBytes({ stream: request.body });
 
       upload = await storeDecodedAudio(decodeNcmAudio(bytes));

@@ -73,7 +73,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ key: 
   }
 }
 
-// 永久删除：只允许删没有成员的曲库，且不能删掉最后一个启用中的曲库：规则在 db 层 与停用不同，此路径不留痕，由右键菜单里的二次确认触发
+// 永久删除：只删没有成员的曲库，也不许删掉最后一个启用库；规则在 db 层，这里透传
 export async function DELETE(request: Request, context: { params: Promise<{ key: string }> }) {
   if (!hasSameOrigin(request)) {
     return NextResponse.json({ error: 'Not found.' }, { status: 404 });

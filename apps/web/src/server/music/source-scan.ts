@@ -1,8 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-// 与 media-store 的白名单一致。这里刻意不导入 app 模块：清单相关的代码只处理路径与 JSON
-// 不需要为此承担类型耦合，代价是这份三元素白名单要与之同步
+// 与 media-store 的白名单一致；不导入 app 模块，避免类型耦合
 export const MUSIC_AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac'];
 
 async function collect(root: string, directory: string): Promise<string[]> {
@@ -26,8 +25,7 @@ async function collect(root: string, directory: string): Promise<string[]> {
   return files;
 }
 
-// 递归扫描内容根，返回相对根目录、正斜杠分隔并排好序的音频路径
-// CLI 的生成器与设置页的管理界面共用这一份实现
+// 递归扫描内容根，返回相对根目录、正斜杠分隔、已排序的音频路径；CLI 与设置页共用
 export async function collectMusicAudioFiles(root: string): Promise<string[]> {
   return (await collect(root, root)).sort();
 }

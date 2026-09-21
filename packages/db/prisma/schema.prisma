@@ -257,13 +257,12 @@ model DocsCollectionItemLocale {
   @@map("docs_collection_item_locales")
 }
 
-// 音乐曲目 / 公开内容，不做 access 分级。
-//
-// trackKey 表示内容身份，由 music.json 清单显式提供，不从文件名或哈希推导；
-// audioUrl 表示当前发布位置，只存站点 URL，绝不存本机绝对路径；
-// contentHash / mimeType / fileSize 描述当前文件，便于导入校验与将来迁移到对象存储；
-// contentHash 唯一：一段字节只对应一行，网页上传按它去重（命中就复用行并补归属），旧数据没有哈希时为 NULL，可重复
-// position 允许重复，排序固定为 position ASC, id ASC（配合 isActive 过滤与下方索引）
+/* 音乐曲目 / 公开内容，不做 access 分级。
+   trackKey = 内容身份，清单显式提供，不从文件名或哈希推导。
+   audioUrl = 当前发布位置，只存站点 URL，不存本机路径。
+   contentHash / mimeType / fileSize 描述当前文件，供导入校验。
+   contentHash 唯一：一段字节一行，旧行为 NULL，可重复。
+   position 允许重复，排序固定为 position ASC, id ASC。 */
 model MusicTrack {
   id              String    @id @default(cuid())
   trackKey        String    @unique
@@ -285,11 +284,10 @@ model MusicTrack {
   @@map("music_tracks")
 }
 
-// 曲库 / 只是标签：改名或重新分组都不改变曲目的 trackKey 与它的媒体
-//
-// key 由清单提供，是曲库的对外身份；position 只决定曲库自身的顺序
-// （读取固定为 position ASC, id ASC），库内曲目顺序复用曲目自己的 position
-// 导入时清单里未声明的曲库停用而非删除，与曲目一致；因此列表要按 isActive 过滤
+/* 曲库 / 只是标签：改名与重新分组都不动曲目的 trackKey 与媒体。
+   key = 对外身份，清单提供；position 只决定曲库自身顺序。
+   库内曲目顺序复用曲目自己的 position。
+   清单未声明的曲库停用而非删除，列表按 isActive 过滤。 */
 model MusicLibrary {
   id        String             @id @default(cuid())
   key       String             @unique
@@ -304,8 +302,8 @@ model MusicLibrary {
   @@map("music_libraries")
 }
 
-// 成员关系 / 清单是权威：每次导入按清单整体重写，所以这里只有 createdAt，没有 updatedAt
-// 一首曲目可属多个曲库，故用中间表而不是曲目上的字符串列
+// 成员关系 / 清单是权威：每次导入整体重写，只有 createdAt
+// 一首可属多库，故用中间表
 model MusicLibraryItem {
   id        String       @id @default(cuid())
   libraryId String

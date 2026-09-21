@@ -161,7 +161,7 @@ async function main() {
   try {
     summary = await runner.commitMusicImport({ plan, operations });
   } catch (error) {
-    // history：数据库部分在单事务里，失败时没有行被改动 / 镜像已经复制好了，因为按内容寻址，重跑必然复用它们 —— 所以这里只报告清单，不删除文件
+    // 数据库写失败：数据库全部回滚，已复制的镜像按内容寻址，重跑直接复用
     console.error('\nThe database write failed. No rows were changed.');
     console.error('Media copied by this run is content-addressed and will be reused on the next run:');
     describeCopiedMedia(operations);

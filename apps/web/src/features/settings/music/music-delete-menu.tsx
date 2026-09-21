@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { MusicAdminCopy } from './music-admin-copy';
 
-// history：右键菜单永久删除
+// 右键菜单的删除目标：坐标 + 两种提示文案
 export type MusicDeleteTarget = {
   id: string;
   // 菜单顶部显示
@@ -63,7 +63,7 @@ export function MusicDeleteMenu({
         onClose();
       }
     };
-    // history：页面滚动后菜单会与它的行脱节，收起
+    // 页面滚动后菜单会与行脱节，收起
     const closeOnScroll = () => onClose();
 
     document.addEventListener('pointerdown', closeOnOutsidePress);

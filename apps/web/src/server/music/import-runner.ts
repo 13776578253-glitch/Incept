@@ -337,8 +337,7 @@ export async function planMusicImport({
   };
 }
 
-// 镜像与数据库分成两步：数据库写失败时，调用方仍需持有本次复制了哪些文件的清单
-// 数据库部分在单个事务里；镜像部分内容寻址，重复运行必然复用
+// 镜像与数据库分两步，数据库部分单事务；返回本次复制了哪些文件
 export async function publishMusicImportMedia({
   plan,
   mode,
@@ -414,8 +413,7 @@ export type MusicLibraryConsistencyInput = {
   tracks: MusicTrackRecord[];
 };
 
-// 纯函数：清单与数据库在曲库上的差异：导入会怎么改，这里就报什么
-// 停用的声明库算"还没导入"：API 只发活跃库，成员关系却还在，界面会因此少一个库；标题与顺序的漂移也在这里报
+// 纯函数：清单与数据库在曲库上的差异，停用的声明库与标题/顺序漂移都算差异
 export function inspectMusicLibraryConsistency({
   plan,
   libraries,
@@ -521,8 +519,7 @@ export async function validateMusicMirror({
 }): Promise<MusicMirrorIssue[]> {
   const issues: MusicMirrorIssue[] = [];
 
-  // 按 trackKey 记录清单算出的期望文件名：
-  // 参与镜像比对，与数据库记录的 URL 交叉校验
+  // 按 trackKey 记录清单算出的期望文件名，用于镜像比对与 URL 交叉校验
   const expectedNameByTrackKey = new Map<string, string>();
 
   for (const entry of plan.entries) {
@@ -570,8 +567,7 @@ export async function validateMusicMirror({
     }
   }
 
-  // 清单算出的期望文件名必须与数据库记录的 URL 一致
-  // 不一致说明内容换了但 trackKey 没换
+  // 期望文件名与数据库记录的 URL 必须一致
   const rowByTrackKey = new Map(rows.map((row) => [row.trackKey, row]));
 
   for (const entry of plan.entries) {
@@ -600,9 +596,8 @@ export async function validateMusicMirror({
   return issues;
 }
 
-// 清理入口：请求路径永远不删内容寻址媒体（并发上传可能正在复用同一份文件），
-// 无引用的文件由这里在"没有写入者"时回收。只有<64 位十六进制>.<扩展名>这种镜像自己的命名才算候选：
-// 临时文件可能属于正在进行的上传，外部文件也不是镜像产物，都不在清理范围内。
+// 清理入口：只有 <64 位十六进制>.<扩展名> 这类镜像命名才是候选
+// 临时文件可能属于正在进行的上传，外部文件不是镜像产物，两者都不碰
 const musicMediaFileNamePattern = /^[0-9a-f]{64}\.(mp3|wav|flac)$/u;
 
 export function planMusicMirrorCleanup(input: {

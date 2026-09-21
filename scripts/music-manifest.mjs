@@ -83,7 +83,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 读清单：文件不存在是"没有上一版"；JSON 无效必须报错，否则会静默丢掉手写的标题、顺序与归属
+  // 读上一版清单：文件不存在算没有上一版，JSON 无效直接报错
   const { previous } = await manifestFile.readMusicManifestFile(contentRoot);
 
   const { document, report } = builder.buildMusicManifest({ files, previous });

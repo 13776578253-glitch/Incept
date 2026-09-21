@@ -27,7 +27,7 @@ export type MusicLibraryMembershipRecord = {
   trackId: string;
 };
 
-// 导入器写入的形状：audioUrl 由媒体镜像产出，不来自本机路径
+// 导入器写入的形状：audioUrl 来自媒体镜像
 export type MusicTrackImportEntry = {
   trackKey: string;
   title: string;

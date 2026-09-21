@@ -2,7 +2,9 @@
 
 ## Status
 
-Implemented and verified on 2026-09-20. Not committed at the time of writing; the proposed commit is `feat(web): decrypt ncm uploads on the server`.
+Implemented and verified on 2026-09-20. Committed as `0d2f532` (`feat(web): music gets its own settings section, row deletion and ncm uploads`).
+
+> **Superseded on 2026-09-21 by `e48ab21`.** The validation described below now runs before the file is published, a `.ncm` that decrypts to an unreadable shell publishes nothing, and `DELETE` answers `{ trackKey }` instead of `mediaRemoved`. The body records the version that shipped in `0d2f532`.
 
 ## Scope
 
@@ -27,7 +29,7 @@ Songs downloaded from NetEase arrive as encrypted `.ncm` containers, so the owne
 | Unit suites | `pnpm test` — core 73, web 128 across 15 files (6 new decoder cases); `pnpm typecheck` clean |
 | Decoder | `ncm-decode.test.ts` builds containers in-process (the same encoding steps the converter's fixture script uses) and covers mp3 + flac payloads, metadata extraction, a bare MPEG frame sync, `NOT_NCM`, and both truncation paths |
 | Real file, end to end | `curl` POST of `Pianoboy高至豪 - 第105天.ncm` (8.8 MB) with the owner cookie → `201`, `title: 第105天`, `artist: Pianoboy高至豪`, `durationSeconds: 218`, `mediaStatus: reuse` — the decrypted bytes were byte-identical to the mirror file the earlier manual conversion had produced |
-| Cleanup | The three verification rows were removed through `DELETE /api/internal/music/tracks/[trackKey]`; each answered `200` with `mediaRemoved: false`, because the shared mirror file is still referenced by the original track. The database is back to its four rows and the mirror to its four mp3s |
+| Cleanup | The three verification rows were removed through `DELETE /api/internal/music/tracks/[trackKey]`; each answered `200` (at the time with `mediaRemoved: false`, because the shared mirror file is still referenced by the original track). The database is back to its four rows and the mirror to its four mp3s |
 
 ## Known limits
 

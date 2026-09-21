@@ -2,7 +2,9 @@
 
 ## Status
 
-Implemented and verified on 2026-09-20. Not committed at the time of writing; the proposed commit is `feat(web): delete music tracks and libraries for good`.
+Implemented and verified on 2026-09-20. Committed as `0d2f532` (`feat(web): music gets its own settings section, row deletion and ncm uploads`).
+
+> **Superseded on 2026-09-21 by `e48ab21`.** The delete path no longer removes content-addressed media: the row and its memberships go and the file stays, because a concurrent upload may already be reusing it. Reclamation moved to `pnpm music:cleanup`. The body below records the version that shipped in `0d2f532`.
 
 ## Scope
 
@@ -27,5 +29,5 @@ The admin panel could only deactivate, so anything mis-uploaded stayed in the li
 ## Known limits
 
 - No trash and no undo: the delete is final, which is exactly why it sits behind a two-step menu.
-- No bulk delete, and no "clean the unreferenced mirror files" entry point with a dry run — that stays open in B-21.
+- No bulk delete, and no "clean the unreferenced mirror files" entry point with a dry run — that stayed open in B-21 until `pnpm music:cleanup` landed on 2026-09-21.
 - A deleted track's `trackKey` is free again, and an import from a content root that still holds the file would recreate the row.

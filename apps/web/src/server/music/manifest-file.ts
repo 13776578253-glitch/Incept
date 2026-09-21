@@ -12,8 +12,7 @@ export function hashMusicManifest(raw: string): string {
   return crypto.createHash('sha256').update(raw, 'utf8').digest('hex');
 }
 
-// 文件不存在返回 previous: null（由调用方决定怎么提示）；
-// JSON 无效必须报错——把它当成"没有上一版清单"会静默丢掉手写的标题、顺序与归属
+// 文件不存在返回 previous: null；JSON 无效直接报错，不当成"没有上一版"
 export async function readMusicManifestFile(
   contentRoot: string,
 ): Promise<{ previous: PreviousMusicManifest | null; hash: string }> {
@@ -38,7 +37,7 @@ export async function readMusicManifestFile(
   return { previous: parsed as PreviousMusicManifest, hash: hashMusicManifest(raw) };
 }
 
-// 与 CLI 生成器完全相同的写法：两空格缩进加一个结尾换行，保证 diff 稳定
+// 与 CLI 生成器同一写法：两空格缩进 + 结尾换行，diff 稳定
 export async function writeMusicManifestFile(
   contentRoot: string,
   document: MusicManifestDocument,

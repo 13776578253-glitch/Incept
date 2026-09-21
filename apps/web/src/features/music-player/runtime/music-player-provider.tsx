@@ -82,7 +82,7 @@ export function MusicPlayerProvider({
   const [sourceRevision, setSourceRevision] = useState(0);
   const [errorKind, setErrorKind] = useState<PlayerErrorKind | null>(null);
 
-  // 队列初值为空：目录异步到达，初值不可能是真实数据。目录就绪后由 tracksLoaded 替换队列， core 需要该输入
+  // 队列初值为空，目录就绪后由 tracksLoaded 替换
   const [state, dispatch] = useReducer(
     (current: PlayerState, input: PlayerInput) => reducePlayerState(current, input, Math.random),
     [],
@@ -110,7 +110,7 @@ export function MusicPlayerProvider({
     dispatch({ type: 'tracksLoaded', tracks: toMusicTracks(catalog) });
   }, [catalog]);
 
-  // 音源应用的唯一实现。只有 trackId 或 URL 真的变化才换源：目录数组换引用不是换源理由，否则会无条件 load() 打断正在播放的音频，而 core 仍认为在播放，形成"界面在播、实际静音且进度丢失"的脱节
+  // 音源应用的唯一实现：只有 trackId 或 URL 变化才换源
   const applySource = useCallback((trackId: string): SourceApplyResult => {
     const audio = audioRef.current;
     if (!audio) return 'unavailable';
@@ -138,7 +138,7 @@ export function MusicPlayerProvider({
     return change;
   }, []);
 
-  // 停用音源并让浏览器真正释放旧媒体：只 removeAttribute 不足以释放，必须显式 pause 后再 load
+  // 停用音源并释放旧媒体：pause 后 removeAttribute 再 load
   const releaseSource = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -150,8 +150,7 @@ export function MusicPlayerProvider({
     audio.load();
   }, []);
 
-  // 运行时事件的唯一入口：audio 元素事件与 play() 拒绝都从这里进入，errorKind 只在这里设置。
-  // 把 dispatch 直接交给 requestAudioPlay 会绕过这里，让被拒绝的播放没有错误提示
+  // 运行时事件的唯一入口：audio 事件与 play() 拒绝都从这里进来，errorKind 只在这里设
   const handleRuntimeEvent = useCallback((event: PlayerRuntimeEvent) => {
     // 切换音源时浏览器补发的 pause 不是用户意图，忽略
     if (event.type === 'playPaused' && suspendPauseEventsRef.current) {
@@ -181,7 +180,7 @@ export function MusicPlayerProvider({
     dispatch(event);
   }, []);
 
-  // 播放启动的唯一出口：applySource 在此同步： play() 始终落在调用方的调用栈内：用户点击路径因此保留 transient user activation，不依赖后续 effect 补发
+  // 播放启动的唯一出口：applySource 与 play() 同步执行，保住用户手势的 user activation
   const startPlayback = useCallback(
     (trackId: string | null) => {
       const audio = audioRef.current;
@@ -199,7 +198,7 @@ export function MusicPlayerProvider({
     [applySource, handleRuntimeEvent],
   );
 
-  // 原子路径：选中并播放指定曲目 / 不拆成两个 intent 连续派发，因为第二次派发时 stateRef 尚未更新，会拿旧 currentTrackId 去启动播放
+  // 选中并播放走同一条路径，不拆成两个 intent
   const playTrack = useCallback(
     (trackId: string) => {
       dispatch({ type: 'selectTrackRequested', trackId });
@@ -265,7 +264,7 @@ export function MusicPlayerProvider({
       dispatch(intent);
 
       if (intent.type === 'playRequested') {
-        // 直接调用 play()：等到 effect 再执行时，浏览器可能已经丢弃 transient user activation，从而拒绝播放
+        // 直接调用 play()，避免等到 effect 时丢失 transient user activation
         // playRequested 不改变当前曲目
         startPlayback(stateRef.current.currentTrackId);
         return;

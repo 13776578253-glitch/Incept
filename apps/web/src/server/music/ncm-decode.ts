@@ -1,7 +1,6 @@
 import { createDecipheriv } from 'node:crypto';
 
-// history：NCM（网易云加密容器）解码：移植自本机 ncm-converter 的同名实现，只保留上传链路需要的那部分——内存里解出原始音频与内嵌的标题/歌手
-// 容器结构：CTENFDAM 魔数 → key 块（XOR 0x64 后 AES-128-ECB）→ 元数据块（XOR 0x63、base64 后 AES-128-ECB） → 9 字节（CRC32 + 5 字节保留）→ 封面块 → 其余是加密音频
+// NCM（网易云加密容器）解码：内存里解出原始音频字节与内嵌标题/歌手
 const ncmMagic = 'CTENFDAM';
 const keyPrefix = 'neteasecloudmusic';
 const metaPrefix = "163 key(Don't modify):";

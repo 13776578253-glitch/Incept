@@ -1,8 +1,6 @@
 import path from 'node:path';
 
-// 清单生成器与网页上传共用同一套命名规则：内容身份（trackKey）与曲库 key 必须一样
-// 否则同一份内容从两条路进来会得到两个不同的身份
-// 放在 db 包里是因为上传执行器要在事务里根据最新数据派生 trackKey / 并发上传时还得重试一次
+// key 派生规则：清单生成器与网页上传共用
 
 export function slugifyMusicKey(value: string): string {
   return value
@@ -29,7 +27,7 @@ export function titleFromFileName(file: string): string {
   return base.replace(/[-_]+/g, ' ').trim() || base;
 }
 
-// 上传曲目的身份来自文件名（不含目录）：同一首歌再次上传会得到 -2 / -3 后缀，不会撞车
+// 曲目身份取自文件名（不含目录）；同名冲突才加 -2 / -3 后缀
 export function deriveMusicTrackKey(filename: string, taken: Set<string>): string {
   const extension = path.extname(filename);
   const withoutExtension =
@@ -38,7 +36,7 @@ export function deriveMusicTrackKey(filename: string, taken: Set<string>): strin
   return uniqueMusicKey(slugifyMusicKey(withoutExtension), taken);
 }
 
-// 曲库 key 由名字转写；目录名常见的数字前缀（01-播客）按生成器的约定剥掉
+// 曲库 key 由名字转写；目录名的数字前缀（01-播客）按生成器约定剥掉
 export function deriveMusicLibraryKey(name: string, taken: Set<string>): string {
   const match = /^(\d+)-(.+)$/.exec(name.trim());
   const base = match ? match[2] : name.trim();

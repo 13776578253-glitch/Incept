@@ -10,8 +10,8 @@ type PlayerLibrarySwitcherProps = {
   onSelect: (key: string | null) => void;
 };
 
-// 分段 chips：库多时横向滚动，不换行、不撑破悬浮面板。
-// 「全部」是一个视图（key 为 null），不是曲库。
+// 分段 chips：库多时横向滚动，不换行、不撑破悬浮面板
+// 「全部」是一个视图（key 为 null），不是曲库
 export function PlayerLibrarySwitcher({
   copy,
   libraries,

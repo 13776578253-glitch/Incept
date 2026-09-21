@@ -53,7 +53,7 @@ function MusicTrackRow({
       ? current.filter((candidate) => candidate !== key)
       : [...current, key];
 
-    // 每首曲目至少属于一个曲库：最后一个归属不能取消
+    // 每首曲目至少属于一个曲库，最后一个归属不能取消
     if (next.length === 0) return;
 
     onPatch(track.trackKey, { libraries: next });
