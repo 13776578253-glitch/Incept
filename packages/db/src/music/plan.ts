@@ -79,9 +79,42 @@ function isTrackChanged(current: MusicTrackRecord, entry: MusicTrackImportEntry)
   );
 }
 
-// 只做计算，不碰数据库：写入层按这份计划执行事务，因此两条模式的差异可以单独测试
+// contentHash 在数据库里唯一：两个 trackKey 不能指向同一段字节。
+// 清单内部的冲突、以及清单与"留在库里的旧行"（从清单消失只是停用，行和哈希都还在）之间的冲突，
+// 都在这里一次性报出来——否则写事务会在中途撞唯一索引回滚，报错还看不出是哪两个 key。
+function assertUniqueContentHashes(input: MusicImportPlanInput): void {
+  const manifestTrackKeys = new Set(input.tracks.map((entry) => entry.trackKey));
+  const hashOwner = new Map<string, string>();
+
+  const claim = (hash: string, trackKey: string): void => {
+    const owner = hashOwner.get(hash);
+
+    if (owner !== undefined && owner !== trackKey) {
+      throw new Error(
+        `The same audio content is assigned to two tracks ("${owner}" and "${trackKey}"); one trackKey per piece of content.`,
+      );
+    }
+
+    hashOwner.set(hash, trackKey);
+  };
+
+  for (const entry of input.tracks) {
+    claim(entry.contentHash, entry.trackKey);
+  }
+
+  // 清单里仍然存在的行会按条目更新哈希
+  for (const row of input.existing.tracks) {
+    if (row.contentHash === null || manifestTrackKeys.has(row.trackKey)) continue;
+
+    claim(row.contentHash, row.trackKey);
+  }
+}
+
+// 只做计算，不碰数据库
 export function planMusicImport(input: MusicImportPlanInput): MusicImportPlan {
   const mode: MusicImportMode = input.libraries === null ? 'legacy' : 'authority';
+
+  assertUniqueContentHashes(input);
 
   const existingTrackByKey = new Map(input.existing.tracks.map((row) => [row.trackKey, row]));
   const manifestTrackKeys = new Set(input.tracks.map((entry) => entry.trackKey));

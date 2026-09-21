@@ -12,6 +12,13 @@ export type MusicAdminCopy = {
   uploadDone: string;
   uploadFailed: string;
   formatUploadProgress: (percent: number) => string;
+  uploadDoneReused: string;
+  uploadDoneExisting: string;
+  uploadDoneMembershipAdded: string;
+  uploadDoneDeactivated: string;
+  uploadSkipped: string;
+  uploadSkippedReason: string;
+  formatUploadDuplicateHint: (titles: string[]) => string;
   tracksHeading: string;
   searchPlaceholder: string;
   filterAllLibraries: string;
@@ -69,6 +76,13 @@ const zhCopy: MusicAdminCopy = {
   uploadDone: '完成',
   uploadFailed: '失败',
   formatUploadProgress: (percent) => `上传中 ${percent}%`,
+  uploadDoneReused: '完成（复用已有文件）',
+  uploadDoneExisting: '已存在，未新增',
+  uploadDoneMembershipAdded: '已加入该曲库',
+  uploadDoneDeactivated: '已存在但已停用，请先恢复',
+  uploadSkipped: '已跳过',
+  uploadSkippedReason: '不是支持的音频格式',
+  formatUploadDuplicateHint: (titles) => `疑似重复：《${titles.join('、')}》`,
   tracksHeading: '曲目',
   searchPlaceholder: '搜索标题、作者或 key',
   filterAllLibraries: '全部曲库',
@@ -105,7 +119,7 @@ const zhCopy: MusicAdminCopy = {
   confirmDeactivateTrack: '停用后可以恢复，媒体文件不会被删除。',
   confirmDeactivateLibrary: '停用曲库前，必须为它的曲目指定去处。',
   deleteAction: '永久删除',
-  deleteTrackConfirm: '删除后无法恢复：曲目、归属关系与镜像文件都会一并移除。',
+  deleteTrackConfirm: '删除后无法恢复：曲目与其归属关系会被移除；镜像文件保留，由清理流程在安全时机回收。',
   deleteLibraryConfirm: '只能删除没有成员的曲库；删除后无法恢复。',
   actionDeleteConfirm: '确认删除',
 };
@@ -126,6 +140,13 @@ const enCopy: MusicAdminCopy = {
   uploadDone: 'Done',
   uploadFailed: 'Failed',
   formatUploadProgress: (percent) => `Uploading ${percent}%`,
+  uploadDoneReused: 'Done (reused the existing file)',
+  uploadDoneExisting: 'Already in the library',
+  uploadDoneMembershipAdded: 'Added to this library',
+  uploadDoneDeactivated: 'Exists but is deactivated; restore it first',
+  uploadSkipped: 'Skipped',
+  uploadSkippedReason: 'Not a supported audio file',
+  formatUploadDuplicateHint: (titles) => `Possible duplicate of ${titles.join(', ')}`,
   tracksHeading: 'Tracks',
   searchPlaceholder: 'Search title, artist or key',
   filterAllLibraries: 'All libraries',
@@ -164,7 +185,8 @@ const enCopy: MusicAdminCopy = {
   confirmDeactivateTrack: 'A deactivated track can be restored; its media file is kept.',
   confirmDeactivateLibrary: 'Before deactivating a library, choose where its tracks should go.',
   deleteAction: 'Delete permanently',
-  deleteTrackConfirm: 'This cannot be undone: the track, its memberships and its media file are removed.',
+  deleteTrackConfirm:
+    'This cannot be undone: the track and its memberships are removed. Its media file is kept for the cleanup pass.',
   deleteLibraryConfirm: 'Only a library without tracks can be deleted; this cannot be undone.',
   actionDeleteConfirm: 'Delete for good',
 };

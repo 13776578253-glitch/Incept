@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest';
 
-import { parseMusicManifest, resolveMusicManifest } from '../import-runner';
+import { parseMusicManifest, planMusicMirrorCleanup, resolveMusicManifest } from '../import-runner';
 
 function manifestWith(trackOverrides: Record<string, unknown> = {}, libraries?: unknown) {
   const track = {
@@ -100,4 +100,42 @@ it('rejects duplicate, malformed or unordered library declarations', () => {
     parseMusicManifest(manifestWith({}, [{ key: '音乐', title: '音乐', position: 1.5 }])),
   ).toThrow(/"position" must be an integer/u);
   expect(() => parseMusicManifest(manifestWith({}, 'nope'))).toThrow(/"libraries" must be an array/u);
+});
+
+// 清理入口的候选规则：只有内容寻址命名、且没有任何行引用的文件才算孤儿
+const orphanHash = 'b'.repeat(64);
+const referencedHash = 'a'.repeat(64);
+
+it('lists only content-addressed mirror files that no row references', () => {
+  const orphans = planMusicMirrorCleanup({
+    mirrorNames: [
+      `${referencedHash}.mp3`,
+      `${orphanHash}.flac`,
+      '10d14a1b-ff91-4dfd-adf3-59ab8746bb01.upload.tmp',
+      'cover.jpg',
+      `${'c'.repeat(64)}.ogg`,
+    ],
+    audioUrls: [`/_music-media/${referencedHash}.mp3`, 'https://cdn.example.com/track.mp3'],
+  });
+
+  expect(orphans).toEqual([`${orphanHash}.flac`]);
+});
+
+it('treats a mirror file no row has a URL for as an orphan, whatever the row state', () => {
+  // 调用方传入的是全部行（含停用行）的 audioUrl：只要还有行引用，就不是孤儿
+  const orphans = planMusicMirrorCleanup({
+    mirrorNames: [`${referencedHash}.mp3`, `${orphanHash}.wav`],
+    audioUrls: [`/_music-media/${referencedHash}.mp3`, 'not-a-mirror-url'],
+  });
+
+  expect(orphans).toEqual([`${orphanHash}.wav`]);
+});
+
+it('reports nothing to clean when every mirror file is referenced', () => {
+  expect(
+    planMusicMirrorCleanup({
+      mirrorNames: [`${referencedHash}.mp3`],
+      audioUrls: [`/_music-media/${referencedHash}.mp3`],
+    }),
+  ).toEqual([]);
 });

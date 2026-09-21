@@ -266,7 +266,14 @@ export function MusicAdminPanel({ locale, data }: { locale: string; data: MusicA
         onSelectLibrary={setPreferredLibrary}
         ensureLibrary={ensureLibrary}
         onUploaded={(track) => {
-          setState((current) => ({ ...current, tracks: sortTracks([...current.tracks, track]) }));
+          // 同名替换而不是直接追加
+          setState((current) => ({
+            ...current,
+            tracks: sortTracks([
+              ...current.tracks.filter((entry) => entry.trackKey !== track.trackKey),
+              track,
+            ]),
+          }));
         }}
       />
 

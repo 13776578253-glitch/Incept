@@ -3,17 +3,15 @@ import {
   listAllMusicTracks,
   listMusicLibraryMemberships,
 } from '@incept/db/music';
-import { parseFile } from 'music-metadata';
 
-import { deriveMusicLibraryKey, deriveMusicTrackKey } from './music-key';
+import { deriveMusicLibraryKey } from './music-key';
 
 export type MusicAdminLibrary = {
   key: string;
   title: string;
   position: number;
   isActive: boolean;
-  // 归属该库的曲目数（含停用曲目，界面上要能看见）
-  memberCount: number;
+  memberCount: number;   // 归属该库的曲目数 /含停用曲目
 };
 
 export type MusicAdminTrack = {
@@ -92,35 +90,6 @@ export async function readMusicAdminData(): Promise<MusicAdminData> {
       tracks: [],
     };
   }
-}
-
-// 上传后的标签读取：读不到就是 null，界面上再补，绝不因此拒绝一次上传
-export async function readUploadedAudioMetadata(storedPath: string): Promise<{
-  title: string | null;
-  artist: string | null;
-  durationSeconds: number | null;
-}> {
-  try {
-    const metadata = await parseFile(storedPath);
-    const title = metadata.common.title?.trim();
-    const artist = metadata.common.artist?.trim();
-    const duration = metadata.format.duration;
-
-    return {
-      title: title ? title : null,
-      artist: artist ? artist : null,
-      durationSeconds:
-        typeof duration === 'number' && Number.isFinite(duration) && duration > 0
-          ? Math.round(duration)
-          : null,
-    };
-  } catch {
-    return { title: null, artist: null, durationSeconds: null };
-  }
-}
-
-export function trackKeyForUpload(filename: string, existingTrackKeys: string[]): string {
-  return deriveMusicTrackKey(filename, new Set(existingTrackKeys));
 }
 
 export function libraryKeyForName(name: string, existingLibraryKeys: string[]): string {

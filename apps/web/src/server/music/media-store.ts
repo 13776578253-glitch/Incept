@@ -21,10 +21,49 @@ const musicAudioFormats = {
   '.flac': 'audio/flac',
 } as const;
 
-type MusicAudioExtension = keyof typeof musicAudioFormats;
+export type MusicAudioExtension = keyof typeof musicAudioFormats;
 
 export type MusicMediaMode = 'publish' | 'dry-run';
 export type MusicMediaStatus = 'publish' | 'reuse';
+
+// 目标文件是不是就是本次这份字节：文件名本身就是内容哈希，但仍然重新读一遍再算一次哈希。
+// 只比尺寸的话，外部把文件换成"尺寸相同的错误内容"时会被判成完好，服务端会一直把坏文件发出去。
+async function readMusicMediaHash(targetPath: string): Promise<string | null> {
+  const existing = await fs.readFile(targetPath).catch(() => null);
+
+  return existing === null ? null : crypto.createHash('sha256').update(existing).digest('hex');
+}
+
+const musicPublishAttempts = 3;
+
+// 把临时文件放到最终位置。两个并发上传同一份内容时，这个"先删再改名"会和对方的改名打架
+// （Windows 上 rename 覆盖已存在的文件直接 EPERM）：失败后重新哈希目标，已经是同一份就当对方赢了、按复用收场，否则再试一次。
+async function publishMusicTempFile(input: {
+  tempPath: string;
+  targetPath: string;
+  hash: string;
+}): Promise<MusicMediaStatus> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await fs.rm(input.targetPath, { force: true });
+      await fs.rename(input.tempPath, input.targetPath);
+
+      return 'publish';
+    } catch (error) {
+      if ((await readMusicMediaHash(input.targetPath)) === input.hash) {
+        await fs.rm(input.tempPath, { force: true });
+
+        return 'reuse';
+      }
+
+      if (attempt >= musicPublishAttempts) {
+        // 彻底失败也要把临时文件收走：错误交给调用方，镜像目录里不留垃圾
+        await fs.rm(input.tempPath, { force: true });
+        throw error;
+      }
+    }
+  }
+}
 
 export type MusicSourceInfo = {
   sourcePath: string;
@@ -45,10 +84,9 @@ export function isMusicAudioExtension(extension: string): extension is MusicAudi
   return Object.prototype.hasOwnProperty.call(musicAudioFormats, extension.toLowerCase());
 }
 
-export function musicAudioMimeType(extension: string): string | null {
-  const normalized = extension.toLowerCase();
-
-  return isMusicAudioExtension(normalized) ? musicAudioFormats[normalized] : null;
+// 白名单的文案只有一份：上传路由要在读请求体之前就拒绝，store 里保留同一道检查作为兜底
+export function musicAudioExtensionError(extension: string): string {
+  return `Unsupported music file extension "${extension || '(none)'}". Allowed: ${Object.keys(musicAudioFormats).join(', ')}.`;
 }
 
 // 镜像目录与文件名的唯一来源：清单导入（publishMusicMedia）与网页上传（storeMusicUpload）共用
@@ -165,7 +203,8 @@ export async function publishMusicMedia({
 }
 
 // history：删除镜像里的一个文件：只接受镜像目录下的裸文件名，任何路径成分都拒绝 / 内容寻址 文件名就是哈希，因此这里负责"文件能不能删"，由调用方先确认没有行再引用它
-export async function removeMusicMediaByUrl(url: string): Promise<boolean> {
+// 目录可注入，便于用临时目录测试；生产调用走默认镜像目录（清理入口）
+export async function removeMusicMediaByUrl(url: string, directory?: string): Promise<boolean> {
   const prefix = `${musicMediaPublicPath}/`;
   const fileName = url.startsWith(prefix) ? url.slice(prefix.length) : '';
 
@@ -173,9 +212,9 @@ export async function removeMusicMediaByUrl(url: string): Promise<boolean> {
     return false;
   }
 
-  const directory = musicMediaMirrorDirectory();
-  const targetPath = path.join(directory, fileName);
-  const relative = path.relative(directory, targetPath);
+  const mirror = directory ?? musicMediaMirrorDirectory();
+  const targetPath = path.join(mirror, fileName);
+  const relative = path.relative(mirror, targetPath);
 
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
     return false;
@@ -213,14 +252,14 @@ export async function storeMusicUpload(input: {
   directory?: string;
   // 可注入，便于测试超限路径；默认沿用镜像上限
   maxBytes?: number;
+  // 落盘前的最终校验：拿到临时文件后确认它真的是音频，并返回真实格式。
+  // 抛错时临时文件会被删掉，垃圾文件绝不进入镜像目录；返回的扩展名用于命名与 MIME，因此"按真实格式存储"
+  resolveExtension?: (tempPath: string) => Promise<MusicAudioExtension>;
 }): Promise<MusicUploadResult> {
   const extension = path.extname(input.filename).toLowerCase();
-  const mimeType = musicAudioMimeType(extension);
 
-  if (mimeType === null) {
-    throw new Error(
-      `Unsupported music file extension "${extension || '(none)'}". Allowed: ${Object.keys(musicAudioFormats).join(', ')}.`,
-    );
+  if (!isMusicAudioExtension(extension)) {
+    throw new Error(musicAudioExtensionError(extension));
   }
 
   const directory = input.directory ?? musicMediaMirrorDirectory();
@@ -256,28 +295,35 @@ export async function storeMusicUpload(input: {
     throw error;
   }
 
+  let storedExtension: MusicAudioExtension = extension;
+
+  if (input.resolveExtension) {
+    try {
+      storedExtension = await input.resolveExtension(tempPath);
+    } catch (error) {
+      await fs.rm(tempPath, { force: true });
+      throw error;
+    }
+  }
+
   const hash = digest.digest('hex');
-  const fileName = musicMediaFileName(hash, extension);
+  const fileName = musicMediaFileName(hash, storedExtension);
   const targetPath = path.join(directory, fileName);
   const targetUrl = `${musicMediaPublicPath}/${fileName}`;
+  const mimeType = musicAudioFormats[storedExtension];
 
-  const existing = await fs.stat(targetPath).catch(() => null);
-
-  // 文件名就是内容哈希：同尺寸即视为同一份字节，不再做第二次整文件哈希
-  if (existing && existing.size === size) {
+  if ((await readMusicMediaHash(targetPath)) === hash) {
     await fs.rm(tempPath, { force: true });
 
     return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status: 'reuse' };
   }
 
-  // 目标不存在，或存在但尺寸不符（截断/损坏）：用这次的字节替换它
-  await fs.rm(targetPath, { force: true });
-  await fs.rename(tempPath, targetPath);
+  const status = await publishMusicTempFile({ tempPath, targetPath, hash });
 
-  return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status: 'publish' };
+  return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status };
 }
 
-// 把整个上传体读进内存：整体解密/解析的输入（NCM）走这条路，普通音频仍然流式落盘
+// 整个上传体读进内存：整体解密/解析的输入（NCM）/普通音频流式落盘
 export async function readMusicUploadBytes(input: {
   stream: ReadableStream<Uint8Array>;
   maxBytes?: number;
@@ -306,21 +352,21 @@ export async function readMusicUploadBytes(input: {
   return Buffer.concat(chunks);
 }
 
-// 存一份已经在内存里解密好的音频：与 storeMusicUpload 共用同一套内容寻址语义（同内容同尺寸即复用，否则先写临时文件再原子改名）
+// 存一份已经在内存里解密好的音频：与 storeMusicUpload 共用同一套内容寻址语义（目标重新哈希后一致才复用，否则先写临时文件再原子改名）
+// validate 在发布之前跑，和普通上传的 resolveExtension 同一套"先验后发"：解码结果只有魔数对、解析不出音频流时，镜像里不会留下任何东西
 export async function storeMusicAudioBytes(input: {
   bytes: Buffer;
   extension: string;
   directory?: string;
+  validate?: (tempPath: string) => Promise<void>;
 }): Promise<MusicUploadResult> {
   const extension = input.extension.toLowerCase();
-  const mimeType = musicAudioMimeType(extension);
 
-  if (mimeType === null) {
-    throw new Error(
-      `Unsupported music file extension "${extension || '(none)'}". Allowed: ${Object.keys(musicAudioFormats).join(', ')}.`,
-    );
+  if (!isMusicAudioExtension(extension)) {
+    throw new Error(musicAudioExtensionError(extension));
   }
 
+  const mimeType = musicAudioFormats[extension];
   const directory = input.directory ?? musicMediaMirrorDirectory();
   await fs.mkdir(directory, { recursive: true });
 
@@ -329,22 +375,31 @@ export async function storeMusicAudioBytes(input: {
   const targetPath = path.join(directory, fileName);
   const targetUrl = `${musicMediaPublicPath}/${fileName}`;
   const size = input.bytes.byteLength;
-  const existing = await fs.stat(targetPath).catch(() => null);
-
-  if (existing && existing.size === size) {
-    return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status: 'reuse' };
-  }
-
   const tempPath = path.join(directory, `${crypto.randomUUID()}.upload.tmp`);
 
   try {
     await fs.writeFile(tempPath, input.bytes, { flag: 'wx' });
-    await fs.rm(targetPath, { force: true });
-    await fs.rename(tempPath, targetPath);
   } catch (error) {
     await fs.rm(tempPath, { force: true });
     throw error;
   }
 
-  return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status: 'publish' };
+  if (input.validate) {
+    try {
+      await input.validate(tempPath);
+    } catch (error) {
+      await fs.rm(tempPath, { force: true });
+      throw error;
+    }
+  }
+
+  if ((await readMusicMediaHash(targetPath)) === hash) {
+    await fs.rm(tempPath, { force: true });
+
+    return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status: 'reuse' };
+  }
+
+  const status = await publishMusicTempFile({ tempPath, targetPath, hash });
+
+  return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status };
 }

@@ -168,3 +168,42 @@ it('warns when content changes under an unchanged trackKey', () => {
   expect(plan.warnings[0]).toMatch(/content changed under an unchanged trackKey "demo-01"/u);
   expect(plan.trackUpdates).toHaveLength(1);
 });
+
+it('refuses a manifest that assigns the same content to two tracks', () => {
+  expect(() =>
+    planMusicImport({
+      libraries: null,
+      tracks: [trackEntry(), trackEntry({ trackKey: 'demo-02' })],
+      existing: { tracks: [], libraries: [libraryRecord()], memberships: [] },
+    }),
+  ).toThrow(/one trackKey per piece of content/u);
+});
+
+it('refuses a manifest entry whose content is still held by a row outside the manifest', () => {
+  expect(() =>
+    planMusicImport({
+      libraries: null,
+      tracks: [trackEntry({ trackKey: 'fresh', contentHash: 'hash-1' })],
+      existing: {
+        tracks: [trackRecord({ trackKey: 'demo-01', contentHash: 'hash-1' })],
+        libraries: [libraryRecord()],
+        memberships: [],
+      },
+    }),
+  ).toThrow(/"fresh" and "demo-01"|"demo-01" and "fresh"/u);
+});
+
+it('accepts a manifest that keeps one trackKey per piece of content', () => {
+  const plan = planMusicImport({
+    libraries: null,
+    tracks: [trackEntry({ trackKey: 'fresh', contentHash: 'hash-9' })],
+    existing: {
+      tracks: [trackRecord({ trackKey: 'other', contentHash: 'hash-1' })],
+      libraries: [libraryRecord()],
+      memberships: [],
+    },
+  });
+
+  expect(plan.trackCreates).toHaveLength(1);
+  expect(plan.trackDeactivations).toEqual(['other']);
+});

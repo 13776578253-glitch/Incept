@@ -1,7 +1,13 @@
 export { importMusicCatalog } from './import';
 export {
+  deriveMusicLibraryKey,
+  deriveMusicTrackKey,
+  slugifyMusicKey,
+  titleFromFileName,
+  uniqueMusicKey,
+} from './keys';
+export {
   createMusicLibrary,
-  createMusicTrack,
   deleteMusicLibrary,
   deleteMusicTrack,
   planMusicLibraryCreate,
@@ -14,6 +20,12 @@ export {
 } from './manage';
 export { planMusicImport } from './plan';
 export {
+  findMusicDuplicateCandidates,
+  isMusicUniqueConflict,
+  planMusicUploadDecision,
+  uploadMusicTrack,
+} from './upload';
+export {
   listActiveMusicCatalog,
   listActiveMusicTracks,
   listAllMusicLibraries,
@@ -22,8 +34,14 @@ export {
 } from './queries/list';
 
 export type { MusicCatalogRecord, MusicCatalogTrackRecord } from './queries/list';
-export type { MusicLibraryPatch, MusicTrackDeletion, MusicTrackPatch, MusicTrackWrite } from './manage';
+export type { MusicLibraryPatch, MusicTrackPatch } from './manage';
 export type { ExistingMusicState, MusicImportMode, MusicImportPlan, MusicImportPlanInput } from './plan';
+export type {
+  MusicDuplicateHint,
+  MusicUploadDecision,
+  MusicUploadOutcome,
+  MusicUploadStatus,
+} from './upload';
 export type {
   MusicImportSummary,
   MusicLibraryImportEntry,

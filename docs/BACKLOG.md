@@ -123,7 +123,9 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 
 - Source: `apps/web/src/server/music/`, `apps/web/src/features/settings/music/`
 - Status: Open. Registered when authoring moved to the web; each item is a deliberate boundary, not an oversight.
-- **Deactivating keeps every byte; deleting takes one row at a time.** The row's right-click menu now erases a track for good (row, memberships, and its mirror file when nothing else references it) or an empty library, but there is still **no bulk cleanup**: `pnpm music:import --validate` reports unreferenced mirror files, and a dry-run cleanup entry for them remains the follow-up.
+- **Deactivating keeps every byte; nothing in a request deletes media.** A track's right-click menu removes the row and its memberships (2026-09-21) and keeps the file; a failed upload keeps its published file too. Reclamation is one entry point, `pnpm music:cleanup` (`--apply`), added 2026-09-21 and meant to run while nothing is uploading; `pnpm music:import --validate` still reports the same unreferenced files inside its manifest comparison.
+- **What remains of that gap:** the cleanup entry's "no writers running" precondition is an operator promise rather than a check, and `.upload.tmp` files left by an interrupted process are never reclaimed automatically (they are outside the cleanup scope, because a temp file may belong to a live upload).
+- **The upload path is validated and deduped by content.** Since 2026-09-21 the bytes decide the format (sniff + parse, stored under the real format), identical bytes reuse one row (`existing` / `membership-added` / `deactivated`), and `contentHash` is unique in the database. Similar-but-different content is hinted at, never merged (B-23). A legacy row with a `NULL` hash is never matched.
 - **Uploads have no resume, no chunking and no transcoding**, and the 128 MB cap is hard — a failed large flac/wav upload starts over.
 - **Every edit is its own request with no concurrency guard**: owner-only, one transaction per request, later write wins. A second editor or a stale tab can silently overwrite an earlier edit.
 - **Order is the track's own `position`**: a track in two libraries shares one order, and the arrow buttons are the only affordance (no drag-and-drop, no bulk edit).
@@ -131,12 +133,21 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 
 ### B-22 Music Metadata Recognition
 
-- Source: `apps/web/src/server/music/music-admin.ts` (`readUploadedAudioMetadata`), `scripts/music-import.mjs`
+- Source: `apps/web/src/server/music/audio-inspection.ts` (`inspectUploadedAudio`), `scripts/music-import.mjs`
 - Status: Open. Registered on 2026-09-20, when the panel stopped offering hand editing of track titles and artists: a missing value renders as the copy's `unknownValue` (`—`), and the answer to a wrong or missing one is better recognition rather than a text field.
 - Today the read is `music-metadata`'s `common.title` / `common.artist`, with the file name as the title fallback. The real files here carry no artist tag and a title that already reads `artist, artist   title` (`GUMI,一之瀬ユウ   心做し`), so the panel shows an artist dash and a title with the performers glued on.
 - Candidates: split a title that carries that shape, fall back to `albumartist` and the other tag frames before giving up, and report per-run recognition counts so a batch can be judged. A split rewrites what the player displays, so it must be reviewable and opt-in.
 - **New NetEase imports already read correctly.** An `.ncm` upload takes `musicName` and `artist` from the container (see [music-authoring-in-the-web.md](./decisions/en/music-authoring-in-the-web.md)), so the songs imported before that support still carry the glued tag title and a blank artist. Re-uploading the original `.ncm` produces a correct row, and the stale one can be removed with the row's right-click delete — which is the practical fix today; the heuristics above stay the answer for non-NetEase sources.
 - The web is no longer the place to fix a wrong value by hand; the API still accepts `title` / `artist` on `PATCH /api/internal/music/tracks/[trackKey]` with no caller — decide whether to trim it when this lands.
+
+### B-23 Same-Song Detection Beyond Exact Bytes
+
+- Source: `packages/db/src/music/upload.ts` (`findMusicDuplicateCandidates`), `apps/web/src/server/music/manifest-builder.ts`, `scripts/music-import.mjs`
+- Status: Open. Registered on 2026-09-21, when uploads started deduping by `contentHash`: identical bytes became one row, and everything else is only hinted at.
+- **The hint is deliberately shallow.** A created track reports existing rows whose normalized title matches (or is a token subsequence of the other side), whose artist does not conflict, and whose duration is within `max(3 s, 5 %)`. It is display-only: nothing merges, no "same song" relation is stored, and the list is not scanned when it merely renders.
+- **An audio fingerprint is the real answer.** A Chromaprint (or similar) value would recognise different encodings of one song without string guessing; it needs a decode step, a stored fingerprint, and a review surface, so it stays a follow-up.
+- **The manifest builder can still emit duplicate content.** Two manifest entries pointing at byte-identical files (the same song copied into two library folders, for example) now make `pnpm music:import` refuse the manifest with both `trackKey`s named. Folding them into one key plus memberships in the generator is the other half.
+- **Nothing scans the existing library.** The hints run on upload only; a one-off "find near-duplicates in the table" view would need the same rules surfaced in the admin read.
 
 ## Review Before Any Code Decision
 

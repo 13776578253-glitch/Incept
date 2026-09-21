@@ -15,7 +15,7 @@ function nextPosition(rows: Array<{ position: number }>): number {
   return rows.reduce((highest, row) => Math.max(highest, row.position), 0) + 1;
 }
 
-function resolveLibraryId(libraryIdByKey: Map<string, string>, key: string): string {
+export function resolveLibraryId(libraryIdByKey: Map<string, string>, key: string): string {
   const id = libraryIdByKey.get(key);
 
   if (!id) {
@@ -198,18 +198,14 @@ export function planMusicLibraryUpdate(input: {
   return { moveMembersTo: null };
 }
 
-export type MusicTrackDeletion = {
-  trackKey: string;
-  // 没有任何行（含停用行）再引用同一个镜像文件时才非空：文件由调用方删除，数据层不碰文件系统
-  mediaUrl: string | null;
-};
-
-// 永久删除：行与成员关系直接删掉，不像停用那样留痕 / 文件是否还能删由调用方按 mediaUrl 判断
-export async function deleteMusicTrack(input: { trackKey: string }): Promise<MusicTrackDeletion> {
+// 永久删除：行与成员关系直接删掉，不像停用那样留痕。
+// 镜像文件：不在这里、也不在调用方 删除：并发上传可能正在复用同一份文件，请求路径里删它就会留下指向已删文件的行。
+// 无引用的媒体由清理入口（`pnpm music:cleanup`）在没有写入者时回收。
+export async function deleteMusicTrack(input: { trackKey: string }): Promise<{ trackKey: string }> {
   return prisma.$transaction(async (transaction) => {
     const track = await transaction.musicTrack.findUnique({
       where: { trackKey: input.trackKey },
-      select: { id: true, trackKey: true, audioUrl: true },
+      select: { id: true, trackKey: true },
     });
 
     if (!track) {
@@ -219,14 +215,7 @@ export async function deleteMusicTrack(input: { trackKey: string }): Promise<Mus
     await transaction.musicLibraryItem.deleteMany({ where: { trackId: track.id } });
     await transaction.musicTrack.delete({ where: { id: track.id } });
 
-    const stillReferenced = await transaction.musicTrack.count({
-      where: { audioUrl: track.audioUrl },
-    });
-
-    return {
-      trackKey: track.trackKey,
-      mediaUrl: stillReferenced === 0 ? track.audioUrl : null,
-    };
+    return { trackKey: track.trackKey };
   });
 }
 
@@ -251,61 +240,6 @@ export async function deleteMusicLibrary(input: { key: string }): Promise<{ key:
     await transaction.musicLibrary.delete({ where: { id: library.id } });
 
     return { key: library.key };
-  });
-}
-
-export type MusicTrackWrite = {
-  trackKey: string;
-  title: string;
-  artist: string | null;
-  durationSeconds: number | null;
-  audioUrl: string;
-  contentHash: string;
-  mimeType: string;
-  fileSize: number;
-  libraryKeys: string[];
-};
-
-export async function createMusicTrack(input: MusicTrackWrite): Promise<MusicCatalogTrackRecord> {
-  return prisma.$transaction(async (transaction) => {
-    const [tracks, libraries] = await Promise.all([
-      transaction.musicTrack.findMany({ select: musicTrackSelection }),
-      transaction.musicLibrary.findMany({ select: musicLibrarySelection }),
-    ]);
-
-    const { position } = planMusicTrackCreate({
-      trackKey: input.trackKey,
-      libraryKeys: input.libraryKeys,
-      tracks,
-      libraries,
-    });
-
-    const libraryIdByKey = new Map(libraries.map((library) => [library.key, library.id]));
-
-    const created = await transaction.musicTrack.create({
-      data: {
-        trackKey: input.trackKey,
-        title: input.title.trim(),
-        artist: input.artist,
-        durationSeconds: input.durationSeconds,
-        audioUrl: input.audioUrl,
-        contentHash: input.contentHash,
-        mimeType: input.mimeType,
-        fileSize: input.fileSize,
-        position,
-        isActive: true,
-      },
-      select: musicTrackSelection,
-    });
-
-    await transaction.musicLibraryItem.createMany({
-      data: input.libraryKeys.map((key) => ({
-        libraryId: resolveLibraryId(libraryIdByKey, key),
-        trackId: created.id,
-      })),
-    });
-
-    return { ...created, libraries: [...input.libraryKeys] };
   });
 }
 

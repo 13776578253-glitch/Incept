@@ -261,7 +261,8 @@ model DocsCollectionItemLocale {
 //
 // trackKey 表示内容身份，由 music.json 清单显式提供，不从文件名或哈希推导；
 // audioUrl 表示当前发布位置，只存站点 URL，绝不存本机绝对路径；
-// contentHash / mimeType / fileSize 描述当前文件，便于导入校验与将来迁移到对象存储
+// contentHash / mimeType / fileSize 描述当前文件，便于导入校验与将来迁移到对象存储；
+// contentHash 唯一：一段字节只对应一行，网页上传按它去重（命中就复用行并补归属），旧数据没有哈希时为 NULL，可重复
 // position 允许重复，排序固定为 position ASC, id ASC（配合 isActive 过滤与下方索引）
 model MusicTrack {
   id              String    @id @default(cuid())
@@ -269,7 +270,7 @@ model MusicTrack {
   title           String
   artist          String?
   audioUrl        String
-  contentHash     String?
+  contentHash     String?   @unique
   mimeType        String?
   fileSize        Int?
   durationSeconds Int?

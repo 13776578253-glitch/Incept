@@ -1,14 +1,18 @@
 'use client';
 
+import type { MusicDuplicateHint } from '@incept/db/music';
 import { useRef, useState } from 'react';
 
 import type { MusicAdminLibrary, MusicAdminTrack } from '@/server/music/music-admin';
 
 import type { MusicAdminCopy } from './music-admin-copy';
+import { partitionMusicUploadFiles } from './music-upload-filter';
 import { MusicSelect } from './music-select';
-import { uploadMusicFile } from './music-upload-client';
+import { uploadMusicFile, type UploadResult } from './music-upload-client';
 
 type UploadItemStatus = 'queued' | 'uploading' | 'done' | 'failed';
+
+type UploadItemNote = 'uploaded' | 'reused' | 'existing' | 'membership-added' | 'deactivated';
 
 type UploadItem = {
   id: string;
@@ -16,6 +20,13 @@ type UploadItem = {
   status: UploadItemStatus;
   percent: number;
   error: string | null;
+  note: UploadItemNote | null;
+  duplicates: MusicDuplicateHint[];
+};
+
+type SkippedItem = {
+  id: string;
+  filename: string;
 };
 
 type MusicUploadZoneProps = {
@@ -41,6 +52,35 @@ function folderNameOf(file: File): string | null {
   return match ? match[2] : segment;
 }
 
+function itemId(filename: string): string {
+  return `${filename}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function noteOf(result: UploadResult): UploadItemNote {
+  if (result.trackStatus === 'existing') return 'existing';
+  if (result.trackStatus === 'membership-added') return 'membership-added';
+  if (result.trackStatus === 'deactivated') return 'deactivated';
+
+  return result.mediaStatus === 'reused' ? 'reused' : 'uploaded';
+}
+
+function formatNote(item: UploadItem, copy: MusicAdminCopy): string {
+  const label =
+    item.note === 'reused'
+      ? copy.uploadDoneReused
+      : item.note === 'existing'
+        ? copy.uploadDoneExisting
+        : item.note === 'membership-added'
+          ? copy.uploadDoneMembershipAdded
+          : item.note === 'deactivated'
+            ? copy.uploadDoneDeactivated
+            : copy.uploadDone;
+
+  if (item.duplicates.length === 0) return label;
+
+  return `${label} · ${copy.formatUploadDuplicateHint(item.duplicates.map((hint) => hint.title))}`;
+}
+
 export function MusicUploadZone({
   copy,
   libraries,
@@ -52,6 +92,7 @@ export function MusicUploadZone({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<UploadItem[]>([]);
+  const [skipped, setSkipped] = useState<SkippedItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -65,10 +106,7 @@ export function MusicUploadZone({
   const runUploads = async (jobs: Array<{ file: File; libraryKey: string }>) => {
     if (jobs.length === 0) return;
 
-    const entries = jobs.map((job) => ({
-      ...job,
-      id: `${job.file.name}-${job.file.size}-${Math.random().toString(36).slice(2, 8)}`,
-    }));
+    const entries = jobs.map((job) => ({ ...job, id: itemId(job.file.name) }));
 
     setItems((current) => [
       ...current,
@@ -78,6 +116,8 @@ export function MusicUploadZone({
         status: 'queued' as const,
         percent: 0,
         error: null,
+        note: null,
+        duplicates: [] as MusicDuplicateHint[],
       })),
     ]);
     setIsUploading(true);
@@ -90,7 +130,12 @@ export function MusicUploadZone({
           onProgress: (percent) => updateItem(entry.id, { percent }),
         });
 
-        updateItem(entry.id, { status: 'done', percent: 100 });
+        updateItem(entry.id, {
+          status: 'done',
+          percent: 100,
+          note: noteOf(result),
+          duplicates: result.duplicates,
+        });
         onUploaded(result.track);
       } catch (error) {
         updateItem(entry.id, {
@@ -106,9 +151,21 @@ export function MusicUploadZone({
   const handleFileList = async (files: File[]) => {
     if (files.length === 0 || !canUpload) return;
 
+    // 白名单之外的先分流：列进「已跳过」而不是静默丢弃，不参与建库与上传
+    const { candidates, skipped: skippedFiles } = partitionMusicUploadFiles(files);
+
+    if (skippedFiles.length > 0) {
+      setSkipped((current) => [
+        ...current,
+        ...skippedFiles.map((file) => ({ id: itemId(file.name), filename: file.name })),
+      ]);
+    }
+
+    if (candidates.length === 0) return;
+
     const byFolder = new Map<string | null, File[]>();
 
-    for (const file of files) {
+    for (const file of candidates) {
       const folder = folderNameOf(file);
       byFolder.set(folder, [...(byFolder.get(folder) ?? []), file]);
     }
@@ -117,6 +174,7 @@ export function MusicUploadZone({
 
     try {
       for (const [folder, folderFiles] of byFolder) {
+        // 只有含候选文件的目录才建库
         const libraryKey = folder === null ? selectedLibrary : await ensureLibrary(folder);
 
         for (const file of folderFiles) {
@@ -126,12 +184,14 @@ export function MusicUploadZone({
     } catch (error) {
       setItems((current) => [
         ...current,
-        ...files.map((file) => ({
-          id: `${file.name}-failed`,
+        ...candidates.map((file) => ({
+          id: itemId(file.name),
           filename: file.name,
           status: 'failed' as const,
           percent: 0,
           error: error instanceof Error ? error.message : String(error),
+          note: null,
+          duplicates: [] as MusicDuplicateHint[],
         })),
       ]);
 
@@ -231,6 +291,24 @@ export function MusicUploadZone({
         />
       </div>
 
+      {skipped.length > 0 ? (
+        <div className="rounded-[10px] border border-[var(--color-nav-dropdown-border)] px-3 py-2">
+          <p className="text-[0.75rem] font-medium text-[var(--color-text)]">
+            {copy.uploadSkipped} ({skipped.length})
+          </p>
+          <ul className="mt-1 space-y-1">
+            {skipped.map((entry) => (
+              <li key={entry.id} className="flex items-center gap-2 text-[0.75rem]">
+                <span className="min-w-0 flex-1 truncate text-[var(--color-nav-dropdown-description)]">
+                  {entry.filename}
+                </span>
+                <span className="text-[var(--color-nav-muted)]">{copy.uploadSkippedReason}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {items.length > 0 ? (
         <ul className="space-y-1">
           {items.map((item) => (
@@ -248,7 +326,7 @@ export function MusicUploadZone({
                   : item.status === 'uploading'
                     ? copy.formatUploadProgress(item.percent)
                     : item.status === 'done'
-                      ? copy.uploadDone
+                      ? formatNote(item, copy)
                       : `${copy.uploadFailed}${item.error ? `: ${item.error}` : ''}`}
               </span>
             </li>

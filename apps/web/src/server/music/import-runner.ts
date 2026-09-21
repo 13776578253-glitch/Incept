@@ -18,9 +18,14 @@ import type {
 
 import { parseFile } from 'music-metadata';
 
-import { findRepoRoot } from '../../features/docs/importer/paths';
 import { getMusicContentRoot } from './content-root';
-import { inspectMusicSource, musicMediaPublicPath, publishMusicMedia } from './media-store';
+import {
+  inspectMusicSource,
+  musicMediaMirrorDirectory,
+  musicMediaPublicPath,
+  publishMusicMedia,
+  removeMusicMediaByUrl,
+} from './media-store';
 import type { MusicMediaMode, MusicMediaOperation, MusicSourceInfo } from './media-store';
 
 const DEFAULT_LIBRARY_KEY = 'default';
@@ -410,7 +415,7 @@ export type MusicLibraryConsistencyInput = {
 };
 
 // 纯函数：清单与数据库在曲库上的差异：导入会怎么改，这里就报什么
-// 停用的声明库同样算"还没导入"：API 只发活跃库，成员关系却还在，界面会因此少一个库；标题与顺序的漂移也在这里报
+// 停用的声明库算"还没导入"：API 只发活跃库，成员关系却还在，界面会因此少一个库；标题与顺序的漂移也在这里报
 export function inspectMusicLibraryConsistency({
   plan,
   libraries,
@@ -534,13 +539,7 @@ export async function validateMusicMirror({
       .filter((name) => name !== ''),
   );
 
-  const mirrorDirectory = path.join(
-    findRepoRoot(),
-    'apps',
-    'web',
-    'public',
-    '_music-media',
-  );
+  const mirrorDirectory = musicMediaMirrorDirectory();
   const mirrorNames: string[] = await fs.readdir(mirrorDirectory).catch(() => []);
 
   for (const name of mirrorNames) {
@@ -599,4 +598,69 @@ export async function validateMusicMirror({
   issues.push(...inspectMusicLibraryConsistency({ plan, libraries, memberships, tracks: rows }));
 
   return issues;
+}
+
+// 清理入口：请求路径永远不删内容寻址媒体（并发上传可能正在复用同一份文件），
+// 无引用的文件由这里在"没有写入者"时回收。只有<64 位十六进制>.<扩展名>这种镜像自己的命名才算候选：
+// 临时文件可能属于正在进行的上传，外部文件也不是镜像产物，都不在清理范围内。
+const musicMediaFileNamePattern = /^[0-9a-f]{64}\.(mp3|wav|flac)$/u;
+
+export function planMusicMirrorCleanup(input: {
+  mirrorNames: string[];
+  audioUrls: string[];
+}): string[] {
+  const referencedNames = new Set(
+    input.audioUrls
+      .map((url) =>
+        url.startsWith(`${musicMediaPublicPath}/`)
+          ? url.slice(musicMediaPublicPath.length + 1)
+          : '',
+      )
+      .filter((name) => name !== ''),
+  );
+
+  return input.mirrorNames
+    .filter((name) => musicMediaFileNamePattern.test(name) && !referencedNames.has(name))
+    .sort();
+}
+
+export type MusicMirrorCleanupReport = {
+  orphans: string[];
+  mirrorFiles: number;
+  referencedFiles: number;
+};
+
+// 读取侧：镜像目录里的文件 vs 全部行（含停用行）引用的 URL
+export async function inspectMusicMirrorCleanup(): Promise<MusicMirrorCleanupReport> {
+  const rows = await listAllMusicTracks();
+  const mirrorNames: string[] = await fs.readdir(musicMediaMirrorDirectory()).catch(() => []);
+  const orphans = planMusicMirrorCleanup({
+    mirrorNames,
+    audioUrls: rows.map((row) => row.audioUrl),
+  });
+
+  return {
+    orphans,
+    mirrorFiles: mirrorNames.length,
+    referencedFiles: mirrorNames.length - orphans.length,
+  };
+}
+
+export async function applyMusicMirrorCleanup(input: {
+  orphans: string[];
+}): Promise<{ removed: string[]; failed: string[] }> {
+  const removed: string[] = [];
+  const failed: string[] = [];
+
+  for (const name of input.orphans) {
+    const deleted = await removeMusicMediaByUrl(`${musicMediaPublicPath}/${name}`);
+
+    if (deleted) {
+      removed.push(name);
+    } else {
+      failed.push(name);
+    }
+  }
+
+  return { removed, failed };
 }

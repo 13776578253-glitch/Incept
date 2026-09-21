@@ -17,6 +17,7 @@
     "music:mock-audio": "node scripts/music-mock-audio.mjs",
     "music:manifest": "pnpm --filter @incept/db exec tsx ../../scripts/music-manifest.mjs",
     "music:import": "pnpm --filter @incept/db exec tsx ../../scripts/music-import.mjs",
+    "music:cleanup": "pnpm --filter @incept/db exec tsx ../../scripts/music-cleanup.mjs",
     "docs:import": "pnpm --filter @incept/db exec tsx ../../scripts/docs-import.mjs",
     "docs:check-import-cli": "pnpm --filter @incept/db exec node ../../scripts/docs-import-cli-check.mjs",
     "docs:check-markdown-like": "pnpm --filter @incept/db exec tsx ../../scripts/docs-markdown-like-check.mjs",

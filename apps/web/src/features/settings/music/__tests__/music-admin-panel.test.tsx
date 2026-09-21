@@ -63,7 +63,6 @@ it('renders the upload zone, the libraries and the tracks', () => {
   expect(screen.getByLabelText('曲库 default')).toHaveValue('默认');
   expect(screen.getByText('演示曲目 01')).toBeInTheDocument();
   expect(screen.getByText('4:28')).toBeInTheDocument();
-  // 歌手没读到就显示占位符，而不是一个可以手改的空输入框
   expect(screen.getByText('-')).toBeInTheDocument();
 });
 
@@ -217,7 +216,12 @@ it('uploads a file and adds the returned track to the table', async () => {
     isActive: true,
   };
 
-  uploadMusicFile.mockResolvedValue({ track: uploaded, mediaStatus: 'publish' });
+  uploadMusicFile.mockResolvedValue({
+    track: uploaded,
+    mediaStatus: 'published',
+    trackStatus: 'created',
+    duplicates: [],
+  });
 
   const user = userEvent.setup();
 
@@ -233,6 +237,27 @@ it('uploads a file and adds the returned track to the table', async () => {
   await waitFor(() => expect(screen.getByText('上传曲目')).toBeInTheDocument());
 });
 
+it('updates the row a matched upload belongs to instead of adding a second one', async () => {
+  uploadMusicFile.mockResolvedValue({
+    track: { ...track, libraries: ['default', '精选'] },
+    mediaStatus: 'reused',
+    trackStatus: 'membership-added',
+    duplicates: [],
+  });
+
+  const user = userEvent.setup();
+
+  render(<MusicAdminPanel locale="zh" data={adminData()} />);
+
+  const file = new File([new Uint8Array([1])], 'demo-01.mp3', { type: 'audio/mpeg' });
+
+  await user.upload(screen.getByLabelText('选择文件'), file);
+
+  await waitFor(() => expect(screen.getByText('已加入该曲库')).toBeInTheDocument());
+
+  expect(screen.getAllByText('演示曲目 01')).toHaveLength(1);
+});
+
 it('deletes a track permanently only after the right-click confirmation', async () => {
   const fetchMock = stubFetch(200, { trackKey: 'demo-01', mediaRemoved: true });
   const user = userEvent.setup();
@@ -242,7 +267,6 @@ it('deletes a track permanently only after the right-click confirmation', async 
   fireEvent.contextMenu(screen.getByText('演示曲目 01'));
   await user.click(screen.getByRole('menuitem', { name: '永久删除' }));
 
-  // 第一下只是把确认按钮露出来，不会发请求
   expect(fetchMock).not.toHaveBeenCalled();
 
   await user.click(screen.getByRole('button', { name: '确认删除' }));

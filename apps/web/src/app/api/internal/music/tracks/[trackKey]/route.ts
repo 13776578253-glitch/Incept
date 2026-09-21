@@ -2,7 +2,6 @@ import { deleteMusicTrack, updateMusicTrack, type MusicTrackPatch } from '@incep
 import { NextResponse } from 'next/server';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
-import { removeMusicMediaByUrl } from '@/server/music/media-store';
 
 export const runtime = 'nodejs';
 
@@ -96,7 +95,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ track
   }
 }
 
-// 永久删除：行、成员关系与（没有别的行再引用的）镜像文件一起消失，与"停用"是两条路。
+// 永久删除：只删曲目行与成员关系，与"停用"是两条路。
+// 镜像文件刻意不在这里删：并发上传可能正在复用同一份文件，请求路径里删它就会留下指向已删文件的行；
+// 无引用的媒体由清理入口（`pnpm music:cleanup`）在没有写入者时回收。
 // 删除是不可撤销的，所以只由右键菜单里的二次确认触发。
 export async function DELETE(request: Request, context: { params: Promise<{ trackKey: string }> }) {
   if (!hasSameOrigin(request)) {
@@ -113,9 +114,8 @@ export async function DELETE(request: Request, context: { params: Promise<{ trac
 
   try {
     const deleted = await deleteMusicTrack({ trackKey });
-    const mediaRemoved = deleted.mediaUrl !== null && (await removeMusicMediaByUrl(deleted.mediaUrl));
 
-    return NextResponse.json({ trackKey: deleted.trackKey, mediaRemoved });
+    return NextResponse.json({ trackKey: deleted.trackKey });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'The track could not be deleted.' },

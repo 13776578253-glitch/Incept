@@ -1,6 +1,18 @@
 import type { MusicAdminTrack } from '@/server/music/music-admin';
+import type { MusicDuplicateHint } from '@incept/db/music';
 
-export type UploadResult = { track: MusicAdminTrack; mediaStatus: string };
+export type MusicUploadMediaStatus = 'published' | 'reused';
+export type MusicUploadTrackStatus = 'created' | 'existing' | 'membership-added' | 'deactivated';
+
+export type UploadResult = {
+  track: MusicAdminTrack;
+  // 镜像是新写下的（published）还是复用了已有文件（reused）
+  mediaStatus: MusicUploadMediaStatus;
+  // 曲目行是新建（created）还是命中已有内容（existing / membership-added / deactivated）——与媒体是否复用是两件事
+  trackStatus: MusicUploadTrackStatus;
+  // 标题/歌手/时长相近但内容不同：只提示，不合并
+  duplicates: MusicDuplicateHint[];
+};
 
 function readError(payload: string, fallback: string): string {
   try {
@@ -12,7 +24,7 @@ function readError(payload: string, fallback: string): string {
   }
 }
 
-// 上传用 XMLHttpRequest 而不是 fetch：只有它能报告上传进度 / 一个请求一个文件，请求体就是文件本身 / 服务端按流落盘，不整块进内存
+// 上传用 XMLHttpRequest ：报告上传进度 / 一个请求一个文件，请求体就是文件本身 / 服务端按流落盘，不整块进内存
 export function uploadMusicFile(
   file: File,
   libraryKey: string,

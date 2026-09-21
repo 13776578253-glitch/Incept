@@ -10,7 +10,8 @@ declare global {
 // history: bumped for add_music_track, which also covers the 2026-09-01 nested collection navigation
 // and the 2026-09-02 collection item active changes that had landed without a bump (BACKLOG B-10).
 // history: bumped again for add_music_libraries.
-const prismaSchemaRevision = '2026-09-17-add-music-libraries';
+// history: bumped again for add_music_content_hash_key.
+const prismaSchemaRevision = '2026-09-21-add-music-content-hash-key';
 const hasCurrentPrismaClient =
   globalThis.__inceptPrisma__ &&
   globalThis.__inceptPrismaSchemaRevision__ === prismaSchemaRevision;
