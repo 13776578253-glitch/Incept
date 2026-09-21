@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import type { MusicAdminLibrary, MusicAdminTrack } from '@/server/music/music-admin';
 
 import type { MusicAdminCopy } from './music-admin-copy';
+import { MusicSelect } from './music-select';
 import { uploadMusicFile } from './music-upload-client';
 
 type UploadItemStatus = 'queued' | 'uploading' | 'done' | 'failed';
@@ -26,7 +27,7 @@ type MusicUploadZoneProps = {
   onUploaded: (track: MusicAdminTrack) => void;
 };
 
-const ACCEPT = '.mp3,.wav,.flac,audio/mpeg,audio/wav,audio/flac';
+const ACCEPT = '.mp3,.wav,.flac,.ncm,audio/mpeg,audio/wav,audio/flac';
 
 function folderNameOf(file: File): string | null {
   const relative = (file as File & { webkitRelativePath?: string }).webkitRelativePath ?? '';
@@ -185,18 +186,18 @@ export function MusicUploadZone({
 
           <label className="ml-auto flex items-center gap-2 text-[0.75rem] text-[var(--color-nav-dropdown-description)]">
             {copy.uploadLibraryLabel}
-            <select
+            <MusicSelect
               value={selectedLibrary}
               disabled={!canUpload}
-              onChange={(event) => onSelectLibrary(event.target.value)}
-              className="min-h-9 rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-2 text-[0.8125rem] text-[var(--color-text)] outline-none disabled:opacity-50"
-            >
-              {activeLibraries.map((library) => (
-                <option key={library.key} value={library.key}>
-                  {library.title}
-                </option>
-              ))}
-            </select>
+              ariaLabel={copy.uploadLibraryLabel}
+              onChange={onSelectLibrary}
+              options={activeLibraries.map((library) => ({
+                value: library.key,
+                label: library.title,
+              }))}
+              className="min-w-[7.25rem]"
+              buttonClassName="h-9 text-[0.8125rem]"
+            />
           </label>
         </div>
 

@@ -14,8 +14,7 @@ export const musicMediaPublicPath = '/_music-media';
 // 镜像最大值 128 MB
 export const musicMediaMaxBytes = 128 * 1024 * 1024;
 
-// 扩展名统一转小写后成为文件名的一部分，因此"同内容不同扩展名"会被视为两个对象
-// 这是刻意的取舍：文件名完全由内容摘要与扩展名决定，避免扩展名归一化带来的歧义
+// history：扩展名统一转小写后成为文件名的一部分
 const musicAudioFormats = {
   '.mp3': 'audio/mpeg',
   '.wav': 'audio/wav',
@@ -135,8 +134,7 @@ export async function publishMusicMedia({
     hash,
   };
 
-  // 存在不等于正确：文件名是内容哈希，因此必须重新校验字节。
-  // 只检查存在会让损坏或被截断的文件被静默复用，而服务端会一直把这份坏文件发出去。
+  // history：重新校验字节，只检查存在会让损坏或被截断的文件被静默复用，而服务端会一直把这份坏文件发出去
   const existingBytes = await fs.readFile(targetPath).catch(() => null);
 
   if (existingBytes !== null) {
@@ -166,6 +164,34 @@ export async function publishMusicMedia({
   return operation;
 }
 
+// history：删除镜像里的一个文件：只接受镜像目录下的裸文件名，任何路径成分都拒绝 / 内容寻址 文件名就是哈希，因此这里负责"文件能不能删"，由调用方先确认没有行再引用它
+export async function removeMusicMediaByUrl(url: string): Promise<boolean> {
+  const prefix = `${musicMediaPublicPath}/`;
+  const fileName = url.startsWith(prefix) ? url.slice(prefix.length) : '';
+
+  if (fileName === '' || fileName !== path.basename(fileName)) {
+    return false;
+  }
+
+  const directory = musicMediaMirrorDirectory();
+  const targetPath = path.join(directory, fileName);
+  const relative = path.relative(directory, targetPath);
+
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return false;
+  }
+
+  const existing = await fs.stat(targetPath).catch(() => null);
+
+  if (existing === null) {
+    return false;
+  }
+
+  await fs.rm(targetPath, { force: true });
+
+  return true;
+}
+
 export type MusicUploadResult = {
   hash: string;
   fileName: string;
@@ -177,9 +203,9 @@ export type MusicUploadResult = {
   status: MusicMediaStatus;
 };
 
-// 网页上传：一个请求一个文件，请求体就是原始字节。
-// 边写临时文件边算哈希与计数，超过上限立刻中断——不能把 128 MB 读进内存。
-// 临时文件与目标同目录，因此最后的 rename 是原子的；失败一律删掉临时文件。
+// 网页上传：一个请求一个文件，请求体就是原始字节
+// 边写临时文件边算哈希与计数，超过上限立刻中断——不能把 128 MB 读进内存
+// 临时文件与目标同目录，因此最后的 rename 是原子的；失败一律删掉临时文件
 export async function storeMusicUpload(input: {
   stream: ReadableStream<Uint8Array>;
   filename: string;
@@ -247,6 +273,78 @@ export async function storeMusicUpload(input: {
   // 目标不存在，或存在但尺寸不符（截断/损坏）：用这次的字节替换它
   await fs.rm(targetPath, { force: true });
   await fs.rename(tempPath, targetPath);
+
+  return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status: 'publish' };
+}
+
+// 把整个上传体读进内存：整体解密/解析的输入（NCM）走这条路，普通音频仍然流式落盘
+export async function readMusicUploadBytes(input: {
+  stream: ReadableStream<Uint8Array>;
+  maxBytes?: number;
+}): Promise<Buffer> {
+  const maxBytes = input.maxBytes ?? musicMediaMaxBytes;
+  const chunks: Buffer[] = [];
+  let size = 0;
+
+  for await (const chunk of Readable.fromWeb(
+    input.stream as unknown as NodeReadableStream<Uint8Array>,
+  )) {
+    const buffer = Buffer.from(chunk as Uint8Array);
+    size += buffer.byteLength;
+
+    if (size > maxBytes) {
+      throw new Error(`The file exceeds the ${Math.round(maxBytes / (1024 * 1024))} MB limit.`);
+    }
+
+    chunks.push(buffer);
+  }
+
+  if (size === 0) {
+    throw new Error('The request carried no file.');
+  }
+
+  return Buffer.concat(chunks);
+}
+
+// 存一份已经在内存里解密好的音频：与 storeMusicUpload 共用同一套内容寻址语义（同内容同尺寸即复用，否则先写临时文件再原子改名）
+export async function storeMusicAudioBytes(input: {
+  bytes: Buffer;
+  extension: string;
+  directory?: string;
+}): Promise<MusicUploadResult> {
+  const extension = input.extension.toLowerCase();
+  const mimeType = musicAudioMimeType(extension);
+
+  if (mimeType === null) {
+    throw new Error(
+      `Unsupported music file extension "${extension || '(none)'}". Allowed: ${Object.keys(musicAudioFormats).join(', ')}.`,
+    );
+  }
+
+  const directory = input.directory ?? musicMediaMirrorDirectory();
+  await fs.mkdir(directory, { recursive: true });
+
+  const hash = crypto.createHash('sha256').update(input.bytes).digest('hex');
+  const fileName = musicMediaFileName(hash, extension);
+  const targetPath = path.join(directory, fileName);
+  const targetUrl = `${musicMediaPublicPath}/${fileName}`;
+  const size = input.bytes.byteLength;
+  const existing = await fs.stat(targetPath).catch(() => null);
+
+  if (existing && existing.size === size) {
+    return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status: 'reuse' };
+  }
+
+  const tempPath = path.join(directory, `${crypto.randomUUID()}.upload.tmp`);
+
+  try {
+    await fs.writeFile(tempPath, input.bytes, { flag: 'wx' });
+    await fs.rm(targetPath, { force: true });
+    await fs.rename(tempPath, targetPath);
+  } catch (error) {
+    await fs.rm(tempPath, { force: true });
+    throw error;
+  }
 
   return { hash, fileName, targetUrl, size, mimeType, storedPath: targetPath, status: 'publish' };
 }

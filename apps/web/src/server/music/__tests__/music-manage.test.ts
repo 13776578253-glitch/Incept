@@ -1,6 +1,7 @@
 // @vitest-environment node
 import {
   planMusicLibraryCreate,
+  planMusicLibraryDelete,
   planMusicLibraryUpdate,
   planMusicTrackCreate,
   planMusicTrackUpdate,
@@ -164,4 +165,28 @@ it('moves members only while deactivating, and allows an empty library to go', (
   expect(() =>
     planMusicLibraryUpdate({ library: libraries[0], libraries, memberCount: 0, patch: { title: ' ' } }),
   ).toThrow(/name cannot be empty/u);
+});
+
+it('deletes only an empty library, and never the last active one', () => {
+  const libraries = [library(), library({ id: 'lib-picks', key: '精选', position: 2 })];
+
+  expect(() => planMusicLibraryDelete({ library: libraries[1], libraries, memberCount: 0 })).not.toThrow();
+  expect(() => planMusicLibraryDelete({ library: libraries[0], libraries, memberCount: 0 })).not.toThrow();
+
+  expect(() => planMusicLibraryDelete({ library: libraries[0], libraries, memberCount: 3 })).toThrow(
+    /with tracks cannot be deleted/u,
+  );
+
+  expect(() =>
+    planMusicLibraryDelete({ library: libraries[0], libraries: [libraries[0]], memberCount: 0 }),
+  ).toThrow(/last active library/u);
+
+  // 停用中的空库随时可删：它不参与"最后一个启用曲库"的判定
+  expect(() =>
+    planMusicLibraryDelete({
+      library: library({ id: 'lib-old', key: 'old', isActive: false }),
+      libraries: [library()],
+      memberCount: 0,
+    }),
+  ).not.toThrow();
 });

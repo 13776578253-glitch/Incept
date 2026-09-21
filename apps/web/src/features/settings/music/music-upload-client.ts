@@ -12,8 +12,7 @@ function readError(payload: string, fallback: string): string {
   }
 }
 
-// 上传用 XMLHttpRequest 而不是 fetch：只有它能报告上传进度
-// 一个请求一个文件，请求体就是文件本身 / 服务端按流落盘，不整块进内存
+// 上传用 XMLHttpRequest 而不是 fetch：只有它能报告上传进度 / 一个请求一个文件，请求体就是文件本身 / 服务端按流落盘，不整块进内存
 export function uploadMusicFile(
   file: File,
   libraryKey: string,

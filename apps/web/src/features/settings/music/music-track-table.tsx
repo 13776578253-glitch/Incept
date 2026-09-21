@@ -5,10 +5,15 @@ import { useDeferredValue, useState } from 'react';
 import type { MusicAdminLibrary, MusicAdminTrack } from '@/server/music/music-admin';
 
 import { formatTrackDuration, type MusicAdminCopy } from './music-admin-copy';
+import {
+  MusicDeleteMenu,
+  musicDeleteTargetFromEvent,
+  type MusicDeleteTarget,
+} from './music-delete-menu';
+import { MusicSelect } from './music-select';
+import { MusicMultiSelect } from './music-multi-select';
 
 export type MusicTrackPatch = {
-  title?: string;
-  artist?: string | null;
   publishedAt?: string | null;
   position?: number;
   isActive?: boolean;
@@ -24,6 +29,7 @@ type MusicTrackRowProps = {
   isLast: boolean;
   onPatch: (trackKey: string, patch: MusicTrackPatch) => void;
   onMove: (trackKey: string, direction: -1 | 1) => void;
+  onOpenDeleteMenu: (event: { clientX: number; clientY: number }, track: MusicAdminTrack) => void;
 };
 
 function MusicTrackRow({
@@ -35,11 +41,11 @@ function MusicTrackRow({
   isLast,
   onPatch,
   onMove,
+  onOpenDeleteMenu,
 }: MusicTrackRowProps) {
-  const [title, setTitle] = useState(track.title);
-  const [artist, setArtist] = useState(track.artist ?? '');
-  const isDirty = title !== track.title || artist !== (track.artist ?? '');
   const activeLibraries = libraries.filter((library) => library.isActive);
+  // 标签没读到就显示占位符
+  const artist = track.artist?.trim() ? track.artist : copy.unknownValue;
 
   const toggleLibrary = (key: string) => {
     const current = track.libraries;
@@ -54,65 +60,55 @@ function MusicTrackRow({
   };
 
   return (
-    <tr className="border-t border-[var(--color-nav-dropdown-border)] align-top">
+    <tr
+      className="border-t border-[var(--color-nav-dropdown-border)] align-top"
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onOpenDeleteMenu(event, track);
+      }}
+    >
       <td className="py-2 pr-3">
-        <input
-          type="text"
-          value={title}
-          disabled={isBusy}
-          aria-label={`${copy.columnTrack} ${track.trackKey}`}
-          onChange={(event) => setTitle(event.target.value)}
-          className="min-h-9 w-full min-w-[10rem] rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-bg)] px-2 text-[0.8125rem] text-[var(--color-text)] outline-none disabled:opacity-60"
-        />
+        <span className="flex min-h-7 items-center text-[0.8125rem] leading-5 text-[var(--color-text)]">
+          {track.title}
+        </span>
         <span className="mt-1 block text-[0.7rem] text-[var(--color-nav-muted)]">{track.trackKey}</span>
       </td>
-      <td className="py-2 pr-3">
-        <input
-          type="text"
-          value={artist}
-          disabled={isBusy}
-          aria-label={`${copy.columnArtist} ${track.trackKey}`}
-          onChange={(event) => setArtist(event.target.value)}
-          className="min-h-9 w-full min-w-[8rem] rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-bg)] px-2 text-[0.8125rem] text-[var(--color-text)] outline-none disabled:opacity-60"
-        />
+      <td className="py-2 pr-3 text-[0.8125rem] text-[var(--color-nav-dropdown-description)]">
+        <span className="flex h-7 items-center leading-none">{artist}</span>
       </td>
       <td className="py-2 pr-3 text-[0.8125rem] text-[var(--color-nav-dropdown-description)]">
-        {formatTrackDuration(track.durationSeconds, copy)}
+        <span className="flex h-7 items-center leading-none">
+          {formatTrackDuration(track.durationSeconds, copy)}
+        </span>
       </td>
       <td className="py-2 pr-3">
-        <div className="flex flex-wrap gap-1.5">
-          {activeLibraries.map((library) => {
-            const active = track.libraries.includes(library.key);
-            const isLast = active && track.libraries.length === 1;
+        <MusicMultiSelect
+          values={track.libraries}
+          ariaLabel={`${copy.columnLibraries} ${track.trackKey}`}
+          placeholder={copy.unknownValue}
+          disabled={isBusy}
+          onToggle={toggleLibrary}
+          options={activeLibraries.map((library) => {
+            const isLast = track.libraries.includes(library.key) && track.libraries.length === 1;
 
-            return (
-              <button
-                key={library.key}
-                type="button"
-                aria-pressed={active}
-                disabled={isBusy || isLast}
-                title={isLast ? copy.confirmDeactivateTrack : library.title}
-                onClick={() => toggleLibrary(library.key)}
-                className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full border px-2.5 py-1 text-[0.72rem] transition-colors duration-[var(--duration-fast)] disabled:cursor-default ${
-                  active
-                    ? 'border-[var(--color-nav-item-active)] bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
-                    : 'border-[var(--color-nav-dropdown-border)] text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
-                }`}
-              >
-                {library.title}
-              </button>
-            );
+            return {
+              value: library.key,
+              label: library.title,
+              disabled: isBusy || isLast,
+              title: isLast ? copy.membershipLastHint : library.title,
+            };
           })}
-        </div>
+          buttonClassName="h-7 text-[0.78rem]"
+        />
       </td>
-      <td className="py-2 pr-3">
-        <div className="flex items-center gap-1">
+      <td className="px-1 py-2">
+        <div className="flex h-7 items-center justify-center gap-1">
           <button
             type="button"
             aria-label={`${copy.actionMoveUp} ${track.trackKey}`}
             disabled={isBusy || isFirst}
             onClick={() => onMove(track.trackKey, -1)}
-            className="rounded-full px-2 py-1 text-[0.75rem] text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
+            className="inline-flex h-7 items-center justify-center rounded-full px-2 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
           >
             ↑
           </button>
@@ -121,47 +117,32 @@ function MusicTrackRow({
             aria-label={`${copy.actionMoveDown} ${track.trackKey}`}
             disabled={isBusy || isLast}
             onClick={() => onMove(track.trackKey, 1)}
-            className="rounded-full px-2 py-1 text-[0.75rem] text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
+            className="inline-flex h-7 items-center justify-center rounded-full px-2 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
           >
             ↓
           </button>
         </div>
       </td>
-      <td className="py-2 pr-3 text-[0.75rem]">
+      <td className="px-1 py-2 text-center text-[0.75rem]">
         <span
           className={
             track.isActive
-              ? 'rounded-full border border-[var(--color-nav-dropdown-border)] px-2 py-0.5 text-[var(--color-nav-dropdown-description)]'
-              : 'rounded-full border border-[var(--color-nav-dropdown-border)] px-2 py-0.5 text-[var(--color-nav-muted)] opacity-80'
+              ? 'inline-flex h-7 w-full items-center justify-center leading-none text-[var(--color-nav-dropdown-description)]'
+              : 'inline-flex h-7 w-full items-center justify-center leading-none text-[var(--color-nav-muted)] opacity-80'
           }
         >
           {track.isActive ? copy.statusActive : copy.statusInactive}
         </span>
       </td>
-      <td className="py-2">
-        <div className="flex flex-wrap items-center gap-2">
-          {isDirty ? (
-            <button
-              type="button"
-              disabled={isBusy}
-              onClick={() =>
-                onPatch(track.trackKey, {
-                  title: title.trim(),
-                  artist: artist.trim() === '' ? null : artist.trim(),
-                })
-              }
-              className="rounded-[9px] border border-[var(--color-nav-item-active)] bg-[var(--color-nav-item-active)] px-2.5 py-1 text-[0.75rem] text-[var(--color-text)] disabled:opacity-50"
-            >
-              {copy.actionSave}
-            </button>
-          ) : null}
+      <td className="px-1 py-2">
+        <div className="flex min-h-7 flex-wrap items-center justify-center gap-2">
           {track.isActive ? (
             <button
               type="button"
               disabled={isBusy}
               title={copy.confirmDeactivateTrack}
               onClick={() => onPatch(track.trackKey, { isActive: false })}
-              className="rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 py-1 text-[0.75rem] text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
+              className="inline-flex h-7 items-center justify-center rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
             >
               {copy.actionDeactivate}
             </button>
@@ -170,7 +151,7 @@ function MusicTrackRow({
               type="button"
               disabled={isBusy || track.libraries.length === 0}
               onClick={() => onPatch(track.trackKey, { isActive: true, libraries: track.libraries })}
-              className="rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 py-1 text-[0.75rem] text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
+              className="inline-flex h-7 items-center justify-center rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 text-[0.75rem] leading-none text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
             >
               {copy.actionReactivate}
             </button>
@@ -188,6 +169,7 @@ export function MusicTrackTable({
   isBusy,
   onPatch,
   onMove,
+  onDelete,
 }: {
   copy: MusicAdminCopy;
   tracks: MusicAdminTrack[];
@@ -195,9 +177,11 @@ export function MusicTrackTable({
   isBusy: boolean;
   onPatch: (trackKey: string, patch: MusicTrackPatch) => void;
   onMove: (trackKey: string, direction: -1 | 1) => void;
+  onDelete: (trackKey: string) => void;
 }) {
   const [search, setSearch] = useState('');
   const [libraryFilter, setLibraryFilter] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<MusicDeleteTarget | null>(null);
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
 
   const visible = tracks.filter((track) => {
@@ -213,7 +197,7 @@ export function MusicTrackTable({
   });
 
   return (
-    <section className="space-y-3">
+    <section className="ml-4 max-w-[744px] space-y-3">
       <h4 className="text-[0.8125rem] font-medium text-[var(--color-text)]">{copy.tracksHeading}</h4>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -225,32 +209,39 @@ export function MusicTrackTable({
           onChange={(event) => setSearch(event.target.value)}
           className="min-h-9 min-w-[12rem] flex-1 rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-bg)] px-3 text-[0.8125rem] text-[var(--color-text)] outline-none"
         />
-        <select
+        <MusicSelect
           value={libraryFilter}
-          aria-label={copy.filterAllLibraries}
-          onChange={(event) => setLibraryFilter(event.target.value)}
-          className="min-h-9 rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-2 text-[0.8125rem] text-[var(--color-text)] outline-none"
-        >
-          <option value="">{copy.filterAllLibraries}</option>
-          {libraries.map((library) => (
-            <option key={library.key} value={library.key}>
-              {library.title}
-            </option>
-          ))}
-        </select>
+          ariaLabel={copy.filterAllLibraries}
+          onChange={setLibraryFilter}
+          options={[
+            { value: '', label: copy.filterAllLibraries },
+            ...libraries.map((library) => ({ value: library.key, label: library.title })),
+          ]}
+          className="min-w-[8.25rem]"
+          buttonClassName="h-9 text-[0.8125rem]"
+        />
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full border-separate border-spacing-0 text-left">
+        <table className="w-full table-fixed border-separate border-spacing-0 text-left">
+          <colgroup>
+            <col className="w-[30%]" />
+            <col className="w-[16%]" />
+            <col className="w-[15%]" />
+            <col className="w-[13%]" />
+            <col className="w-[8%]" />
+            <col className="w-[9%]" />
+            <col className="w-[9%]" />
+          </colgroup>
           <thead>
             <tr className="text-[0.7rem] uppercase tracking-[0.12em] text-[var(--color-nav-muted)]">
               <th className="pb-2 pr-3 font-medium">{copy.columnTrack}</th>
               <th className="pb-2 pr-3 font-medium">{copy.columnArtist}</th>
               <th className="pb-2 pr-3 font-medium">{copy.columnDuration}</th>
               <th className="pb-2 pr-3 font-medium">{copy.columnLibraries}</th>
-              <th className="pb-2 pr-3 font-medium">{copy.columnOrder}</th>
-              <th className="pb-2 pr-3 font-medium">{copy.columnStatus}</th>
-              <th className="pb-2 font-medium">{copy.columnActions}</th>
+              <th className="px-1 pb-2 text-center font-medium">{copy.columnOrder}</th>
+              <th className="px-1 pb-2 text-center font-medium">{copy.columnStatus}</th>
+              <th className="px-1 pb-2 text-center font-medium">{copy.columnActions}</th>
             </tr>
           </thead>
           <tbody>
@@ -272,12 +263,32 @@ export function MusicTrackTable({
                   isLast={index === visible.length - 1}
                   onPatch={onPatch}
                   onMove={onMove}
+                  onOpenDeleteMenu={(event, target) =>
+                    setDeleteTarget(
+                      musicDeleteTargetFromEvent(event, {
+                        id: target.trackKey,
+                        title: target.title,
+                        confirm: copy.deleteTrackConfirm,
+                      }),
+                    )
+                  }
                 />
               ))
             )}
           </tbody>
         </table>
       </div>
+
+      <MusicDeleteMenu
+        target={deleteTarget}
+        copy={copy}
+        isBusy={isBusy}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={(trackKey) => {
+          setDeleteTarget(null);
+          onDelete(trackKey);
+        }}
+      />
     </section>
   );
 }

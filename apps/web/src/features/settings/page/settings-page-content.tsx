@@ -14,7 +14,7 @@ import { localeConfig, type AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 
 import { AccountSettingsPanel } from '../account/account-settings-panel';
-import { MusicAdminPanel } from '../plugin/music/music-admin-panel';
+import { MusicAdminPanel } from '../music/music-admin-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
 
@@ -56,8 +56,8 @@ function getLocalizedReturnPath(returnTo: string | null, locale: AppLocale) {
   return query ? `${localizedPath}?${query}` : localizedPath;
 }
 
-// 曲目与曲库管理挂在插件分区下面，只对 owner 出现（数据由服务端页面传下来，非 owner 为 null）
-function PluginManagerBlock({
+// 曲目与曲库管理是音乐分区的一部分，只对 owner 出现 /数据由服务端页面传下来，非 owner 为 null
+function MusicManagerBlock({
   section,
   locale,
   data,
@@ -66,7 +66,7 @@ function PluginManagerBlock({
   locale: AppLocale;
   data: MusicAdminData | null;
 }) {
-  if (section.id !== 'plugin' || data === null) {
+  if (section.id !== 'music' || data === null) {
     return null;
   }
 
@@ -170,7 +170,7 @@ export function SettingsPageContent({
         ) : (
           <div className="space-y-8">
             <SettingsSectionPanel section={selectedSection} {...interactions} />
-            <PluginManagerBlock section={selectedSection} locale={language} data={musicAdminData} />
+            <MusicManagerBlock section={selectedSection} locale={language} data={musicAdminData} />
           </div>
         )}
       </div>
@@ -182,7 +182,7 @@ export function SettingsPageContent({
           ) : (
             <div key={section.id} className="space-y-8">
               <SettingsSectionPanel section={section} {...interactions} />
-              <PluginManagerBlock section={section} locale={language} data={musicAdminData} />
+              <MusicManagerBlock section={section} locale={language} data={musicAdminData} />
             </div>
           )
         ))}

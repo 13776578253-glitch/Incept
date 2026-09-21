@@ -1,4 +1,4 @@
-import { updateMusicLibrary, type MusicLibraryPatch } from '@incept/db/music';
+import { deleteMusicLibrary, updateMusicLibrary, type MusicLibraryPatch } from '@incept/db/music';
 import { NextResponse } from 'next/server';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
@@ -68,6 +68,32 @@ export async function PATCH(request: Request, context: { params: Promise<{ key: 
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'The library could not be updated.' },
+      { status: 400 },
+    );
+  }
+}
+
+// 永久删除：只允许删没有成员的曲库，且不能删掉最后一个启用中的曲库：规则在 db 层 与停用不同，此路径不留痕，由右键菜单里的二次确认触发
+export async function DELETE(request: Request, context: { params: Promise<{ key: string }> }) {
+  if (!hasSameOrigin(request)) {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
+
+  const viewer = await getCurrentViewer();
+
+  if (viewer.role !== 'owner') {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
+
+  const { key } = await context.params;
+
+  try {
+    const deleted = await deleteMusicLibrary({ key });
+
+    return NextResponse.json({ key: deleted.key });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'The library could not be deleted.' },
       { status: 400 },
     );
   }

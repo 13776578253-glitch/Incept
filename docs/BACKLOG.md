@@ -94,8 +94,8 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 
 - Source: `apps/web/src/features/music-player/components/music-player-floating.tsx`
 - `nextRequested`, `previousRequested` and `seekRequested` are implemented and tested in `@incept/music-player-core`, but the player UI intentionally exposes only play, pause, track selection and the speed control.
-- `playbackRateRequested` is wired to the speed control, which cycles `PLAYBACK_RATE_OPTIONS` from `adapter/player-copy.ts`. The speed ships locked at 1x by default, so the button is inert until the lock is turned off under Settings → Plugin.
-- `repeatModeRequested` is dispatched from the persisted default-playback-mode preference (`MusicPlayerPreferencesProvider`) and applied in the floating component, so repeat is reachable from Settings → Plugin and has no player control.
+- `playbackRateRequested` is wired to the speed control, which cycles `PLAYBACK_RATE_OPTIONS` from `adapter/player-copy.ts`. The speed ships locked at 1x by default, so the button is inert until the lock is turned off under Settings → Music.
+- `repeatModeRequested` is dispatched from the persisted default-playback-mode preference (`MusicPlayerPreferencesProvider`) and applied in the floating component, so repeat is reachable from Settings → Music and has no player control.
 - Wire the remaining three in a later phase. Until then the player must not be described as having previous/next or seek controls, and repeat must be described as a settings preference rather than a player control.
 - **Default speed is still not a preference.** What exists is a lock at 1x, not a stored default value, so a listener cannot choose a different starting speed.
 
@@ -121,13 +121,22 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 
 ### B-21 Web Authoring Follow-Ups
 
-- Source: `apps/web/src/server/music/`, `apps/web/src/features/settings/plugin/music/`
+- Source: `apps/web/src/server/music/`, `apps/web/src/features/settings/music/`
 - Status: Open. Registered when authoring moved to the web; each item is a deliberate boundary, not an oversight.
-- **Media files are never deleted.** Deactivating a track or a library keeps every byte, so disk usage only grows; the only cleanup is `pnpm music:import --validate` reporting unreferenced mirror files plus a manual delete. A UI cleanup entry with a dry run is the follow-up.
+- **Deactivating keeps every byte; deleting takes one row at a time.** The row's right-click menu now erases a track for good (row, memberships, and its mirror file when nothing else references it) or an empty library, but there is still **no bulk cleanup**: `pnpm music:import --validate` reports unreferenced mirror files, and a dry-run cleanup entry for them remains the follow-up.
 - **Uploads have no resume, no chunking and no transcoding**, and the 128 MB cap is hard — a failed large flac/wav upload starts over.
 - **Every edit is its own request with no concurrency guard**: owner-only, one transaction per request, later write wins. A second editor or a stale tab can silently overwrite an earlier edit.
 - **Order is the track's own `position`**: a track in two libraries shares one order, and the arrow buttons are the only affordance (no drag-and-drop, no bulk edit).
 - **The admin read returns every row** (`listAllMusicTracks` plus all memberships) on each settings-page load, and the payload is serialised to the client. Fine for tens of tracks; it needs paging or a server-side filter past a few hundred.
+
+### B-22 Music Metadata Recognition
+
+- Source: `apps/web/src/server/music/music-admin.ts` (`readUploadedAudioMetadata`), `scripts/music-import.mjs`
+- Status: Open. Registered on 2026-09-20, when the panel stopped offering hand editing of track titles and artists: a missing value renders as the copy's `unknownValue` (`—`), and the answer to a wrong or missing one is better recognition rather than a text field.
+- Today the read is `music-metadata`'s `common.title` / `common.artist`, with the file name as the title fallback. The real files here carry no artist tag and a title that already reads `artist, artist   title` (`GUMI,一之瀬ユウ   心做し`), so the panel shows an artist dash and a title with the performers glued on.
+- Candidates: split a title that carries that shape, fall back to `albumartist` and the other tag frames before giving up, and report per-run recognition counts so a batch can be judged. A split rewrites what the player displays, so it must be reviewable and opt-in.
+- **New NetEase imports already read correctly.** An `.ncm` upload takes `musicName` and `artist` from the container (see [music-authoring-in-the-web.md](./decisions/en/music-authoring-in-the-web.md)), so the songs imported before that support still carry the glued tag title and a blank artist. Re-uploading the original `.ncm` produces a correct row, and the stale one can be removed with the row's right-click delete — which is the practical fix today; the heuristics above stay the answer for non-NetEase sources.
+- The web is no longer the place to fix a wrong value by hand; the API still accepts `title` / `artist` on `PATCH /api/internal/music/tracks/[trackKey]` with no caller — decide whether to trim it when this lands.
 
 ## Review Before Any Code Decision
 

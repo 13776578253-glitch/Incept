@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 
@@ -61,40 +61,69 @@ it('renders the upload zone, the libraries and the tracks', () => {
   expect(screen.getByRole('button', { name: '选择文件' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '选择文件夹' })).toBeInTheDocument();
   expect(screen.getByLabelText('曲库 default')).toHaveValue('默认');
-  expect(screen.getByLabelText('曲目 demo-01')).toHaveValue('演示曲目 01');
+  expect(screen.getByText('演示曲目 01')).toBeInTheDocument();
   expect(screen.getByText('4:28')).toBeInTheDocument();
+  // 歌手没读到就显示占位符，而不是一个可以手改的空输入框
+  expect(screen.getByText('-')).toBeInTheDocument();
 });
 
-it('saves a renamed track through the tracks endpoint', async () => {
-  const fetchMock = stubFetch(200, { track: { ...track, title: '新的名字' } });
+it('filters tracks with the styled library dropdown', async () => {
+  const user = userEvent.setup();
+
+  render(
+    <MusicAdminPanel
+      locale="zh"
+      data={adminData({
+        tracks: [
+          track,
+          {
+            ...track,
+            trackKey: 'featured-01',
+            title: '精选曲目',
+            libraries: ['精选'],
+            position: 2,
+          },
+        ],
+      })}
+    />,
+  );
+
+  await user.click(screen.getByRole('button', { name: '全部曲库' }));
+  await user.click(screen.getByRole('option', { name: '精选' }));
+
+  expect(screen.queryByText('演示曲目 01')).not.toBeInTheDocument();
+  expect(screen.getByText('精选曲目')).toBeInTheDocument();
+});
+
+it('saves a renamed library through the libraries endpoint', async () => {
+  const fetchMock = stubFetch(200, {
+    library: { key: 'default', title: '收藏', position: 1, isActive: true },
+  });
   const user = userEvent.setup();
 
   render(<MusicAdminPanel locale="zh" data={adminData()} />);
 
-  const input = screen.getByLabelText('曲目 demo-01');
+  const input = screen.getByLabelText('曲库 default');
   await user.clear(input);
-  await user.type(input, '新的名字');
+  await user.type(input, '收藏');
   await user.click(screen.getByRole('button', { name: '保存' }));
 
   expect(fetchMock).toHaveBeenCalledWith(
-    '/api/internal/music/tracks/demo-01',
+    '/api/internal/music/libraries/default',
     expect.objectContaining({ method: 'PATCH' }),
   );
-  expect(bodyOf(fetchMock)).toEqual({ title: '新的名字', artist: null });
-  await waitFor(() => expect(screen.getByLabelText('曲目 demo-01')).toHaveValue('新的名字'));
+  expect(bodyOf(fetchMock)).toEqual({ title: '收藏' });
+  await waitFor(() => expect(screen.getByLabelText('曲库 default')).toHaveValue('收藏'));
 });
 
-it('toggles a library membership from the row chips', async () => {
+it('toggles a library membership from the row dropdown', async () => {
   const fetchMock = stubFetch(200, { track: { ...track, libraries: ['default', '精选'] } });
   const user = userEvent.setup();
 
   render(<MusicAdminPanel locale="zh" data={adminData()} />);
 
-  const row = screen.getByLabelText('曲目 demo-01').closest('tr');
-
-  if (!row) throw new Error('the track row is missing');
-
-  await user.click(within(row).getByRole('button', { name: '精选' }));
+  await user.click(screen.getByLabelText('归属 demo-01'));
+  await user.click(screen.getByRole('option', { name: '精选' }));
 
   expect(bodyOf(fetchMock)).toEqual({ libraries: ['default', '精选'] });
 });
@@ -105,7 +134,7 @@ it('deactivates a track without deleting it', async () => {
 
   render(<MusicAdminPanel locale="zh" data={adminData()} />);
 
-  const row = screen.getByLabelText('曲目 demo-01').closest('tr');
+  const row = screen.getByText('演示曲目 01').closest('tr');
 
   if (!row) throw new Error('the track row is missing');
 
@@ -150,26 +179,30 @@ it('asks where the members go before deactivating a library', async () => {
   await user.click(within(row).getByRole('button', { name: '停用' }));
   expect(fetchMock).not.toHaveBeenCalled();
 
-  await user.selectOptions(screen.getByLabelText('成员移到 default'), '精选');
+  await user.click(screen.getByLabelText('成员移到 default'));
+  await user.click(screen.getByRole('option', { name: '精选' }));
   await user.click(within(row).getByRole('button', { name: '停用' }));
 
   expect(bodyOf(fetchMock)).toEqual({ isActive: false, moveMembersTo: '精选' });
 });
 
 it('reports a failed request instead of silently keeping the edit', async () => {
-  stubFetch(400, { error: 'A track title cannot be empty.' });
+  stubFetch(400, { error: 'The track could not be deactivated.' });
   const user = userEvent.setup();
 
   render(<MusicAdminPanel locale="zh" data={adminData()} />);
 
-  const input = screen.getByLabelText('曲目 demo-01');
-  await user.clear(input);
-  await user.type(input, '新名字');
-  await user.click(screen.getByRole('button', { name: '保存' }));
+  const row = screen.getByText('演示曲目 01').closest('tr');
+
+  if (!row) throw new Error('the track row is missing');
+
+  await user.click(within(row).getByRole('button', { name: '停用' }));
 
   await waitFor(() =>
-    expect(screen.getByRole('alert')).toHaveTextContent('A track title cannot be empty.'),
+    expect(screen.getByRole('alert')).toHaveTextContent('The track could not be deactivated.'),
   );
+  // 失败的编辑回滚：行仍然停在启用状态
+  expect(within(row).getByRole('button', { name: '停用' })).toBeInTheDocument();
 });
 
 it('uploads a file and adds the returned track to the table', async () => {
@@ -197,6 +230,46 @@ it('uploads a file and adds the returned track to the table', async () => {
   await waitFor(() => expect(uploadMusicFile).toHaveBeenCalledTimes(1));
   expect(uploadMusicFile.mock.calls[0][1]).toBe('default');
 
-  // 标题是输入框的值，不是文本节点
-  await waitFor(() => expect(screen.getByLabelText('曲目 uploaded-01')).toHaveValue('上传曲目'));
+  await waitFor(() => expect(screen.getByText('上传曲目')).toBeInTheDocument());
+});
+
+it('deletes a track permanently only after the right-click confirmation', async () => {
+  const fetchMock = stubFetch(200, { trackKey: 'demo-01', mediaRemoved: true });
+  const user = userEvent.setup();
+
+  render(<MusicAdminPanel locale="zh" data={adminData()} />);
+
+  fireEvent.contextMenu(screen.getByText('演示曲目 01'));
+  await user.click(screen.getByRole('menuitem', { name: '永久删除' }));
+
+  // 第一下只是把确认按钮露出来，不会发请求
+  expect(fetchMock).not.toHaveBeenCalled();
+
+  await user.click(screen.getByRole('button', { name: '确认删除' }));
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/internal/music/tracks/demo-01',
+    expect.objectContaining({ method: 'DELETE' }),
+  );
+  await waitFor(() => expect(screen.queryByText('演示曲目 01')).not.toBeInTheDocument());
+});
+
+it('deletes an empty library permanently after the right-click confirmation', async () => {
+  const fetchMock = stubFetch(200, { key: '精选' });
+  const user = userEvent.setup();
+
+  render(<MusicAdminPanel locale="zh" data={adminData()} />);
+
+  fireEvent.contextMenu(screen.getByLabelText('曲库 精选'));
+  await user.click(screen.getByRole('menuitem', { name: '永久删除' }));
+
+  expect(fetchMock).not.toHaveBeenCalled();
+
+  await user.click(screen.getByRole('button', { name: '确认删除' }));
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/internal/music/libraries/%E7%B2%BE%E9%80%89',
+    expect.objectContaining({ method: 'DELETE' }),
+  );
+  await waitFor(() => expect(screen.queryByLabelText('曲库 精选')).not.toBeInTheDocument());
 });

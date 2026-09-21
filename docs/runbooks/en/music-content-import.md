@@ -70,7 +70,7 @@ Allowed extensions: `.mp3`, `.wav`, `.flac`. Single file limit: 128 MB.
 
 ## Adding and adjusting libraries (bulk migration path)
 
-> This section applies only when migrating with a content root and a manifest. Day-to-day create/read/update/delete lives in the web (Settings → Plugin → Tracks and libraries, owner only); `pnpm music:import` **deactivates** anything the manifest does not describe, so clear it out first or accept that.
+> This section applies only when migrating with a content root and a manifest. Day-to-day create/read/update/delete lives in the web (Settings → Music → Tracks and libraries, owner only); `pnpm music:import` **deactivates** anything the manifest does not describe, so clear it out first or accept that.
 
 | What you want | How |
 | --- | --- |

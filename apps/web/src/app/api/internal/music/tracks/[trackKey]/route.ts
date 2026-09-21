@@ -1,7 +1,8 @@
-import { updateMusicTrack, type MusicTrackPatch } from '@incept/db/music';
+import { deleteMusicTrack, updateMusicTrack, type MusicTrackPatch } from '@incept/db/music';
 import { NextResponse } from 'next/server';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
+import { removeMusicMediaByUrl } from '@/server/music/media-store';
 
 export const runtime = 'nodejs';
 
@@ -90,6 +91,34 @@ export async function PATCH(request: Request, context: { params: Promise<{ track
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'The track could not be updated.' },
+      { status: 400 },
+    );
+  }
+}
+
+// 永久删除：行、成员关系与（没有别的行再引用的）镜像文件一起消失，与"停用"是两条路。
+// 删除是不可撤销的，所以只由右键菜单里的二次确认触发。
+export async function DELETE(request: Request, context: { params: Promise<{ trackKey: string }> }) {
+  if (!hasSameOrigin(request)) {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
+
+  const viewer = await getCurrentViewer();
+
+  if (viewer.role !== 'owner') {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
+
+  const { trackKey } = await context.params;
+
+  try {
+    const deleted = await deleteMusicTrack({ trackKey });
+    const mediaRemoved = deleted.mediaUrl !== null && (await removeMusicMediaByUrl(deleted.mediaUrl));
+
+    return NextResponse.json({ trackKey: deleted.trackKey, mediaRemoved });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'The track could not be deleted.' },
       { status: 400 },
     );
   }

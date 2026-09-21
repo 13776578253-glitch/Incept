@@ -6,10 +6,10 @@ import {
 } from './queries/list';
 import type { MusicLibraryRecord, MusicTrackRecord } from './types';
 
-// 曲目与曲库的日常管理入口（网页上传、表格编辑）走这里。
-// 批量导入仍走 plan.ts / import.ts：那条路径以清单为期望状态，这条路径以请求为期望状态。
-//
-// 判断都在纯函数里，Prisma 只负责执行——与 plan.ts 同一套分法，便于测试。
+// 曲目与曲库的日常管理入口（网页上传、表格编辑）
+// 批量导入走 plan.ts / import.ts：那条路径以清单为期望状态，这条路径以请求为期望状态
+
+// 判断在纯函数里，Prisma 只负责执行——与 plan.ts 同一套分法，便于测试
 
 function nextPosition(rows: Array<{ position: number }>): number {
   return rows.reduce((highest, row) => Math.max(highest, row.position), 0) + 1;
@@ -129,6 +129,27 @@ export type MusicLibraryPatch = {
   moveMembersTo?: string;
 };
 
+// 永久删除一个曲库的前提：没有成员，且不是最后一个启用中的曲库，两项都不满足时报错，不让活跃曲目失去归属
+export function planMusicLibraryDelete(input: {
+  library: MusicLibraryRecord;
+  libraries: MusicLibraryRecord[];
+  memberCount: number;
+}): void {
+  if (input.memberCount > 0) {
+    throw new Error('A library with tracks cannot be deleted; move its tracks first.');
+  }
+
+  if (!input.library.isActive) return;
+
+  const remaining = input.libraries.filter(
+    (library) => library.isActive && library.id !== input.library.id,
+  );
+
+  if (remaining.length === 0) {
+    throw new Error('The last active library cannot be deleted.');
+  }
+}
+
 export function planMusicLibraryUpdate(input: {
   library: MusicLibraryRecord;
   libraries: MusicLibraryRecord[];
@@ -175,6 +196,62 @@ export function planMusicLibraryUpdate(input: {
   }
 
   return { moveMembersTo: null };
+}
+
+export type MusicTrackDeletion = {
+  trackKey: string;
+  // 没有任何行（含停用行）再引用同一个镜像文件时才非空：文件由调用方删除，数据层不碰文件系统
+  mediaUrl: string | null;
+};
+
+// 永久删除：行与成员关系直接删掉，不像停用那样留痕 / 文件是否还能删由调用方按 mediaUrl 判断
+export async function deleteMusicTrack(input: { trackKey: string }): Promise<MusicTrackDeletion> {
+  return prisma.$transaction(async (transaction) => {
+    const track = await transaction.musicTrack.findUnique({
+      where: { trackKey: input.trackKey },
+      select: { id: true, trackKey: true, audioUrl: true },
+    });
+
+    if (!track) {
+      throw new Error(`The track "${input.trackKey}" does not exist.`);
+    }
+
+    await transaction.musicLibraryItem.deleteMany({ where: { trackId: track.id } });
+    await transaction.musicTrack.delete({ where: { id: track.id } });
+
+    const stillReferenced = await transaction.musicTrack.count({
+      where: { audioUrl: track.audioUrl },
+    });
+
+    return {
+      trackKey: track.trackKey,
+      mediaUrl: stillReferenced === 0 ? track.audioUrl : null,
+    };
+  });
+}
+
+export async function deleteMusicLibrary(input: { key: string }): Promise<{ key: string }> {
+  return prisma.$transaction(async (transaction) => {
+    const library = await transaction.musicLibrary.findUnique({
+      where: { key: input.key },
+      select: musicLibrarySelection,
+    });
+
+    if (!library) {
+      throw new Error(`The library "${input.key}" does not exist.`);
+    }
+
+    const [libraries, memberCount] = await Promise.all([
+      transaction.musicLibrary.findMany({ select: musicLibrarySelection }),
+      transaction.musicLibraryItem.count({ where: { libraryId: library.id } }),
+    ]);
+
+    planMusicLibraryDelete({ library, libraries, memberCount });
+
+    await transaction.musicLibrary.delete({ where: { id: library.id } });
+
+    return { key: library.key };
+  });
 }
 
 export type MusicTrackWrite = {

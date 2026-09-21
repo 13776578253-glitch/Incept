@@ -42,10 +42,15 @@ export type MusicAdminCopy = {
   libraryReactivate: string;
   libraryMoveMembersLabel: string;
   libraryRemoveHint: string;
-  durationUnknown: string;
+  unknownValue: string;
+  membershipLastHint: string;
   failedPrefix: string;
   confirmDeactivateTrack: string;
   confirmDeactivateLibrary: string;
+  deleteAction: string;
+  deleteTrackConfirm: string;
+  deleteLibraryConfirm: string;
+  actionDeleteConfirm: string;
 };
 
 const zhCopy: MusicAdminCopy = {
@@ -55,7 +60,7 @@ const zhCopy: MusicAdminCopy = {
   unavailablePrefix: '数据库不可用：',
   uploadHeading: '上传',
   uploadHint:
-    '把音频拖到这里，或选择文件 / 文件夹（mp3、wav、flac，单个最大 128 MB）。选文件夹时，第一层目录名作为曲库名，缺的曲库会自动创建。',
+    '把音频拖到这里，或选择文件 / 文件夹（mp3、wav、flac、ncm，单个最大 128 MB）。ncm 会在服务端自动解密成原始音频，并用它内嵌的歌名与歌手；选文件夹时，第一层目录名作为曲库名，缺的曲库会自动创建。',
   chooseFiles: '选择文件',
   chooseFolder: '选择文件夹',
   uploadLibraryLabel: '归属曲库',
@@ -94,10 +99,15 @@ const zhCopy: MusicAdminCopy = {
   libraryReactivate: '恢复',
   libraryMoveMembersLabel: '成员移到',
   libraryRemoveHint: '停用后曲目会移到你选择的曲库；最后一个启用的曲库不能停用。',
-  durationUnknown: '—',
+  unknownValue: '-',
+  membershipLastHint: '每首曲目至少属于一个曲库，最后一个归属不能取消。',
   failedPrefix: '操作失败：',
   confirmDeactivateTrack: '停用后可以恢复，媒体文件不会被删除。',
   confirmDeactivateLibrary: '停用曲库前，必须为它的曲目指定去处。',
+  deleteAction: '永久删除',
+  deleteTrackConfirm: '删除后无法恢复：曲目、归属关系与镜像文件都会一并移除。',
+  deleteLibraryConfirm: '只能删除没有成员的曲库；删除后无法恢复。',
+  actionDeleteConfirm: '确认删除',
 };
 
 const enCopy: MusicAdminCopy = {
@@ -107,7 +117,7 @@ const enCopy: MusicAdminCopy = {
   unavailablePrefix: 'The database is unavailable: ',
   uploadHeading: 'Upload',
   uploadHint:
-    'Drop audio here, or choose files / a folder (mp3, wav, flac, 128 MB each). With a folder, the first directory name becomes the library name and a missing library is created for you.',
+    'Drop audio here, or choose files / a folder (mp3, wav, flac, ncm, 128 MB each). An .ncm file is decrypted to its original audio on the server and keeps its embedded title and artists; with a folder, the first directory name becomes the library name and a missing library is created for you.',
   chooseFiles: 'Choose files',
   chooseFolder: 'Choose folder',
   uploadLibraryLabel: 'Library',
@@ -147,10 +157,16 @@ const enCopy: MusicAdminCopy = {
   libraryMoveMembersLabel: 'Move members to',
   libraryRemoveHint:
     'Deactivating moves its tracks to the library you pick; the last active library cannot be deactivated.',
-  durationUnknown: '—',
+  unknownValue: '-',
+  membershipLastHint:
+    'A track must belong to at least one library, so its last membership cannot be cleared.',
   failedPrefix: 'That failed: ',
   confirmDeactivateTrack: 'A deactivated track can be restored; its media file is kept.',
   confirmDeactivateLibrary: 'Before deactivating a library, choose where its tracks should go.',
+  deleteAction: 'Delete permanently',
+  deleteTrackConfirm: 'This cannot be undone: the track, its memberships and its media file are removed.',
+  deleteLibraryConfirm: 'Only a library without tracks can be deleted; this cannot be undone.',
+  actionDeleteConfirm: 'Delete for good',
 };
 
 export function getMusicAdminCopy(locale: string): MusicAdminCopy {
@@ -159,7 +175,7 @@ export function getMusicAdminCopy(locale: string): MusicAdminCopy {
 
 export function formatTrackDuration(seconds: number | null, copy: MusicAdminCopy): string {
   if (seconds === null || !Number.isFinite(seconds) || seconds <= 0) {
-    return copy.durationUnknown;
+    return copy.unknownValue;
   }
 
   const total = Math.round(seconds);

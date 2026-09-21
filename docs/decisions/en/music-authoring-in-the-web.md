@@ -18,9 +18,10 @@ The requirement is the opposite: **pick files or a folder in the browser and get
 - **Metadata comes from the audio tags.** After the bytes land, `music-metadata` reads title / artist / duration (the same entry point the importer uses for duration); a missing tag falls back to the file name, and all three fields are editable in the table. Uploads never fail because tags are missing.
 - **A folder upload keeps the "first directory is the library" habit.** The browser gives relative paths, the first segment (numeric prefix stripped) becomes the library name, and a missing library is created; uploading loose files asks for the library instead. This is continuity of habit, not a rule of the system.
 - **`trackKey` is derived from the file name and is still identity.** The transliteration rules are shared with the generator (`music-key.ts`); re-uploading the same name gets a `-2` / `-3` suffix. Renaming a title or moving memberships does not change identity; renaming the file does.
-- **Deleting deactivates rather than erases.** A track goes `isActive=false`, its media file stays, and the UI offers a restore. **Deactivating a library requires choosing where its members go** (moved in the same request), and the last active library cannot be deactivated — so "every active track belongs to at least one active library" always holds and the player's read never fails because of a UI action.
+- **Deleting deactivates rather than erases, and erasing is a deliberate exception.** A track goes `isActive=false`, its media file stays, and the UI offers a restore. **Deactivating a library requires choosing where its members go** (moved in the same request), and the last active library cannot be deactivated — so "every active track belongs to at least one active library" always holds and the player's read never fails because of a UI action. The one way to erase for good is the row's **right-click menu**: two clicks (menu, then a confirmation) call `DELETE`, which drops the track row and its memberships and removes the mirror file **only when no other row still references it** — a file may be shared by rows, and a deactivated row still owns its copy. A library can only be deleted while it has no members and is not the last active one; the server refuses the rest and the menu shows the reason.
+- **A `.ncm` upload is decrypted on the server, silently.** NetEase's container is read into memory, decrypted to its original mp3/flac and stored under that format's content hash — the mirror never holds encrypted bytes, and re-uploading the same song reuses the same mirror file. The embedded NetEase metadata wins over the audio tags (`musicName` for the title, `artist` joined with `, `), which is what finally gives a NetEase download an artist instead of an empty field; the tag reader still supplies the duration. The decoder lives in `apps/web/src/server/music/ncm-decode.ts`, ported from the owner's `ncm-converter` library; `.ncm` is simply one more accepted upload extension, with no switch anywhere in the UI.
 - **There is one read path for playback.** The admin screen uses `listAll*` (deactivated rows included); the player keeps using `listActiveMusicCatalog()` (single-transaction snapshot, active rows only). Routes only serialize, and the adapter and player are untouched.
-- **Owner isolation is unchanged.** The block renders only for `viewer.role === 'owner'`, and the write routes re-check the owner session plus same-origin, answering 404 to everyone else.
+- **Owner isolation is unchanged.** The block renders only for `viewer.role === 'owner'`, and the write routes re-check the owner session plus same-origin, answering 404 to everyone else. It lives in the settings page's **Music** section together with the player preferences; that section was named Plugin until 2026-09-20.
 
 ## Rejected alternatives
 
@@ -30,7 +31,7 @@ The requirement is the opposite: **pick files or a folder in the browser and get
 | Keep the manifest authoritative but let the web trigger the import | A wider conflict surface: external manifest edits, failed imports and partial imports all desynchronise the UI from the database, and the user never sees the manifest. |
 | Multipart upload | A 128 MB file lands in memory in one piece; one raw-byte stream per file both streams to disk and hashes on the way. |
 | Write the uploaded file into the content root | The content root serves the migration tool; once the web authors content it is not needed, and writing there creates a second truth. |
-| Deleting rows and media for real | A mis-click in the UI would be unrecoverable, and a content-addressed mirror entry cannot be rebuilt without the original file. |
+| Deleting rows and media as the default action | A mis-click would be unrecoverable and a content-addressed mirror entry cannot be rebuilt without the original file, which is why deactivation stays the default and erasing sits behind a right-click menu plus a confirmation. |
 | Auto-merging members into the first library on deactivation | Membership is a content decision, not an ordering detail; asking costs one dropdown. |
 | Per-library ordering | `position` belongs to the track today, so a track in two libraries shares one order; doing it per library needs a column on the join row and is a separate ask. |
 
@@ -46,6 +47,6 @@ The requirement is the opposite: **pick files or a folder in the browser and get
 ## Boundaries
 
 - No resumable or chunked uploads, no transcoding; 128 MB per file.
-- No hard delete or cleanup entry point for media, and no trash.
+- No hard delete or cleanup entry point for media as a batch operation, and no trash or undo for the per-row delete.
 - No per-library ordering, no bulk editing, no drag-and-drop (order is the track's `position`, moved with up/down buttons).
 - No batch status beyond upload progress: uploads run one after another, and a failure does not stop the rest.

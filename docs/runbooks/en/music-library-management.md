@@ -18,7 +18,7 @@ In one sentence: **the database is the source of truth, the mirror is content-ad
 
 ```bash
 pnpm db:deploy    # make sure migrations are applied
-pnpm dev          # start the site (track and library management lives under Settings → Plugin, owner only)
+pnpm dev          # start the site (track and library management lives under Settings → Music, owner only)
 ```
 
 To add content you need **neither a content root nor a manifest**: open the settings page and upload. A content root is only needed to import a batch of existing folders in one go — see [music-content-import.md](./music-content-import.md).
@@ -41,11 +41,12 @@ A `204` sets the session cookie (30 days, httpOnly); reload the page and you are
 
 ## Everyday: uploading
 
-Open **Settings → Plugin → Tracks and libraries** and use the upload zone:
+Open **Settings → Music → Tracks and libraries** and use the upload zone:
 
 | What you want | How |
 | --- | --- |
 | Add a few loose files | "Choose files" (multi-select) or drop them on the dashed area; the "Library" dropdown decides where they go |
+| Upload a NetEase download | Drop the `.ncm` as-is: the server decrypts it to its original mp3/flac, keeps the embedded title and artists, and stores only the plain audio |
 | Import an album or an episode set in one go | "Choose folder" and pick the directory: **the first directory name is the library name** (`01-podcast` → "podcast"), and a missing library is created for you |
 | Watch progress and results | One row per file: queued → uploading x% → done / failed (with the server's reason); uploads run one after another |
 
@@ -59,8 +60,9 @@ Every edit **applies immediately** (there is no global save button): each action
 
 | What you want | How |
 | --- | --- |
-| Change a title or artist | Edit it in the table, then press Save on that row |
-| Put a track in several libraries, or take it out of one | Light or clear the chips under "Libraries". The last one cannot be cleared — every track belongs to at least one library |
+| Change a title or artist | Not offered. The panel shows what the tags gave it and falls back to `-`; recognition is improved on the import side (B-22), not by hand |
+| Erase a track, or an empty library, for good | Right-click the row → "Delete permanently" → confirm. The track's memberships go with it and its mirror file goes too when no other row references it; there is no undo |
+| Put a track in several libraries, or take it out of one | Open the **Libraries** dropdown in the track's row and tick or untick an entry; the menu stays open while you tick several. The last one cannot be unticked — every track belongs to at least one library |
 | Reorder tracks | That row's ↑ / ↓ (swaps the two `position` values; a track in several libraries shares one order) |
 | Take a track down | "Deactivate": the row stays, its media file is kept, and "Restore" brings it back |
 | Add a library | Type a name under "Libraries" → "Create" (the server derives the key from the name and reuses an existing library with the same name) |

@@ -9,9 +9,9 @@ export type SettingsControlType =
   | 'button'
   | 'status'
   | 'input'
-  | 'plugin-rate-lock-toggle'
-  | 'plugin-placement-toggle'
-  | 'plugin-playback-mode-segmented';
+  | 'music-rate-lock-toggle'
+  | 'music-placement-toggle'
+  | 'music-playback-mode-segmented';
 
 export type SettingsRowState =
   | 'interactive'
@@ -41,7 +41,7 @@ export type SettingsRow = {
 };
 
 export type SettingsSection = {
-  id: 'appearance' | 'language' | 'account' | 'plugin' | 'ai';
+  id: 'appearance' | 'language' | 'account' | 'music' | 'ai';
   label: string;
   description?: string;
   visibility: SettingsVisibility;

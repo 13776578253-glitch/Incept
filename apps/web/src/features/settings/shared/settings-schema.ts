@@ -4,7 +4,7 @@ import { getAccountSettingsSection } from '../account/account-schema';
 import { getAiSettingsSection } from '../ai/ai-schema';
 import { getAppearanceSettingsSection } from '../appearance/appearance-schema';
 import { getLanguageSettingsSection } from '../language/language-schema';
-import { getPluginSettingsSection } from '../plugin/plugin-schema';
+import { getMusicSettingsSection } from '../music/music-schema';
 
 export function getSettingsPageData(locale: AppLocale): SettingsPageData {
   const isZh = locale === 'zh';
@@ -16,7 +16,7 @@ export function getSettingsPageData(locale: AppLocale): SettingsPageData {
       getAppearanceSettingsSection(locale),
       getLanguageSettingsSection(locale),
       getAccountSettingsSection(locale),
-      getPluginSettingsSection(locale),
+      getMusicSettingsSection(locale),
       getAiSettingsSection(locale),
     ],
   };

@@ -2,7 +2,9 @@
 
 ## Status
 
-Implemented and verified on 2026-09-18. Not committed at the time of writing; the proposed commit is `feat(web): author tracks and libraries from the settings page`. It replaces the manifest-editor round recorded in `docs/finish-task/2026-09-18-music-library-management.md`.
+Implemented and verified on 2026-09-18; committed as `ccd0d62` (`feat(web): author tracks and libraries from the settings page`). It replaces the manifest-editor round recorded in `docs/finish-task/2026-09-18-music-library-management.md`.
+
+> **Section name note (2026-09-20):** the section this record calls Settings → Plugin is now **Music**, and the screen no longer sits under a plugin container — see [2026-09-20-music-settings-section.md](./2026-09-20-music-settings-section.md).
 
 ## Scope
 

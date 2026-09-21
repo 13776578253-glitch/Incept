@@ -254,7 +254,7 @@ function SettingsRowControl({
     );
   }
 
-  if (row.controlType === 'plugin-rate-lock-toggle') {
+  if (row.controlType === 'music-rate-lock-toggle') {
     return (
       <SettingsBooleanToggle
         enabled={musicPlaybackRateLocked}
@@ -265,7 +265,7 @@ function SettingsRowControl({
     );
   }
 
-  if (row.controlType === 'plugin-placement-toggle') {
+  if (row.controlType === 'music-placement-toggle') {
     return (
       <SettingsBooleanToggle
         enabled={musicRememberPlacement}
@@ -276,7 +276,7 @@ function SettingsRowControl({
     );
   }
 
-  if (row.controlType === 'plugin-playback-mode-segmented') {
+  if (row.controlType === 'music-playback-mode-segmented') {
     return (
       <SettingsSegmentedControl
         options={row.options ?? []}
@@ -325,8 +325,8 @@ function SettingsRows({
   section,
   ...interactions
 }: { section: SettingsSection } & SettingsInteractionProps) {
-  // 二级分组：按出现顺序把连续同组的行切成若干段，段前插一个二级标题。
-  // 未标 group 的行沿用原来的一段连续列表，所以既有分区不受影响。
+  // 二级分组：按出现顺序把连续同组的行切成若干段，段前插一个二级标题
+  // 未标 group 的行沿用原来的一段连续列表，所以既有分区不受影响
   const rowGroups = section.rows.reduce<Array<{ label: string | null; rows: SettingsRow[] }>>(
     (accumulator, row) => {
       const label = row.group ?? null;
@@ -346,7 +346,7 @@ function SettingsRows({
   const rows = (
     <div className="max-w-[760px]">
       {rowGroups.map((group, index) => (
-        // 首段不加上间距，否则分区标题下会多出一块空白。
+        // 首段不加上间距，否则分区标题下会多出一块空白
         <div key={group.label ?? `ungrouped-${index}`} className={index === 0 ? undefined : 'pt-8'}>
           {group.label ? (
             <h3 className="pb-3 text-[1.0625rem] font-semibold tracking-[-0.01em] text-[var(--color-text)]">

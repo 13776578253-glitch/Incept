@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 
-import { getPluginSettingsSection } from '../../plugin/plugin-schema';
+import { getMusicSettingsSection } from '../../music/music-schema';
 import { SettingsSectionPanel } from '../settings-renderer';
 import type { SettingsSection } from '../settings-types';
 
@@ -32,21 +32,21 @@ function makeInteractions(overrides: Partial<Interactions> = {}): Interactions {
   };
 }
 
-it('renders the plugin section with its second-level group heading', () => {
-  render(<SettingsSectionPanel section={getPluginSettingsSection('zh')} {...makeInteractions()} />);
+it('renders the music section with its second-level group heading', () => {
+  render(<SettingsSectionPanel section={getMusicSettingsSection('zh')} {...makeInteractions()} />);
 
-  expect(screen.getByRole('heading', { name: '插件' })).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: '音乐播放器' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '音乐' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '播放器' })).toBeInTheDocument();
   expect(screen.getByRole('switch', { name: '锁定' })).toBeChecked();
   expect(screen.getByRole('switch', { name: '开启' })).toBeChecked();
   expect(screen.getByRole('button', { name: '单曲' })).toBeInTheDocument();
 });
 
-it('toggles a plugin switch with the negated value', async () => {
+it('toggles a music switch with the negated value', async () => {
   const interactions = makeInteractions();
   const user = userEvent.setup();
 
-  render(<SettingsSectionPanel section={getPluginSettingsSection('en')} {...interactions} />);
+  render(<SettingsSectionPanel section={getMusicSettingsSection('en')} {...interactions} />);
 
   await user.click(screen.getByRole('switch', { name: 'Locked' }));
 
@@ -62,17 +62,17 @@ it('selects a playback mode through the segmented control', async () => {
   const interactions = makeInteractions();
   const user = userEvent.setup();
 
-  render(<SettingsSectionPanel section={getPluginSettingsSection('zh')} {...interactions} />);
+  render(<SettingsSectionPanel section={getMusicSettingsSection('zh')} {...interactions} />);
 
   await user.click(screen.getByRole('button', { name: '循环' }));
 
   expect(interactions.setMusicPlaybackMode).toHaveBeenCalledWith('all');
 });
 
-it('disables the plugin controls until the preferences are ready', () => {
+it('disables the music controls until the preferences are ready', () => {
   render(
     <SettingsSectionPanel
-      section={getPluginSettingsSection('zh')}
+      section={getMusicSettingsSection('zh')}
       {...makeInteractions({ isMusicPreferencesReady: false })}
     />,
   );
@@ -105,7 +105,7 @@ it('renders ungrouped rows without a group heading', () => {
   render(<SettingsSectionPanel section={section} {...makeInteractions()} />);
 
   expect(screen.getByRole('heading', { name: '主题' })).toBeInTheDocument();
-  expect(screen.queryByRole('heading', { name: '音乐播放器' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: '播放器' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '亮色' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '跟随系统' })).toBeInTheDocument();
 });

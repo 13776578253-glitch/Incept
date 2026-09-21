@@ -5,6 +5,12 @@ import { useState } from 'react';
 import type { MusicAdminLibrary } from '@/server/music/music-admin';
 
 import type { MusicAdminCopy } from './music-admin-copy';
+import {
+  MusicDeleteMenu,
+  musicDeleteTargetFromEvent,
+  type MusicDeleteTarget,
+} from './music-delete-menu';
+import { MusicSelect } from './music-select';
 
 type MusicLibraryEditorProps = {
   copy: MusicAdminCopy;
@@ -14,6 +20,7 @@ type MusicLibraryEditorProps = {
   onRename: (key: string, title: string) => void;
   onMove: (key: string, direction: -1 | 1) => void;
   onSetActive: (key: string, isActive: boolean, moveMembersTo?: string) => void;
+  onDelete: (key: string) => void;
 };
 
 function LibraryRow({
@@ -26,6 +33,7 @@ function LibraryRow({
   onRename,
   onMove,
   onSetActive,
+  onOpenDeleteMenu,
 }: {
   copy: MusicAdminCopy;
   library: MusicAdminLibrary;
@@ -33,6 +41,7 @@ function LibraryRow({
   isBusy: boolean;
   isFirst: boolean;
   isLast: boolean;
+  onOpenDeleteMenu: (event: { clientX: number; clientY: number }, library: MusicAdminLibrary) => void;
 } & Pick<MusicLibraryEditorProps, 'onRename' | 'onMove' | 'onSetActive'>) {
   const [title, setTitle] = useState(library.title);
   const [isDeactivating, setIsDeactivating] = useState(false);
@@ -43,27 +52,41 @@ function LibraryRow({
   );
 
   return (
-    <li className="flex flex-wrap items-center gap-2 rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-2">
+    <li
+      className="flex flex-wrap items-center gap-2 py-2"
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onOpenDeleteMenu(event, library);
+      }}
+    >
       <input
         type="text"
         value={title}
         disabled={isBusy}
         aria-label={`${copy.librariesHeading} ${library.key}`}
         onChange={(event) => setTitle(event.target.value)}
-        className="min-h-9 min-w-[10rem] flex-1 rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-bg)] px-3 text-[0.8125rem] text-[var(--color-text)] outline-none disabled:opacity-60"
+        className="h-8 min-w-[10rem] flex-1 rounded-[8px] bg-transparent px-3 text-[0.8125rem] leading-none text-[var(--color-text)] outline-none transition-colors hover:bg-[var(--color-nav-item-hover)] focus:bg-[var(--color-nav-item-hover)] disabled:opacity-60"
       />
       {isDirty ? (
         <button
           type="button"
           disabled={isBusy || title.trim() === ''}
           onClick={() => onRename(library.key, title.trim())}
-          className="rounded-[9px] border border-[var(--color-nav-item-active)] bg-[var(--color-nav-item-active)] px-2.5 py-1 text-[0.75rem] text-[var(--color-text)] disabled:opacity-50"
+          className="inline-flex h-8 items-center justify-center rounded-[9px] border border-[var(--color-nav-item-active)] bg-[var(--color-nav-item-active)] px-2.5 text-[0.75rem] leading-none text-[var(--color-text)] disabled:opacity-50"
         >
           {copy.actionSave}
         </button>
       ) : null}
-      <span className="text-[0.75rem] text-[var(--color-nav-muted)]">{library.memberCount}</span>
-      <span className="rounded-full border border-[var(--color-nav-dropdown-border)] px-2 py-0.5 text-[0.68rem] text-[var(--color-nav-muted)]">
+      <span className="inline-flex h-8 w-5 items-center text-[0.75rem] leading-none text-[var(--color-nav-muted)]">
+        {library.memberCount}
+      </span>
+      <span
+        className={
+          library.isActive
+            ? 'inline-flex h-8 w-16 items-center text-[0.72rem] leading-none text-[var(--color-nav-dropdown-description)]'
+            : 'inline-flex h-8 w-16 items-center text-[0.72rem] leading-none text-[var(--color-nav-muted)] opacity-80'
+        }
+      >
         {library.isActive ? copy.libraryActive : copy.libraryInactive}
       </span>
       <button
@@ -71,7 +94,7 @@ function LibraryRow({
         aria-label={`${copy.actionMoveUp} ${library.key}`}
         disabled={isBusy || isFirst}
         onClick={() => onMove(library.key, -1)}
-        className="rounded-full px-2 py-1 text-[0.75rem] text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
+        className="inline-flex h-8 items-center justify-center rounded-full px-2 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
       >
         ↑
       </button>
@@ -80,36 +103,37 @@ function LibraryRow({
         aria-label={`${copy.actionMoveDown} ${library.key}`}
         disabled={isBusy || isLast}
         onClick={() => onMove(library.key, 1)}
-        className="rounded-full px-2 py-1 text-[0.75rem] text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
+        className="inline-flex h-8 items-center justify-center rounded-full px-2 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
       >
         ↓
       </button>
 
       {library.isActive ? (
         isDeactivating ? (
-          <span className="flex flex-wrap items-center gap-2">
+          <span className="flex min-h-8 flex-wrap items-center gap-2">
             <label className="flex items-center gap-1 text-[0.72rem] text-[var(--color-nav-dropdown-description)]">
               {copy.libraryMoveMembersLabel}
-              <select
+              <MusicSelect
                 value={destination}
                 disabled={isBusy}
-                aria-label={`${copy.libraryMoveMembersLabel} ${library.key}`}
-                onChange={(event) => setDestination(event.target.value)}
-                className="min-h-8 rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-2 text-[0.75rem] text-[var(--color-text)] outline-none"
-              >
-                <option value="">—</option>
-                {destinations.map((candidate) => (
-                  <option key={candidate.key} value={candidate.key}>
-                    {candidate.title}
-                  </option>
-                ))}
-              </select>
+                ariaLabel={`${copy.libraryMoveMembersLabel} ${library.key}`}
+                onChange={setDestination}
+                options={[
+                  { value: '', label: '—' },
+                  ...destinations.map((candidate) => ({
+                    value: candidate.key,
+                    label: candidate.title,
+                  })),
+                ]}
+                className="min-w-20"
+                buttonClassName="h-8 text-[0.75rem] leading-none"
+              />
             </label>
             <button
               type="button"
               disabled={isBusy || (library.memberCount > 0 && destination === '')}
               onClick={() => onSetActive(library.key, false, destination === '' ? undefined : destination)}
-              className="rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 py-1 text-[0.75rem] text-[var(--color-text)] disabled:opacity-50"
+              className="inline-flex h-8 items-center justify-center rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 text-[0.75rem] leading-none text-[var(--color-text)] disabled:opacity-50"
             >
               {copy.libraryDeactivate}
             </button>
@@ -117,7 +141,7 @@ function LibraryRow({
               type="button"
               disabled={isBusy}
               onClick={() => setIsDeactivating(false)}
-              className="rounded-[9px] px-2.5 py-1 text-[0.75rem] text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)]"
+              className="inline-flex h-8 items-center justify-center rounded-[9px] px-2.5 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)]"
             >
               {copy.actionCancel}
             </button>
@@ -135,7 +159,7 @@ function LibraryRow({
 
               setIsDeactivating(true);
             }}
-            className="rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 py-1 text-[0.75rem] text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
+            className="inline-flex h-8 items-center justify-center rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
           >
             {copy.libraryDeactivate}
           </button>
@@ -145,7 +169,7 @@ function LibraryRow({
           type="button"
           disabled={isBusy}
           onClick={() => onSetActive(library.key, true)}
-          className="rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 py-1 text-[0.75rem] text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
+          className="inline-flex h-8 items-center justify-center rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 text-[0.75rem] leading-none text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
         >
           {copy.libraryReactivate}
         </button>
@@ -162,8 +186,10 @@ export function MusicLibraryEditor({
   onRename,
   onMove,
   onSetActive,
+  onDelete,
 }: MusicLibraryEditorProps) {
   const [newName, setNewName] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<MusicDeleteTarget | null>(null);
 
   return (
     <section className="space-y-3">
@@ -191,7 +217,7 @@ export function MusicLibraryEditor({
         </button>
       </div>
 
-      <ul className="space-y-2">
+      <ul className="divide-y divide-[var(--color-nav-dropdown-border)]">
         {libraries.length === 0 ? (
           <li className="text-[0.8125rem] text-[var(--color-nav-dropdown-description)]">
             {copy.libraryEmpty}
@@ -209,10 +235,30 @@ export function MusicLibraryEditor({
               onRename={onRename}
               onMove={onMove}
               onSetActive={onSetActive}
+              onOpenDeleteMenu={(event, target) =>
+                setDeleteTarget(
+                  musicDeleteTargetFromEvent(event, {
+                    id: target.key,
+                    title: target.title,
+                    confirm: copy.deleteLibraryConfirm,
+                  }),
+                )
+              }
             />
           ))
         )}
       </ul>
+
+      <MusicDeleteMenu
+        target={deleteTarget}
+        copy={copy}
+        isBusy={isBusy}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={(key) => {
+          setDeleteTarget(null);
+          onDelete(key);
+        }}
+      />
     </section>
   );
 }

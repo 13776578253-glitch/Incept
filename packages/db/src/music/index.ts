@@ -2,7 +2,10 @@ export { importMusicCatalog } from './import';
 export {
   createMusicLibrary,
   createMusicTrack,
+  deleteMusicLibrary,
+  deleteMusicTrack,
   planMusicLibraryCreate,
+  planMusicLibraryDelete,
   planMusicLibraryUpdate,
   planMusicTrackCreate,
   planMusicTrackUpdate,
@@ -19,7 +22,7 @@ export {
 } from './queries/list';
 
 export type { MusicCatalogRecord, MusicCatalogTrackRecord } from './queries/list';
-export type { MusicLibraryPatch, MusicTrackPatch, MusicTrackWrite } from './manage';
+export type { MusicLibraryPatch, MusicTrackDeletion, MusicTrackPatch, MusicTrackWrite } from './manage';
 export type { ExistingMusicState, MusicImportMode, MusicImportPlan, MusicImportPlanInput } from './plan';
 export type {
   MusicImportSummary,
