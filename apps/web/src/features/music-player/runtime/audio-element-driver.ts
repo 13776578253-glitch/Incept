@@ -36,9 +36,14 @@ export function attachAudioDriver(audio: HTMLAudioElement, bridge: AudioEventBri
   };
 }
 
-// play() 被拒绝时转成运行时事件
+// play() 被拒绝时转成运行时事件；元素已带媒体错误说明是加载失败，不是自动播放被拦
 export function requestAudioPlay(audio: HTMLAudioElement, bridge: AudioEventBridge): void {
   void audio.play().catch((error: unknown) => {
+    if (audio.error) {
+      bridge({ type: 'audioErrored', message: 'audio_element_error' });
+      return;
+    }
+
     bridge({
       type: 'playRejected',
       message: error instanceof Error ? error.message : 'play_rejected',
