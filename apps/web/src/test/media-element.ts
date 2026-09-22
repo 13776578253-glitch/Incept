@@ -22,6 +22,9 @@ export function installMediaElementMocks() {
     setDuration(element: HTMLMediaElement, seconds: number) {
       Object.defineProperty(element, 'duration', { configurable: true, value: seconds });
     },
+    setError(element: HTMLMediaElement, code: number) {
+      Object.defineProperty(element, 'error', { configurable: true, value: { code } });
+    },
     dispatch(element: HTMLMediaElement, type: AudioEventType) {
       fireEvent(element, new Event(type));
     },

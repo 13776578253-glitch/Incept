@@ -9,7 +9,7 @@ The rules and the reasoning live in [Tracks and libraries are authored in the we
 | Thing | Where | Who may change it |
 | --- | --- | --- |
 | The database | `music_tracks` / `music_libraries` / `music_library_items` | **The web** (uploads and edits) or a bulk import |
-| Published audio | `apps/web/public/_music-media/<sha256>.<ext>` (gitignored) | Web uploads or a bulk import; both are content-addressed |
+| Published audio | `apps/web/public/_music-media/<sha256>.<ext>` (gitignored, no second copy) | Web uploads or a bulk import; both are content-addressed |
 | The migration manifest and originals | audio plus `music.json` under `MUSIC_CONTENT_ROOT` | Only during a bulk migration — ignore it day to day |
 
 In one sentence: **the database is the source of truth, the mirror is content-addressed, and the manifest is just a migration tool.**
@@ -104,6 +104,8 @@ pnpm music:cleanup --apply   # delete them
 
 ## Backup and recovery
 
+> **The mirror has no second copy, and it sits inside the repository workspace.** `apps/web/public/_music-media/` is gitignored: git does not track it and nothing backs it up. A "clean the workspace" pass, a delete made while switching branches, or emptying the directory all leave the database rows pointing at files that no longer exist — the player then has nothing to load (every `/_music-media/*` request is a 404), and **a deleted file exists nowhere else**, so only the originals can bring it back. Copy the directory away (second bullet below) before anything touches it.
+
 - **Metadata**: the database is it. Take a `pg_dump`; after restoring, a stale `music.json` in the content root does not matter.
 - **Audio**: copy the whole `apps/web/public/_music-media/` directory (named by sha256, deduplicated, verifiable). If the originals are still in the content root, that works too.
 - **Migrating**: move the database and the mirror directory, run `pnpm db:deploy`, start the site. If the migration tool needs a manifest, point it at a content root and run `pnpm music:manifest`.
@@ -123,6 +125,7 @@ pnpm music:cleanup --apply   # delete them
 | Upload says "The file exceeds the 128 MB limit." | Over 128 MB per file; transcode or trim it — chunked upload is not implemented |
 | Upload says "does not exist or is deactivated" | The target library was deactivated: restore it, or pick another |
 | An uploaded file is missing from the player | It went into a deactivated library, or the browser cached the catalogue: reload the page |
+| The player loads nothing, reports "Audio failed to load", and the server log shows `/_music-media/*` 404s | The mirror files are gone (a workspace cleanup, a delete made while switching branches, the directory emptied) while the rows remain. Upload the originals again — content addressing hits the same row and only republishes the file; with a backup, copy it straight back into `apps/web/public/_music-media/` |
 | The library's "Deactivate" button will not press | It is the last active library — at least one must remain |
 | The track's "Restore" button will not press | The track has no memberships: give it an active library first |
 | "The database is unavailable" | Check that the database runs and `DATABASE_URL` is right; the screen stays read-only until then |

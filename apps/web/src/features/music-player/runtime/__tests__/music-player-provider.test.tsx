@@ -136,6 +136,21 @@ it('surfaces an audio element error', () => {
   expect(latest.current!.state.status).toBe('errored');
 });
 
+it('reports a media error, not an autoplay block, when play() is rejected by a broken source', async () => {
+  const { latest, audio } = renderPlayer(makeCatalog(1));
+
+  // 源取不到（404 等）时元素上会有媒体错误，play() 的拒绝属于加载失败
+  media.setError(audio, 4);
+  media.play.mockRejectedValue(new Error('NotSupportedError'));
+
+  act(() => {
+    latest.current!.playTrack('demo-01');
+  });
+
+  await waitFor(() => expect(latest.current!.errorKind).toBe('audioError'));
+  expect(latest.current!.state.status).toBe('errored');
+});
+
 it('restarts from zero when the same track is served from a new URL', () => {
   const { latest, audio, rerender } = renderPlayer(catalogWithAudioUrl('/_music-media/old.wav'));
 
