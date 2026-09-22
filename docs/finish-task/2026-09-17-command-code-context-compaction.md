@@ -2,7 +2,7 @@
 
 ## Status
 
-**Investigation complete. No repository files were changed in this session.** All repository work remains as described in the two active task records (see "Where development resumes").
+**Investigation complete. No repository files were changed in this session.** All repository work remains as described in the two active task records (see "Where development resumes"). The bug this session filed was fixed upstream and verified on 2026-09-21, on the original failing session — see "Resolution".
 
 ## Why this session happened
 
@@ -18,11 +18,21 @@ The previous session (`e557b148`, 2026-09-10 → 2026-09-16) degraded: frequent 
 
 ## Actions taken (outside the repository)
 
-- `compact-mode` switched `fast` → `default` in user scope — removes the silent 50%/80% trims, leaving only a 90% summarize.
-- Bug report filed: *TUI hangs after /compact — input is blocked and the queued message is never sent* (`github.com/CommandCodeAI/command-code/issues`).
+- `compact-mode` switched `fast` → `default` in user scope — removes the silent 50%/80% trims, leaving only a 90% summarize. Verified still in effect on 2026-09-21.
+- Bug report filed: *TUI hangs after /compact — input is blocked and the queued message is never sent* (`github.com/CommandCodeAI/command-code/issues`). Fixed upstream and verified on 2026-09-21 — see "Resolution".
 - Artifacts in `D:\Desktop\docs-push`:
   - `command-code-issue-compact-hang.md` — report text pasted into the issue form.
   - `command-code-session-tail-redacted.json` — 204 redacted transcript entries (09-16 22:39 → 23:22 local), with source SHA-256 and redaction log in its header; secret scan clean.
+
+## Resolution (2026-09-21)
+
+The maintainers answered that it was fixed and asked for confirmation on an updated CLI; the fix was confirmed on the session that had failed, not on a fresh one.
+
+- The CLI had already auto-updated past the incident's version (1.54.1 → 1.54.2 → **1.58.1**, the current release). In the new bundle, manual `/compact` runs through the session client with a busy state (`Compacting conversation...`), resets on both the success and the failure path, and queues input submitted while busy; `compaction_start` / `compaction_done` events are new.
+- `e557b148` — the session from the incident — was resumed on 1.58.1 and a manual `/compact` was run again. Its transcript now holds one compaction entry: `tokensBefore` **1,120,238** (above the 1M window, because `default` mode no longer trims and the resumed session re-expanded the whole history), a ~27.4k-character summary, ~28 s wall time, ~498k tokens saved.
+- Messages were accepted again at 23:06:33 local, and by 23:07:20 the model had made four tool calls and returned visible output. The same file's original failure — the manual `/compact` on 2026-09-16 23:17:03 — left no compaction entry at all and the input never accepted a message again, while the process kept appending turns until 23:22:31.
+- **Not covered by the fix:** the branch where the summary request never returns. There is still no cancellation and no visible timeout on that path, so queued input would wait indefinitely if the request never settles. The maintainers' follow-up paired fixture narrows this to one boundary — `Escape` reports `Interrupted` without cancelling the in-flight summary request — which is their own question to close rather than part of the reported bug; the method note relayed back was that a 3-second observation window shows "no cancellation within 3 s", not whether the client eventually times out.
+- **Also not fixed:** the long-session drift itself (findings 1–5). Trimming still fires at 50% / 80% under `fast`, and reasoning is still replayed for every model outside `modelBindsThinkingToPrefix`. The mitigation stays what the working rules below describe.
 
 ## Working rules adopted (apply to future sessions)
 
@@ -38,6 +48,12 @@ The previous session (`e557b148`, 2026-09-10 → 2026-09-16) degraded: frequent 
 - `docs/current-task/2026-09-14-music-player-floating-plugin.md` — player and preference channel.
 - Open human decisions: none. Both questions recorded here were answered on 2026-09-17 — the React test environment was built (B-18) and the queue behaviour on a library switch was decided and implemented (B-19). Repository status at handoff: 48 changed files, nothing committed this session.
 
+Both task records above were archived to `docs/finish-task/` on 2026-09-21, and the music feature they describe was merged into `main` through PR #2 (`e35fccc`).
+
 ## Lifecycle
 
 Archive this file to `docs/finish-task/` once the upstream issue is resolved or the working rules are absorbed elsewhere.
+
+## Archive Note
+
+Archived to `finish-task/` on 2026-09-21 — the condition above is met: the fix shipped in `1.58.1` and was verified on the original failing session (see "Resolution"). This record's own sessions changed no repository files, and the working rules it adopted remain in force.
