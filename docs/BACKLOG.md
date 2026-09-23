@@ -20,27 +20,27 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 
 ### B-03 Markdown-like Heading And Section Model
 
-- Source: `document/blocks/index.ts`
+- Source: `apps/web/src/features/docs/importer/parsers/markdown-like/document/blocks/index.ts`
 - Status: Implemented; the line-12 heading note is already `history:`, but `blocks/index.ts:13` still carries a live TODO about mapping heading blocks into the nested `On this page` outline, so it is not a completed-work cleanup candidate.
 - `#` starts a section, while `##` through `####` become body heading blocks and nested `On this page` outline items.
 - Section IDs, block IDs, article-writing syntax, and the existing section-level outline behavior remain unchanged.
 
 ### B-04 Markdown-like Checklist Expansion
 
-- Source: `document/state.ts:63-64`
+- Source: `apps/web/src/features/docs/importer/parsers/markdown-like/document/state.ts:63-64`
 - Status: Active parser-design work.
 - Decide multiline checklist item syntax and whether nested checklist items are supported. Do not change IDs independently of the parser grammar.
 
 ### B-05 Structured Content Extensions
 
-- Source: `block-system/schema/docs-block-types.ts` (`DocsBlockType` union), `block-system/examples/docs-block-style-lab-page.ts:12-13`
+- Source: `apps/web/src/features/docs/block-system/schema/docs-block-types.ts` (`DocsBlockType` union), `apps/web/src/features/docs/block-system/examples/docs-block-style-lab-page.ts:12-13`
 - Note: the former `docs-block-types.ts:1` marker is already an in-place `history:` note; `table` remains unimplemented across the block union, the renderers, and the importer.
 - Status: Active only after the authoring contract is designed.
 - Image support is complete. The remaining concrete candidate is `table`; embeds, video, timeline, and interactive blocks remain separate proposals rather than implicit additions.
 
 ### B-06 Multi-Article Markdown-like Source
 
-- Sources: `document/state.ts:6`, `document/ids.ts:3`
+- Sources: `apps/web/src/features/docs/importer/parsers/markdown-like/document/state.ts:6`, `apps/web/src/features/docs/importer/parsers/markdown-like/document/ids.ts:3`
 - Status: Implemented foundation; real-content acceptance and follow-up hardening remain.
 - One `.docs.md` file remains one independent article. Directory import maps numbered folders to empty navigation folders and numbered files to article nodes.
 - Maximum folder depth is three; numeric prefixes supply sibling order. Batch Preview/Confirm, the `created` / `updated` / `unchanged` diff, inactive-node cleanup, and strict database transaction handling are implemented. The `renamed` / `removed` statuses are not: both branches of the replace check in `packages/db/src/docs/import.ts` resolve to `updated` (B-13).
@@ -50,7 +50,7 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 
 ### B-07 Additional Code Palettes
 
-- Source: `features/docs/code-highlighting/palette.ts:5`
+- Source: `apps/web/src/features/docs/code-highlighting/palette.ts:5`
 - Status: Deferred.
 - Current `vscode`, `github`, and `vitesse` palettes plus the eye-comfort override are sufficient. Add palettes only with a named UX need and matching light/dark Shiki themes.
 
@@ -163,7 +163,7 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 
 ### B-09 Retained Style Lab And Block Catalog
 
-- Sources: `block-system/catalog/`, `block-system/examples/`, `[locale]/docs/style-lab`
+- Sources: `apps/web/src/features/docs/block-system/catalog/`, `apps/web/src/features/docs/block-system/examples/`, `apps/web/src/app/[locale]/docs/style-lab`
 - Status: Retained Owner-only test surface.
 - Keep the source and route out of public navigation. Do not delete this original test layer during cleanup.
 - Only convert its completed real-media and syntax-highlighting TODOs to in-place `history:` notes; any future expansion needs a concrete regression-testing purpose.
@@ -178,18 +178,27 @@ Verified against the working tree: these sources already carry the planned in-pl
 
 | Source | In-place note now present |
 | --- | --- |
-| `features/docs/block-system/examples/docs-code-example-utils.ts:1-3` | `history:` Shiki highlighting note plus a `Deferred:` builder note. |
-| `features/docs/block-system/schema/docs-block-types.ts:1` | `history: image blocks and local media publishing are implemented; table remains B-05.` |
-| `features/docs/block-system/catalog/docs-block-catalog.ts:36-37` | `history:` real-media pipeline note plus the retained Style Lab fixture note. |
+| `apps/web/src/features/docs/block-system/examples/docs-code-example-utils.ts:1-3` | `history:` Shiki highlighting note plus a `Deferred:` builder note. |
+| `apps/web/src/features/docs/block-system/schema/docs-block-types.ts:1` | `history: image blocks and local media publishing are implemented; table remains B-05.` |
+| `apps/web/src/features/docs/block-system/catalog/docs-block-catalog.ts:36-37` | `history:` real-media pipeline note plus the retained Style Lab fixture note. |
 | `apps/web/src/server/docs/mappers.ts:23-24` | `history:` annual-description removal and mapper-consolidation notes. |
 | `packages/db/src/docs/types.ts:10-11` | `history:` block-union note. The earlier `:6` reference pointed at an import statement, not a comment. |
-| `document/state.ts:5` | `history: # creates a section and ## through #### already parse as body heading blocks.` |
+| `apps/web/src/features/docs/importer/parsers/markdown-like/document/state.ts:5` | `history: # creates a section and ## through #### already parse as body heading blocks.` |
+
+Verified against the working tree on 2026-09-23: **there are currently no pending history conversions.** Every source listed in the tables above already carries its intended in-place note.
 
 ### Remaining
 
-| Source | Planned in-place history note | Evidence |
-| --- | --- | --- |
-| `document/state.ts:6` and `document/ids.ts:3` duplicate wording | `history: duplicated multi-article-source TODO consolidated under B-06.` | Both TODOs still exist and are the live B-06 source markers; convert them only once B-06 real-content acceptance closes. |
+None. The row previously listed here claimed that the duplicate multi-article-source TODO in the markdown-like importer was still live. That is no longer accurate and has been removed from this table:
+
+| Former row | Verified state on 2026-09-23 |
+| --- | --- |
+| The TODO in the markdown-like parser's section-state and id-generation files was still open | **Superseded.** They are the live source markers of B-06, not pending history conversions, and B-06's real-content acceptance is tracked in the Active section above. They are deliberately left as TODOs until that acceptance closes; they are not a cleanup candidate. |
+
+Two further claims that used to live in this file are also resolved, and are recorded here so the correction is not lost:
+
+- The stale project-root paths `document/blocks/index.ts`, `document/state.ts` and `document/ids.ts` have been repointed at their real locations under `apps/web/src/features/docs/importer/parsers/markdown-like/document/`.
+- The note that `prismaSchemaRevision` in `packages/db/src/client.ts` had not been raised for the 2026-09-01 / 2026-09-02 schema changes is no longer true: it currently reads `2026-09-21-add-music-content-hash-key`, matching the latest migration. Be aware that this string is a hand-maintained sentinel — every new migration must update it, and nothing enforces that.
 
 ### Cleaned On 2026-09-21 During The Comment Pass
 

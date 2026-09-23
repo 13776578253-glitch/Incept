@@ -45,5 +45,7 @@ Docs 导入会先生成 draft；正式写库必须在 Owner 预览页确认。�
 
 - [Docs Index](docs/INDEX.md)：文档目录与阅读入口。
 - [Code Backlog](docs/BACKLOG.md)：源码 TODO 的唯一审查清单。
-- [Docs Module Architecture](docs/modules/docs/zh/docs-architecture.md)：当前 Docs 模块结构，后续会与实现同步更新。
+- [Next Stage](docs/NEXT.md)：当前活跃产品任务的短入口。
+- [Docs 内容导入与合集批次操作手册](docs/runbooks/zh/docs-content-import.md)：写作、导入、发布的标准流程。
+- [Docs 数据层规则](docs/decisions/zh/db-layer-architecture-rules.md)：分层边界与不可随手改动的约束。
 - [Current Task](docs/current-task/)：近期任务上下文与里程碑记录。

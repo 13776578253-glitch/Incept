@@ -2,7 +2,16 @@
 
 ## Status
 
-Implemented in the current working tree, **uncommitted**. Delivery is the tooling plus the bilingual runbook.
+**Closed on 2026-09-23.** Delivered, committed as `fc68715 feat(scripts): add the multi-AI worktree workflow tooling and runbook`, and moved from `docs/current-task/` to `docs/finish-task/`.
+
+The delivery is the tooling plus the bilingual runbook.
+
+> **Archived note (2026-09-23).** The body below was written while the work was still uncommitted, so two statements are now out of date. They are corrected here rather than edited in place, because this record's original text is history:
+>
+> - It says "Implemented in the current working tree, **uncommitted**". It is committed (`fc68715`) and on `main`.
+> - It describes the main checkout as sitting at `a927a12`. That was true when written; `main` has since moved to `fc68715`.
+>
+> The rest of the record — the tooling model, the verified refusal paths and the open verification items — still describes the delivered behaviour. The verification items that remain open today are: no AI round has yet been run inside `Incept-music`, all scripted verification used `--no-install`, and the `--db-schema` refusal branch has never been exercised against a real env file.
 
 The main checkout now sits at `a927a12` (PR #3 merged `feat/music-Plugin`), and the real music worktree exists and is registered: `D:\Desktop\code\code\Incept-music` on branch `feat/music-Plugin`.
 

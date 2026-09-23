@@ -1,3 +1,26 @@
+> **Retired on 2026-09-23.** This was the only document in the `docs/modules/` layer, and
+> that layer has been removed. Kept here so the working tree does not lose it.
+>
+> **Why the layer went away:** it had no defensible inclusion rule (one of eight candidate
+> modules was documented, and nothing said why), and it restated content owned elsewhere —
+> "Runtime Boundaries" duplicated the six-layer split in
+> [db-layer-architecture-rules.md](../../../decisions/en/db-layer-architecture-rules.md), and
+> "Current Deferred Boundaries" was a third parallel copy of what `NEXT.md` and
+> `BACKLOG.md` already track.
+>
+> **No decision replaced this document**, so none was invented for it. Where its content
+> lives now:
+>
+> - routes, content/data model, body contract and the import/publication flow: still
+>   accurate, but now owned by [docs-content-import.md](../../../runbooks/en/docs-content-import.md)
+>   (procedure), the Markdown-like decision documents (authoring contract) and
+>   `packages/db/prisma/schema.prisma` (data model)
+> - runtime boundaries: [db-layer-architecture-rules.md](../../../decisions/en/db-layer-architecture-rules.md)
+> - deferred boundaries: `docs/NEXT.md` and `docs/BACKLOG.md`
+>
+> Originally at `docs/modules/docs/en/docs-architecture.md`. The text below is the original,
+> unedited apart from this header.
+
 # Docs Module Architecture
 
 ## Purpose

@@ -2,7 +2,7 @@
 
 面向内容维护者。**日常创作都在网页里完成**：上传音频、编辑曲目、管理曲库。命令行只在批量迁移与重建时使用。
 
-规则与理由见 [曲目与曲库改为网页创作](../decisions/zh/music-authoring-in-the-web.md)；迁移工具（内容根、清单、导入器）的规则见 [music-content-import.md](./music-content-import.md)。
+规则与理由见 [曲目与曲库改为网页创作](../../decisions/zh/music-authoring-in-the-web.md)；迁移工具（内容根、清单、导入器）的规则见 [music-content-import.md](./music-content-import.md)。
 
 ## 先理解三样东西
 

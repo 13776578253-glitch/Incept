@@ -2,7 +2,7 @@
 
 For whoever maintains the content. **Daily authoring happens in the web**: upload audio, edit tracks, manage libraries. The command line is only for bulk migration and rebuilding.
 
-The rules and the reasoning live in [Tracks and libraries are authored in the web](../decisions/en/music-authoring-in-the-web.md); the migration tool (content root, manifest, importer) is described in [music-content-import.md](./music-content-import.md).
+The rules and the reasoning live in [Tracks and libraries are authored in the web](../../decisions/en/music-authoring-in-the-web.md); the migration tool (content root, manifest, importer) is described in [music-content-import.md](./music-content-import.md).
 
 ## Three things to understand first
 

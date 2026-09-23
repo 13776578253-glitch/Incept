@@ -26,7 +26,25 @@ apps/web/public/mock/audio/
 packages/db/generated
 packages/db/node_modules
 .docs-import-drafts
-apps/web/src/features/docs/importer/docs-push/
+
+# docs-push holds historical source/article samples alongside the authoring
+# contract. Only the contract itself, docs-push/README.md, is tracked: the article
+# samples under docs/, the media sample directories and the example directories
+# stay out of Git, matching the rule that real content lives in DOCS_CONTENT_ROOT
+# outside the repository.
+#
+# The example directories are excluded whole, including their own READMEs, because
+# they document the earlier TypeScript DocsImportArticleSource template path, which
+# .docs.md has since replaced. Tracking them would offer a second and competing
+# authoring entry point.
+#
+# The sample locations are listed explicitly rather than ignored by wildcard: a
+# rule such as /*/*/* also matches the nested README files, and once a file is
+# matched by such a rule no later negation can bring it back.
+apps/web/src/features/docs/importer/docs-push/docs/
+apps/web/src/features/docs/importer/docs-push/docs-image/
+apps/web/src/features/docs/importer/docs-push/example-first-mapping/
+apps/web/src/features/docs/importer/docs-push/example-second-mapping/
 
 .agents
 .commandcode

@@ -1,3 +1,17 @@
+> **本文件已于 2026-09-23 停止维护。** 它曾是 `docs/modules/` 层唯一的文档，而该层已被移除；保留在此是为了工作区不丢失内容。
+>
+> **为什么移除该层：** 它没有可辩护的收录判据（八个候选模块里只写了一篇，且没说为什么），并且重复了别处的归属——「Runtime Boundaries」重复了
+> [db-layer-architecture-rules.md](../../../decisions/zh/db-layer-architecture-rules.md) 的六层划分，「Current Deferred Boundaries」则是 `NEXT.md` 与 `BACKLOG.md` 已有的第三份并行清单。
+>
+> **没有任何 decision 取代本文**，因此也没有为它硬造一份。它的内容现在的归属：
+>
+> - 路由、内容与数据模型、正文合同、导入/发布流程：仍然准确，但归属分别改为
+>   [docs-content-import.md](../../../runbooks/zh/docs-content-import.md)（操作流程）、Markdown-like 决策文档（写作合同）与 `packages/db/prisma/schema.prisma`（数据模型）
+> - 运行时边界：[db-layer-architecture-rules.md](../../../decisions/zh/db-layer-architecture-rules.md)
+> - 未实现边界：`docs/NEXT.md` 与 `docs/BACKLOG.md`
+>
+> 原文位置：`docs/modules/docs/zh/docs-architecture.md`。以下为原文，除本抬头外未作改动。
+
 # Docs 模块架构
 
 ## 定位
