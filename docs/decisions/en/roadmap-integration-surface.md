@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted on 2026-09-23. The migration phases are specified in `docs/plans/roadmap-modularization.md`.
+Accepted on 2026-09-23. The deferred implementation phases are tracked as `B-26` in `docs/BACKLOG.md`.
 
 ## Context
 

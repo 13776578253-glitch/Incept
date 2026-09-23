@@ -2,7 +2,7 @@
 
 ## 状态
 
-Accepted on 2026-09-23。迁移阶段见 `docs/plans/roadmap-modularization.md`。
+Accepted on 2026-09-23。暂缓的实施阶段登记在 `docs/BACKLOG.md`（B-26）。
 
 ## 背景
 
