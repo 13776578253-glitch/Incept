@@ -144,6 +144,11 @@ Current content import manuals:
 - `docs/runbooks/en/music-library-management.md`
 - `docs/runbooks/zh/music-library-management.md`
 
+Current workflow manuals:
+
+- `docs/runbooks/zh/multi-ai-worktrees.md`
+- `docs/runbooks/en/multi-ai-worktrees.md`
+
 ### `decisions/`
 
 Stores architectural and design decisions.
