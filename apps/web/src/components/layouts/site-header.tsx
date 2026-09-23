@@ -204,32 +204,41 @@ export function SiteHeader() {
 
                 {hasGroups ? (
                   <div
-                    className={`absolute left-0 top-full z-50 mt-2 w-max min-w-[18rem] transition-opacity duration-150 ${
+                    className={`absolute left-0 top-full z-50 mt-1.5 w-[min(20rem,calc(100vw-2rem))] transition-[opacity,transform] duration-150 ${
                       isDropdownOpen
-                        ? 'pointer-events-auto visible opacity-100'
-                        : 'pointer-events-none invisible opacity-0'
+                        ? 'pointer-events-auto visible translate-y-0 opacity-100'
+                        : 'pointer-events-none invisible -translate-y-1 opacity-0'
                     }`}
                     onMouseEnter={() => openMenu(item.id)}
                     onMouseLeave={scheduleCloseMenu}
                   >
-                    <div className="overflow-hidden rounded-[15px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 shadow-[var(--shadow-nav-dropdown)]">
+                    <div className="overflow-hidden rounded-[16px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1.5 shadow-[var(--shadow-nav-dropdown)]">
                       {item.groups?.flatMap((group) =>
                         group.items.map((navItem) => (
                           <Link
                             key={navItem.id}
                             href={navItem.href}
-                            className="block rounded-[11px] px-2.5 py-2 transition-colors hover:bg-[var(--color-nav-item-hover)]"
+                            className={`group block rounded-[10px] px-2.5 py-2 transition-colors hover:bg-[var(--color-nav-item-hover)] ${
+                              pathname === navItem.href ? 'bg-[var(--color-nav-item-hover)]' : ''
+                            }`}
                             onClick={() => setOpenDropdown(null)}
                           >
-                            <div className="flex flex-col gap-1">
-                              <div className="text-[0.9rem] font-medium text-[var(--color-text)]">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="text-[0.82rem] font-medium leading-[1.15rem] text-[var(--color-text)]">
                                 {navItem.label}
-                              </div>
-                              {navItem.description ? (
-                                <div className="max-w-[20rem] text-[0.82rem] leading-5 text-[var(--color-nav-dropdown-description)]">
-                                  {navItem.description}
                                 </div>
-                              ) : null}
+                                {navItem.description ? (
+                                  <div className="mt-0.5 text-[0.7rem] leading-[1.2rem] text-[var(--color-nav-dropdown-description)]">
+                                    {navItem.description}
+                                  </div>
+                                ) : null}
+                              </div>
+                              <span className="mt-0.5 text-[var(--color-nav-muted)] opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true">
+                                <svg viewBox="0 0 16 16" className="size-3" fill="none">
+                                  <path d="M3.5 8h9m-3.5-3.5L12.5 8 9 11.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </span>
                             </div>
                           </Link>
                         )),
