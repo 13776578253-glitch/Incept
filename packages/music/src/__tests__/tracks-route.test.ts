@@ -5,6 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+import { buildNcmContainer } from '../testing/ncm-fixture';
+import { createMusicTracksRoute } from '../next/music-tracks';
+
 const { mirrorRef, db } = vi.hoisted(() => ({
   mirrorRef: { directory: '' },
   db: {
@@ -13,29 +16,19 @@ const { mirrorRef, db } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@/server/auth', () => ({
-  getCurrentViewer: async () => ({ role: 'owner' }),
-  hasSameOrigin: () => true,
-}));
-
 // 把镜像目录换到临时目录，其余实现保持真实 /含 fs 与真实解码/解析
-vi.mock('@incept/music/adapters', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@incept/music/adapters')>();
+function POST(request: Request) {
+  const { POST: handler } = createMusicTracksRoute({
+    authorizeOwner: async () => true,
+    repository: {
+      listAllLibraries: db.listAllMusicLibraries,
+      uploadTrack: db.uploadMusicTrack,
+    },
+    paths: { mirrorDirectory: mirrorRef.directory },
+  });
 
-  return {
-    ...actual,
-    listAllMusicLibraries: db.listAllMusicLibraries,
-    uploadMusicTrack: db.uploadMusicTrack,
-    storeMusicUpload: (input: Parameters<typeof actual.storeMusicUpload>[0]) =>
-      actual.storeMusicUpload({ ...input, directory: mirrorRef.directory }),
-    storeMusicAudioBytes: (input: Parameters<typeof actual.storeMusicAudioBytes>[0]) =>
-      actual.storeMusicAudioBytes({ ...input, directory: mirrorRef.directory }),
-  };
-});
-
-import { buildNcmContainer } from '@incept/music/testing';
-
-import { POST } from '../route';
+  return handler(request);
+}
 
 // 合成 WAV：结构合法/能被 music-metadata 解析
 function wavBytes(seconds = 1): Buffer {
@@ -304,4 +297,24 @@ it('stores the decoded audio of a working ncm under its real format', async () =
       mimeType: 'audio/mpeg',
     }),
   );
+});
+
+// v2 增补的 404 语义回归：authorizeOwner 拒绝（非 owner）时不得触达库与镜像
+it('answers 404 without touching the database or the mirror when authorizeOwner refuses', async () => {
+  const { POST: refused } = createMusicTracksRoute({
+    authorizeOwner: async () => false,
+    repository: {
+      listAllLibraries: db.listAllMusicLibraries,
+      uploadTrack: db.uploadMusicTrack,
+    },
+    paths: { mirrorDirectory: mirrorRef.directory },
+  });
+
+  const response = await refused(uploadRequest('song.mp3', 'default', wavBytes()));
+
+  expect(response.status).toBe(404);
+  await expect(response.json()).resolves.toEqual({ error: 'Not found.' });
+  expect(db.listAllMusicLibraries).not.toHaveBeenCalled();
+  expect(db.uploadMusicTrack).not.toHaveBeenCalled();
+  expect(await fs.readdir(mirrorRef.directory)).toEqual([]);
 });

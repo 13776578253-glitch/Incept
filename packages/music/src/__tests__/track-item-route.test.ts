@@ -1,27 +1,21 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+import { createMusicTrackItemRoute } from '../next/music-track-item';
+
 const { auth, db } = vi.hoisted(() => ({
-  auth: { role: 'owner' },
+  auth: { allowed: true },
   db: { deleteMusicTrack: vi.fn(), updateMusicTrack: vi.fn() },
 }));
 
-vi.mock('@/server/auth', () => ({
-  getCurrentViewer: async () => ({ role: auth.role }),
-  hasSameOrigin: () => true,
-}));
+function DELETE(request: Request, context: { params: Promise<{ trackKey: string }> }) {
+  const { DELETE: handler } = createMusicTrackItemRoute({
+    authorizeOwner: async () => auth.allowed,
+    repository: { deleteTrack: db.deleteMusicTrack, updateTrack: db.updateMusicTrack },
+  });
 
-vi.mock('@incept/music/adapters', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@incept/music/adapters')>();
-
-  return {
-    ...actual,
-    deleteMusicTrack: db.deleteMusicTrack,
-    updateMusicTrack: db.updateMusicTrack,
-  };
-});
-
-import { DELETE } from '../route';
+  return handler(request, context);
+}
 
 const context = { params: Promise.resolve({ trackKey: 'demo-01' }) };
 
@@ -30,7 +24,7 @@ function request(): Request {
 }
 
 beforeEach(() => {
-  auth.role = 'owner';
+  auth.allowed = true;
   db.deleteMusicTrack.mockResolvedValue({ trackKey: 'demo-01' });
 });
 
@@ -48,7 +42,7 @@ it('removes the row and its memberships, reporting only the key', async () => {
 });
 
 it('answers 404 to everyone who is not the owner', async () => {
-  auth.role = 'guest';
+  auth.allowed = false;
 
   const response = await DELETE(request(), context);
 

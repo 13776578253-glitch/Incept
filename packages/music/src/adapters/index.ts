@@ -7,5 +7,6 @@ export * from './ncm-decode';
 export * from './prisma/import';
 export * from './prisma/manage';
 export * from './prisma/queries/list';
+export * from './prisma/repository';
 export * from './prisma/upload';
 export * from './source-scan';

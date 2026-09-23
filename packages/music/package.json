@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./endpoints": {
+      "types": "./src/endpoints.ts",
+      "default": "./src/endpoints.ts"
+    },
     "./domain": {
       "types": "./src/domain/index.ts",
       "default": "./src/domain/index.ts"
@@ -38,7 +42,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.src.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run --exclude src/__tests__/cli-smoke.test.ts",
+    "test:cli": "vitest run src/__tests__/cli-smoke.test.ts"
   },
   "dependencies": {
     "@incept/db": "workspace:*",
@@ -46,7 +51,12 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "next": "16.2.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^5.0.1"
+  },
+  "peerDependencies": {
+    "next": "^16.2.0"
   }
 }
