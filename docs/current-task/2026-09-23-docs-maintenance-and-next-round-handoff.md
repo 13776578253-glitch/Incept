@@ -149,13 +149,18 @@ examples, which are illustrative rather than links.
 - Every repaired link was re-checked after the edit; no non-image link under `docs/` is broken.
 - `git status` shows only intended changes; no source file under `apps/` or `packages/` was
   modified except the one README paragraph noted above.
+- **`pnpm docs:check-import-cli` passes.** It prints `Docs import CLI checks passed` and exits
+  zero, which confirms the corrected statement in the docs-push README: the directory command
+  does produce a batch draft and a preview URL rather than only printing a tree. The check
+  could not be run from the agent session — it spawns `pnpm.cmd` with captured stdio, which the
+  sandbox denies with `EPERM` — so it was run manually by the owner instead.
+- It emits one `DEP0190` deprecation warning: the check passes arguments to a child process
+  with `shell: true`, which concatenates rather than escapes them. It does not affect the
+  result, because the arguments are the repo's own generated temporary paths. Worth cleaning up
+  if that script is touched again.
 
 ## Not Verified
 
-- **`pnpm docs:check-import-cli` could not run in this session.** It spawns `pnpm.cmd` with
-  captured stdio, which the sandbox denies with `EPERM`. The claim that `--dir` creates a
-  batch draft therefore rests on reading `scripts/docs-import.mjs` and on the runbook, not on
-  a live run. Re-run it before committing if the change is expected to touch import behaviour.
 - Docker was not reachable from this shell, so the database was reached directly on 5432
   rather than through `docker compose ps`.
 - No document was previewed through `dbdiagram.io`; the DBML was validated structurally
