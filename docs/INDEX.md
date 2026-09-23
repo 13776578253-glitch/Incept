@@ -104,6 +104,11 @@ flight.
 - `plans/` holds the plan for a body of work that is too large to start as one task
 - when execution begins, the active slice moves to `current-task/`; the plan stays here as
   the reference it is being executed against
+- **`plans/` is the controller's buffer, not the executor's.** A worktree must not write here.
+  Its plan is written after the task is already fixed, by the same AI that might have misread
+  the task, so it cannot catch that misreading. A plan that has to exist before execution
+  belongs to the controller and is recorded at handoff, not after it. Worktree plans belong in
+  the worktree's own gitignored `.agents/`, where they are destroyed with the worktree
 - a superseded plan is **removed**, not kept: if something replaced it, that replacement
   belongs in `decisions/`. This is why `history/plans/` no longer exists as a category
 - a plan that is finished has no home here; its outcome is recorded as a `finish-task/`

@@ -8,6 +8,7 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 - A completed or superseded TODO is rewritten in place as `history: <what replaced it>` when its source file is cleaned.
 - Multiple TODOs describing one capability are consolidated into one canonical backlog item, then the duplicate source comments are converted to history notes.
 - `Active` means a concrete next feature. `Deferred` means an intentional future direction. `Review` means the containing surface may be removed or merged before its TODO should be decided.
+- **An agent working in a worktree writes its blocked or deliberately-skipped items here, not only in its report.** Acceptance reads git — a clean tree, the commit range, whether the merge applies — and explicitly does not read the AI's own summary. Anything left only in that summary disappears when the worktree is reclaimed. A follow-up that never reached this file was never recorded.
 
 ## Active
 

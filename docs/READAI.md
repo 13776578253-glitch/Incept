@@ -13,7 +13,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `NEXT.md` | A | 现在活跃的产品任务是什么（只列活跃项） |
 | `BACKLOG.md` | R/A | 源码 TODO 的唯一清单 |
 | `current-task/` | A | 现在在做什么 |
-| `plans/` | R/A | 大计划缓冲区：已评审、尚未拆成任务的大型计划 |
+| `plans/` | R/A | 大计划缓冲区（**仅主控写**）：已评审、尚未拆成任务的大型计划 |
 | `finish-task/` | A | 以前做完了什么 |
 | `runbooks/{en,zh}/` | R/A | 具体怎么操作 |
 | `decisions/{en,zh}/` | R | 为什么这样定 |
@@ -22,6 +22,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 `history/` 只放历史参考。它**不再**包含 `plans/`：计划是大计划缓冲区，位于 `docs/plans/`，
 与 `current-task/` 同级。被取代的计划在成果被记录后删除，不归档。
+
+`plans/` **仅由主控书写**。worktree（功能 AI）不得写入：它的计划写在任务已经确定之后，且
+出自可能误读任务的同一个 AI，因此结构上抓不到这种误读。必须在执行前存在的计划属于主控，
+在交接时记录，而不是执行之后补写。worktree 各自的计划放在该 worktree 自己的 `.agents/`
+（已被 gitignore），随 worktree 一并销毁。
+
+反过来，**worktree 刻意未做或受阻的条目必须写进 `BACKLOG.md`**。验收只看 git（工作树是否
+干净、领先基点多少、能否无冲突合并），不看 AI 自述；不落进仓库的待办会随 worktree 一起消失。
 
 两个已退役的位置，不要重新创建：
 

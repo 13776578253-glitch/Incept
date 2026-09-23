@@ -11,6 +11,7 @@ const MANAGED_BRANCH_PREFIX = 'feature/';
 const REGISTRY_DIRECTORY = '.agents';
 const REGISTRY_FILE = path.join(REGISTRY_DIRECTORY, 'worktree.json');
 const RULES_FILE = path.join(REGISTRY_DIRECTORY, 'worktree-rules.md');
+const PLANS_DIRECTORY = path.join(REGISTRY_DIRECTORY, 'plans');
 const NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 const BRANCH_PATTERN = /^[A-Za-z0-9._/-]+$/;
 const SCHEMA_PATTERN = /^[a-z_][a-z0-9_]*$/;
@@ -361,6 +362,9 @@ function readRegistry(worktreePath) {
 function writeRegistration(registry) {
   const directory = path.join(registry.path, REGISTRY_DIRECTORY);
   mkdirSync(directory, { recursive: true });
+  // 计划写在 worktree 自己的 .agents/ 里（已被 gitignore），随 worktree 销毁。
+  // 预先建出来，让功能 AI 一眼看到它该写哪，而不是去写 docs/plans/。
+  mkdirSync(path.join(registry.path, PLANS_DIRECTORY), { recursive: true });
   writeFileSync(path.join(registry.path, REGISTRY_FILE), `${JSON.stringify(registry, null, 2)}\n`);
   writeFileSync(path.join(registry.path, RULES_FILE), buildRules(registry));
 }
@@ -399,7 +403,20 @@ Database schema: ${registry.dbSchema ?? 'public (shared with the main checkout)'
 - \`git checkout\` / \`git switch\` 换分支
 - \`git worktree add\` / \`git worktree remove\`
 - 在主 worktree 目录里工作
+- 写 \`docs/plans/\`（那是主控的计划缓冲区。你的计划写在任务已经确定之后，且出自可能误读任务的同一个 AI，结构上抓不到这种误读；必须在执行前存在的计划属于主控）
 - \`pnpm db:deploy\` / \`db:migrate\`（数据库默认与主 checkout 共享，未经主控明确授权不要跑 migration）
+
+## 你的计划写在哪
+
+写在 \`.agents/plans/\`（该目录已被 gitignore，随 worktree 一并销毁，不需要任何清理步骤）。
+
+它记的是设计理由：为什么这样做、否决了哪些替代方案、执行中的发现。它是**执行记录**，不是给主控预先审阅的任务计划。
+
+## 刻意未做与受阻的条目
+
+**必须写进 \`docs/BACKLOG.md\`，不能只写在交付报告里。** 验收只看 git（工作树是否干净、领先基点多少、能否无冲突合并），明确不采信 AI 自述。只留在报告里的待办会随 worktree 一起消失。
+
+同样，改动留下的 TODO 也照仓库规则处理：完成的在源码里改写为 \`history: <被什么取代>\`，未做成的进 \`BACKLOG.md\`。
 
 ## 提交要求
 
