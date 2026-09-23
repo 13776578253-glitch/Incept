@@ -13,17 +13,40 @@ Every other page still under development, validation or administration is treate
 
 These pages are not deleted. They keep their direct links for development, validation, import, administration and the later create/admin workflows.
 
+## Update 2026-09-23: An `atlas` Section Enters Public Navigation
+
+This decision has an explicit exit path, and the surface that took it is now called **`atlas`**. The naming took three attempts in one round, all before any commit, and the sequence is worth recording because the first two were wrong for instructive reasons:
+
+1. `workspace` — mounted, then rejected. "Workspace" promises a place to work; the section holds small viewing surfaces. The word was also already taken: `WorkspaceShell` and `page-shell-workspace` are the shared utility shell that `/studio/docs/library` uses.
+2. `tools` — mounted, then rejected. "Tools" names a container by the *kind of thing inside it*, which is why it fit nothing: playback and an architecture diagram are not implements you pick up to do work, they are ways of looking at content. The section's contents do not share a container type, they share a relationship to what is already there.
+3. `atlas` — kept. The section holds maps of the project: structure, time, subject. Each entry derives a view from material that already exists rather than producing new material.
+
+Renaming left two redirects rather than broken links, because both earlier paths were genuinely reachable: `/workspace → /atlas` and `/tools → /atlas`, with `/tools/<moved>` → `/atlas/<moved>` for the three surviving routes.
+
+During the rename **`playback` was moved out of the section entirely.** It was the one entry that did not fit: listening to content is not a way of reading the project. Its navigation entry now points at `/settings`, where playback preferences and the music library already live, and `/tools/playback` redirects there.
+
+The revision keeps the original boundary rather than relaxing it:
+
+- The section does **not** carry docs back-office data. `/studio/docs/library` stays hidden, and no card links to it.
+- The section is a navigation surface, not a second content library. It lists `/atlas/architecture`, `/atlas/roadmap` and `/atlas/keywords`, and nothing outside its own subtree.
+- It adds no data access. The hub is a static entry list, reads no database, and needs no viewer.
+- **All three atlas pages are not implemented.** Each is an explicit "not implemented yet" placeholder, and each card carries a line describing what that map is planned to show. The routes and navigation entries exist so the structure is settled; no placeholder claims to work.
+- The player is still hidden on `/atlas` (`features/music-player/adapter/player-route-policy.ts`). Only this route's public status changed, not the player policy.
+
+Everything below about the remaining hidden surfaces still applies unchanged.
+
 ## Public Navigation Rules
 
 Public navigation does not show:
 
-- `Workspace`
 - `Resources`
 - `Docs archive`
 - `Docs style lab`
 - `Import preview`
 - `Docs library`
 - `Docs admin`
+
+`Workspace` was on this list; it is now a public `Atlas` section instead. See the update above.
 
 The related copy may stay in `messages`, so that context is not lost when an entry is restored or reorganised later.
 
@@ -121,7 +144,10 @@ The first-stage public experience advances around the docs reading interface onl
 
 ## Follow-Up TODOs
 
-- `workspace` remains a separate working surface and does not carry docs back-office data.
+- `workspace` and `tools` no longer exist as pages: both redirect, to `/atlas`. The docs back-office stays in `studio` and must not be pulled back into the atlas section.
+- **Do not rename this section again without a reason of the same kind.** Two names were rejected already, both times because the name described the container rather than the relationship between the entries. Any entry that cannot be described as a view derived from existing content does not belong here.
+- **This revision relaxes one earlier rule deliberately.** The first update said every listed entry must already work before it is listed. The atlas routes are mounted before implementation, so that rule now reads: an entry may be mounted ahead of its map **only if** both its card and its page state plainly that the map is not implemented. If a future entry cannot say that honestly, it should stay unlisted until it works.
+- Playback now lives with the music settings, reachable from the atlas dropdown but not part of the atlas. If a second non-map entry is ever wanted here, that is the point to reconsider whether the section is still coherent.
 - If an administrator entry point is needed later, decide then whether to expose `/studio` in a controlled position.
 - Decide when `Docs archive` re-enters public navigation.
 - Decide whether `style-lab` stays under `/docs` long term, or moves to an internal path.

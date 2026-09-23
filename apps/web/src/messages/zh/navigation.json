@@ -3,6 +3,7 @@
   "primary": {
     "home": "首页",
     "docs": "文档",
+    "atlas": "图谱",
     "workspace": "工作台",
     "resources": "资源",
     "about": "关于",
@@ -21,6 +22,28 @@
       "archive": {
         "label": "归档",
         "description": "按时间整理的文章归档"
+      }
+    },
+    "atlas": {
+      "entry": {
+        "label": "图谱",
+        "description": "所有图谱汇总入口"
+      },
+      "architecture": {
+        "label": "架构",
+        "description": "项目与其数据的组织方式"
+      },
+      "roadmap": {
+        "label": "路线图",
+        "description": "已完成、进行中与计划中的内容"
+      },
+      "keywords": {
+        "label": "关键词",
+        "description": "一篇文档或合集的主题词"
+      },
+      "playback": {
+        "label": "回放",
+        "description": "播放偏好与曲库，位于设置内"
       }
     }
   },
