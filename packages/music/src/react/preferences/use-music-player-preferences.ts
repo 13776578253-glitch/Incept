@@ -5,7 +5,7 @@ import { useContext } from 'react';
 import {
   MusicPlayerPreferencesContext,
   type MusicPlayerPreferencesValue,
-} from '@/components/base/music-player-preferences-provider';
+} from './music-player-preferences-provider';
 
 export function useMusicPlayerPreferences(): MusicPlayerPreferencesValue {
   const value = useContext(MusicPlayerPreferencesContext);

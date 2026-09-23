@@ -25,10 +25,12 @@
 10. 未完成项裁定（2026-09-23）：R-KEYS **选 A（纯实现），语义必须 POSIX-only**（`\` 是普通字符，不是 win32 双分隔符），以 `path.posix` 等价测试锁语义；`music-key.ts:1` 旧包名注释**批准修改**，与 R-KEYS 同轮一次写完。
 11. music-admin.ts 去向点名（2026-09-23，补 Phase 3 的第 10 文件缺口）：**→ application**（读用例编排，与 import-runner 编排同层，含面板视图类型 MusicAdminData 一族）；留 host 装配层会让决策 6/16 的「宿主只经 ports/装配/注册面接入」长期留缺口，host 现有 `readMusicAdminData` 直连是 Phase 7 serverLoader 收编前的过渡态。
 12. Phase 5 注记（2026-09-23）：`tracks/route.ts:143` host 侧 `path.extname` 随收编改用包内 keys 的 POSIX-only 纯实现，避免两套 extname 语义并存（与 R-KEYS 选 A 对齐）。
-13. Phase 3 实施修正（2026-09-23，待追认）：ncm-decode 去向 domain → **adapters**（node:crypto + Buffer 会被纯层边界拒绝，决策 1 梯度优先）；exports 清单补 **`./application`、`./testing`**（计划六层清单漏计）；media-store 拆**纯契约 → domain/media** + IO 留 adapters（避免 domain→adapters 反向依赖）；music-key.ts 按 **shim 删除**处理（消费者直连 domain）。`ports/auth.ts` 的 `Request` 以 @ts-ignore 桥接纯层边界（收编并入 lint 基建任务）。纯层闭包（tsconfig.src.json）现为 **domain + ports**；application 的「禁直接 Node 导入」由 review + import-boundary lint 承担。
+13. Phase 3 实施修正（2026-09-23，已追认）：ncm-decode 去向 domain → **adapters**（node:crypto + Buffer 会被纯层边界拒绝，决策 1 梯度优先）；exports 清单补 **`./application`、`./testing`**（计划六层清单漏计）；media-store 拆**纯契约 → domain/media** + IO 留 adapters（避免 domain→adapters 反向依赖）；music-key.ts 按 **shim 删除**处理（消费者直连 domain）。纯层闭包（tsconfig.src.json）现为 **domain + ports**；application 的「禁直接 Node 导入」由 review + import-boundary lint 承担。
 14. Phase 3 审查裁定（2026-09-23）：①`ports/auth` 的 Request 抑制**撤销**——端口泛型化 `AuthorizeOwner<TRequest = unknown>`，宿主以 `AuthorizeOwner<Request>` 定死（消灭需求而非压制，同类抑制保持零容忍）；②决策 1 **正式修订**：application 承认为 Node 可用编排层，其「禁直接 Node 导入」由 import-boundary lint 任务承接（BACKLOG B-25 已排期）；③`MusicRepository` 注释改为事实（端口 Phase 5 接线，现状无 PrismaMusicRepository）；`resolveWebMusicPaths` 无消费者与镜像路径三处重复留 Phase 4 收敛；④`source-scan` 扩展名白名单改由 `domain/media` 派生（三份白名单收敛为一根轴 + 嗅探侧映射）；⑤宿主 `mirrorDirectory` 按**追认**处置（依据决策 13「路径知识留宿主侧」），Phase 3 改动面措辞同步修正；⑥报告计数措辞修正为「16 rename + 1 shim 删除」。
 15. Phase 5 开放问题裁定（2026-09-23，按 READAI 核对 Next 16 文档）：`route.md` 确认 `context.params` 为 Promise（现状正确、随迁保持）；`runtime.md:18` 确认 `'nodejs'` 是**默认值**——stub 的 `export const runtime` 随收编移除（零行为差异），仅 catalog stub 保留字面 `export const dynamic = 'force-dynamic'`（语义配置、须路由文件静态可析）。验收措辞同步：「stub 仅含 re-export 行」→「stub 形态 = re-export 行 + 注释 + 必要的 segment 配置行（当前仅 catalog 的 dynamic）」。另：`@incept/music` 以 peerDependencies（+devDependencies 供本地类型检查）声明 next——决策 1 给 next 层的 `next/server` 特权需要显式依赖。
 16. Phase 4 修订版裁定与实施（2026-09-23）：**D.1 = 甲**（CLI 取 `--mirror`，根转发脚本给出；为 C6 归一，镜像布局常量唯一定义于 `scripts/music-paths.mjs`（+`.d.mts` 供 TS 侧解析），assembly 与两支转发脚本共用）；**D.2 = 删除 `resolveWebMusicPaths`**（甲之下无用途，死代码按 R8 清除）；**D.3 = 采纳**（cli 入口不导出、根脚本直接 exec，功能经 `./application`/`./adapters` 出口）。**R11 探针通过**（tsx 对 exports 自引用解析到 .ts 源正常）。**C1 基线对照达成**：临时 clone @ origin/main(a927a12) vs 新 CLI，manifest/import `--dry-run` 行级 0 diff；两次运行间输入清单 `music.json` 的 SHA-256 未变（输入指纹，非产物 hash）——兼证 R-KEYS「POSIX-only 零行为变更」。转发基准变更 db→music（R6 注记）；新增 `--env-file`/`--mirror` plumbing 标志（`--help` 文案保持原样以守 C4）。
+17. Phase 6/7 前置修订（2026-09-23）：①**Tailwind `@source` 行并入 Phase 6**（globals.css 一行；仓库无 `tailwind.config.*`、只有 `postcss.config.js`，CSS-first 是唯一入口），**CSS 断言写进 Phase 6 验收**（build 产物 CSS 含包内 class 实测），**Phase 7 只做复核**；②**类型边界决策（非机械搬运）**：Phase 7 的 `SettingsSectionContribution.label` 在宿主类型上是 `(locale: AppLocale) => string`，函数参数逆变要求 `(locale: MusicLocale) => string` 可赋值的前提是 **AppLocale ⊆ MusicLocale**——最省做法：包自带 `MusicLocale` **精确镜像**宿主联合类型（Phase 6 落类型，music-schema 的宿主 AppLocale 依赖随之解除）；③**提交流程固定步骤**：`pnpm build` 会改写被跟踪的 `apps/web/next-env.d.ts`，Phase 7/8 的提交流程与 A11 证据步骤固定加一条 `git restore apps/web/next-env.d.ts`。
+18. Phase 6 审查裁定（2026-09-23）：5 项实施修正**全部追认**（music-schema 迁回宿主、core 补依赖、testing 出 node 层配置、补 `jsx: react-jsx`）。**修订 18 = 决策 1 的有界例外**：`src/react/music-player/components/music-player-floating.tsx` 允许 `next/navigation` 的 `usePathname`（路由响应式，注入 props 会丢失响应性）——例外**仅限该文件该导入**，不构成 react 层可用 next 的一般许可；包内其余 react 文件仍以 React 为唯一框架依赖。**必修项（已修）**：`packages/music/tsconfig.json` include 补 `src/**/*.tsx`——原 `*.ts` 致 7 个 React 测试 .tsx（59 例，占 music 套件 1/3）静默失检（迁移前 web 的 tsconfig 含 `**/*.tsx`；vitest 全跑 + typecheck 全绿故两边不报警），与第 4 项补 jsx 属同一处遗漏。**「新增文件类型是否纳入对应 tsconfig 的 include」列入 Phase 7/8 收尾核对**。
 
 ## 背景与目标
 
@@ -236,6 +238,8 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 - 组件 URL 改用 `musicEndpoints`（消除 **7 处**散写）。
 - `player-route-policy` 改为 locales 注入 + 隐藏路由清单由 mount 配置传入。
 - 偏好 localStorage key 常量随迁（值不变）。
+- **类型边界决策（修订 17②）**：包内落 `MusicLocale`（精确镜像宿主 `AppLocale` 联合——函数参数逆变要求 AppLocale ⊆ MusicLocale）；`music-schema` 等对宿主 `AppLocale` 的类型依赖改用 `MusicLocale`。
+- **Tailwind `@source` 行（修订 17①，自 Phase 7 并入）**：`globals.css` 加一行 `@source` 指向 `packages/music` 源码（CSS-first，仓库无 tailwind.config）。
 - 测试随迁：包内 Vitest 配置（jsdom、setup 抽取共享部分）；`music-fixtures` 反向 import 改包内路径。
 
 验收标准：
@@ -244,6 +248,7 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 - `apps/web` 内 import music 组件为 0（挂载/装配/桩除外）。
 - 浏览器实测：迁移前后同一 localStorage 偏好值继续生效（key 不变）。
 - 测试输出零噪声（jsdom media 警告为零；拆除顺序为 cleanup 先于恢复原型 stub）。
+- **CSS 断言（修订 17①）**：`pnpm build` 产物 CSS 含 `packages/music` 内 class（`@source` 生效实测）。
 
 风险与阻塞：vitest 基础设施抽取不得影响 web 既有测试（抽取后 web 全量回归一次）；`settings-renderer.test.tsx`（6 用例）覆盖 music 分支，Phase 7 删除分支时同步收敛。
 
@@ -253,10 +258,11 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 
 改动面：
 
-- music 注册进 mount manifest（偏好 Provider wrapper、RuntimeMount wrapper、FloatingOverlay）与 SettingsSectionContribution（music section：3 行偏好 + 整块管理面板 + owner 门控 server loader；**7 个偏好 props** 迁入面板内部）。
-- 删除设置框架 music 硬编码：`settings-types.ts` 3 个 controlType 与 `'music'` id、`settings-renderer.tsx` 3 段分支与 **7 个** props、`settings-schema.ts` 静态 import、`settings/page.tsx` 的 `readMusicAdminData` 直连（改挂 serverLoader）。
+- music 注册进 mount manifest（偏好 Provider wrapper、RuntimeMount wrapper、FloatingOverlay）与 SettingsSectionContribution（music section：3 行偏好 + 整块管理面板 + owner 门控 server loader；**7 个偏好 props** 迁入面板内部）。label 用包内 `MusicLocale`——函数参数逆变要求 AppLocale ⊆ MusicLocale，MusicLocale 精确镜像宿主联合（修订 17②）。
+- 删除设置框架 music 硬编码：`settings-types.ts` 3 个 controlType 与 `'music'` id、`settings-renderer.tsx` 3 段分支与 **7 个** props、`settings-schema.ts` 静态 import、`settings/page.tsx` 的 `readMusicAdminData` 直连（改挂 serverLoader）、`settings-page-content.tsx` 的 `MusicAdminPanel` 直连与 7 个偏好 props 的 interactions（2026-09-23 补点名）。
 - 样式：组件样式随包；`tokens.css` 由 Web 提供 `--z-feature-floating`（原 `--z-music-player` 更名）与 `--navbar-height`；包所需变量清单写入模块文档（含 `use-floating-position.ts:225` 的 JS 运行时读取点）。
-- 构建定形：transpilePackages 完成态核对；Tailwind v4 `@source` 扫描 `packages/music` 源码。
+- 构建定形：`@source` 与 CSS 断言已在 Phase 6 落地，本 Phase 只做复核（修订 17①）；transpilePackages 完成态核对。
+- **提交流程固定步骤（修订 17③）**：凡执行 `pnpm build` 后、提交前固定执行 `git restore apps/web/next-env.d.ts`（build 会改写该被跟踪文件）。
 - 删除 `apps/web` 残留 music 文件。
 
 验收标准：
@@ -276,6 +282,8 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 
 - 删除演练：临时摘除 mount 注册与 stub，构建应仅在 stub/注册处报错；恢复并把演练输出记入本文件。
 - 边界检查留档：exports 封装、分层 tsconfig、pnpm 隔离各一条可复现验证命令及输出。
+- **A11 证据步骤固定项（修订 17③）**：`pnpm build` 采集产物 CSS 证据后、提交前固定执行 `git restore apps/web/next-env.d.ts`。
+- **收尾核对项（修订 18，Phase 7/8 共用）**：新增文件类型是否已纳入对应 tsconfig 的 include（Phase 6 曾因 include 漏 `*.tsx` 致 7 个测试文件静默失检）。
 - 全量浏览器验收：播放、上传（音频 + NCM）、管理（曲库/曲目增删改查）、偏好、设置页。
 - 冻结声明写入决策文档：music 扩展只经 ports / adapters / 注册面；`docs/BACKLOG.md` 登记遗留（account 分区按同一原语迁移、lint 基建、新模块 scaffold、`music:check-*` 兼容别名整理）。
 - 文档收尾：两份 music runbook 补 CLI 转发机制说明与迁移后目录布局。
@@ -410,3 +418,8 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 - Phase 4（修订版）实施：CLI 三入口迁入 `src/cli/`（文案/参数逐字保留 + --env-file/--mirror plumbing）、纯转发脚本（基准 db→music）、exports 自引用（字面 src 路径归零）、镜像路径唯一定义（D.1 甲）、resolveWebMusicPaths 删除（D.2）、smoke 测试 6 例；R11 探针通过；C1 以 origin/main(a927a12) 临时 clone 基线对照达成（dry-run 行级 0 diff，兼证 R-KEYS）。详见 `docs/current-task/2026-09-23-music-migration-phase4.md`。
 - 遗留问题: 无新增；Phase 4+5 就绪待合并提交；Phase 6–8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 4+5 CLI 迁入与 API 路由收编
+
+[2026-09-23 23:15] - Update by AI完成改动:
+- Phase 6 实施（React 层迁入）：42 项迁移、URL 收敛 7 处、policy 注入化、MusicLocale 落地、@source + CSS 断言、共享 setup 抽取、真 barrel；80 用例随迁、**270/270 全绿**、探针红→绿闭环、宿主导入 grep 归零。实施修正 4 项 + react 层 next/navigation 例外（修订 18 待追认）。详见 `docs/current-task/2026-09-23-music-migration-phase6.md`。
+- 遗留问题: 浏览器 localStorage 实测待补（唯一验收缺口）；Phase 7–8 待批准。
+- Commit 建议: [feat]: music 迁移 Phase 6 React 层迁入

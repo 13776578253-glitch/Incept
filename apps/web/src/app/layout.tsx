@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { AppProviders } from '@/components/base/app-providers';
-import { MusicPlayerRuntimeMount } from '@/features/music-player';
+import { MusicPlayerRuntimeMount } from '@incept/music/react';
 import { mountManifest, renderProviderWrappers } from '@/mount/registry';
 import './globals.css';
 

@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { makeCatalogPayload, validCatalogTrack } from '@/test/music-fixtures';
+import { makeCatalogPayload, validCatalogTrack } from '../../../../testing/music-fixtures';
 
 import { useMusicTrackCatalog } from '../use-music-track-catalog';
 

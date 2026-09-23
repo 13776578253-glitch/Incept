@@ -1,4 +1,5 @@
 import type { MusicAdminTrack } from '@incept/music/application';
+import { musicEndpoints } from '../../endpoints';
 import type { MusicDuplicateHint } from '@incept/music/domain';
 
 export type MusicUploadMediaStatus = 'published' | 'reused';
@@ -34,7 +35,7 @@ export function uploadMusicFile(
     const query = new URLSearchParams({ filename: file.name, library: libraryKey });
     const request = new XMLHttpRequest();
 
-    request.open('POST', `/api/internal/music/tracks?${query.toString()}`);
+    request.open('POST', `${musicEndpoints.tracks}?${query.toString()}`);
     request.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
 
     request.upload.addEventListener('progress', (event) => {

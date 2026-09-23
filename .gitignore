@@ -19,6 +19,7 @@ coverage
 Thumbs.db
 
 apps/web/*.log
+apps/web/next-env.d.ts
 apps/web/public/_docs-media/
 apps/web/public/_music-media/
 apps/web/public/mock/audio/

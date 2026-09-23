@@ -1,9 +1,9 @@
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { MusicPlayerPreferencesProvider } from '@/components/base/music-player-preferences-provider';
-import { installMediaElementMocks, type MediaElementMocks } from '@/test/media-element';
-import { makeCatalogPayload } from '@/test/music-fixtures';
+import { MusicPlayerPreferencesProvider } from '../../preferences/music-player-preferences-provider';
+import { installMediaElementMocks, type MediaElementMocks } from '../../../testing/media-element';
+import { makeCatalogPayload } from '../../../testing/music-fixtures';
 
 import { MusicPlayerRuntimeMount } from '../music-player-runtime-mount';
 

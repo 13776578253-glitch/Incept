@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { ColorSchemeProvider } from '@/components/base/color-scheme-provider';
 import { DocsCodePaletteProvider } from '@/components/base/docs-code-palette-provider';
 import { EyeComfortFilterProvider } from '@/components/base/eye-comfort-filter-provider';
-import { MusicPlayerPreferencesProvider } from '@/components/base/music-player-preferences-provider';
+import { MusicPlayerPreferencesProvider } from '@incept/music/react';
 import { mountManifest, renderProviderWrappers } from '@/mount/registry';
 
 // Browser-only preference providers belong behind one client boundary.

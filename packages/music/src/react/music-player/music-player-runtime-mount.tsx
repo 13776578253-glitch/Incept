@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, type ReactNode } from 'react';
 
-import { useMusicPlayerPreferences } from '@/hooks/use-music-player-preferences';
+import { useMusicPlayerPreferences } from '../preferences/use-music-player-preferences';
 
 import {
   filterCatalogByLibrary,

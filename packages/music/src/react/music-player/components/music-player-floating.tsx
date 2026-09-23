@@ -1,7 +1,6 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useLocale } from 'next-intl';
 import { useEffect, useMemo } from 'react';
 
 import {
@@ -13,9 +12,8 @@ import {
 } from '../adapter/player-copy';
 
 import { findCatalogPublishedAt, resolveLibrarySelection } from '../adapter/music-source';
-import { isMusicPlayerHiddenRoute } from '../adapter/player-route-policy';
 
-import { useMusicPlayerPreferences } from '@/hooks/use-music-player-preferences';
+import { useMusicPlayerPreferences } from '../../preferences/use-music-player-preferences';
 import { useFloatingPosition } from '../hooks/use-floating-position';
 import { useMusicPlayer } from '../hooks/use-music-player';
 import { usePlayerViewport } from '../hooks/use-player-viewport';
@@ -25,9 +23,14 @@ import { PlayerExpanded } from './player-expanded';
 import { PlayerOrb } from './player-orb';
 import type { PlayerPlaylistItem } from './player-playlist';
 
-export function MusicPlayerFloating() {
+export function MusicPlayerFloating({
+  locale,
+  isHiddenRoute: matchesHiddenRoute,
+}: {
+  locale: string;
+  isHiddenRoute: (pathname: string) => boolean;
+}) {
   const pathname = usePathname();
-  const locale = useLocale();
   const copy = useMemo(() => getPlayerCopy(locale), [locale]);
   const { state, sendIntent, playTrack, reloadCatalog, currentTrack, errorKind, catalog, libraries, catalogStatus } =
     useMusicPlayer();
@@ -42,7 +45,7 @@ export function MusicPlayerFloating() {
   } = useMusicPlayerPreferences();
 
   const isMobile = viewport === 'mobile';
-  const isHiddenRoute = isMusicPlayerHiddenRoute(pathname);
+  const isHiddenRoute = matchesHiddenRoute(pathname);
 
   const { elementRef, placement, geometry, isDragging, setMode, dragHandlers } = useFloatingPosition({
     draggable: !isMobile,

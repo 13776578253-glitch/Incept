@@ -8,6 +8,7 @@ import {
   type MusicLibraryCatalogEntry,
   type MusicTrackCatalogEntry,
 } from '../adapter/music-source';
+import { musicEndpoints } from '../../../endpoints';
 
 // 目录状态属于数据层，不写入 core 的错误字段
 export type TrackCatalogStatus = 'loading' | 'ready' | 'error';
@@ -35,7 +36,7 @@ export function useMusicTrackCatalog(): MusicTrackCatalog {
   useEffect(() => {
     const controller = new AbortController();
 
-    void fetch('/api/music/tracks', { signal: controller.signal })
+    void fetch(musicEndpoints.catalog, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`music catalogue request failed with ${response.status}`);

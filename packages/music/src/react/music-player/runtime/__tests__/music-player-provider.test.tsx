@@ -1,8 +1,8 @@
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { installMediaElementMocks, type MediaElementMocks } from '@/test/media-element';
-import { makeCatalog, makeMixedCatalog, validCatalogTrack } from '@/test/music-fixtures';
+import { installMediaElementMocks, type MediaElementMocks } from '../../../../testing/media-element';
+import { makeCatalog, makeMixedCatalog, validCatalogTrack } from '../../../../testing/music-fixtures';
 
 import {
   filterCatalogByLibrary,

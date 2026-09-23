@@ -3,7 +3,7 @@ import {
   type MusicCatalog,
   type MusicLibraryCatalogEntry,
   type MusicTrackCatalogEntry,
-} from '@/features/music-player/adapter/music-source';
+} from '../react/music-player/adapter/music-source';
 
 export const validCatalogTrack = {
   trackKey: 'demo-01',

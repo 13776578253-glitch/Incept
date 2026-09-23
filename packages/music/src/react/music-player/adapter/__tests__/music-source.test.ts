@@ -9,7 +9,7 @@ import {
   toMusicCatalog,
   type MusicTrackCatalogEntry,
 } from '../music-source';
-import { makeCatalogPayload, makeMixedCatalog, validCatalogTrack } from '@/test/music-fixtures';
+import { makeCatalogPayload, makeMixedCatalog, validCatalogTrack } from '../../../../testing/music-fixtures';
 
 function entriesOf(payload: unknown): MusicTrackCatalogEntry[] {
   return toMusicCatalog(payload).entries;

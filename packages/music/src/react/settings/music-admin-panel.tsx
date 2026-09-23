@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import type { MusicAdminData, MusicAdminLibrary, MusicAdminTrack } from '@incept/music/application';
+import { musicEndpoints } from '../../endpoints';
 
 import { getMusicAdminCopy } from './music-admin-copy';
 import { MusicLibraryEditor } from './music-library-editor';
@@ -99,7 +100,7 @@ export function MusicAdminPanel({ locale, data }: { locale: string; data: MusicA
       ),
     }));
 
-    const payload = await request(`/api/internal/music/tracks/${encodeURIComponent(trackKey)}`, {
+    const payload = await request(musicEndpoints.track(trackKey), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
@@ -132,7 +133,7 @@ export function MusicAdminPanel({ locale, data }: { locale: string; data: MusicA
   };
 
   const patchLibrary = async (key: string, patch: Record<string, unknown>) => {
-    const payload = await request(`/api/internal/music/libraries/${encodeURIComponent(key)}`, {
+    const payload = await request(musicEndpoints.library(key), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
@@ -147,7 +148,7 @@ export function MusicAdminPanel({ locale, data }: { locale: string; data: MusicA
   };
 
   const ensureLibrary = async (name: string): Promise<string> => {
-    const payload = await request('/api/internal/music/libraries', {
+    const payload = await request(musicEndpoints.libraries, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
@@ -166,7 +167,7 @@ export function MusicAdminPanel({ locale, data }: { locale: string; data: MusicA
   // 永久删除：只删行与成员关系，与停用是两条路
   // 只有右键菜单里的二次确认会走到这里，服务端还会再校验一次（owner + 同源）。
   const deleteTrack = async (trackKey: string) => {
-    const payload = await request(`/api/internal/music/tracks/${encodeURIComponent(trackKey)}`, {
+    const payload = await request(musicEndpoints.track(trackKey), {
       method: 'DELETE',
     });
 
@@ -179,7 +180,7 @@ export function MusicAdminPanel({ locale, data }: { locale: string; data: MusicA
   };
 
   const deleteLibrary = async (key: string) => {
-    const payload = await request(`/api/internal/music/libraries/${encodeURIComponent(key)}`, {
+    const payload = await request(musicEndpoints.library(key), {
       method: 'DELETE',
     });
 

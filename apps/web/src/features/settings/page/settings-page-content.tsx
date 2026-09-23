@@ -8,14 +8,14 @@ import { findSettingsSectionContribution, mountManifest } from '@/mount/registry
 import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
 import { useDocsCodePaletteContext } from '@/components/base/docs-code-palette-provider';
 import { useLanguage } from '@/hooks/use-language';
-import { useMusicPlayerPreferences } from '@/hooks/use-music-player-preferences';
-import type { MusicPlaybackMode } from '@/components/base/music-player-preferences-provider';
+import { useMusicPlayerPreferences } from '@incept/music/react';
+import type { MusicPlaybackMode } from '@incept/music/react';
 
 import { localeConfig, type AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 
 import { AccountSettingsPanel } from '../account/account-settings-panel';
-import { MusicAdminPanel } from '../music/music-admin-panel';
+import { MusicAdminPanel } from '@incept/music/react';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
 

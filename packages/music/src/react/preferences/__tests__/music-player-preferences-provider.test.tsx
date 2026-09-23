@@ -2,7 +2,7 @@ import { act, render } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { useMusicPlayerPreferences } from '@/hooks/use-music-player-preferences';
+import { useMusicPlayerPreferences } from '../use-music-player-preferences';
 
 import {
   MusicPlayerPreferencesProvider,
