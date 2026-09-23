@@ -3,8 +3,8 @@ import {
   findMusicDuplicateCandidates,
   isMusicUniqueConflict,
   planMusicUploadDecision,
-} from '@incept/db/music';
-import type { MusicLibraryRecord, MusicTrackRecord } from '@incept/db/music';
+} from '../domain';
+import type { MusicLibraryRecord, MusicTrackRecord } from '../domain';
 import { expect, it } from 'vitest';
 
 function library(overrides: Partial<MusicLibraryRecord> = {}): MusicLibraryRecord {

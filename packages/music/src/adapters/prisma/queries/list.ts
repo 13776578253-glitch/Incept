@@ -1,48 +1,18 @@
-import { prisma } from '../../client';
-import type {
-  MusicLibraryRecord,
-  MusicLibraryMembershipRecord,
-  MusicTrackRecord,
-} from '../types';
-
-export const musicTrackSelection = {
-  id: true,
-  trackKey: true,
-  title: true,
-  artist: true,
-  audioUrl: true,
-  contentHash: true,
-  mimeType: true,
-  fileSize: true,
-  durationSeconds: true,
-  publishedAt: true,
-  position: true,
-  isActive: true,
-} as const;
+import { prisma } from '@incept/db';
+import {
+  musicLibrarySelection,
+  musicTrackSelection,
+  type MusicCatalogRecord,
+  type MusicLibraryMembershipRecord,
+  type MusicLibraryRecord,
+  type MusicTrackRecord,
+} from '../../../domain';
 
 // 排序固定 position ASC, id ASC（position 允许重复）
 const musicTrackOrder = [{ position: 'asc' }, { id: 'asc' }] as const;
 
-export const musicLibrarySelection = {
-  id: true,
-  key: true,
-  title: true,
-  position: true,
-  isActive: true,
-} as const;
-
 // 曲库顺序：position ASC, id ASC
 const musicLibraryOrder = [{ position: 'asc' }, { id: 'asc' }] as const;
-
-export type MusicCatalogTrackRecord = MusicTrackRecord & {
-  // 曲库 key，按 (position, id) 稳定排序；一首可以属于多个曲库
-  libraries: string[];
-};
-
-export type MusicCatalogRecord = {
-  libraries: MusicLibraryRecord[];
-  tracks: MusicCatalogTrackRecord[];
-};
 
 // 播放器只消费启用中的曲目
 export async function listActiveMusicTracks(): Promise<MusicTrackRecord[]> {

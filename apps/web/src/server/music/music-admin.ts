@@ -2,7 +2,7 @@ import {
   listAllMusicLibraries,
   listAllMusicTracks,
   listMusicLibraryMemberships,
-} from '@incept/db/music';
+} from '@incept/music/adapters';
 
 import { deriveMusicLibraryKey } from './music-key';
 

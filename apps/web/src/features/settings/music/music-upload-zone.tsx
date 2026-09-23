@@ -1,6 +1,6 @@
 'use client';
 
-import type { MusicDuplicateHint } from '@incept/db/music';
+import type { MusicDuplicateHint } from '@incept/music/domain';
 import { useRef, useState } from 'react';
 
 import type { MusicAdminLibrary, MusicAdminTrack } from '@/server/music/music-admin';

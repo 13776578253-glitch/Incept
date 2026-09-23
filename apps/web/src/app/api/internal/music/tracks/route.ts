@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { listAllMusicLibraries, uploadMusicTrack } from '@incept/db/music';
+import { listAllMusicLibraries, uploadMusicTrack } from '@incept/music/adapters';
 import { NextResponse } from 'next/server';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';

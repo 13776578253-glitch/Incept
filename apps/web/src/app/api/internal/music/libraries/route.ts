@@ -1,4 +1,4 @@
-import { createMusicLibrary, listAllMusicLibraries, updateMusicLibrary } from '@incept/db/music';
+import { createMusicLibrary, listAllMusicLibraries, updateMusicLibrary } from '@incept/music/adapters';
 import { NextResponse } from 'next/server';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';

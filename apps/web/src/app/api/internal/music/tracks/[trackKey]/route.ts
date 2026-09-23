@@ -1,4 +1,5 @@
-import { deleteMusicTrack, updateMusicTrack, type MusicTrackPatch } from '@incept/db/music';
+import { deleteMusicTrack, updateMusicTrack } from '@incept/music/adapters';
+import type { MusicTrackPatch } from '@incept/music/domain';
 import { NextResponse } from 'next/server';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';

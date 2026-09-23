@@ -20,6 +20,8 @@
 - **Phase 2**：纯/执行拆分细则与事务不变式清单（见该 Phase 风险注）；`MusicCatalogTrackRecord`/`MusicCatalogRecord` 是纯类型但现居 `queries/list.ts`，须先随 domain 迁移，禁止 domain 反向依赖 adapters；`resolveLibraryId`/`assertMusicLibraryAssignments`（manage.ts:16-47）为被 upload.ts:3 消费的跨界纯助手，随 domain 迁移；`isMusicUniqueConflict` 归 domain（纯），注记其 P2002 语义；`import.ts` 内联 select 形状（:14-31）与 `queries/list.ts` 的 selection 重复，迁移时并轨。
 - **Phase 7**：`use-floating-position.ts:225` 对 `--navbar-height` 的 JS 运行时 `getComputedStyle` 读取，列入包所需变量清单；music 偏好 props 为 7 个。
 - 风险登记新增 R9、R10。
+8. B1（R10 强制，2026-09-23 Phase 2 批准附带）：`SettingsSectionContribution` 摘除 `serverLoader` 字段，loader 只存在于服务端注册表类型 `SettingsSectionServerLoader`（按 id 与分区配对）；类型测试同步。客户端可见贡献类型从编译期就不可能携带服务端闭包。
+9. R9 裁定（2026-09-23）：纯/执行拆分接受「逐函数核对」兜底，不先补事务执行回归；逐函数映射表见 Phase 2 报告。R-KEYS 新增：keys.ts 的 `node:path` 与「domain 禁 Node」口径矛盾（计划两处要求不可兼得），暂以边界桥接注释冻结（零行为变更），待裁定纯实现或改层。
 
 ## 背景与目标
 
@@ -380,3 +382,8 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 - 实施前逐条审查 v1 全部断言（文件/行数/import 计数/key/触点），修正 7 处计数与口径偏差，补遗 Phase 1 设计（保留字防劫持、双渲染路径、serverLoader 服务端隔离）与 Phase 2 拆分细则（事务不变式、类型归属、跨界纯助手），产出 v2 修订（本文件）。
 - 遗留问题: Phase 2–8 待批准；R9 事务回归兜底方式待定（拆分核对 vs 先补测试）。
 - Commit 建议: [docs]: music 模块化迁移计划 v2 修订落档
+
+[2026-09-23 17:05] - Update by AI完成改动:
+- Phase 2 实施（含 B1/B2/B3 强制项与 R9 裁定执行）：packages/music 包骨架（六层 exports、分层 tsconfig 边界）、manage/upload 纯执行拆分（事务语义逐函数核对不变）、catalog 形状与选择常量入 domain、import.ts 选择并轨、MusicRepository 端口（11 用例方法）、10 文件 git mv + 3 测试随迁（27 用例）、18 条 import 原子改写（10 生产 + 6 测试）、db 移除 ./music、transpilePackages 与 web 依赖同轮、R10 类型强制（B1）、非空探针红→绿留档。详见 `docs/current-task/2026-09-23-music-migration-phase2.md`。
+- 遗留问题: R-KEYS（node:path 归层，已就地桥接零行为变更）与 music-key.ts:1 旧包名注释（READAI 2.1 冻结）待裁定；Phase 3–8 待批准。
+- Commit 建议: [feat]: music 迁移 Phase 2 包骨架与数据层

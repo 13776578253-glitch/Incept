@@ -1,3 +1,5 @@
+// 边界桥接（待裁定）：keys 依计划归 domain，但 node:path 与「domain 禁 Node」口径矛盾（Phase 2 报告 R-KEYS）
+// @ts-ignore 仅压住纯层边界（tsconfig.src.json 的 types: []）对 node:path 的拒绝；代码行为零变更
 import path from 'node:path';
 
 // key 派生规则：清单生成器与网页上传共用

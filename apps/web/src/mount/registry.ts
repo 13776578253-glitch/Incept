@@ -111,7 +111,6 @@ export function defineSettingsSectionContribution<TData>(contribution: {
   label: (locale: AppLocale) => string;
   visibility: SettingsVisibility;
   order: number;
-  serverLoader?: () => Promise<TData | null>;
   panel: ComponentType<{ data: TData | null }>;
 }): SettingsSectionContribution {
   return {

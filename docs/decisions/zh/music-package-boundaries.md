@@ -62,3 +62,4 @@ music 功能目前约 6,400 行实现 + 3,400 行测试，散布在 `apps/web` �
 
 - **Phase 0 — 决策落档与基线（2026-09-23 轮）。** 本决策文件（en/zh）、迁移计划 v2 修订（含 Phase 0 基线附录）、`@incept/db` typecheck 脚本与根链接入（R2 未暴露）随该轮唯一提交一并入库。
 - **Phase 1 — 最小模块机制（2026-09-23 轮，同一提交）。** `apps/web/src/mount`（manifest 类型、带保留字防护的空静态注册表、服务端专用 loader 注册表、9 个测试）与根布局 / Provider 链 / locale 布局 / 设置页接线。注册表保持为空直至 Phase 7。
+- **Phase 2 — 包骨架与数据层（2026-09-23 轮）。** `packages/music` 落地：六层 exports 与分层边界 tsconfig；manage/upload 纯执行拆分、catalog 形状与选择常量入 domain、MusicRepository 端口（11 用例方法）、10 文件 git mv 与 3 测试随迁、18 条 import 原子改写（10 生产 + 6 测试）、`@incept/db` 移除 `./music` 导出、transpilePackages 与 web 依赖声明同轮，全部随该轮唯一提交入库。待裁定：`keys.ts` 的 `node:path` 与「domain 禁 Node」梯度的口径矛盾（已就地桥接，行为零变更）。

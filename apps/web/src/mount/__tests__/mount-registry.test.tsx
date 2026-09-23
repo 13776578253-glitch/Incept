@@ -75,13 +75,17 @@ const TYPE_LEVEL_MANIFEST = {
       label: (locale) => (locale === 'zh' ? '示例分区' : 'Demo section'),
       visibility: 'public',
       order: 10,
-      serverLoader: async () => 42,
       panel: ({ data }) => (
         <span data-testid="demo-panel">{data === null ? 'none' : data.toFixed(0)}</span>
       ),
     }),
   ],
 } satisfies MountManifest;
+
+// B1（R10 强制）：loader 只存在于服务端注册表类型，与分区按 id 配对
+const TYPE_LEVEL_LOADERS = [
+  { id: 'demo-section', serverLoader: async () => 42 },
+] satisfies SettingsSectionServerLoader<number>[];
 
 function manifestOf(
   contributions: MountContribution[],
@@ -95,6 +99,7 @@ describe('mount manifest type level', () => {
     expect(TYPE_LEVEL_PROOF).toEqual([true, true]);
     expect(TYPE_LEVEL_MANIFEST.contributions).toHaveLength(4);
     expect(TYPE_LEVEL_MANIFEST.settingsSections).toHaveLength(1);
+    expect(TYPE_LEVEL_LOADERS).toHaveLength(1);
   });
 });
 
@@ -236,7 +241,6 @@ describe('mount registry', () => {
           label: () => 'demo',
           visibility: 'public',
           order: 10,
-          serverLoader: async () => 42,
           panel: ({ data }) => (
             <span data-testid="demo-panel">{data === null ? 'none' : data.toFixed(0)}</span>
           ),

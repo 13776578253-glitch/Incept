@@ -1,4 +1,4 @@
-import { listActiveMusicCatalog } from '@incept/db/music';
+import { listActiveMusicCatalog } from '@incept/music/adapters';
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';

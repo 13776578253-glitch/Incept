@@ -1,10 +1,10 @@
 // @vitest-environment node
-import { planMusicImport } from '@incept/db/music';
+import { planMusicImport } from '../domain';
 import type {
   MusicLibraryRecord,
   MusicTrackImportEntry,
   MusicTrackRecord,
-} from '@incept/db/music';
+} from '../domain';
 import { expect, it } from 'vitest';
 
 function trackRecord(overrides: Partial<MusicTrackRecord> = {}): MusicTrackRecord {

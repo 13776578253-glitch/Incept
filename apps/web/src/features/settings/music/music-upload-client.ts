@@ -1,5 +1,5 @@
 import type { MusicAdminTrack } from '@/server/music/music-admin';
-import type { MusicDuplicateHint } from '@incept/db/music';
+import type { MusicDuplicateHint } from '@incept/music/domain';
 
 export type MusicUploadMediaStatus = 'published' | 'reused';
 export type MusicUploadTrackStatus = 'created' | 'existing' | 'membership-added' | 'deactivated';

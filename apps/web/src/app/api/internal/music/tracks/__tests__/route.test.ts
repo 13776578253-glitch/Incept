@@ -18,8 +18,8 @@ vi.mock('@/server/auth', () => ({
   hasSameOrigin: () => true,
 }));
 
-vi.mock('@incept/db/music', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@incept/db/music')>();
+vi.mock('@incept/music/adapters', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@incept/music/adapters')>();
 
   return {
     ...actual,

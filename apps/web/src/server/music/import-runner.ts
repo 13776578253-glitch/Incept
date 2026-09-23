@@ -6,7 +6,7 @@ import {
   listAllMusicLibraries,
   listAllMusicTracks,
   listMusicLibraryMemberships,
-} from '@incept/db/music';
+} from '@incept/music/adapters';
 import type {
   MusicImportSummary,
   MusicLibraryImportEntry,
@@ -14,7 +14,7 @@ import type {
   MusicLibraryRecord,
   MusicTrackImportEntry,
   MusicTrackRecord,
-} from '@incept/db/music';
+} from '@incept/music/domain';
 
 import { parseFile } from 'music-metadata';
 

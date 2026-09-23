@@ -1,6 +1,12 @@
-import { prisma } from '../client';
-import { planMusicImport } from './plan';
-import type { MusicImportSummary, MusicLibraryImportEntry, MusicTrackImportEntry } from './types';
+import { prisma } from '@incept/db';
+import {
+  musicLibrarySelection,
+  musicTrackSelection,
+  planMusicImport,
+  type MusicImportSummary,
+  type MusicLibraryImportEntry,
+  type MusicTrackImportEntry,
+} from '../../domain';
 
 // 按 planMusicImport 的结果执行（曲目 → 曲库 → 成员关系 → 停用），单事务
 export async function importMusicCatalog(input: {
@@ -11,23 +17,10 @@ export async function importMusicCatalog(input: {
   return prisma.$transaction(async (transaction) => {
     const [tracks, libraries, memberships] = await Promise.all([
       transaction.musicTrack.findMany({
-        select: {
-          id: true,
-          trackKey: true,
-          title: true,
-          artist: true,
-          audioUrl: true,
-          contentHash: true,
-          mimeType: true,
-          fileSize: true,
-          durationSeconds: true,
-          publishedAt: true,
-          position: true,
-          isActive: true,
-        },
+        select: musicTrackSelection,
       }),
       transaction.musicLibrary.findMany({
-        select: { id: true, key: true, title: true, position: true, isActive: true },
+        select: musicLibrarySelection,
       }),
       transaction.musicLibraryItem.findMany({ select: { libraryId: true, trackId: true } }),
     ]);

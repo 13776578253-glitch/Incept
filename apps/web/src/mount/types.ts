@@ -34,7 +34,7 @@ export type MountContribution =
   | MountFloatingOverlayContribution
   | MountLayoutSlotContribution;
 
-// 设置分区贡献：整块 React 面板；loader 数据经服务端注册表注入（见 src/mount/server.ts）
+// 设置分区贡献：整块 React 面板；loader 只存在于服务端注册表类型（R10 强制，防服务端闭包进客户端包图）
 export type SettingsSectionContributionPanelProps = {
   data: unknown;
 };
@@ -44,7 +44,6 @@ export type SettingsSectionContribution<TData = unknown> = {
   label: (locale: AppLocale) => string;
   visibility: SettingsVisibility;
   order: number;
-  serverLoader?: () => Promise<TData | null>;
   panel: ComponentType<{ data: TData | null }>;
 };
 

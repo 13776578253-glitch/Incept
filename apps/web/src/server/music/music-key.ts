@@ -5,4 +5,4 @@ export {
   slugifyMusicKey,
   titleFromFileName,
   uniqueMusicKey,
-} from '@incept/db/music';
+} from '@incept/music/domain';

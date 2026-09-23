@@ -16,10 +16,6 @@
     "./access": {
       "types": "./src/access/index.ts",
       "default": "./src/access/index.ts"
-    },
-    "./music": {
-      "types": "./src/music/index.ts",
-      "default": "./src/music/index.ts"
     }
   },
   "scripts": {

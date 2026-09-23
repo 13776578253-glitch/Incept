@@ -2,7 +2,7 @@
 import type {
   MusicLibraryRecord,
   MusicTrackRecord,
-} from '@incept/db/music';
+} from '@incept/music/domain';
 import { expect, it } from 'vitest';
 
 import { inspectMusicLibraryConsistency } from '../import-runner';
