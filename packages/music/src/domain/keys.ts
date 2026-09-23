@@ -1,6 +1,29 @@
-// 边界桥接（待裁定）：keys 依计划归 domain，但 node:path 与「domain 禁 Node」口径矛盾（Phase 2 报告 R-KEYS）
-// @ts-ignore 仅压住纯层边界（tsconfig.src.json 的 types: []）对 node:path 的拒绝；代码行为零变更
-import path from 'node:path';
+// R-KEYS 裁定（选 A）：文件名工具为纯实现，语义 POSIX-only——目录分隔符只有 '/'，'\' 是普通字符
+function baseNameOf(file: string): string {
+  const trimmed = file.replace(/\/+$/u, '');
+
+  if (trimmed === '') {
+    return '';
+  }
+
+  const slash = trimmed.lastIndexOf('/');
+
+  return slash === -1 ? trimmed : trimmed.slice(slash + 1);
+}
+
+// 扩展名取自最后一段文件名的最后一个 '.'；'.' 位于段首（如 .hidden）或整段恰为 '..' 时没有扩展名
+function extensionOf(file: string): string {
+  const base = baseNameOf(file);
+  const dot = base.lastIndexOf('.');
+
+  if (dot <= 0) return '';
+
+  if (dot === base.length - 1) {
+    return base === '..' ? '' : base.slice(dot);
+  }
+
+  return base.slice(dot);
+}
 
 // key 派生规则：清单生成器与网页上传共用
 
@@ -24,14 +47,16 @@ export function uniqueMusicKey(base: string, taken: Set<string>): string {
 }
 
 export function titleFromFileName(file: string): string {
-  const base = path.basename(file, path.extname(file));
+  const base = baseNameOf(file);
+  const extension = extensionOf(base);
+  const stem = extension === '' ? base : base.slice(0, base.length - extension.length);
 
-  return base.replace(/[-_]+/g, ' ').trim() || base;
+  return stem.replace(/[-_]+/g, ' ').trim() || stem;
 }
 
 // 曲目身份取自文件名（不含目录）；同名冲突才加 -2 / -3 后缀
 export function deriveMusicTrackKey(filename: string, taken: Set<string>): string {
-  const extension = path.extname(filename);
+  const extension = extensionOf(filename);
   const withoutExtension =
     extension === '' ? filename : filename.slice(0, filename.length - extension.length);
 

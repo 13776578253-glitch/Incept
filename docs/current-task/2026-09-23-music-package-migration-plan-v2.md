@@ -22,6 +22,9 @@
 - 风险登记新增 R9、R10。
 8. B1（R10 强制，2026-09-23 Phase 2 批准附带）：`SettingsSectionContribution` 摘除 `serverLoader` 字段，loader 只存在于服务端注册表类型 `SettingsSectionServerLoader`（按 id 与分区配对）；类型测试同步。客户端可见贡献类型从编译期就不可能携带服务端闭包。
 9. R9 裁定（2026-09-23）：纯/执行拆分接受「逐函数核对」兜底，不先补事务执行回归；逐函数映射表见 Phase 2 报告。R-KEYS 新增：keys.ts 的 `node:path` 与「domain 禁 Node」口径矛盾（计划两处要求不可兼得），暂以边界桥接注释冻结（零行为变更），待裁定纯实现或改层。
+10. 未完成项裁定（2026-09-23）：R-KEYS **选 A（纯实现），语义必须 POSIX-only**（`\` 是普通字符，不是 win32 双分隔符），以 `path.posix` 等价测试锁语义；`music-key.ts:1` 旧包名注释**批准修改**，与 R-KEYS 同轮一次写完。
+11. music-admin.ts 去向点名（2026-09-23，补 Phase 3 的第 10 文件缺口）：**→ application**（读用例编排，与 import-runner 编排同层，含面板视图类型 MusicAdminData 一族）；留 host 装配层会让决策 6/16 的「宿主只经 ports/装配/注册面接入」长期留缺口，host 现有 `readMusicAdminData` 直连是 Phase 7 serverLoader 收编前的过渡态。
+12. Phase 5 注记（2026-09-23）：`tracks/route.ts:143` host 侧 `path.extname` 随收编改用包内 keys 的 POSIX-only 纯实现，避免两套 extname 语义并存（与 R-KEYS 选 A 对齐）。
 
 ## 背景与目标
 
@@ -165,7 +168,7 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 
 改动面：
 
-- git mv `apps/web/src/server/music/**` 10 文件入包：manifest-builder、music-key、ncm-decode、import-runner 纯函数 → domain；import-runner 编排 → application；media-store、audio-inspection、manifest-file、source-scan、content-root → adapters。
+- git mv `apps/web/src/server/music/**` 10 文件入包：manifest-builder、music-key、ncm-decode、import-runner 纯函数 → domain；import-runner 编排、**music-admin（读用例编排，readMusicAdminData 与面板视图类型 MusicAdminData 一族）→ application**（2026-09-23 补点名，见修订记录 11）；media-store、audio-inspection、manifest-file、source-scan、content-root → adapters。
 - 新增 `src/ports/paths.ts`（contentRoot、mirrorDirectory 注入）与 `src/ports/auth.ts`（`authorizeOwner`）。
 - 删除 media-store 对 `features/docs/importer/paths` 的 `findRepoRoot` 依赖（media-store.ts:10，使用点 :92）。
 - `apps/web/src/server/music/assembly.ts` 新增（Web 装配：authorizeOwner 实现包 `server/auth`，路径来自 env）；`apps/web/src/server/**` 除装配外清空 music。
@@ -207,6 +210,7 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 改动面：
 
 - 新增 `src/endpoints.ts`（`musicEndpoints` 常量）与 `src/next/`（5 个 route handler，消费 authorizeOwner 端口 + MusicRepository 装配）。
+- 统一扩展名判定（2026-09-23 注记，见修订记录 12）：`tracks/route.ts:143` host 侧的 `path.extname` 随收编改用包内 keys 的 POSIX-only 纯实现（R-KEYS 选 A 语义）。
 - `apps/web/app/api/**/music/**` 5 文件变 re-export stub。
 
 验收标准：
