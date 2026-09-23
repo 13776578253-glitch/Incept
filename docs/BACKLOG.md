@@ -61,6 +61,14 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 - `docs_collection_items_collectionId_idx` currently exists in the database but is not declared in the Prisma schema. `20260916010002_add_music_track` and `20260917133912_add_music_libraries` both generated a `DROP INDEX` for it and both had it removed by hand, so the decision stays open rather than landing inside an unrelated migration.
 - Decide separately later: create a standalone migration to drop it if it is not needed, or add it back to the schema if it is.
 
+### B-26 Roadmap Module Implementation
+
+- Source: `docs/decisions/{en,zh}/roadmap-integration-surface.md` (no code marker yet; registered per the worktree blocked/skipped-items working rule).
+- Status: Deferred pending the second discussion (storage, authoring, content model fields, `/atlas/roadmap` placement).
+- The `feat/roadmap` worktree landed the decisions and the feature/UI spec but deliberately started no code: Phase 1 (package skeleton + fixture read chain), Phase 2 (storage read chain), Phase 3 (write surface) and Phase 4 (acceptance freeze) all wait for the gate.
+- Deliberate non-goals of the first surface: drag-reorder, an entry detail route, vote/comment interaction (decided with the authoring mechanism at the gate), and search/sort controls.
+- The provenance of `metrics {votes, comments}` is a gate question: hand-entered counts rot (the "read, don't retype" trap in a new form), and an import would be a data channel the gate has to define.
+
 ## Code-Level Follow-Ups
 
 Registered while verifying `NEXT.md` against the working tree. These are source TODOs, not product features.
