@@ -22,6 +22,14 @@
   --color-nav-create-hover-bg: #232323;
   --color-nav-create-text: var(--color-white);
   --shadow-nav-dropdown: 0 18px 44px rgba(17, 17, 17, 0.12);
+  --roadmap-lane-bg: rgba(17, 17, 17, 0.03);
+  --roadmap-chip-bg: rgba(17, 17, 17, 0.05);
+  --roadmap-priority-high-fg: #b42318;
+  --roadmap-priority-high-bg: rgba(180, 35, 24, 0.08);
+  --roadmap-priority-middle-fg: #9a6700;
+  --roadmap-priority-middle-bg: rgba(154, 103, 0, 0.1);
+  --roadmap-priority-low-fg: #5c6b73;
+  --roadmap-priority-low-bg: rgba(92, 107, 115, 0.12);
 }
 
 .dark {
@@ -48,6 +56,14 @@
   --color-nav-create-hover-bg: #ffffff;
   --color-nav-create-text: #050505;
   --shadow-nav-dropdown: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --roadmap-lane-bg: rgba(245, 245, 245, 0.05);
+  --roadmap-chip-bg: rgba(245, 245, 245, 0.08);
+  --roadmap-priority-high-fg: #ff9b91;
+  --roadmap-priority-high-bg: rgba(255, 155, 145, 0.14);
+  --roadmap-priority-middle-fg: #e3b341;
+  --roadmap-priority-middle-bg: rgba(227, 179, 65, 0.14);
+  --roadmap-priority-low-fg: #a8b5bd;
+  --roadmap-priority-low-bg: rgba(168, 181, 189, 0.14);
 }
 
 html[data-eye-comfort-filter='warm']:not(.dark) {
@@ -56,4 +72,12 @@ html[data-eye-comfort-filter='warm']:not(.dark) {
   --color-nav-dropdown-bg: #fffdf7;
   --color-nav-search-bg: rgba(255, 252, 245, 0.92);
   --color-nav-search-hover-bg: rgba(133, 98, 42, 0.06);
+  --roadmap-lane-bg: rgba(122, 102, 85, 0.05);
+  --roadmap-chip-bg: rgba(122, 102, 85, 0.08);
+  --roadmap-priority-high-fg: #a4443a;
+  --roadmap-priority-high-bg: rgba(164, 68, 58, 0.09);
+  --roadmap-priority-middle-fg: #8a6d1f;
+  --roadmap-priority-middle-bg: rgba(138, 109, 31, 0.1);
+  --roadmap-priority-low-fg: #6d7361;
+  --roadmap-priority-low-bg: rgba(109, 115, 97, 0.12);
 }
