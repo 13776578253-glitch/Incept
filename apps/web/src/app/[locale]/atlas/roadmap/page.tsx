@@ -1,20 +1,91 @@
-import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell';
-import { AtlasPlaceholderScreen } from '@/features/atlas';
-import type { AppLocale } from '@/i18n/config/locales';
+import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
-// 路线图：尚未绘制，本文件就是它完成后的接线位置
+import type { RoadmapChrome } from '@incept/roadmap/react';
+import { RoadmapBoard, RoadmapSampleBanner, RoadmapSwitcher } from '@incept/roadmap/react';
+import { createFixtureRoadmapRepository } from '@incept/roadmap/testing';
+
+import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell';
+import type { AppLocale } from '@/i18n/config/locales';
+import { withLocalePath } from '@/i18n/utils/locale-path';
+
+// 路线图 Phase 1：fixture 读链（决策条目 3 的诚实标注见页面横幅与图谱卡片注记）。
+// 多 roadmap 切换走 ?rd=（T2 裁定），列结构与显示名由每张 roadmap 自带（T1 裁定）。
 export default async function RoadmapMapPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: AppLocale }>;
+  searchParams: Promise<{ rd?: string }>;
 }) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'atlas' });
+  const { rd } = await searchParams;
+  const t = await getTranslations({ locale, namespace: 'roadmap' });
+
+  const repository = createFixtureRoadmapRepository();
+  const roadmaps = await repository.listRoadmaps();
+  const current = roadmaps.find((roadmap) => roadmap.key === rd) ?? roadmaps[0];
+  const board = current ? await repository.listBoard(current.key) : null;
+
+  if (!current || !board) {
+    return notFound();
+  }
+
+  const chrome: RoadmapChrome = {
+    sampleBanner: t('sampleBanner'),
+    switcherLabel: t('switcherLabel'),
+    boardLabel: t('boardLabel'),
+    lanePickerLabel: t('lanePickerLabel'),
+    emptyLane: {
+      reviewing: t('emptyLane.reviewing'),
+      unstarted: t('emptyLane.unstarted'),
+      active: t('emptyLane.active'),
+      completed: t('emptyLane.completed'),
+      canceled: t('emptyLane.canceled'),
+    },
+    loadMore: t('loadMore'),
+    loading: t('loading'),
+    errorTitle: t('error.title'),
+    errorDescription: t('error.description'),
+    typeLabels: {
+      feature: t('chips.type.feature'),
+      improvement: t('chips.type.improvement'),
+      maintenance: t('chips.type.maintenance'),
+    },
+    priorityLabels: {
+      high: t('chips.priority.high'),
+      middle: t('chips.priority.middle'),
+      low: t('chips.priority.low'),
+      none: t('chips.priority.none'),
+    },
+    votesLabel: t('metrics.votes'),
+    commentsLabel: t('metrics.comments'),
+  };
 
   return (
     <WorkspaceShell>
-      <AtlasPlaceholderScreen locale={locale} t={t} title={t('items.roadmap.label')} />
+      <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-6 px-6 pt-10 pb-16 lg:px-10">
+        <header className="max-w-[720px] space-y-4">
+          <p className="text-[0.76rem] uppercase tracking-[0.2em] text-[var(--color-text-soft)]">
+            {t('page.eyebrow')}
+          </p>
+          <h1 className="text-[clamp(2.4rem,5vw,4.6rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--color-text)]">
+            {t('page.title')}
+          </h1>
+          <p className="text-[1.02rem] leading-8 text-[var(--color-text-muted)]">
+            {t('page.description')}
+          </p>
+        </header>
+        <RoadmapSampleBanner text={chrome.sampleBanner} />
+        <RoadmapSwitcher
+          roadmaps={roadmaps}
+          currentKey={current.key}
+          locale={locale}
+          hrefFor={(key) => withLocalePath(locale, `/atlas/roadmap?rd=${encodeURIComponent(key)}`)}
+          label={chrome.switcherLabel}
+        />
+        <RoadmapBoard board={board} locale={locale} chrome={chrome} />
+      </div>
     </WorkspaceShell>
   );
 }

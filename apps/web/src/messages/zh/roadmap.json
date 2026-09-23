@@ -1,0 +1,41 @@
+{
+  "page": {
+    "eyebrow": "路线图",
+    "title": "每个项目去往何处",
+    "description": "每张路线图一块板：排了什么、在造什么、发了什么。条目由人工撰写并维护，中英双语。"
+  },
+  "switcherLabel": "路线图",
+  "boardLabel": "路线图板",
+  "lanePickerLabel": "选择一列",
+  "sampleBanner": "示例数据，尚未接入存储。",
+  "emptyLane": {
+    "reviewing": "暂无评审中的内容。新想法先落在这里。",
+    "unstarted": "暂无排队内容。已承诺的工作在这里等候。",
+    "active": "当前没有正在构建的内容。",
+    "completed": "这里还没有已发布的内容。",
+    "canceled": "没有被关闭或拒绝的内容。"
+  },
+  "loadMore": "加载更多",
+  "loading": "正在绘制路线图",
+  "error": {
+    "title": "这张图未能绘出",
+    "description": "加载路线图时出了问题。重新加载页面再试一次。"
+  },
+  "chips": {
+    "type": {
+      "feature": "功能请求",
+      "improvement": "改进",
+      "maintenance": "维护"
+    },
+    "priority": {
+      "high": "高优先级",
+      "middle": "中优先级",
+      "low": "低优先级",
+      "none": "无优先级"
+    }
+  },
+  "metrics": {
+    "votes": "{count} 票",
+    "comments": "{count} 条评论"
+  }
+}

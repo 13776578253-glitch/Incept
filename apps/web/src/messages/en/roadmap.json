@@ -1,0 +1,41 @@
+{
+  "page": {
+    "eyebrow": "Roadmap",
+    "title": "Where each project is going",
+    "description": "One board per roadmap: what is queued, what is being built, and what has shipped. Entries are written and maintained by hand, in both languages."
+  },
+  "switcherLabel": "Roadmaps",
+  "boardLabel": "Roadmap board",
+  "lanePickerLabel": "Choose a column",
+  "sampleBanner": "Sample data — not yet connected to storage.",
+  "emptyLane": {
+    "reviewing": "Nothing is under review. New ideas land here first.",
+    "unstarted": "Nothing queued right now. Committed work waits here.",
+    "active": "Nothing is being built right now.",
+    "completed": "Nothing has shipped here yet.",
+    "canceled": "Nothing is closed or declined."
+  },
+  "loadMore": "Load more",
+  "loading": "Drawing the roadmap",
+  "error": {
+    "title": "This map could not be drawn",
+    "description": "Something went wrong while loading the roadmap. Reload the page to try again."
+  },
+  "chips": {
+    "type": {
+      "feature": "Feature Request",
+      "improvement": "Improvement",
+      "maintenance": "Maintenance"
+    },
+    "priority": {
+      "high": "High Priority",
+      "middle": "Middle Priority",
+      "low": "Low Priority",
+      "none": "No Priority"
+    }
+  },
+  "metrics": {
+    "votes": "{count} votes",
+    "comments": "{count} comments"
+  }
+}

@@ -13,7 +13,7 @@
     "roadmap": {
       "label": "Roadmap",
       "description": "What is done, in progress and planned.",
-      "note": "Planned: a human-curated integration roadmap across projects, written and maintained by hand in both languages."
+      "note": "Sample data — not yet connected to storage. A human-curated integration roadmap across projects, in both languages."
     },
     "keywords": {
       "label": "Keywords",
