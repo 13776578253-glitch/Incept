@@ -47,5 +47,5 @@ Accepted on 2026-09-23。暂缓的实施阶段登记在 `docs/BACKLOG.md`（B-26
 
 1. **存储：** Prisma（docs/notes 共享 `@incept/db` 的模式）、仓库内 markdown/JSON、还是仓库外 content root（`DOCS_CONTENT_ROOT` 约定）。
 2. **著述：** owner 门控的 studio 界面、CLI、还是手工编辑文件。无论哪种，决策第 7 条都把它排除在 atlas 子树之外。`metrics {votes, comments}` 的来源也在此一并裁定：手录计数会腐坏（「读而非抄」陷阱的新形态），外部导入则是一条本 gate 必须定义的数据通道。
-3. **内容模型字段：** 条目粒度、时间轴抽象、状态词汇、跨项目登记方式（项目注册表？）。参考界面 Featurebase Roadmap（`astrbot.featurebase.app/roadmap`）把稳定状态枚举（reviewing / unstarted / active / completed / canceled）映射为每板显示名；这种拆分值得借用，列结构与词汇可按项目不同。
-4. **`/atlas/roadmap` 归属：** 留在 atlas 还是升为顶级界面。以 "If a second non-map entry is ever wanted here, that is the point to reconsider whether the section is still coherent"（若还想再放一个非"图"的条目，那就是重新审视栏目是否仍然成立的时点）为框架：跨项目集成界面正是那个时点；在存储 gate 裁定。同一参考界面把"跨项目"表达为多 roadmap（Roadmaps 切换）而非单板 + 项目 chip：每板列结构天然隔离各项目的状态词汇，chip 方案在各项目列结构分化后撑不住。
+3. **内容模型字段：** 条目粒度、时间轴抽象、状态词汇、跨项目登记方式（项目注册表？）。参考界面 Featurebase Roadmap（`astrbot.featurebase.app/roadmap`）把稳定状态枚举（reviewing / unstarted / active / completed / canceled）映射为每板显示名；这种拆分值得借用，列结构与词汇可按项目不同。**2026-09-23 定案（T1）：**采用稳定状态枚举 + 每板显示名映射，已由 `@incept/roadmap` domain 类型实现。
+4. **`/atlas/roadmap` 归属：** 留在 atlas 还是升为顶级界面。以 "If a second non-map entry is ever wanted here, that is the point to reconsider whether the section is still coherent"（若还想再放一个非"图"的条目，那就是重新审视栏目是否仍然成立的时点）为框架：跨项目集成界面正是那个时点；在存储 gate 裁定。同一参考界面把"跨项目"表达为多 roadmap（Roadmaps 切换）而非单板 + 项目 chip：每板列结构天然隔离各项目的状态词汇，chip 方案在各项目列结构分化后撑不住。**2026-09-23 定案（T2）：**多 roadmap + 切换器，留在 `/atlas/roadmap`（`?rd=` 选择）；Phase 1 以 fixture 数据落地。

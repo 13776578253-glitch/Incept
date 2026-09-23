@@ -64,10 +64,10 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 ### B-26 Roadmap Module Implementation
 
 - Source: `docs/decisions/{en,zh}/roadmap-integration-surface.md` (no code marker yet; registered per the worktree blocked/skipped-items working rule).
-- Status: Deferred pending the second discussion (storage, authoring, content model fields, `/atlas/roadmap` placement).
-- The `feat/roadmap` worktree landed the decisions and the feature/UI spec but deliberately started no code: Phase 1 (package skeleton + fixture read chain), Phase 2 (storage read chain), Phase 3 (write surface) and Phase 4 (acceptance freeze) all wait for the gate.
+- Status: Phase 1 (fixture read chain) delivered on 2026-09-23. Phase 2 (storage read chain), Phase 3 (write surface) and Phase 4 (acceptance freeze) are deferred pending the second discussion. T1 (stable status enum + per-roadmap display names) and T2 (multi-roadmap switcher under `/atlas/roadmap`) were settled on 2026-09-23 and are implemented in `@incept/roadmap`; storage and authoring (T3/T4) stay open.
+- Phase 1 covers the `@incept/roadmap` package (domain validation, read port, fixture data in `src/testing/`, board UI) wired to `/atlas/roadmap` with `?rd=` switching and the sample-data honesty banner. It follows the boundary rules restated in `docs/decisions/{en,zh}/roadmap-integration-surface.md` standalone, because the music package template is still unmerged upstream.
 - Deliberate non-goals of the first surface: drag-reorder, an entry detail route, vote/comment interaction (decided with the authoring mechanism at the gate), and search/sort controls.
-- The provenance of `metrics {votes, comments}` is a gate question: hand-entered counts rot (the "read, don't retype" trap in a new form), and an import would be a data channel the gate has to define.
+- The provenance of `metrics {votes, comments}` is a gate question: hand-entered counts rot (the "read, don't retype" trap in a new form), and an import would be a data channel the gate has to define. Until then counts render as plain text only.
 
 ## Code-Level Follow-Ups
 
