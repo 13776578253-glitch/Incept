@@ -15,6 +15,10 @@
       "types": "./src/adapters/index.ts",
       "default": "./src/adapters/index.ts"
     },
+    "./application": {
+      "types": "./src/application/index.ts",
+      "default": "./src/application/index.ts"
+    },
     "./react": {
       "types": "./src/react/index.ts",
       "default": "./src/react/index.ts"
@@ -26,6 +30,10 @@
     "./cli": {
       "types": "./src/cli/index.ts",
       "default": "./src/cli/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing/index.ts",
+      "default": "./src/testing/index.ts"
     }
   },
   "scripts": {
@@ -33,7 +41,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@incept/db": "workspace:*"
+    "@incept/db": "workspace:*",
+    "music-metadata": "^11.15.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

@@ -3,7 +3,7 @@
 import type { MusicDuplicateHint } from '@incept/music/domain';
 import { useRef, useState } from 'react';
 
-import type { MusicAdminLibrary, MusicAdminTrack } from '@/server/music/music-admin';
+import type { MusicAdminLibrary, MusicAdminTrack } from '@incept/music/application';
 
 import type { MusicAdminCopy } from './music-admin-copy';
 import { partitionMusicUploadFiles } from './music-upload-filter';

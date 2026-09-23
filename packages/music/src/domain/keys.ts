@@ -12,7 +12,7 @@ function baseNameOf(file: string): string {
 }
 
 // 扩展名取自最后一段文件名的最后一个 '.'；'.' 位于段首（如 .hidden）或整段恰为 '..' 时没有扩展名
-function extensionOf(file: string): string {
+export function extensionOf(file: string): string {
   const base = baseNameOf(file);
   const dot = base.lastIndexOf('.');
 

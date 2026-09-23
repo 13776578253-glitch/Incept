@@ -25,6 +25,8 @@
 10. 未完成项裁定（2026-09-23）：R-KEYS **选 A（纯实现），语义必须 POSIX-only**（`\` 是普通字符，不是 win32 双分隔符），以 `path.posix` 等价测试锁语义；`music-key.ts:1` 旧包名注释**批准修改**，与 R-KEYS 同轮一次写完。
 11. music-admin.ts 去向点名（2026-09-23，补 Phase 3 的第 10 文件缺口）：**→ application**（读用例编排，与 import-runner 编排同层，含面板视图类型 MusicAdminData 一族）；留 host 装配层会让决策 6/16 的「宿主只经 ports/装配/注册面接入」长期留缺口，host 现有 `readMusicAdminData` 直连是 Phase 7 serverLoader 收编前的过渡态。
 12. Phase 5 注记（2026-09-23）：`tracks/route.ts:143` host 侧 `path.extname` 随收编改用包内 keys 的 POSIX-only 纯实现，避免两套 extname 语义并存（与 R-KEYS 选 A 对齐）。
+13. Phase 3 实施修正（2026-09-23，待追认）：ncm-decode 去向 domain → **adapters**（node:crypto + Buffer 会被纯层边界拒绝，决策 1 梯度优先）；exports 清单补 **`./application`、`./testing`**（计划六层清单漏计）；media-store 拆**纯契约 → domain/media** + IO 留 adapters（避免 domain→adapters 反向依赖）；music-key.ts 按 **shim 删除**处理（消费者直连 domain）。`ports/auth.ts` 的 `Request` 以 @ts-ignore 桥接纯层边界（收编并入 lint 基建任务）。纯层闭包（tsconfig.src.json）现为 **domain + ports**；application 的「禁直接 Node 导入」由 review + import-boundary lint 承担。
+14. Phase 3 审查裁定（2026-09-23）：①`ports/auth` 的 Request 抑制**撤销**——端口泛型化 `AuthorizeOwner<TRequest = unknown>`，宿主以 `AuthorizeOwner<Request>` 定死（消灭需求而非压制，同类抑制保持零容忍）；②决策 1 **正式修订**：application 承认为 Node 可用编排层，其「禁直接 Node 导入」由 import-boundary lint 任务承接（BACKLOG B-25 已排期）；③`MusicRepository` 注释改为事实（端口 Phase 5 接线，现状无 PrismaMusicRepository）；`resolveWebMusicPaths` 无消费者与镜像路径三处重复留 Phase 4 收敛；④`source-scan` 扩展名白名单改由 `domain/media` 派生（三份白名单收敛为一根轴 + 嗅探侧映射）；⑤宿主 `mirrorDirectory` 按**追认**处置（依据决策 13「路径知识留宿主侧」），Phase 3 改动面措辞同步修正；⑥报告计数措辞修正为「16 rename + 1 shim 删除」。
 
 ## 背景与目标
 
@@ -171,7 +173,7 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 - git mv `apps/web/src/server/music/**` 10 文件入包：manifest-builder、music-key、ncm-decode、import-runner 纯函数 → domain；import-runner 编排、**music-admin（读用例编排，readMusicAdminData 与面板视图类型 MusicAdminData 一族）→ application**（2026-09-23 补点名，见修订记录 11）；media-store、audio-inspection、manifest-file、source-scan、content-root → adapters。
 - 新增 `src/ports/paths.ts`（contentRoot、mirrorDirectory 注入）与 `src/ports/auth.ts`（`authorizeOwner`）。
 - 删除 media-store 对 `features/docs/importer/paths` 的 `findRepoRoot` 依赖（media-store.ts:10，使用点 :92）。
-- `apps/web/src/server/music/assembly.ts` 新增（Web 装配：authorizeOwner 实现包 `server/auth`，路径来自 env）；`apps/web/src/server/**` 除装配外清空 music。
+- `apps/web/src/server/music/assembly.ts` 新增（Web 装配：authorizeOwner 实现包 `server/auth`；contentRoot 来自 env、mirrorDirectory 由宿主按仓库布局解析——2026-09-23 追认，依据决策 13「路径知识留宿主侧」）；`apps/web/src/server/**` 除装配外清空 music。
 - `music-metadata` 依赖声明从 `apps/web/package.json`（dependencies:17）移到 `@incept/music`。
 - 同步改写 `scripts/music-*.mjs` 的动态 import 目标指向包内路径（保持 CLI 可用，正式化留 Phase 4）。
 - 测试随迁 **6 个**（ncm-decode、media-store-upload、manifest-builder、import-runner、audio-inspection、library-consistency——最后一个测的是本目录 import-runner.ts，v2 归属修正）。
@@ -391,3 +393,8 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 - Phase 2 实施（含 B1/B2/B3 强制项与 R9 裁定执行）：packages/music 包骨架（六层 exports、分层 tsconfig 边界）、manage/upload 纯执行拆分（事务语义逐函数核对不变）、catalog 形状与选择常量入 domain、import.ts 选择并轨、MusicRepository 端口（11 用例方法）、10 文件 git mv + 3 测试随迁（27 用例）、18 条 import 原子改写（10 生产 + 6 测试）、db 移除 ./music、transpilePackages 与 web 依赖同轮、R10 类型强制（B1）、非空探针红→绿留档。详见 `docs/current-task/2026-09-23-music-migration-phase2.md`。
 - 遗留问题: R-KEYS（node:path 归层，已就地桥接零行为变更）与 music-key.ts:1 旧包名注释（READAI 2.1 冻结）待裁定；Phase 3–8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 2 包骨架与数据层
+
+[2026-09-23 19:20] - Update by AI完成改动:
+- Phase 3 实施（服务端管线与端口）：6 实现 + import-runner/manifest-builder + music-admin + ncm-fixture + 6 测试 git mv 入包（import-runner 纯/编排拆分）；决策 5 路径注入（directory 必填、findRepoRoot 出包）；决策 6 鉴权端口 + 宿主 assembly；music-metadata 迁移；music-key shim 删除；三支 scripts 动态 import 同轮改写。验收：四包 typecheck 全绿、269/269 测试全绿（56 用例随迁、总数零漂移）、grep 全过。详见 `docs/current-task/2026-09-23-music-migration-phase3.md`。
+- 遗留问题: 修订 13 的 4 处计划修正待追认；`removeMusicMediaByUrl` 过时注释行（READAI 冻结 + 变更注记）待批并改；Phase 4–8 待批准。
+- Commit 建议: [feat]: music 迁移 Phase 3 服务端管线与端口

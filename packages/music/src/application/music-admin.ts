@@ -2,9 +2,9 @@ import {
   listAllMusicLibraries,
   listAllMusicTracks,
   listMusicLibraryMemberships,
-} from '@incept/music/adapters';
+} from '../adapters';
 
-import { deriveMusicLibraryKey } from './music-key';
+import { deriveMusicLibraryKey } from '../domain';
 
 export type MusicAdminLibrary = {
   key: string;

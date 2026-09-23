@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/domain/**/*.ts", "src/application/**/*.ts", "src/ports/**/*.ts"]
+  "include": ["src/domain/**/*.ts", "src/ports/**/*.ts"]
 }

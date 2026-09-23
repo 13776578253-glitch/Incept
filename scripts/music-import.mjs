@@ -84,10 +84,20 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   const runner = await import(
-    pathToFileURL(path.join(projectRoot, 'apps/web/src/server/music/import-runner.ts')).href
+    pathToFileURL(path.join(projectRoot, 'packages/music/src/application/import-runner.ts')).href
+  );
+  const contentRoots = await import(
+    pathToFileURL(path.join(projectRoot, 'packages/music/src/adapters/content-root.ts')).href
   );
 
+  // 路径装配（决策 5）：内容根来自 env，镜像目录由本脚本按仓库布局给出
+  const paths = {
+    contentRoot: await contentRoots.resolveMusicContentRoot(process.env.MUSIC_CONTENT_ROOT),
+    mirrorDirectory: path.join(projectRoot, 'apps', 'web', 'public', '_music-media'),
+  };
+
   const plan = await runner.planMusicImport({
+    paths,
     manifestPath: args.manifest || undefined,
     allowEmpty: args.allowEmpty,
   });
@@ -104,7 +114,7 @@ async function main() {
   );
 
   if (args.validate) {
-    const issues = await runner.validateMusicMirror({ plan });
+    const issues = await runner.validateMusicMirror({ paths, plan });
 
     if (issues.length === 0) {
       console.log('\nThe mirror and the database agree with the manifest.');
@@ -122,7 +132,7 @@ async function main() {
   }
 
   // 网页新增的内容不在清单里，而清单导入是权威的：先说清楚这次会停用多少它不认识的行
-  const pendingIssues = await runner.validateMusicMirror({ plan });
+  const pendingIssues = await runner.validateMusicMirror({ paths, plan });
   const deactivations = pendingIssues.filter(
     (issue) => issue.kind === 'willDeactivate' || issue.kind === 'willDeactivateLibrary',
   );
@@ -142,6 +152,7 @@ async function main() {
   }
 
   const operations = await runner.publishMusicImportMedia({
+    paths,
     plan,
     mode: args.dryRun ? 'dry-run' : 'publish',
   });

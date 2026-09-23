@@ -159,6 +159,13 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 - **One home for the rule:** the panel would compute that candidate list offline, so `findMusicDuplicateCandidates` has to move into a module with no Prisma import and be exported through its own subpath of the db package (the `./music` barrel pulls in the client, which the browser bundle cannot take).
 - B-23 remains the detection half; this item only handles what to do after the human says yes.
 
+### B-25 Import-Boundary Lint Infrastructure
+
+- Source: `packages/music/tsconfig.src.json`; `docs/decisions/{en,zh}/music-package-boundaries.md` (decision 1, amended 2026-09-23).
+- Status: Active infrastructure work, scheduled by the Phase 3 review ruling (decision 3 always reserved lint enforcement for a separate task).
+- The mechanical pure-layer check covers domain + ports only: application compiles in the node-flavoured config because it calls the adapters graph, so its "no direct Node imports" rule currently rests on review alone.
+- Add an import-boundary lint across `packages/music` layers: domain/ports must not import Node built-ins, adapters, or each other's internals; application must not import Node built-ins directly; adapters/next/cli may use Node; react may use React. Cover `apps/web` imports of the package the same way (host only via ports/assembly/stubs).
+
 ## Review Before Any Code Decision
 
 ### B-09 Retained Style Lab And Block Catalog

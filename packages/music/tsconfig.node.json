@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/adapters/**/*.ts", "src/next/**/*.ts", "src/cli/**/*.ts"]
+  "include": ["src/adapters/**/*.ts", "src/application/**/*.ts", "src/next/**/*.ts", "src/cli/**/*.ts", "src/testing/**/*.ts"]
 }

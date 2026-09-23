@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest';
 
-import { parseMusicManifest, planMusicMirrorCleanup, resolveMusicManifest } from '../import-runner';
+import { parseMusicManifest, planMusicMirrorCleanup, resolveMusicManifest } from '../domain/import-runner';
 
 function manifestWith(trackOverrides: Record<string, unknown> = {}, libraries?: unknown) {
   const track = {

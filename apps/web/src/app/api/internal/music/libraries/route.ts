@@ -2,7 +2,7 @@ import { createMusicLibrary, listAllMusicLibraries, updateMusicLibrary } from '@
 import { NextResponse } from 'next/server';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
-import { libraryKeyForName } from '@/server/music/music-admin';
+import { libraryKeyForName } from '@incept/music/application';
 
 export const runtime = 'nodejs';
 

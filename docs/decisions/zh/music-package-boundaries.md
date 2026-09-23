@@ -12,7 +12,7 @@ music 功能目前约 6,400 行实现 + 3,400 行测试，散布在 `apps/web` �
 
 十六项决策，按定案顺序：
 
-1. **包框架是分层梯度。** domain / application / ports 禁止引入 React、Next 或 Node 内置模块；react 层认 React；next 层认 `next` / `next/server`；cli 与 adapters 认 Node。
+1. **包框架是分层梯度。** domain / ports 禁止引入 React、Next 或 Node 内置模块；**application 是 Node 可用的编排层**（2026-09-23 修订：其「禁直接 Node 导入」由 import-boundary lint 任务承接约束，见 BACKLOG B-25）；react 层认 React；next 层认 `next` / `next/server`；cli 与 adapters 认 Node。
 2. **`@incept/music-player-core` 保持独立包。** music domain 依赖它；其零依赖机械边界与测试原样保留。
 3. **边界强制方式**为包 `exports`、分层 tsconfig、pnpm 隔离与包独立 `typecheck`。lint / import-boundary 基建另立任务。
 4. **数据层归包所有。** 包定义 `MusicRepository`，拥有业务规则与 `PrismaMusicRepository` adapter；`@incept/db` 永久保留 schema、migration 与 Prisma client。本迁移不生成任何 Prisma migration。
@@ -63,3 +63,4 @@ music 功能目前约 6,400 行实现 + 3,400 行测试，散布在 `apps/web` �
 - **Phase 0 — 决策落档与基线（2026-09-23 轮）。** 本决策文件（en/zh）、迁移计划 v2 修订（含 Phase 0 基线附录）、`@incept/db` typecheck 脚本与根链接入（R2 未暴露）随该轮唯一提交一并入库。
 - **Phase 1 — 最小模块机制（2026-09-23 轮，同一提交）。** `apps/web/src/mount`（manifest 类型、带保留字防护的空静态注册表、服务端专用 loader 注册表、9 个测试）与根布局 / Provider 链 / locale 布局 / 设置页接线。注册表保持为空直至 Phase 7。
 - **Phase 2 — 包骨架与数据层（2026-09-23 轮）。** `packages/music` 落地：六层 exports 与分层边界 tsconfig；manage/upload 纯执行拆分、catalog 形状与选择常量入 domain、MusicRepository 端口（11 用例方法）、10 文件 git mv 与 3 测试随迁、18 条 import 原子改写（10 生产 + 6 测试）、`@incept/db` 移除 `./music` 导出、transpilePackages 与 web 依赖声明同轮，全部随该轮唯一提交入库。待裁定：`keys.ts` 的 `node:path` 与「domain 禁 Node」梯度的口径矛盾（已就地桥接，行为零变更）。
+- **Phase 3 — 服务端管线与端口（2026-09-23 轮）。** 服务端 10 文件与 6 测试入包（import-runner 纯/编排拆分、music-admin → application、ncm-decode → adapters、media-store 拆纯契约入 domain/media）；决策 5 路径注入落地（`ports/paths`、directory 必填、包内 findRepoRoot 归零）；决策 6 鉴权端口落地（`ports/auth` + 宿主 `assembly.authorizeOwner`）；music-metadata 迁出 web、music-key shim 删除、三支 CLI 同轮改写无断链。exports 补 `./application`、`./testing`（共 8 出口）。待追认 4 处实施修正见迁移报告。

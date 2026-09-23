@@ -18,6 +18,7 @@ vi.mock('@/server/auth', () => ({
   hasSameOrigin: () => true,
 }));
 
+// 把镜像目录换到临时目录，其余实现保持真实 /含 fs 与真实解码/解析
 vi.mock('@incept/music/adapters', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@incept/music/adapters')>();
 
@@ -25,15 +26,6 @@ vi.mock('@incept/music/adapters', async (importOriginal) => {
     ...actual,
     listAllMusicLibraries: db.listAllMusicLibraries,
     uploadMusicTrack: db.uploadMusicTrack,
-  };
-});
-
-// 把镜像目录换到临时目录，其余实现保持真实 /含 fs 与真实解码/解析
-vi.mock('@/server/music/media-store', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/server/music/media-store')>();
-
-  return {
-    ...actual,
     storeMusicUpload: (input: Parameters<typeof actual.storeMusicUpload>[0]) =>
       actual.storeMusicUpload({ ...input, directory: mirrorRef.directory }),
     storeMusicAudioBytes: (input: Parameters<typeof actual.storeMusicAudioBytes>[0]) =>
@@ -41,7 +33,7 @@ vi.mock('@/server/music/media-store', async (importOriginal) => {
   };
 });
 
-import { buildNcmContainer } from '@/test/ncm-fixture';
+import { buildNcmContainer } from '@incept/music/testing';
 
 import { POST } from '../route';
 

@@ -6,25 +6,21 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 
-// 相对导入：本模块也被 scripts/ 下的 CLI 加载，它解析不到 @/ 别名
-import { findRepoRoot } from '../../features/docs/importer/paths';
-
-export const musicMediaPublicPath = '/_music-media';
-
-// 镜像最大值 128 MB
-export const musicMediaMaxBytes = 128 * 1024 * 1024;
-
-// 白名单：扩展名 → MIME；小写扩展名同时是镜像文件名的后缀
-const musicAudioFormats = {
-  '.mp3': 'audio/mpeg',
-  '.wav': 'audio/wav',
-  '.flac': 'audio/flac',
-} as const;
-
-export type MusicAudioExtension = keyof typeof musicAudioFormats;
-
-export type MusicMediaMode = 'publish' | 'dry-run';
-export type MusicMediaStatus = 'publish' | 'reuse';
+import {
+  isMusicAudioExtension,
+  musicAudioExtensionError,
+  musicAudioFormats,
+  musicMediaFileName,
+  musicMediaMaxBytes,
+  musicMediaPublicPath,
+} from '../domain/media';
+import type {
+  MusicAudioExtension,
+  MusicMediaMode,
+  MusicMediaOperation,
+  MusicMediaStatus,
+  MusicSourceInfo,
+} from '../domain/media';
 
 // 复用前重新哈希目标：哈希一致才算同一份字节，尺寸相同不算
 async function readMusicMediaHash(targetPath: string): Promise<string | null> {
@@ -63,37 +59,9 @@ async function publishMusicTempFile(input: {
   }
 }
 
-export type MusicSourceInfo = {
-  sourcePath: string;
-  extension: MusicAudioExtension;
-  mimeType: string;
-  size: number;
-};
-
-export type MusicMediaOperation = MusicSourceInfo & {
-  fileName: string;
-  targetUrl: string;
-  status: MusicMediaStatus;
-  repaired?: boolean;
-  hash: string;
-};
-
-export function isMusicAudioExtension(extension: string): extension is MusicAudioExtension {
-  return Object.prototype.hasOwnProperty.call(musicAudioFormats, extension.toLowerCase());
-}
-
-// 扩展名被拒时的文案，上传路由与 store 共用
-export function musicAudioExtensionError(extension: string): string {
-  return `Unsupported music file extension "${extension || '(none)'}". Allowed: ${Object.keys(musicAudioFormats).join(', ')}.`;
-}
-
-// 镜像目录的唯一来源：清单导入与网页上传共用
-export function musicMediaMirrorDirectory(): string {
-  return path.join(findRepoRoot(), 'apps', 'web', 'public', '_music-media');
-}
-
-export function musicMediaFileName(hash: string, extension: string): string {
-  return `${hash}${extension.toLowerCase()}`;
+// 镜像目录文件名清单：目录不存在视为空；一致性检查与清理入口共用
+export function listMusicMirrorNames(directory: string): Promise<string[]> {
+  return fs.readdir(directory).catch(() => []);
 }
 
 // 校验单个清单条目：解析、防符号链接逃逸、检查扩展名与体积
@@ -148,16 +116,18 @@ export async function inspectMusicSource(
 
 // 内容寻址发布：文件名: sha256 + 小写扩展名
 export async function publishMusicMedia({
+  directory,
   source,
   mode,
 }: {
+  directory: string;
   source: MusicSourceInfo;
   mode: MusicMediaMode;
 }): Promise<MusicMediaOperation> {
   const bytes = await fs.readFile(source.sourcePath);
   const hash = crypto.createHash('sha256').update(bytes).digest('hex');
   const fileName = musicMediaFileName(hash, source.extension);
-  const targetPath = path.join(musicMediaMirrorDirectory(), fileName);
+  const targetPath = path.join(directory, fileName);
   const targetUrl = `${musicMediaPublicPath}/${fileName}`;
 
   const operation: MusicMediaOperation = {
@@ -200,8 +170,9 @@ export async function publishMusicMedia({
 }
 
 // 删除镜像里的一个文件：只接受裸文件名，任何路径成分都拒绝
-// 目录可注入，便于用临时目录测试；生产调用走默认镜像目录（清理入口）
-export async function removeMusicMediaByUrl(url: string, directory?: string): Promise<boolean> {
+// 目录必填、由装配注入（决策 5）
+// 2026-09-23（Phase 3）：原「生产调用走默认镜像目录」一句已随 findRepoRoot 移除
+export async function removeMusicMediaByUrl(url: string, directory: string): Promise<boolean> {
   const prefix = `${musicMediaPublicPath}/`;
   const fileName = url.startsWith(prefix) ? url.slice(prefix.length) : '';
 
@@ -209,7 +180,7 @@ export async function removeMusicMediaByUrl(url: string, directory?: string): Pr
     return false;
   }
 
-  const mirror = directory ?? musicMediaMirrorDirectory();
+  const mirror = directory;
   const targetPath = path.join(mirror, fileName);
   const relative = path.relative(mirror, targetPath);
 
@@ -244,7 +215,8 @@ export async function storeMusicUpload(input: {
   stream: ReadableStream<Uint8Array>;
   filename: string;
   // 可注入，便于用临时目录测试
-  directory?: string;
+  // 2026-09-23（Phase 3）起必填、由装配注入（决策 5）
+  directory: string;
   // 可注入，便于测试超限路径；默认沿用镜像上限
   maxBytes?: number;
   // 落盘前的最终校验：返回真实格式，抛错时临时文件被删掉
@@ -256,7 +228,7 @@ export async function storeMusicUpload(input: {
     throw new Error(musicAudioExtensionError(extension));
   }
 
-  const directory = input.directory ?? musicMediaMirrorDirectory();
+  const directory = input.directory;
   const maxBytes = input.maxBytes ?? musicMediaMaxBytes;
   await fs.mkdir(directory, { recursive: true });
 
@@ -350,7 +322,7 @@ export async function readMusicUploadBytes(input: {
 export async function storeMusicAudioBytes(input: {
   bytes: Buffer;
   extension: string;
-  directory?: string;
+  directory: string;
   validate?: (tempPath: string) => Promise<void>;
 }): Promise<MusicUploadResult> {
   const extension = input.extension.toLowerCase();
@@ -360,7 +332,7 @@ export async function storeMusicAudioBytes(input: {
   }
 
   const mimeType = musicAudioFormats[extension];
-  const directory = input.directory ?? musicMediaMirrorDirectory();
+  const directory = input.directory;
   await fs.mkdir(directory, { recursive: true });
 
   const hash = crypto.createHash('sha256').update(input.bytes).digest('hex');

@@ -2,10 +2,10 @@
 import type {
   MusicLibraryRecord,
   MusicTrackRecord,
-} from '@incept/music/domain';
+} from '../domain';
 import { expect, it } from 'vitest';
 
-import { inspectMusicLibraryConsistency } from '../import-runner';
+import { inspectMusicLibraryConsistency } from '../domain/import-runner';
 
 function libraryRecord(overrides: Partial<MusicLibraryRecord> = {}): MusicLibraryRecord {
   return {

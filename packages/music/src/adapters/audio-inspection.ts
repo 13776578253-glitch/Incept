@@ -1,7 +1,7 @@
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 
-import { parseStream } from 'music-metadata';
+import { parseFile, parseStream } from 'music-metadata';
 
 export type MusicAudioFormat = 'mp3' | 'wav' | 'flac';
 
@@ -109,5 +109,22 @@ export async function inspectUploadedAudio(storedPath: string): Promise<Uploaded
     };
   } catch {
     return { ok: false, error: 'The audio file could not be parsed; it may be corrupt.' };
+  }
+}
+
+// 时长只在导入时读一次并落库
+export async function readAudioDurationSeconds(sourcePath: string): Promise<number | null> {
+  try {
+    const metadata = await parseFile(sourcePath);
+    const duration = metadata.format.duration;
+
+    if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0) {
+      return null;
+    }
+
+    return Math.round(duration);
+  } catch {
+    // 读不到时长不阻断导入：曲目照样能播，列表少一列信息
+    return null;
   }
 }

@@ -12,7 +12,8 @@ import type {
   MusicUploadOutcome,
 } from '../domain';
 
-// 用例端口：11 个方法即 music 的全部用例；PrismaMusicRepository 在 adapters/prisma 按此实现，装配层注入
+// 用例端口：11 个方法即 music 的全部用例。现状：adapters/prisma 以裸函数导出、消费者直调，尚无 PrismaMusicRepository 实现；
+// 端口在 Phase 5（路由收编 + 装配）正式接线。2026-09-23 注记：修正原「已在 adapters/prisma 按此实现」的不符表述
 export type MusicRepository = {
   listActiveCatalog: () => Promise<MusicCatalogRecord>;
   listAllTracks: () => Promise<MusicTrackRecord[]>;

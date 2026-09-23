@@ -5,26 +5,25 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
 import {
+  decodeNcmAudio,
   inspectUploadedAudio,
+  isNcmDecodeError,
+  isNcmFileName,
   musicAudioFormatExtensions,
-  type UploadedAudioMetadata,
-} from '@/server/music/audio-inspection';
-import {
-  isMusicAudioExtension,
-  musicAudioExtensionError,
   readMusicUploadBytes,
   storeMusicAudioBytes,
   storeMusicUpload,
-  type MusicAudioExtension,
   type MusicUploadResult,
-} from '@/server/music/media-store';
-import { titleFromFileName } from '@/server/music/music-key';
-import {
-  decodeNcmAudio,
-  isNcmDecodeError,
-  isNcmFileName,
   type NcmAudio,
-} from '@/server/music/ncm-decode';
+  type UploadedAudioMetadata,
+} from '@incept/music/adapters';
+import {
+  isMusicAudioExtension,
+  musicAudioExtensionError,
+  titleFromFileName,
+  type MusicAudioExtension,
+} from '@incept/music/domain';
+import { webMusicMirrorDirectory } from '@/server/music/assembly';
 
 export const runtime = 'nodejs';
 
@@ -74,6 +73,7 @@ async function storePlainAudio(
   const stored = await storeMusicUpload({
     stream,
     filename,
+    directory: webMusicMirrorDirectory(),
     resolveExtension: (tempPath) => inspectStagedAudio(tempPath, holder),
   });
   const metadata = heldMetadata(holder);
@@ -95,6 +95,7 @@ async function storeDecodedAudio(decoded: NcmAudio): Promise<StoredUpload> {
   const stored = await storeMusicAudioBytes({
     bytes: decoded.audio,
     extension: `.${decoded.format}`,
+    directory: webMusicMirrorDirectory(),
     validate: async (tempPath) => {
       await inspectStagedAudio(tempPath, holder);
     },

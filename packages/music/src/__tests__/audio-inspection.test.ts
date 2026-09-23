@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import { inspectUploadedAudio, sniffMusicAudioFormat } from '../audio-inspection';
+import { inspectUploadedAudio, sniffMusicAudioFormat } from '../adapters';
 
 let directory: string;
 

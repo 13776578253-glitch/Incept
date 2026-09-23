@@ -19,9 +19,6 @@ importers:
       '@incept/music-player-core':
         specifier: workspace:*
         version: link:../../packages/music-player-core
-      music-metadata:
-        specifier: ^11.15.0
-        version: 11.15.0
       next:
         specifier: 16.2.0
         version: 16.2.0(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -108,6 +105,9 @@ importers:
       '@incept/db':
         specifier: workspace:*
         version: link:../db
+      music-metadata:
+        specifier: ^11.15.0
+        version: 11.15.0
     devDependencies:
       '@types/node':
         specifier: ^24.10.1

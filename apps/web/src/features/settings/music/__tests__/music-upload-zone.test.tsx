@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import type { MusicAdminTrack } from '@/server/music/music-admin';
+import type { MusicAdminTrack } from '@incept/music/application';
 
 import { getMusicAdminCopy } from '../music-admin-copy';
 import { MusicUploadZone } from '../music-upload-zone';

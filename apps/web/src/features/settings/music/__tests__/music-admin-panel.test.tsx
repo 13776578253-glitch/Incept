@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import type { MusicAdminData, MusicAdminTrack } from '@/server/music/music-admin';
+import type { MusicAdminData, MusicAdminTrack } from '@incept/music/application';
 
 import { MusicAdminPanel } from '../music-admin-panel';
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import type { MusicAdminLibrary } from '@/server/music/music-admin';
+import type { MusicAdminLibrary } from '@incept/music/application';
 
 import type { MusicAdminCopy } from './music-admin-copy';
 import {

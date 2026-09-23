@@ -65,13 +65,15 @@ async function main() {
   }
 
   const contentRoot = path.resolve(configuredRoot);
-  const serverMusic = (name) =>
-    import(pathToFileURL(path.join(projectRoot, 'apps/web/src/server/music', name)).href);
+  const domainMusic = (name) =>
+    import(pathToFileURL(path.join(projectRoot, 'packages/music/src/domain', name)).href);
+  const adaptersMusic = (name) =>
+    import(pathToFileURL(path.join(projectRoot, 'packages/music/src/adapters', name)).href);
 
   const [builder, scan, manifestFile] = await Promise.all([
-    serverMusic('manifest-builder.ts'),
-    serverMusic('source-scan.ts'),
-    serverMusic('manifest-file.ts'),
+    domainMusic('manifest-builder.ts'),
+    adaptersMusic('source-scan.ts'),
+    adaptersMusic('manifest-file.ts'),
   ]);
 
   const files = await scan.collectMusicAudioFiles(contentRoot);

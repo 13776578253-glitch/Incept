@@ -1,6 +1,4 @@
-import path from 'node:path';
-
-import { slugifyMusicKey, titleFromFileName, uniqueMusicKey } from './music-key';
+import { extensionOf, slugifyMusicKey, titleFromFileName, uniqueMusicKey } from './keys';
 
 export type ManifestLibraryEntry = {
   key: string;
@@ -52,7 +50,7 @@ const DEFAULT_LIBRARY_KEY = 'default';
 const NUMBERED_FOLDER_PATTERN = /^(\d+)-(.+)$/;
 
 function trackKeyFromFile(file: string): string {
-  const extension = path.extname(file);
+  const extension = extensionOf(file);
   const withoutExtension = extension === '' ? file : file.slice(0, file.length - extension.length);
 
   return slugifyMusicKey(withoutExtension.split('/').join('-'));

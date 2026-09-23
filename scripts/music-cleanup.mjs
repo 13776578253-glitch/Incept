@@ -53,10 +53,15 @@ async function main() {
 
   const args = parseArgs(process.argv.slice(2));
   const runner = await import(
-    pathToFileURL(path.join(projectRoot, 'apps/web/src/server/music/import-runner.ts')).href
+    pathToFileURL(path.join(projectRoot, 'packages/music/src/application/import-runner.ts')).href
   );
 
-  const report = await runner.inspectMusicMirrorCleanup();
+  // 路径装配（决策 5）：清理只关心镜像目录，不需要内容根
+  const paths = {
+    mirrorDirectory: path.join(projectRoot, 'apps', 'web', 'public', '_music-media'),
+  };
+
+  const report = await runner.inspectMusicMirrorCleanup({ paths });
 
   console.log(`mirror files:     ${report.mirrorFiles}`);
   console.log(`kept by a row:    ${report.referencedFiles}`);
@@ -78,7 +83,7 @@ async function main() {
     return;
   }
 
-  const result = await runner.applyMusicMirrorCleanup({ orphans: report.orphans });
+  const result = await runner.applyMusicMirrorCleanup({ paths, orphans: report.orphans });
 
   console.log(`\nremoved ${result.removed.length} file(s).`);
 

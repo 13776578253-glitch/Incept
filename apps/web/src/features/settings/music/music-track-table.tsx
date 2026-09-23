@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useState } from 'react';
 
-import type { MusicAdminLibrary, MusicAdminTrack } from '@/server/music/music-admin';
+import type { MusicAdminLibrary, MusicAdminTrack } from '@incept/music/application';
 
 import { formatTrackDuration, type MusicAdminCopy } from './music-admin-copy';
 import {

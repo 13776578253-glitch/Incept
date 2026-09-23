@@ -19,7 +19,7 @@ import { MusicAdminPanel } from '../music/music-admin-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
 
-import type { MusicAdminData } from '@/server/music/music-admin';
+import type { MusicAdminData } from '@incept/music/application';
 import type { SettingsSection } from '../shared/settings-types';
 
 function useMounted() {

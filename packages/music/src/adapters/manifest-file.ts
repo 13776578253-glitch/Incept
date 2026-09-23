@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { MusicManifestDocument, PreviousMusicManifest } from './manifest-builder';
+import type { MusicManifestDocument, PreviousMusicManifest } from '../domain';
 
 export function getMusicManifestPath(contentRoot: string): string {
   return path.join(contentRoot, 'music.json');
@@ -47,4 +47,16 @@ export async function writeMusicManifestFile(
   await fs.writeFile(getMusicManifestPath(contentRoot), raw, 'utf8');
 
   return { hash: hashMusicManifest(raw) };
+}
+
+// 清单路径解析：显式路径按当前工作目录解析，缺省取内容根下的 music.json
+export function resolveMusicManifestPath(contentRoot: string, manifestPath?: string): string {
+  return manifestPath ? path.resolve(manifestPath) : getMusicManifestPath(contentRoot);
+}
+
+// 原样读清单文本：读不到即报错，不当成"没有上一版"
+export async function readMusicManifestRaw(manifestPath: string): Promise<string> {
+  return fs.readFile(manifestPath, 'utf8').catch(() => {
+    throw new Error(`Cannot read the music manifest: ${manifestPath}`);
+  });
 }

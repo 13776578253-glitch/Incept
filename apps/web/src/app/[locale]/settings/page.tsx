@@ -6,7 +6,7 @@ import {
 import { loadSettingsSectionContributionData } from '@/mount/registry';
 import { settingsSectionServerLoaders } from '@/mount/server';
 import { getCurrentViewer } from '@/server/auth';
-import { readMusicAdminData } from '@/server/music/music-admin';
+import { readMusicAdminData } from '@incept/music/application';
 
 export default async function SettingsPage() {
   const viewer = await getCurrentViewer();

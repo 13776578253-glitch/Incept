@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest';
 
-import { buildMusicManifest, type PreviousMusicManifest } from '../manifest-builder';
+import { buildMusicManifest, type PreviousMusicManifest } from '../domain';
 
 it('derives libraries from numbered folders and puts root files in the default library', () => {
   const { document, report } = buildMusicManifest({

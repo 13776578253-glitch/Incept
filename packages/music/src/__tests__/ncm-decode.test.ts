@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { expect, it } from 'vitest';
 
-import { buildNcmContainer } from '@/test/ncm-fixture';
+import { buildNcmContainer } from '../testing/ncm-fixture';
 
-import { NcmDecodeError, decodeNcmAudio, isNcmFileName } from '../ncm-decode';
+import { NcmDecodeError, decodeNcmAudio, isNcmFileName } from '../adapters';
 
 const id3Audio = Buffer.concat([Buffer.from('ID3', 'latin1'), Buffer.alloc(64, 7)]);
 const flacAudio = Buffer.concat([Buffer.from('fLaC', 'latin1'), Buffer.alloc(64, 9)]);

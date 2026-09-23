@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import { removeMusicMediaByUrl, storeMusicAudioBytes, storeMusicUpload } from '../media-store';
+import { removeMusicMediaByUrl, storeMusicAudioBytes, storeMusicUpload } from '../adapters';
 
 let directory: string;
 

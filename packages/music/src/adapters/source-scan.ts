@@ -1,8 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { musicAudioFormats } from '../domain/media';
+
 // 与 media-store 的白名单一致；不导入 app 模块，避免类型耦合
-export const MUSIC_AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac'];
+// 2026-09-23（Phase 3）：同包后改由 domain/media 派生，上一行的「避免类型耦合」理由已失效
+export const MUSIC_AUDIO_EXTENSIONS: string[] = Object.keys(musicAudioFormats);
 
 async function collect(root: string, directory: string): Promise<string[]> {
   const dirents = await fs.readdir(directory, { withFileTypes: true });
