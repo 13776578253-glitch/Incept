@@ -41,7 +41,8 @@ export type SettingsRow = {
 };
 
 export type SettingsSection = {
-  id: 'appearance' | 'language' | 'account' | 'music' | 'ai';
+  // 分区 id 放开为字符串以容纳注册表贡献；内置 appearance/language/account/music/ai 为保留字（见 mount/registry）
+  id: string;
   label: string;
   description?: string;
   visibility: SettingsVisibility;

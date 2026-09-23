@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { findSettingsSectionContribution, mountManifest } from '@/mount/registry';
 import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
 import { useDocsCodePaletteContext } from '@/components/base/docs-code-palette-provider';
 import { useLanguage } from '@/hooks/use-language';
@@ -73,13 +74,35 @@ function MusicManagerBlock({
   return <MusicAdminPanel locale={locale} data={data} />;
 }
 
+// 注册表贡献分区：整块面板替代行渲染，数据来自服务端 loader
+function ContributionSectionPanel({
+  section,
+  data,
+}: {
+  section: SettingsSection;
+  data: Record<string, unknown>;
+}) {
+  const contribution = findSettingsSectionContribution(mountManifest, section.id);
+
+  if (!contribution) {
+    return null;
+  }
+
+  const Panel = contribution.panel;
+
+  return <Panel data={data[section.id] ?? null} />;
+}
+
 export function SettingsPageContent({
   viewerRole,
   musicAdminData,
+  settingsContributionData,
 }: {
   viewerRole: 'guest' | 'pro' | 'owner';
   // 只有 owner 会拿到；其余角色为 null，管理区不渲染
   musicAdminData: MusicAdminData | null;
+  // 注册表贡献分区的 loader 数据：owner 门控，非 owner 为 null
+  settingsContributionData: Record<string, unknown>;
 }) {
   const mounted = useMounted();
   const router = useRouter();
@@ -167,6 +190,8 @@ export function SettingsPageContent({
       <div className="hidden lg:block">
         {selectedSection.id === 'account' ? (
           <AccountSettingsPanel language={language} viewerRole={viewerRole} />
+        ) : findSettingsSectionContribution(mountManifest, selectedSection.id) ? (
+          <ContributionSectionPanel section={selectedSection} data={settingsContributionData} />
         ) : (
           <div className="space-y-8">
             <SettingsSectionPanel section={selectedSection} {...interactions} />
@@ -179,6 +204,8 @@ export function SettingsPageContent({
         {page.sections.map((section) => (
           section.id === 'account' ? (
             <AccountSettingsPanel key={section.id} language={language} viewerRole={viewerRole} />
+          ) : findSettingsSectionContribution(mountManifest, section.id) ? (
+            <ContributionSectionPanel key={section.id} section={section} data={settingsContributionData} />
           ) : (
             <div key={section.id} className="space-y-8">
               <SettingsSectionPanel section={section} {...interactions} />
