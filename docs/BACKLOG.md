@@ -64,10 +64,10 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 ### B-26 Roadmap Module Implementation
 
 - Source: `docs/decisions/{en,zh}/roadmap-integration-surface.md` (no code marker yet; registered per the worktree blocked/skipped-items working rule).
-- Status: Phase 1 (fixture read chain) delivered on 2026-09-23. Phase 2 (storage read chain), Phase 3 (write surface) and Phase 4 (acceptance freeze) are deferred pending the second discussion. T1 (stable status enum + per-roadmap display names) and T2 (multi-roadmap switcher under `/atlas/roadmap`) were settled on 2026-09-23 and are implemented in `@incept/roadmap`; storage and authoring (T3/T4) stay open.
+- Status: Phase 1 (fixture read chain) delivered on 2026-09-23. T1–T4 settled on 2026-09-23: T1 stable status enum + per-roadmap display names (implemented in `@incept/roadmap`), T2 multi-roadmap switcher under `/atlas/roadmap`, T3 Prisma sharing `@incept/db` with music-style layered encapsulation (package owns repository rules and the Prisma adapter behind the port; `@incept/db` keeps schema, migrations and client), T4 owner-gated studio UI with no vote/comment interaction for now (further feature additions wait until the surface completes; counts are not a current topic). Phase 2 (storage read chain) and Phase 3 (studio write surface) are unblocked and await phase approval.
 - Phase 1 covers the `@incept/roadmap` package (domain validation, read port, fixture data in `src/testing/`, board UI) wired to `/atlas/roadmap` with `?rd=` switching and the sample-data honesty banner. It follows the boundary rules restated in `docs/decisions/{en,zh}/roadmap-integration-surface.md` standalone, because the music package template is still unmerged upstream.
 - Deliberate non-goals of the first surface: drag-reorder, an entry detail route, vote/comment interaction (decided with the authoring mechanism at the gate), and search/sort controls.
-- The provenance of `metrics {votes, comments}` is a gate question: hand-entered counts rot (the "read, don't retype" trap in a new form), and an import would be a data channel the gate has to define. Until then counts render as plain text only.
+- The provenance of `metrics {votes, comments}` is parked, not decided: the T4 ruling keeps counts out of the current topic and defers vote/comment interaction to a post-completion feature discussion, where the count source question goes with it. Until then counts render as plain text only.
 
 ## Code-Level Follow-Ups
 
