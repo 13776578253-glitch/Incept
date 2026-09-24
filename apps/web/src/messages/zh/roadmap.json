@@ -7,7 +7,6 @@
   "switcherLabel": "路线图",
   "boardLabel": "路线图板",
   "lanePickerLabel": "选择一列",
-  "sampleBanner": "示例数据，尚未接入存储。",
   "emptyLane": {
     "reviewing": "暂无评审中的内容。新想法先落在这里。",
     "unstarted": "暂无排队内容。已承诺的工作在这里等候。",

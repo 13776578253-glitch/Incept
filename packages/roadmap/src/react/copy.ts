@@ -6,7 +6,6 @@ import type { RoadmapEntryPriority, RoadmapEntryType, RoadmapStatus } from '../d
 //   --roadmap-lane-bg、--roadmap-chip-bg、
 //   --roadmap-priority-{high,middle,low}-{fg,bg}，以及 --color-text/-soft/-muted、--color-border、--radius-md、--duration-fast。
 export type RoadmapChrome = {
-  sampleBanner: string;
   switcherLabel: string;
   boardLabel: string;
   lanePickerLabel: string;

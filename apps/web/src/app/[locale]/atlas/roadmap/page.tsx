@@ -2,14 +2,14 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import type { RoadmapChrome } from '@incept/roadmap/react';
-import { RoadmapBoard, RoadmapSampleBanner, RoadmapSwitcher } from '@incept/roadmap/react';
-import { createFixtureRoadmapRepository } from '@incept/roadmap/testing';
+import { RoadmapBoard, RoadmapSwitcher } from '@incept/roadmap/react';
 
 import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell';
 import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
+import { createRoadmapRepository } from '@/server/roadmap/assembly';
 
-// 路线图 Phase 1：fixture 读链（决策条目 3 的诚实标注见页面横幅与图谱卡片注记）。
+// 路线图 Phase 2：Prisma 读链（T3 装配注入，数据 = pnpm roadmap:seed 的初始入库内容）。
 // 多 roadmap 切换走 ?rd=（T2 裁定），列结构与显示名由每张 roadmap 自带（T1 裁定）。
 export default async function RoadmapMapPage({
   params,
@@ -22,7 +22,7 @@ export default async function RoadmapMapPage({
   const { rd } = await searchParams;
   const t = await getTranslations({ locale, namespace: 'roadmap' });
 
-  const repository = createFixtureRoadmapRepository();
+  const repository = createRoadmapRepository();
   const roadmaps = await repository.listRoadmaps();
   const current = roadmaps.find((roadmap) => roadmap.key === rd) ?? roadmaps[0];
   const board = current ? await repository.listBoard(current.key) : null;
@@ -32,7 +32,6 @@ export default async function RoadmapMapPage({
   }
 
   const chrome: RoadmapChrome = {
-    sampleBanner: t('sampleBanner'),
     switcherLabel: t('switcherLabel'),
     boardLabel: t('boardLabel'),
     lanePickerLabel: t('lanePickerLabel'),
@@ -76,7 +75,6 @@ export default async function RoadmapMapPage({
             {t('page.description')}
           </p>
         </header>
-        <RoadmapSampleBanner text={chrome.sampleBanner} />
         <RoadmapSwitcher
           roadmaps={roadmaps}
           currentKey={current.key}

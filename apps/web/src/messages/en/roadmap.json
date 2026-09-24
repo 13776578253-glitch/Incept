@@ -7,7 +7,6 @@
   "switcherLabel": "Roadmaps",
   "boardLabel": "Roadmap board",
   "lanePickerLabel": "Choose a column",
-  "sampleBanner": "Sample data — not yet connected to storage.",
   "emptyLane": {
     "reviewing": "Nothing is under review. New ideas land here first.",
     "unstarted": "Nothing queued right now. Committed work waits here.",

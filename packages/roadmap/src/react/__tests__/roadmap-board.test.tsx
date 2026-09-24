@@ -10,7 +10,6 @@ import { RoadmapBoard } from '../roadmap-board';
 import { RoadmapSwitcher } from '../roadmap-switcher';
 
 const chrome: RoadmapChrome = {
-  sampleBanner: 'Sample data — not yet connected to storage.',
   switcherLabel: 'Roadmaps',
   boardLabel: 'Roadmap board',
   lanePickerLabel: 'Choose a column',

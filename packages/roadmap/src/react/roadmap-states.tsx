@@ -1,16 +1,3 @@
-type RoadmapSampleBannerProps = {
-  text: string;
-};
-
-// fixture 阶段的诚实标注（决策条目 3 + internal-surfaces 更新段）：虚线框与内容区分开。
-export function RoadmapSampleBanner({ text }: RoadmapSampleBannerProps) {
-  return (
-    <p className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-text-soft)] px-4 py-3 text-[0.85rem] text-[var(--color-text-muted)]">
-      {text}
-    </p>
-  );
-}
-
 type RoadmapSkeletonProps = {
   label: string;
 };
