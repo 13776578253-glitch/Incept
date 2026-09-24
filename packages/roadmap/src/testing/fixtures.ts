@@ -1,7 +1,7 @@
 import type { Roadmap, RoadmapEntry } from '../domain';
 
 // fixture 只允许存在于 testing/（决策条目 3）：这是 Gate 前唯一的数据源，全部是示例内容。
-// 样本刻意覆盖极端：超长标题（卡片两行截断）、大计数、无 metrics、空列、双语长文本。
+// 样本刻意覆盖极端：超长标题（卡片两行截断）、空列、双语长文本。T4 硬化：无计数样本。
 
 export const fixtureRoadmaps: readonly Roadmap[] = [
   {
@@ -38,7 +38,6 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
       en: 'Shape replies around what the reader cares about.',
       zh: '围绕读者关心的内容组织回复。',
     },
-    metrics: { votes: 293, comments: 2 },
   },
   {
     key: 'sample-02',
@@ -55,7 +54,6 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
       en: 'Extreme sample: the clamp must not eat the text.',
       zh: '极端样本：截断不能吞掉文本。',
     },
-    metrics: { votes: 58 },
   },
   {
     key: 'sample-03',
@@ -69,7 +67,6 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
       en: 'Queued next: long-term memory that stays with the conversation.',
       zh: '排在下一批：随对话留存的长期记忆。',
     },
-    metrics: { votes: 638, comments: 1 },
   },
   {
     key: 'sample-04',
@@ -96,7 +93,6 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
       en: 'Being built: a desktop client for the local agent.',
       zh: '正在构建：本地 Agent 的桌面客户端。',
     },
-    metrics: { votes: 616, comments: 12 },
   },
   {
     key: 'sample-06',
@@ -107,10 +103,9 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
     priority: 'none',
     title: { en: 'Runtime isolation groundwork', zh: '运行时隔离地基' },
     summary: {
-      en: 'Big-count sample and no priority: isolation groundwork in progress.',
-      zh: '大计数与无优先级样本：隔离地基进行中。',
+      en: 'Isolation groundwork in progress.',
+      zh: '隔离地基进行中。',
     },
-    metrics: { votes: 12847, comments: 321 },
     links: [
       {
         label: { en: 'Discussion', zh: '讨论' },
@@ -130,7 +125,6 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
       en: 'Shipped: automatic and manual context compression.',
       zh: '已发布：手动与自动的上下文压缩。',
     },
-    metrics: { votes: 110, comments: 3 },
   },
   {
     key: 'sample-08',
@@ -141,8 +135,8 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
     priority: 'none',
     title: { en: 'Command panel cleanup', zh: '指令面板清理' },
     summary: {
-      en: 'Shipped without metrics: counts hide when absent.',
-      zh: '无计数样本：缺省即隐藏。',
+      en: 'Shipped as a cleanup round.',
+      zh: '作为清理一轮已发布。',
     },
   },
   {
@@ -157,7 +151,6 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
       en: 'Second board, own columns and names: the multi-roadmap axis.',
       zh: '第二块板自带列与命名：多 roadmap 轴。',
     },
-    metrics: { votes: 42 },
   },
   {
     key: 'sample-10',
@@ -171,6 +164,5 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
       en: 'Shipped on this board only.',
       zh: '只在这块板上标记为已发布。',
     },
-    metrics: { comments: 7 },
   },
 ];

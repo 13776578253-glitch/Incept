@@ -57,22 +57,6 @@ export function IconXCircle() {
   );
 }
 
-export function IconComment() {
-  return (
-    <svg {...base}>
-      <path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" />
-    </svg>
-  );
-}
-
-export function IconUpvote() {
-  return (
-    <svg {...base}>
-      <path d="m4 9.5 4-4 4 4" />
-    </svg>
-  );
-}
-
 export function IconLink() {
   return (
     <svg {...base}>

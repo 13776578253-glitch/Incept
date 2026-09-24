@@ -10,7 +10,7 @@ import type {
 } from '../domain';
 
 // 写端口：RoadmapRepository 的对偶面（Phase 3 规格，主控已评审）。
-// links 随 entry 事务性整体重写；计数（votes/comments）不可写（T4 计数非议题）。
+// links 随 entry 事务性整体重写；计数不做（T4 硬化：无投票/评论），域模型无计数字段。
 export type RoadmapEntryDraft = {
   key: string;
   status: RoadmapStatus;

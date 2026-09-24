@@ -15,7 +15,6 @@
     "canceled": "没有被关闭或拒绝的内容。"
   },
   "loadMore": "加载更多",
-  "loading": "正在绘制路线图",
   "error": {
     "title": "这张图未能绘出",
     "description": "加载路线图时出了问题。重新加载页面再试一次。"
@@ -32,10 +31,6 @@
       "low": "低优先级",
       "none": "无优先级"
     }
-  },
-  "metrics": {
-    "votes": "{count} 票",
-    "comments": "{count} 条评论"
   },
   "admin": {
     "heading": "路线图管理",

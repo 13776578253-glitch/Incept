@@ -21,7 +21,6 @@ const chrome: RoadmapChrome = {
     canceled: 'Nothing closed.',
   },
   loadMore: 'Load more',
-  loading: 'Loading roadmap',
   errorTitle: 'This map could not be drawn',
   errorDescription: 'Something went wrong.',
   typeLabels: {
@@ -35,8 +34,6 @@ const chrome: RoadmapChrome = {
     low: 'Low Priority',
     none: 'No Priority',
   },
-  votesLabel: '{count} votes',
-  commentsLabel: '{count} comments',
 };
 
 afterEach(cleanup);
@@ -58,7 +55,7 @@ describe('RoadmapBoard', () => {
     expect(screen.getByRole('region', { name: 'Done' })).toBeTruthy();
   });
 
-  it('shows both language titles, chips and counts as text, never as buttons', async () => {
+  it('shows both language titles and chips, with no interactive controls in the card', async () => {
     render(<RoadmapBoard board={await sampleBoard('sample-roadmap')} locale="en" chrome={chrome} />);
 
     expect(screen.getByText('Interest-based reply method')).toBeTruthy();
@@ -68,11 +65,7 @@ describe('RoadmapBoard', () => {
     expect(card).not.toBeNull();
     expect(within(card).getByText('Feature Request')).toBeTruthy();
     expect(within(card).getByText('Middle Priority')).toBeTruthy();
-
-    const votes = within(card).getByTitle('293 votes');
-    expect(within(votes).getByText('293')).toBeTruthy();
     expect(within(card).queryByRole('button')).toBeNull();
-    expect(screen.queryByRole('button', { name: /293/ })).toBeNull();
   });
 
   it('keeps the full long title available when the card clamps', async () => {

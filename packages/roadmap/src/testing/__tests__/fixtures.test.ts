@@ -29,8 +29,6 @@ describe('roadmap fixtures', () => {
     const entries = board?.entries ?? [];
 
     expect(entries.some((entry) => entry.title.en.length > 100)).toBe(true);
-    expect(entries.some((entry) => (entry.metrics?.votes ?? 0) > 10000)).toBe(true);
-    expect(entries.some((entry) => entry.metrics === undefined)).toBe(true);
 
     const atlas = await repository.listBoard('sample-atlas');
     const active = atlas?.entries.filter((entry) => entry.status === 'active') ?? [];

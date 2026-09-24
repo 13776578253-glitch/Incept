@@ -85,7 +85,7 @@ describe('createPrismaRoadmapRepository', () => {
     expect(roadmaps[0].columns.map((column) => column.status)).toEqual(['active', 'reviewing']);
   });
 
-  it('maps a board with entries: position becomes order, counts and links are optional', async () => {
+  it('maps a board with entries: position becomes order and links sort by position', async () => {
     const repository = createPrismaRoadmapRepository(
       fakeClient({
         board: {
@@ -129,8 +129,6 @@ describe('createPrismaRoadmapRepository', () => {
     expect(board?.entries.map((entry) => entry.key)).toEqual(['sample-01', 'sample-02']);
     expect(board?.entries[0].roadmap).toBe('sample-roadmap');
     expect(board?.entries[0].order).toBe(10);
-    expect(board?.entries[0].metrics).toEqual({ votes: 293 });
-    expect(board?.entries[1].metrics).toBeUndefined();
     expect(board?.entries[1].links?.map((link) => link.href)).toEqual([
       'https://example.com/1',
       'https://example.com/2',

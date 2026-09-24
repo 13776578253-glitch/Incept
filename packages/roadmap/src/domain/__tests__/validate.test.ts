@@ -84,16 +84,6 @@ describe('validateEntry', () => {
     );
   });
 
-  it('rejects negative or fractional metrics', () => {
-    expect(() => validateEntry({ ...entry, metrics: { votes: -1 } }, roadmap)).toThrow(
-      /non-negative integer/,
-    );
-    expect(() => validateEntry({ ...entry, metrics: { comments: 1.5 } }, roadmap)).toThrow(
-      /non-negative integer/,
-    );
-    expect(() => validateEntry({ ...entry, metrics: {} }, roadmap)).not.toThrow();
-  });
-
   it('rejects a link missing its label half or href', () => {
     expect(() =>
       validateEntry({ ...entry, links: [{ label: { en: 'Link', zh: '' }, href: 'https://x' }] }, roadmap),

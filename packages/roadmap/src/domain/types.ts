@@ -42,12 +42,6 @@ export type RoadmapEntryLink = {
   href: string;
 };
 
-// 计数只显示、不做成按钮（T4 未裁定来源前无交互）。
-export type RoadmapEntryMetrics = {
-  votes?: number;
-  comments?: number;
-};
-
 export type RoadmapEntry = {
   key: string;
   roadmap: string;
@@ -57,6 +51,5 @@ export type RoadmapEntry = {
   priority: RoadmapEntryPriority;
   title: LocalizedText;
   summary: LocalizedText;
-  metrics?: RoadmapEntryMetrics;
   links?: RoadmapEntryLink[];
 };

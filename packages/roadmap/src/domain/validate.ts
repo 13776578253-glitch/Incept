@@ -89,16 +89,6 @@ export function validateEntry(entry: RoadmapEntry, roadmap: Roadmap): void {
   assertLocalizedText(entry.title, 'entry.title');
   assertLocalizedText(entry.summary, 'entry.summary');
 
-  if (entry.metrics) {
-    for (const metric of ['votes', 'comments'] as const) {
-      const value = entry.metrics[metric];
-
-      if (value !== undefined && (!Number.isInteger(value) || value < 0)) {
-        fail(`entry.metrics.${metric}`, 'expected a non-negative integer when present');
-      }
-    }
-  }
-
   for (const [index, link] of (entry.links ?? []).entries()) {
     assertLocalizedText(link.label, `entry.links[${index}].label`);
 

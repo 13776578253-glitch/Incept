@@ -1,27 +1,3 @@
-type RoadmapSkeletonProps = {
-  label: string;
-};
-
-export function RoadmapSkeleton({ label }: RoadmapSkeletonProps) {
-  return (
-    <div role="status" aria-busy="true" aria-label={label} className="flex flex-col gap-4">
-      <span className="sr-only">{label}</span>
-      <div className="flex flex-col gap-4 md:grid md:auto-cols-[minmax(280px,1fr)] md:grid-flow-col">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div
-            key={index}
-            className="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] p-4"
-          >
-            <div className="h-5 w-24 animate-pulse rounded-full bg-[var(--roadmap-chip-bg)]" />
-            <div className="h-28 animate-pulse rounded-[var(--radius-md)] bg-[var(--roadmap-chip-bg)]" />
-            <div className="h-28 animate-pulse rounded-[var(--radius-md)] bg-[var(--roadmap-chip-bg)]" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 type RoadmapErrorProps = {
   title: string;
   description: string;

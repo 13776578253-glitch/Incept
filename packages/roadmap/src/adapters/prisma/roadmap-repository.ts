@@ -99,6 +99,7 @@ export function toRoadmap(row: RoadmapRow, columns: readonly RoadmapColumnRow[])
 }
 
 // 行 → 域：position → order；entry.roadmap 记的是 roadmap key（校验口径），由父行带入。
+// 行上的 votes/comments 为休眠列（T4 硬化：不做投票/评论），刻意不映射进域模型。
 export function toEntry(
   row: RoadmapEntryRow & { links: readonly RoadmapEntryLinkRow[] },
   roadmapKey: string,
@@ -106,7 +107,6 @@ export function toEntry(
   const links: RoadmapEntryLink[] = [...row.links]
     .sort(byPosition)
     .map((link) => ({ label: { en: link.labelEn, zh: link.labelZh }, href: link.href }));
-  const hasMetrics = row.votes !== null || row.comments !== null;
 
   return {
     key: row.key,
@@ -117,14 +117,6 @@ export function toEntry(
     priority: row.priority as RoadmapEntryPriority,
     title: { en: row.titleEn, zh: row.titleZh },
     summary: { en: row.summaryEn, zh: row.summaryZh },
-    ...(hasMetrics
-      ? {
-          metrics: {
-            ...(row.votes !== null ? { votes: row.votes } : {}),
-            ...(row.comments !== null ? { comments: row.comments } : {}),
-          },
-        }
-      : {}),
     ...(links.length > 0 ? { links } : {}),
   };
 }

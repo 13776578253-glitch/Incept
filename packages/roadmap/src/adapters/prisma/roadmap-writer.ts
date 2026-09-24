@@ -79,8 +79,6 @@ export type RoadmapPrismaTx = {
         titleZh: string;
         summaryEn: string;
         summaryZh: string;
-        votes: null;
-        comments: null;
         position: number;
       };
     }): Promise<RoadmapEntryRow>;
@@ -336,8 +334,6 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
             titleZh: entry.title.zh,
             summaryEn: entry.summary.en,
             summaryZh: entry.summary.zh,
-            votes: null,
-            comments: null,
             position: entry.order,
           },
         });

@@ -15,7 +15,6 @@
     "canceled": "Nothing is closed or declined."
   },
   "loadMore": "Load more",
-  "loading": "Drawing the roadmap",
   "error": {
     "title": "This map could not be drawn",
     "description": "Something went wrong while loading the roadmap. Reload the page to try again."
@@ -32,10 +31,6 @@
       "low": "Low Priority",
       "none": "No Priority"
     }
-  },
-  "metrics": {
-    "votes": "{count} votes",
-    "comments": "{count} comments"
   },
   "admin": {
     "heading": "Roadmap admin",

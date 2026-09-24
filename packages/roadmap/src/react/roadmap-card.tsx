@@ -1,7 +1,7 @@
 import type { RoadmapEntry, RoadmapLocale } from '../domain';
 
-import { fillCount, type RoadmapChrome } from './copy';
-import { IconComment, IconLink, IconUpvote } from './icons';
+import type { RoadmapChrome } from './copy';
+import { IconLink } from './icons';
 import { RoadmapChip } from './roadmap-chip';
 
 type RoadmapCardProps = {
@@ -10,12 +10,10 @@ type RoadmapCardProps = {
   chrome: RoadmapChrome;
 };
 
-// 条目卡：主语言标题 + 次语言一行（双语对等可见）、chips、计数 footer。
-// 计数是纯文本，不是按钮（T4 未裁定来源前无交互）。
+// 条目卡：主语言标题 + 次语言一行（双语对等可见）、chips。
+// T4 硬化：无投票/评论——卡片不渲染任何计数或投票/评论痕迹。
 export function RoadmapCard({ entry, locale, chrome }: RoadmapCardProps) {
   const secondary = locale === 'en' ? 'zh' : 'en';
-  const votes = entry.metrics?.votes;
-  const comments = entry.metrics?.comments;
   const links = entry.links ?? [];
 
   return (
@@ -55,25 +53,6 @@ export function RoadmapCard({ entry, locale, chrome }: RoadmapCardProps) {
           </a>
         ))}
       </div>
-      {(votes !== undefined || comments !== undefined) && (
-        <div className="mt-auto flex items-center gap-4 border-t border-[var(--color-border)] pt-3 text-[0.78rem] text-[var(--color-text-soft)] tabular-nums">
-          {votes !== undefined && (
-            <span className="inline-flex items-center gap-1.5" title={fillCount(chrome.votesLabel, votes)}>
-              <IconUpvote />
-              {votes}
-            </span>
-          )}
-          {comments !== undefined && (
-            <span
-              className="inline-flex items-center gap-1.5"
-              title={fillCount(chrome.commentsLabel, comments)}
-            >
-              <IconComment />
-              {comments}
-            </span>
-          )}
-        </div>
-      )}
     </article>
   );
 }

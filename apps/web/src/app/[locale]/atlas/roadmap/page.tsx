@@ -43,7 +43,6 @@ export default async function RoadmapMapPage({
       canceled: t('emptyLane.canceled'),
     },
     loadMore: t('loadMore'),
-    loading: t('loading'),
     errorTitle: t('error.title'),
     errorDescription: t('error.description'),
     typeLabels: {
@@ -57,8 +56,6 @@ export default async function RoadmapMapPage({
       low: t('chips.priority.low'),
       none: t('chips.priority.none'),
     },
-    votesLabel: t('metrics.votes', { count: '{count}' }),
-    commentsLabel: t('metrics.comments', { count: '{count}' }),
   };
 
   return (
@@ -82,7 +79,7 @@ export default async function RoadmapMapPage({
           hrefFor={(key) => withLocalePath(locale, `/atlas/roadmap?rd=${encodeURIComponent(key)}`)}
           label={chrome.switcherLabel}
         />
-        <RoadmapBoard board={board} locale={locale} chrome={chrome} />
+        <RoadmapBoard key={current.key} board={board} locale={locale} chrome={chrome} />
       </div>
     </WorkspaceShell>
   );

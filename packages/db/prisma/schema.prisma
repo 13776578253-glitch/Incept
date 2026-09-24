@@ -320,7 +320,8 @@ model MusicLibraryItem {
 /* 路线图 / 人写内容（roadmap-integration-surface 决策）：多 roadmap，各带自己的列映射。
    nameEn / nameZh 成对存储，完整双语对等由 domain 校验兜底。
    position 决定切换器、列与条目的人定顺序（同 music 先例）。
-   votes / comments 是占位列：T4 裁定计数非当前议题，来源留后续讨论，无值即 NULL。 */
+   votes / comments 休眠列（T4 硬化：不做投票/评论）：域模型与界面零暴露，值恒 NULL；
+   删除列待主控单独授权的迁移。 */
 enum RoadmapStatus {
   reviewing
   unstarted
