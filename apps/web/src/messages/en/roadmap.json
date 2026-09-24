@@ -36,5 +36,40 @@
   "metrics": {
     "votes": "{count} votes",
     "comments": "{count} comments"
+  },
+  "admin": {
+    "heading": "Roadmap admin",
+    "boardsLabel": "Roadmaps",
+    "columnsLabel": "Columns",
+    "entriesLabel": "Entries",
+    "emptySelection": "Select a roadmap on the left to edit its columns and entries.",
+    "fieldKey": "Key",
+    "nameEn": "Name (English)",
+    "nameZh": "Name (Chinese)",
+    "titleEn": "Title (English)",
+    "titleZh": "Title (Chinese)",
+    "summaryEn": "Summary (English)",
+    "summaryZh": "Summary (Chinese)",
+    "labelEn": "Label (English)",
+    "labelZh": "Label (Chinese)",
+    "fieldStatus": "Status",
+    "fieldType": "Type",
+    "fieldPriority": "Priority",
+    "fieldOrder": "Order",
+    "fieldHref": "Link URL",
+    "addLink": "Add link",
+    "removeLink": "Remove link",
+    "create": "Create",
+    "update": "Save",
+    "deleteLabel": "Delete",
+    "confirmDelete": "Confirm delete",
+    "failed": "The request failed.",
+    "status": {
+      "reviewing": "Reviewing",
+      "unstarted": "Unstarted",
+      "active": "Active",
+      "completed": "Completed",
+      "canceled": "Canceled"
+    }
   }
 }
