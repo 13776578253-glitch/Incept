@@ -9,6 +9,7 @@ import type { SettingsSectionContribution } from './types';
 export function defineSettingsSectionContribution<TData>(contribution: {
   id: string;
   label: (locale: AppLocale) => string;
+  description?: (locale: AppLocale) => string;
   visibility: SettingsVisibility;
   order: number;
   panel: ComponentType<{ data: TData | null }>;

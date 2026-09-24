@@ -163,7 +163,28 @@ export async function publishMusicMedia({
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
         throw error;
       }
+
+      // A concurrent publisher may have won the create race. EEXIST alone does
+      // not prove it published the same bytes, so repair and verify before the
+      // caller is allowed to write a database row pointing at this URL.
+      const racedBytes = await fs.readFile(targetPath).catch(() => null);
+      const racedHash = racedBytes === null
+        ? null
+        : crypto.createHash('sha256').update(racedBytes).digest('hex');
+
+      if (racedHash !== hash || racedBytes?.byteLength !== bytes.byteLength) {
+        await fs.writeFile(targetPath, bytes);
+      }
     });
+
+    const publishedBytes = await fs.readFile(targetPath).catch(() => null);
+    const publishedHash = publishedBytes === null
+      ? null
+      : crypto.createHash('sha256').update(publishedBytes).digest('hex');
+
+    if (publishedHash !== hash || publishedBytes?.byteLength !== bytes.byteLength) {
+      throw new Error(`Music mirror publication could not be verified: ${targetPath}`);
+    }
   }
 
   return operation;

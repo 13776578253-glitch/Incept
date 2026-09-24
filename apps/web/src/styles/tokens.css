@@ -7,6 +7,9 @@
   --navbar-height: 64px;
   /* 悬浮播放器层级：位于固定侧栏(20)与 Toast(40) 之上、Header(50) 之下。 */
   --z-feature-floating: 45;
+  /* 设置侧栏选中态描边/底色：含逗号的 color-mix() 写进 Tailwind 任意值不会生成规则，故经变量中转 */
+  --settings-nav-active-border: color-mix(in srgb, var(--color-text) 8%, transparent);
+  --settings-nav-active-bg: color-mix(in srgb, var(--color-text) 4%, transparent);
   --docs-sidebar-width: 248px;
   --docs-content-width: 760px;
   --docs-right-rail-width: 260px;

@@ -42,6 +42,8 @@ export type SettingsSectionContributionPanelProps = {
 export type SettingsSectionContribution<TData = unknown> = {
   id: string;
   label: (locale: AppLocale) => string;
+  // 分区说明（侧栏与分区头复用）；迁移自内置分区的 description 文案，缺省即不渲染
+  description?: (locale: AppLocale) => string;
   visibility: SettingsVisibility;
   order: number;
   panel: ComponentType<{ data: TData | null }>;

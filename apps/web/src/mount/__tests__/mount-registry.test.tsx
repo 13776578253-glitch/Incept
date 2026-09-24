@@ -109,6 +109,11 @@ describe('mount registry', () => {
     expect(mountManifest.contributions).toHaveLength(3);
     expect(mountManifest.settingsSections).toHaveLength(1);
     expect(mountManifest.settingsSections[0].id).toBe('music');
+    // 回归锁：分区说明文案随收编迁移自内置 music-schema（主分支 description 字面量），侧栏依赖它渲染
+    expect(mountManifest.settingsSections[0].description?.('zh')).toBe('播放器偏好与曲库');
+    expect(mountManifest.settingsSections[0].description?.('en')).toBe(
+      'Player preferences and libraries.',
+    );
     expect(RESERVED_SETTINGS_SECTION_IDS).toEqual([
       'appearance',
       'language',

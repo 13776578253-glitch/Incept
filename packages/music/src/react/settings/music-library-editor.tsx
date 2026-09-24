@@ -192,7 +192,7 @@ export function MusicLibraryEditor({
   const [deleteTarget, setDeleteTarget] = useState<MusicDeleteTarget | null>(null);
 
   return (
-    <section className="space-y-3">
+    <section className="ml-4 max-w-[744px] space-y-3">
       <h4 className="text-[0.8125rem] font-medium text-[var(--color-text)]">{copy.librariesHeading}</h4>
 
       <div className="flex flex-wrap items-center gap-2">

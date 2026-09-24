@@ -185,6 +185,12 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 - Status: Open. Registered at the Phase 8 freeze; B-18 recorded them as accepted compatibility aliases when the suites moved under Vitest.
 - The tests they run now live in `@incept/music` / `@incept/music-player-core`. Decide whether the aliases still earn their keep; if not, delete them and point any external doc at `pnpm test` / `pnpm --filter <pkg> test`.
 
+### B-29 Comma-Bearing Tailwind Arbitrary Values Generate No Rules
+
+- Source: ~30 class strings across `apps/web/src` using `border-[color:color-mix(...)]` / `bg-[color-mix(...)]` / `shadow-[...color-mix(...)]` (docs/admin tables, import-preview panels, about/activity, home/blog, docs blocks, …).
+- Status: Open. Found on 2026-09-24 while diagnosing the settings sidebar styling: Tailwind v4 emits **no CSS rule** for arbitrary values that contain commas (`color-mix(in_srgb,...)`), while standard utilities in the same class string generate fine. The build's CSS contains exactly one `color-mix` (hand-written CSS), i.e. every such utility silently does nothing — the site-wide "slightly off" chrome is this.
+- The settings sidebar case is fixed by routing the mix through tokens variables (`--settings-nav-active-border` / `--settings-nav-active-bg`, comma-free `var()` arbitrary values generate correctly). Apply the same variable-indirection pattern (or plain CSS) to the remaining sites, or drop the dead classes once a visual pass confirms what they were supposed to do.
+
 ## Review Before Any Code Decision
 
 ### B-09 Retained Style Lab And Block Catalog

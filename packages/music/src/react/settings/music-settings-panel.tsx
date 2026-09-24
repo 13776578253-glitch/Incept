@@ -11,6 +11,10 @@ export function getMusicSettingsSectionLabel(locale: MusicLocale): string {
   return locale === 'zh' ? '音乐' : 'Music';
 }
 
+export function getMusicSettingsSectionDescription(locale: MusicLocale): string {
+  return locale === 'zh' ? '播放器偏好与曲库' : 'Player preferences and libraries.';
+}
+
 // 分区文案（原 host 侧 music-schema 的文案随收编迁移，逐字保留）
 const SECTION_COPY: Record<
   MusicLocale,

@@ -2,6 +2,7 @@ import type { MusicAdminData } from '@incept/music/application';
 import {
   MusicPlayerPreferencesProvider,
   MusicPlayerRuntimeMount,
+  getMusicSettingsSectionDescription,
   getMusicSettingsSectionLabel,
 } from '@incept/music/react';
 
@@ -39,6 +40,7 @@ export const musicSettingsSectionContribution: SettingsSectionContribution =
   defineSettingsSectionContribution<MusicAdminData>({
     id: 'music',
     label: getMusicSettingsSectionLabel,
+    description: getMusicSettingsSectionDescription,
     visibility: 'public',
     order: 0,
     panel: MusicSettingsSectionPanelHost,

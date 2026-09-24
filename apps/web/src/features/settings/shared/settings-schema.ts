@@ -21,6 +21,7 @@ export function getSettingsPageData(locale: AppLocale): SettingsPageData {
       ...collectSettingsSectionContributions(mountManifest).map((contribution) => ({
         id: contribution.id,
         label: contribution.label(locale),
+        description: contribution.description?.(locale),
         visibility: contribution.visibility,
         rows: [],
       })),

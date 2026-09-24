@@ -32,8 +32,8 @@ function SettingsSidebar() {
             aria-current={active ? 'page' : undefined}
             className={`block rounded-[14px] border px-3 py-2.5 transition-colors ${
               active
-                ? 'border-[color:color-mix(in_srgb,var(--color-text)_8%,transparent)] bg-[color:color-mix(in_srgb,var(--color-text)_4%,transparent)]'
-                : 'border-transparent hover:border-[var(--color-nav-dropdown-border)] hover:bg-[var(--color-nav-item-hover)]'
+                ? 'border-[color:var(--settings-nav-active-border)] bg-[color:var(--settings-nav-active-bg)]'
+                : 'border-transparent hover:border-[color:var(--color-nav-dropdown-border)] hover:bg-[color:var(--color-nav-item-hover)]'
             }`}
           >
             <p className="text-[0.8125rem] font-medium text-[var(--color-text)]">
