@@ -8,6 +8,7 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 - A completed or superseded TODO is rewritten in place as `history: <what replaced it>` when its source file is cleaned.
 - Multiple TODOs describing one capability are consolidated into one canonical backlog item, then the duplicate source comments are converted to history notes.
 - `Active` means a concrete next feature. `Deferred` means an intentional future direction. `Review` means the containing surface may be removed or merged before its TODO should be decided.
+- **An agent working in a worktree writes its blocked or deliberately-skipped items here, not only in its report.** Acceptance reads git — a clean tree, the commit range, whether the merge applies — and explicitly does not read the AI's own summary. Anything left only in that summary disappears when the worktree is reclaimed. A follow-up that never reached this file was never recorded.
 
 ## Active
 
@@ -169,6 +170,38 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 - **Entry points:** the row's right-click menu grows a "merge into…" step listing the rows that look like the same song (the same normalized title / artist / duration rule, with the full list as a fallback when nothing is flagged), and the upload list's "possible duplicate of …" hint gets a shortcut into the same action.
 - **One home for the rule:** the panel would compute that candidate list offline, so `findMusicDuplicateCandidates` has to move into a module with no Prisma import and be exported through its own subpath of the db package (the `./music` barrel pulls in the client, which the browser bundle cannot take).
 - B-23 remains the detection half; this item only handles what to do after the human says yes.
+
+### B-25 Import-Boundary Lint Infrastructure
+
+- Source: `packages/music/tsconfig.src.json`; `docs/decisions/{en,zh}/music-package-boundaries.md` (decision 1, amended 2026-09-23).
+- Status: Active infrastructure work, scheduled by the Phase 3 review ruling (decision 3 always reserved lint enforcement for a separate task).
+- The mechanical pure-layer check covers domain + ports only: application compiles in the node-flavoured config because it calls the adapters graph, so its "no direct Node imports" rule currently rests on review alone.
+- Add an import-boundary lint across `packages/music` layers: domain/ports must not import Node built-ins, adapters, or each other's internals; application must not import Node built-ins directly; adapters/next/cli may use Node; react may use React. Cover `apps/web` imports of the package the same way (host only via ports/assembly/stubs).
+
+### B-26 Account Section On The Same Contribution Primitive
+
+- Source: `apps/web/src/features/settings/account/`（`account-settings-panel.tsx` / `account-schema.ts`）
+- Status: Open. Registered at the Phase 8 freeze (2026-09-23), where music completed the SettingsSectionContribution adoption.
+- The account section is the remaining built-in settings section that predates the mount registration surface: `settings-page-content.tsx` still branches on `section.id === 'account'` and renders `AccountSettingsPanel` directly, and `account` stays a reserved section id because of it.
+- Move it onto the same primitive music now uses (a SettingsSectionContribution with an owner-gated server loader), then drop the special branch and the reserved id — the exact surgery Phase 7 did for music.
+
+### B-27 New-Module Scaffold
+
+- Source: `packages/music/`（the layered package layout）、`apps/web/src/mount/`
+- Status: Open. Registered at the Phase 8 freeze; A6 of the migration acceptance explicitly deferred it ("scaffold 另立任务").
+- Codify the migration's shape as a copyable scaffold: the layered exports + boundary tsconfigs + ports/assembly/registration seams + mount contribution wiring, so a new feature module starts from the structure instead of re-deriving it from `packages/music`.
+
+### B-28 `music:check-*` Compatibility Aliases
+
+- Source: root `package.json` (`music:check-core`, `music:check-adapter`)
+- Status: Open. Registered at the Phase 8 freeze; B-18 recorded them as accepted compatibility aliases when the suites moved under Vitest.
+- The tests they run now live in `@incept/music` / `@incept/music-player-core`. Decide whether the aliases still earn their keep; if not, delete them and point any external doc at `pnpm test` / `pnpm --filter <pkg> test`.
+
+### B-29 Comma-Bearing Tailwind Arbitrary Values Generate No Rules
+
+- Source: ~30 class strings across `apps/web/src` using `border-[color:color-mix(...)]` / `bg-[color-mix(...)]` / `shadow-[...color-mix(...)]` (docs/admin tables, import-preview panels, about/activity, home/blog, docs blocks, …).
+- Status: Open. Found on 2026-09-24 while diagnosing the settings sidebar styling: Tailwind v4 emits **no CSS rule** for arbitrary values that contain commas (`color-mix(in_srgb,...)`), while standard utilities in the same class string generate fine. The build's CSS contains exactly one `color-mix` (hand-written CSS), i.e. every such utility silently does nothing — the site-wide "slightly off" chrome is this.
+- The settings sidebar case is fixed by routing the mix through tokens variables (`--settings-nav-active-border` / `--settings-nav-active-bg`, comma-free `var()` arbitrary values generate correctly). Apply the same variable-indirection pattern (or plain CSS) to the remaining sites, or drop the dead classes once a visual pass confirms what they were supposed to do.
 
 ## Review Before Any Code Decision
 

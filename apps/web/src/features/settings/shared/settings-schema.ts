@@ -1,10 +1,10 @@
 import type { AppLocale } from '@/i18n/config/locales';
+import { collectSettingsSectionContributions, mountManifest } from '@/mount/registry';
 import type { SettingsPageData } from './settings-types';
 import { getAccountSettingsSection } from '../account/account-schema';
 import { getAiSettingsSection } from '../ai/ai-schema';
 import { getAppearanceSettingsSection } from '../appearance/appearance-schema';
 import { getLanguageSettingsSection } from '../language/language-schema';
-import { getMusicSettingsSection } from '../music/music-schema';
 
 export function getSettingsPageData(locale: AppLocale): SettingsPageData {
   const isZh = locale === 'zh';
@@ -16,7 +16,15 @@ export function getSettingsPageData(locale: AppLocale): SettingsPageData {
       getAppearanceSettingsSection(locale),
       getLanguageSettingsSection(locale),
       getAccountSettingsSection(locale),
-      getMusicSettingsSection(locale),
+      // 注册表贡献分区按 order 追加
+      // history: 原 music 硬编码已由注册面持有，贡献分区插在 ai 之前以保持原分区顺序
+      ...collectSettingsSectionContributions(mountManifest).map((contribution) => ({
+        id: contribution.id,
+        label: contribution.label(locale),
+        description: contribution.description?.(locale),
+        visibility: contribution.visibility,
+        rows: [],
+      })),
       getAiSettingsSection(locale),
     ],
   };

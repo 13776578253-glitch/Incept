@@ -1,0 +1,76 @@
+{
+  "name": "@incept/music",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./endpoints": {
+      "types": "./src/endpoints.ts",
+      "default": "./src/endpoints.ts"
+    },
+    "./domain": {
+      "types": "./src/domain/index.ts",
+      "default": "./src/domain/index.ts"
+    },
+    "./ports": {
+      "types": "./src/ports/index.ts",
+      "default": "./src/ports/index.ts"
+    },
+    "./adapters": {
+      "types": "./src/adapters/index.ts",
+      "default": "./src/adapters/index.ts"
+    },
+    "./application": {
+      "types": "./src/application/index.ts",
+      "default": "./src/application/index.ts"
+    },
+    "./react": {
+      "types": "./src/react/index.ts",
+      "default": "./src/react/index.ts"
+    },
+    "./next": {
+      "types": "./src/next/index.ts",
+      "default": "./src/next/index.ts"
+    },
+    "./cli": {
+      "types": "./src/cli/index.ts",
+      "default": "./src/cli/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing/index.ts",
+      "default": "./src/testing/index.ts"
+    },
+    "./testing/setup": {
+      "types": "./src/testing/setup.ts",
+      "default": "./src/testing/setup.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.src.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --exclude src/__tests__/cli-smoke.test.ts",
+    "test:cli": "vitest run src/__tests__/cli-smoke.test.ts"
+  },
+  "dependencies": {
+    "@incept/db": "workspace:*",
+    "@incept/music-player-core": "workspace:*",
+    "music-metadata": "^11.15.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^30.1.0",
+    "next": "16.2.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.1"
+  },
+  "peerDependencies": {
+    "next": "^16.2.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}

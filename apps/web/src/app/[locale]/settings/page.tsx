@@ -3,17 +3,26 @@ import {
   SettingsPageContent,
   SettingsPageSidebar,
 } from '@/features/settings';
+import { loadSettingsSectionContributionData } from '@/mount/registry';
+import { settingsSectionServerLoaders } from '@/mount/server';
 import { getCurrentViewer } from '@/server/auth';
-import { readMusicAdminData } from '@/server/music/music-admin';
 
 export default async function SettingsPage() {
   const viewer = await getCurrentViewer();
-  // 曲目与曲库管理只对 owner 渲染；数据在服务端从数据库读，客户端组件只负责渲染与提交
-  const musicAdminData = viewer.role === 'owner' ? await readMusicAdminData() : null;
+  // 曲目与曲库管理只对 owner 渲染
+  // history: 原直接数据流已迁入 settingsSectionServerLoaders 的 music 注册条目
+  // 注册表贡献分区的 server loader 数据流：owner 门控在收集器内执行
+  const settingsContributionData = await loadSettingsSectionContributionData(
+    settingsSectionServerLoaders,
+    viewer.role === 'owner',
+  );
 
   return (
     <SettingsShell sidebar={<SettingsPageSidebar />}>
-      <SettingsPageContent viewerRole={viewer.role} musicAdminData={musicAdminData} />
+      <SettingsPageContent
+        viewerRole={viewer.role}
+        settingsContributionData={settingsContributionData}
+      />
     </SettingsShell>
   );
 }

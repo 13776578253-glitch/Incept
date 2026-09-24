@@ -141,3 +141,7 @@ pnpm music:cleanup --apply   # 删除它们
 - 顺序是曲目自己的 `position`，一首在多个库里共享同一个顺序；没有拖拽排序与批量编辑。
 - 没有并发编辑保护：owner 单人使用，同时改动同一行时后写者胜出。
 - 访问控制与 CDN 属于部署阶段的事，见导入 runbook 的「边界」一节。
+
+## CLI 转发机制与包布局（2026-09-23 模块化迁移后）
+
+上文所有 `pnpm music:*` 命令都是**纯转发器**（`scripts/music-*.mjs` → `pnpm --filter @incept/music exec tsx src/cli/<入口>.ts`），用法与参数逐字不变，另有 `--env-file` / `--mirror` 两个 plumbing 标志；镜像布局唯一定义在 `scripts/music-paths.mjs`。功能代码在 `packages/music`（domain / ports / adapters / application / react / next / cli / endpoints / testing 分层），网页宿主只经 exports、装配（`apps/web/src/server/music/assembly.ts`）与挂载注册（`apps/web/src/mount/music*`）接入；Prisma schema 与迁移永久归 `@incept/db`。

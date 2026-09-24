@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { RootProvider } from '@/components/base/root-provider';
 import { AppShell } from '@/components/layouts/containers/app-shell';
-import { MusicPlayerFloatingMount } from '@/features/music-player';
+import { mountManifest, renderFloatingOverlays, renderLayoutSlot } from '@/mount/registry';
 
 import { hasLocale } from 'next-intl';
 import { notFound } from 'next/navigation';
@@ -31,7 +31,9 @@ export default async function LocaleLayout({
       timeZone={localeConfig.timeZone}
     >
       <AppShell>{children}</AppShell>
-      <MusicPlayerFloatingMount />
+      {/* 浮层与命名插槽贡献位（slot: shell-after）：music 的 FloatingOverlay 由此注册 */}
+      {renderFloatingOverlays(mountManifest)}
+      {renderLayoutSlot(mountManifest, 'shell-after')}
     </RootProvider>
   );
 }

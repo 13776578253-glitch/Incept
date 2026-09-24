@@ -1,90 +1,23 @@
+// CLI 转发器：用法与参数由 @incept/music/cli 定义并逐字保留；路径知识留在本脚本（决策 13）
+// history: 原独立 CLI 脚本已迁入包内，本脚本退化为纯转发层
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+
+import { musicMirrorDirectory } from './music-paths.mjs';
 
 const projectRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 
-function loadEnvironment() {
-  const envFilePath = path.join(projectRoot, 'apps', 'web', '.env.local');
+const quote = (value) => `"${String(value).replace(/"/g, '""')}"`;
 
-  try {
-    process.loadEnvFile(envFilePath);
-  } catch (error) {
-    if (error?.code !== 'ENOENT') {
-      throw error;
-    }
-  }
-}
+const command = [
+  'pnpm', '--filter', '@incept/music', 'exec', 'tsx', 'src/cli/cleanup.ts',
+  '--env-file', quote(path.join(projectRoot, 'apps', 'web', '.env.local')),
+  '--mirror', quote(musicMirrorDirectory(projectRoot)),
+  ...process.argv.slice(2).map(quote),
+].join(' ');
 
-function printUsage() {
-  console.log('Usage: pnpm music:cleanup [--apply]');
-  console.log('  --apply  Delete the unreferenced mirror files instead of only listing them.');
-  console.log('');
-  console.log('A mirror file no row references is an orphan: it comes from a failed upload, a deactivated');
-  console.log('track, or a per-row delete. The API never removes content-addressed media itself, because a');
-  console.log('concurrent upload may already be reusing that file, so reclamation happens here:');
-  console.log('run this while nothing is uploading (close the settings page, no imports running).');
-}
+const result = spawnSync(command, { stdio: 'inherit', shell: true, cwd: projectRoot });
 
-function parseArgs(argv) {
-  const args = { apply: false };
-
-  for (const current of argv) {
-    if (current === '--apply') {
-      args.apply = true;
-      continue;
-    }
-
-    if (current === '--help' || current === '-h') {
-      printUsage();
-      process.exit(0);
-    }
-
-    console.error(`Unknown argument: ${current}`);
-    printUsage();
-    process.exit(1);
-  }
-
-  return args;
-}
-
-async function main() {
-  loadEnvironment();
-
-  const args = parseArgs(process.argv.slice(2));
-  const runner = await import(
-    pathToFileURL(path.join(projectRoot, 'apps/web/src/server/music/import-runner.ts')).href
-  );
-
-  const report = await runner.inspectMusicMirrorCleanup();
-
-  console.log(`mirror files:     ${report.mirrorFiles}`);
-  console.log(`kept by a row:    ${report.referencedFiles}`);
-  console.log(`unreferenced:     ${report.orphans.length}`);
-
-  if (report.orphans.length === 0) {
-    console.log('\nNothing to clean up: every mirror file is referenced by a row.');
-    return;
-  }
-
-  console.log('');
-
-  for (const name of report.orphans) {
-    console.log(`  ${name}`);
-  }
-
-  if (!args.apply) {
-    console.log('\nreport only: pass --apply to delete these files.');
-    return;
-  }
-
-  const result = await runner.applyMusicMirrorCleanup({ orphans: report.orphans });
-
-  console.log(`\nremoved ${result.removed.length} file(s).`);
-
-  for (const name of result.failed) {
-    console.log(`  not removed (already gone?): ${name}`);
-  }
-}
-
-await main();
+process.exit(result.status ?? 1);
