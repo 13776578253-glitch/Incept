@@ -1,7 +1,5 @@
-import { createElement, type ComponentType, type ReactNode } from 'react';
+import { createElement, type ReactNode } from 'react';
 
-import type { AppLocale } from '@/i18n/config/locales';
-import type { SettingsVisibility } from '@/features/settings/shared/settings-types';
 import type {
   MountFloatingOverlayContribution,
   MountLayoutSlotContribution,
@@ -13,17 +11,20 @@ import type {
 } from './types';
 
 // 静态注册表：生产为空，music 在挂载收编阶段（Phase 7）注册；示例贡献只存在于测试
+// 2026-09-23（Phase 7）：music 已注册进生产清单，上行「生产为空」一句随收编失效
+import { musicMountContributions, musicSettingsSectionContribution } from './music';
+
 export const mountManifest: MountManifest = {
-  contributions: [],
-  settingsSections: [],
+  contributions: musicMountContributions,
+  settingsSections: [musicSettingsSectionContribution],
 };
 
 // 保留字分区 id：贡献注册不得复用，防劫持 account/music 整块分支
+// 2026-09-23（Phase 7）：music 硬编码已删除、分区归注册面持有，music 从保留字放行
 export const RESERVED_SETTINGS_SECTION_IDS = [
   'appearance',
   'language',
   'account',
-  'music',
   'ai',
 ];
 
@@ -103,20 +104,6 @@ export async function loadSettingsSectionContributionData(
   }
 
   return data;
-}
-
-// 泛型面板在此做类型擦除，贡献方无需在调用点写断言
-export function defineSettingsSectionContribution<TData>(contribution: {
-  id: string;
-  label: (locale: AppLocale) => string;
-  visibility: SettingsVisibility;
-  order: number;
-  panel: ComponentType<{ data: TData | null }>;
-}): SettingsSectionContribution {
-  return {
-    ...contribution,
-    panel: ({ data }) => createElement(contribution.panel, { data: data as TData | null }),
-  };
 }
 
 // 渲染 helper（createElement 实现，服务端布局与客户端 Provider 链共用）；order 小者包裹在外

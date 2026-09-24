@@ -8,18 +8,14 @@ import { findSettingsSectionContribution, mountManifest } from '@/mount/registry
 import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
 import { useDocsCodePaletteContext } from '@/components/base/docs-code-palette-provider';
 import { useLanguage } from '@/hooks/use-language';
-import { useMusicPlayerPreferences } from '@incept/music/react';
-import type { MusicPlaybackMode } from '@incept/music/react';
 
 import { localeConfig, type AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 
 import { AccountSettingsPanel } from '../account/account-settings-panel';
-import { MusicAdminPanel } from '@incept/music/react';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
 
-import type { MusicAdminData } from '@incept/music/application';
 import type { SettingsSection } from '../shared/settings-types';
 
 function useMounted() {
@@ -57,23 +53,6 @@ function getLocalizedReturnPath(returnTo: string | null, locale: AppLocale) {
   return query ? `${localizedPath}?${query}` : localizedPath;
 }
 
-// 曲目与曲库管理是音乐分区的一部分，只对 owner 出现 /数据由服务端页面传下来，非 owner 为 null
-function MusicManagerBlock({
-  section,
-  locale,
-  data,
-}: {
-  section: SettingsSection;
-  locale: AppLocale;
-  data: MusicAdminData | null;
-}) {
-  if (section.id !== 'music' || data === null) {
-    return null;
-  }
-
-  return <MusicAdminPanel locale={locale} data={data} />;
-}
-
 // 注册表贡献分区：整块面板替代行渲染，数据来自服务端 loader
 function ContributionSectionPanel({
   section,
@@ -95,12 +74,9 @@ function ContributionSectionPanel({
 
 export function SettingsPageContent({
   viewerRole,
-  musicAdminData,
   settingsContributionData,
 }: {
   viewerRole: 'guest' | 'pro' | 'owner';
-  // 只有 owner 会拿到；其余角色为 null，管理区不渲染
-  musicAdminData: MusicAdminData | null;
   // 注册表贡献分区的 loader 数据：owner 门控，非 owner 为 null
   settingsContributionData: Record<string, unknown>;
 }) {
@@ -119,15 +95,6 @@ export function SettingsPageContent({
     setCodePalette,
     isCodePaletteReady,
   } = useDocsCodePaletteContext();
-  const {
-    playbackRateLocked: musicPlaybackRateLocked,
-    rememberPlacement: musicRememberPlacement,
-    playbackMode: musicPlaybackMode,
-    isReady: isMusicPreferencesReady,
-    setPlaybackRateLocked: setMusicPlaybackRateLocked,
-    setRememberPlacement: setMusicRememberPlacement,
-    setPlaybackMode: setMusicPlaybackMode,
-  } = useMusicPlayerPreferences();
   const page = getSettingsPageData(language);
   const requestedSection = searchParams.get('section');
   const returnTo = searchParams.get('returnTo');
@@ -146,14 +113,6 @@ export function SettingsPageContent({
     isCodePaletteReady,
     language,
     setLanguage,
-    musicPlaybackRateLocked,
-    setMusicPlaybackRateLocked,
-    musicRememberPlacement,
-    setMusicRememberPlacement,
-    musicPlaybackMode,
-    // 渲染层的分段控件只接受 string，这里把值收窄回播放模式
-    setMusicPlaybackMode: (value: string) => setMusicPlaybackMode(value as MusicPlaybackMode),
-    isMusicPreferencesReady,
   };
   const handleBack = () => {
     const returnPath = getLocalizedReturnPath(returnTo, language);
@@ -195,7 +154,6 @@ export function SettingsPageContent({
         ) : (
           <div className="space-y-8">
             <SettingsSectionPanel section={selectedSection} {...interactions} />
-            <MusicManagerBlock section={selectedSection} locale={language} data={musicAdminData} />
           </div>
         )}
       </div>
@@ -209,7 +167,6 @@ export function SettingsPageContent({
           ) : (
             <div key={section.id} className="space-y-8">
               <SettingsSectionPanel section={section} {...interactions} />
-              <MusicManagerBlock section={section} locale={language} data={musicAdminData} />
             </div>
           )
         ))}

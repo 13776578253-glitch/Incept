@@ -8,10 +8,7 @@ export type SettingsControlType =
   | 'select'
   | 'button'
   | 'status'
-  | 'input'
-  | 'music-rate-lock-toggle'
-  | 'music-placement-toggle'
-  | 'music-playback-mode-segmented';
+  | 'input';
 
 export type SettingsRowState =
   | 'interactive'

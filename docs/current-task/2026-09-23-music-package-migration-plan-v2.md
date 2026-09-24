@@ -423,3 +423,8 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 - Phase 6 实施（React 层迁入）：42 项迁移、URL 收敛 7 处、policy 注入化、MusicLocale 落地、@source + CSS 断言、共享 setup 抽取、真 barrel；80 用例随迁、**270/270 全绿**、探针红→绿闭环、宿主导入 grep 归零。实施修正 4 项 + react 层 next/navigation 例外（修订 18 待追认）。详见 `docs/current-task/2026-09-23-music-migration-phase6.md`。
 - 遗留问题: 浏览器 localStorage 实测待补（唯一验收缺口）；Phase 7–8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 6 React 层迁入
+
+[2026-09-23] - Update by AI完成改动:
+- Phase 7 实施（挂载收编与构建定形）：music 3 贡献位 + SettingsSectionContribution 注册进 manifest、设置框架 5 处硬编码切除（含 3 controlType/3 分支/7 props/music-schema/readMusicAdminData 直连）、`--z-feature-floating` 改名、构建复核 + 浏览器轮（5 分区顺序保全、非 owner 门控、**localStorage 偏好延续实测通过**）。构建复核抓获并修复 RSC 边界 bug（注册数据模块拆 `'use client'`）。271/271、四包 typecheck、build 全绿。详见 `docs/current-task/2026-09-23-music-migration-phase7.md`。
+- 遗留问题: 浮层 DOM 可见性与 owner 浏览器视角并入 Phase 8 全量浏览器验收；Phase 8 待批准。
+- Commit 建议: [feat]: music 迁移 Phase 7 挂载收编与构建定形

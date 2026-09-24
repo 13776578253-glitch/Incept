@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 
-import { getMusicSettingsSection } from '../../music/music-schema';
 import { SettingsSectionPanel } from '../settings-renderer';
 import type { SettingsSection } from '../settings-types';
 
@@ -21,69 +20,11 @@ function makeInteractions(overrides: Partial<Interactions> = {}): Interactions {
     isCodePaletteReady: true,
     language: 'zh',
     setLanguage: vi.fn(),
-    musicPlaybackRateLocked: true,
-    setMusicPlaybackRateLocked: vi.fn(),
-    musicRememberPlacement: true,
-    setMusicRememberPlacement: vi.fn(),
-    musicPlaybackMode: 'off',
-    setMusicPlaybackMode: vi.fn(),
-    isMusicPreferencesReady: true,
     ...overrides,
   };
 }
 
-it('renders the music section with its second-level group heading', () => {
-  render(<SettingsSectionPanel section={getMusicSettingsSection('zh')} {...makeInteractions()} />);
-
-  expect(screen.getByRole('heading', { name: '音乐' })).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: '播放器' })).toBeInTheDocument();
-  expect(screen.getByRole('switch', { name: '锁定' })).toBeChecked();
-  expect(screen.getByRole('switch', { name: '开启' })).toBeChecked();
-  expect(screen.getByRole('button', { name: '单曲' })).toBeInTheDocument();
-});
-
-it('toggles a music switch with the negated value', async () => {
-  const interactions = makeInteractions();
-  const user = userEvent.setup();
-
-  render(<SettingsSectionPanel section={getMusicSettingsSection('en')} {...interactions} />);
-
-  await user.click(screen.getByRole('switch', { name: 'Locked' }));
-
-  expect(interactions.setMusicPlaybackRateLocked).toHaveBeenCalledWith(false);
-
-  await user.click(screen.getByRole('switch', { name: 'On' }));
-
-  expect(interactions.setMusicRememberPlacement).toHaveBeenCalledWith(false);
-});
-
-// 分段控件的选中态只体现在 className 上：没有 aria-pressed/aria-checked 可查，因此断言的是回调
-it('selects a playback mode through the segmented control', async () => {
-  const interactions = makeInteractions();
-  const user = userEvent.setup();
-
-  render(<SettingsSectionPanel section={getMusicSettingsSection('zh')} {...interactions} />);
-
-  await user.click(screen.getByRole('button', { name: '循环' }));
-
-  expect(interactions.setMusicPlaybackMode).toHaveBeenCalledWith('all');
-});
-
-it('disables the music controls until the preferences are ready', () => {
-  render(
-    <SettingsSectionPanel
-      section={getMusicSettingsSection('zh')}
-      {...makeInteractions({ isMusicPreferencesReady: false })}
-    />,
-  );
-
-  for (const control of screen.getAllByRole('switch')) {
-    expect(control).toBeDisabled();
-  }
-
-  expect(screen.getByRole('button', { name: '顺序' })).toBeDisabled();
-  expect(screen.getByRole('button', { name: '随机' })).toBeDisabled();
-});
+// music 的 4 个用例随分支收编迁往包内 music-settings-panel.test.tsx（等价随迁，断言逐字保留）
 
 it('renders ungrouped rows without a group heading', () => {
   const section: SettingsSection = {

@@ -8,7 +8,6 @@ import {
   collectLayoutSlotContributions,
   collectProviderWrappers,
   collectSettingsSectionContributions,
-  defineSettingsSectionContribution,
   findSettingsSectionContribution,
   loadSettingsSectionContributionData,
   mountManifest,
@@ -16,6 +15,7 @@ import {
   renderLayoutSlot,
   renderProviderWrappers,
 } from '../registry';
+import { defineSettingsSectionContribution } from '../define';
 import type {
   MountContribution,
   MountManifest,
@@ -104,14 +104,15 @@ describe('mount manifest type level', () => {
 });
 
 describe('mount registry', () => {
-  it('registers nothing in production', () => {
-    expect(mountManifest.contributions).toHaveLength(0);
-    expect(mountManifest.settingsSections).toHaveLength(0);
+  // 2026-09-23（Phase 7）：music 于挂载收编注册进生产清单，原「registers nothing in production」断言随收编改写
+  it('registers the music contributions in production', () => {
+    expect(mountManifest.contributions).toHaveLength(3);
+    expect(mountManifest.settingsSections).toHaveLength(1);
+    expect(mountManifest.settingsSections[0].id).toBe('music');
     expect(RESERVED_SETTINGS_SECTION_IDS).toEqual([
       'appearance',
       'language',
       'account',
-      'music',
       'ai',
     ]);
   });

@@ -196,7 +196,7 @@ export function MusicPlayerFloating({
 
   if (isMobile) {
     return (
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[var(--z-music-player)] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[var(--z-feature-floating)] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
         <div className="pointer-events-auto mx-auto w-full max-w-[34rem]">
           {surface}
           {errorNotice}
@@ -213,7 +213,7 @@ export function MusicPlayerFloating({
           ? { left: geometry.left, top: geometry.top }
           : { left: 0, top: 0, visibility: 'hidden' }
       }
-      className={`fixed z-[var(--z-music-player)] ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+      className={`fixed z-[var(--z-feature-floating)] ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
       {...dragHandlers}
     >
       {surface}

@@ -4,6 +4,7 @@ export * from './music-player';
 export * from './preferences/music-player-preferences-provider';
 export * from './preferences/use-music-player-preferences';
 export * from './settings/music-admin-panel';
+export * from './settings/music-settings-panel';
 export * from './settings/music-admin-copy';
 export * from './settings/music-upload-client';
 export * from './settings/music-upload-filter';
