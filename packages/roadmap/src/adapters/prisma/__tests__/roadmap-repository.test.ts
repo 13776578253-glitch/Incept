@@ -1,0 +1,173 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  createPrismaRoadmapRepository,
+  type RoadmapColumnRow,
+  type RoadmapEntryRow,
+  type RoadmapEntryLinkRow,
+  type RoadmapWithChildren,
+  type RoadmapWithColumns,
+} from '../roadmap-repository';
+
+const baseRow = {
+  id: 'rm_1',
+  key: 'sample-roadmap',
+  nameEn: 'Sample Roadmap',
+  nameZh: '示例路线图',
+  position: 10,
+  createdAt: new Date('2026-09-23T00:00:00Z'),
+  updatedAt: new Date('2026-09-23T00:00:00Z'),
+};
+
+const columnRow: RoadmapColumnRow = {
+  id: 'col_1',
+  roadmapId: 'rm_1',
+  status: 'reviewing',
+  labelEn: 'Backlog',
+  labelZh: '储备',
+  position: 10,
+};
+
+const entryRow: RoadmapEntryRow & { links: RoadmapEntryLinkRow[] } = {
+  id: 'ent_1',
+  roadmapId: 'rm_1',
+  key: 'sample-01',
+  status: 'reviewing',
+  type: 'feature',
+  priority: 'middle',
+  titleEn: 'Interest-based reply method',
+  titleZh: '基于兴趣点的回复策略',
+  summaryEn: 'Shape replies around the reader.',
+  summaryZh: '围绕读者组织回复。',
+  votes: 293,
+  comments: null,
+  position: 10,
+  createdAt: new Date('2026-09-23T00:00:00Z'),
+  updatedAt: new Date('2026-09-23T00:00:00Z'),
+  links: [],
+};
+
+function fakeClient(options: {
+  roadmaps?: RoadmapWithColumns[];
+  board?: RoadmapWithChildren | null;
+}) {
+  return {
+    roadmap: {
+      findMany: async () => options.roadmaps ?? [],
+      findUnique: async () => options.board ?? null,
+    },
+  };
+}
+
+describe('createPrismaRoadmapRepository', () => {
+  it('maps roadmap rows to bilingual pairs and orders by position', async () => {
+    const repository = createPrismaRoadmapRepository(
+      fakeClient({
+        roadmaps: [
+          { ...baseRow, columns: [{ ...columnRow, position: 20 }, { ...columnRow, id: 'col_0', status: 'active', position: 10 }] },
+          {
+            ...baseRow,
+            id: 'rm_2',
+            key: 'sample-atlas',
+            nameEn: 'Sample Atlas Board',
+            nameZh: '示例图谱板',
+            position: 20,
+            columns: [{ ...columnRow, id: 'col_2', status: 'completed', labelEn: 'Shipped', labelZh: '已发布' }],
+          },
+        ],
+      }),
+    );
+
+    const roadmaps = await repository.listRoadmaps();
+
+    expect(roadmaps.map((roadmap) => roadmap.key)).toEqual(['sample-roadmap', 'sample-atlas']);
+    expect(roadmaps[0].name).toEqual({ en: 'Sample Roadmap', zh: '示例路线图' });
+    expect(roadmaps[0].columns.map((column) => column.status)).toEqual(['active', 'reviewing']);
+  });
+
+  it('maps a board with entries: position becomes order, counts and links are optional', async () => {
+    const repository = createPrismaRoadmapRepository(
+      fakeClient({
+        board: {
+          ...baseRow,
+          columns: [columnRow],
+          entries: [
+            {
+              ...entryRow,
+              key: 'sample-02',
+              position: 20,
+              votes: null,
+              comments: null,
+              links: [
+                {
+                  id: 'lnk_2',
+                  entryId: 'ent_1',
+                  labelEn: 'Second',
+                  labelZh: '第二',
+                  href: 'https://example.com/2',
+                  position: 20,
+                },
+                {
+                  id: 'lnk_1',
+                  entryId: 'ent_1',
+                  labelEn: 'First',
+                  labelZh: '第一',
+                  href: 'https://example.com/1',
+                  position: 10,
+                },
+              ],
+            },
+            { ...entryRow, position: 10 },
+          ],
+        },
+      }),
+    );
+
+    const board = await repository.listBoard('sample-roadmap');
+
+    expect(board).not.toBeNull();
+    expect(board?.entries.map((entry) => entry.key)).toEqual(['sample-01', 'sample-02']);
+    expect(board?.entries[0].roadmap).toBe('sample-roadmap');
+    expect(board?.entries[0].order).toBe(10);
+    expect(board?.entries[0].metrics).toEqual({ votes: 293 });
+    expect(board?.entries[1].metrics).toBeUndefined();
+    expect(board?.entries[1].links?.map((link) => link.href)).toEqual([
+      'https://example.com/1',
+      'https://example.com/2',
+    ]);
+  });
+
+  it('returns null for an unknown roadmap key', async () => {
+    const repository = createPrismaRoadmapRepository(fakeClient({}));
+
+    expect(await repository.listBoard('missing')).toBeNull();
+  });
+
+  it('rejects rows that break bilingual parity', async () => {
+    const repository = createPrismaRoadmapRepository(
+      fakeClient({
+        board: {
+          ...baseRow,
+          columns: [{ ...columnRow, labelZh: '   ' }],
+          entries: [],
+        },
+      }),
+    );
+
+    await expect(repository.listBoard('sample-roadmap')).rejects.toThrow(/both languages/);
+  });
+
+  it('rejects rows with an unknown status or priority', async () => {
+    const statusRepository = createPrismaRoadmapRepository(
+      fakeClient({ board: { ...baseRow, columns: [{ ...columnRow, status: 'shipped' }], entries: [] } }),
+    );
+    await expect(statusRepository.listBoard('sample-roadmap')).rejects.toThrow(/unknown status/);
+
+    const priorityRepository = createPrismaRoadmapRepository(
+      fakeClient({
+        board: { ...baseRow, columns: [columnRow], entries: [{ ...entryRow, priority: 'urgent' }] },
+      }),
+    );
+    await expect(priorityRepository.listBoard('sample-roadmap')).rejects.toThrow(/unknown priority/);
+  });
+});

@@ -11,6 +11,10 @@
       "types": "./src/ports/index.ts",
       "default": "./src/ports/index.ts"
     },
+    "./adapters": {
+      "types": "./src/adapters/index.ts",
+      "default": "./src/adapters/index.ts"
+    },
     "./react": {
       "types": "./src/react/index.ts",
       "default": "./src/react/index.ts"
