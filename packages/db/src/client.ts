@@ -7,7 +7,7 @@ declare global {
 }
 
 // schema 每次变化都要改：Next dev 的 HMR 会留住旧的运行时模型
-const prismaSchemaRevision = '2026-09-21-add-music-content-hash-key';
+const prismaSchemaRevision = '2026-09-23-add-roadmap';
 const hasCurrentPrismaClient =
   globalThis.__inceptPrisma__ &&
   globalThis.__inceptPrismaSchemaRevision__ === prismaSchemaRevision;
