@@ -166,6 +166,25 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 - The mechanical pure-layer check covers domain + ports only: application compiles in the node-flavoured config because it calls the adapters graph, so its "no direct Node imports" rule currently rests on review alone.
 - Add an import-boundary lint across `packages/music` layers: domain/ports must not import Node built-ins, adapters, or each other's internals; application must not import Node built-ins directly; adapters/next/cli may use Node; react may use React. Cover `apps/web` imports of the package the same way (host only via ports/assembly/stubs).
 
+### B-26 Account Section On The Same Contribution Primitive
+
+- Source: `apps/web/src/features/settings/account/`（`account-settings-panel.tsx` / `account-schema.ts`）
+- Status: Open. Registered at the Phase 8 freeze (2026-09-23), where music completed the SettingsSectionContribution adoption.
+- The account section is the remaining built-in settings section that predates the mount registration surface: `settings-page-content.tsx` still branches on `section.id === 'account'` and renders `AccountSettingsPanel` directly, and `account` stays a reserved section id because of it.
+- Move it onto the same primitive music now uses (a SettingsSectionContribution with an owner-gated server loader), then drop the special branch and the reserved id — the exact surgery Phase 7 did for music.
+
+### B-27 New-Module Scaffold
+
+- Source: `packages/music/`（the layered package layout）、`apps/web/src/mount/`
+- Status: Open. Registered at the Phase 8 freeze; A6 of the migration acceptance explicitly deferred it ("scaffold 另立任务").
+- Codify the migration's shape as a copyable scaffold: the layered exports + boundary tsconfigs + ports/assembly/registration seams + mount contribution wiring, so a new feature module starts from the structure instead of re-deriving it from `packages/music`.
+
+### B-28 `music:check-*` Compatibility Aliases
+
+- Source: root `package.json` (`music:check-core`, `music:check-adapter`)
+- Status: Open. Registered at the Phase 8 freeze; B-18 recorded them as accepted compatibility aliases when the suites moved under Vitest.
+- The tests they run now live in `@incept/music` / `@incept/music-player-core`. Decide whether the aliases still earn their keep; if not, delete them and point any external doc at `pnpm test` / `pnpm --filter <pkg> test`.
+
 ## Review Before Any Code Decision
 
 ### B-09 Retained Style Lab And Block Catalog

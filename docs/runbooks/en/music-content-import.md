@@ -133,3 +133,9 @@ pnpm music:import --validate
 This is a **local and internal** solution. The database stores only the site URL (`/_music-media/<sha256>.<ext>`) and never a machine path, so moving to object storage and a CDN means replacing the publishing implementation and the URL prefix. The manifest contract, the database tables and the player carry the library model added in B-19 and do not change for that move.
 
 Replacing it before release is not optional: files under `public/` **cannot be access-controlled**, and audio is far larger than images, so range requests and CDN caching have to be verified on the real deployment platform rather than assumed from a development environment.
+
+## CLI forwarding and package layout (after the 2026-09-23 modularization)
+
+`pnpm music:manifest` / `music:import` / `music:cleanup` are now **pure forwarders** (`scripts/music-*.mjs`): they hand the arguments verbatim to `pnpm --filter @incept/music exec tsx src/cli/<entry>.ts`, with usage text and flag semantics unchanged; `--env-file` / `--mirror` are the two new plumbing flags (explicit environment file and mirror root) and `--help` still prints the same text. The mirror layout constant is defined once in `scripts/music-paths.mjs`, shared by the forwarders and the server assembly.
+
+The feature code lives in `packages/music` (`@incept/music`, layered as domain / ports / adapters / application / react / next / cli / endpoints / testing). The web host reaches it through exactly three seams: the package exports, the server assembly (`apps/web/src/server/music/assembly.ts`) and the mount registration (`apps/web/src/mount/music*`). The Prisma schema and the database migrations belong to `@incept/db` permanently; this package produces none.

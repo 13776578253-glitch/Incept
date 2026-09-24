@@ -428,3 +428,15 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 - Phase 7 实施（挂载收编与构建定形）：music 3 贡献位 + SettingsSectionContribution 注册进 manifest、设置框架 5 处硬编码切除（含 3 controlType/3 分支/7 props/music-schema/readMusicAdminData 直连）、`--z-feature-floating` 改名、构建复核 + 浏览器轮（5 分区顺序保全、非 owner 门控、**localStorage 偏好延续实测通过**）。构建复核抓获并修复 RSC 边界 bug（注册数据模块拆 `'use client'`）。271/271、四包 typecheck、build 全绿。详见 `docs/current-task/2026-09-23-music-migration-phase7.md`。
 - 遗留问题: 浮层 DOM 可见性与 owner 浏览器视角并入 Phase 8 全量浏览器验收；Phase 8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 7 挂载收编与构建定形
+
+[2026-09-24] - Update by AI完成改动:
+- Phase 8 实施（删除演练与冻结）：删除演练（摘包构建仅装配/注册 5 处报错，附录见下）、边界三件套留档（exports 封装/纯层独立编译/pnpm 隔离）、全量浏览器验收（owner 登录、管理面板、曲库 create/停用、上传双路径（新字节创建 + 同字节去重复用）、播放真实推进、浮层双向路由实测、偏好延续）、冻结声明入决策文档、BACKLOG 登记 B-26/27/28、两份 runbook×双语补 CLI 转发机制与包布局。**A1–A13 全核销**（详见 phase8 报告）。**副作用披露**：内容准备时 `pnpm music:import` 以权威模式实跑（非 dry-run），停用 7 曲目 + 2 曲库 + 11 归属（仅 deactivate 无删除）、复制 4 媒体进镜像——待裁定是否还原。详见 `docs/current-task/2026-09-24-music-migration-phase8.md`。
+- 遗留问题: NCM 上传浏览器实测未做（NCM 管线有 6 例单测覆盖）；曲目级 patch/删除 UI 回路未走浏览器（12 例单测 + 4 路由测试覆盖）；import 副作用待裁定。
+- Commit 建议: [chore]: music 迁移 Phase 8 删除演练、冻结与文档收尾
+
+## Phase 8 附录 — 删除演练记录（A9）
+
+- 方法：`packages/music/src` 整目录临时改名摘除，`pnpm --filter web build` 取证后 `finally` 还原（`git status` 确认零残留）。
+- 结果：**Turbopack build failed with 5 errors**，报错点全部为装配/注册接缝：`server/music/assembly.ts`（`@incept/music/adapters`、`@incept/music/next`）、`mount/server.ts`（`@incept/music/application`）、`mount/music.ts` / `mount/music-components.tsx`（`@incept/music/react`、`@incept/music/application`）。其余应用与包外代码零波及——「删除包后 Web 仅剩桩处报错」成立（A5），报错清单即完整耦合面（A4）。
+- 还原后 `pnpm build` / `pnpm test` / typecheck 复验全绿（同轮 Phase 7 终验）。
+- 边界三件套留档（A8）：①exports 封装——仓库内 `@incept/music/*` 说明符仅出现 9 个出口名，深层 import 为 0；②分层 tsconfig——`pnpm --filter @incept/music exec tsc --noEmit -p tsconfig.src.json`（domain+ports 纯闭包独立编译）零输出通过；③pnpm 隔离——`pnpm --filter web list --depth 0` 显示 web 直接依赖仅 `@incept/{db,music,music-player-core}` 与框架，music 内部依赖（music-metadata 等）零泄漏。

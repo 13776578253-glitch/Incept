@@ -141,3 +141,7 @@ pnpm music:cleanup --apply   # delete them
 - Order is the track's own `position`, shared across the libraries it belongs to; there is no drag-and-drop and no bulk editing.
 - Concurrent editing is unprotected: one owner, and if two edits touch the same row the later write wins.
 - Access control and the CDN belong to the deployment stage; see the boundaries section of the import runbook.
+
+## CLI forwarding and package layout (after the 2026-09-23 modularization)
+
+Every `pnpm music:*` command above is a **pure forwarder** (`scripts/music-*.mjs` → `pnpm --filter @incept/music exec tsx src/cli/<entry>.ts`) with the usage and flags verbatim, plus the `--env-file` / `--mirror` plumbing flags; the mirror layout is defined once in `scripts/music-paths.mjs`. The feature code lives in `packages/music` (layered domain / ports / adapters / application / react / next / cli / endpoints / testing); the web host reaches it through the exports, the assembly (`apps/web/src/server/music/assembly.ts`) and the mount registration (`apps/web/src/mount/music*`) only. The Prisma schema and migrations belong to `@incept/db` permanently.
