@@ -18,13 +18,6 @@ type SettingsInteractionProps = {
   isCodePaletteReady: boolean;
   language: string;
   setLanguage: (value: 'zh' | 'en') => void;
-  musicPlaybackRateLocked: boolean;
-  setMusicPlaybackRateLocked: (value: boolean) => void;
-  musicRememberPlacement: boolean;
-  setMusicRememberPlacement: (value: boolean) => void;
-  musicPlaybackMode: string;
-  setMusicPlaybackMode: (value: string) => void;
-  isMusicPreferencesReady: boolean;
 };
 
 function SettingsSegmentedControl({
@@ -167,18 +160,6 @@ function SettingsBooleanToggle({
   );
 }
 
-// 开关文案由各分区在 options 里给出：同一个开关控件在不同分区含义不同，不能写死。
-// 兜底值只在分区漏配时生效。
-function resolveToggleLabels(row: SettingsRow, enabledFallback: string, disabledFallback: string) {
-  const enabled = row.options?.find((option) => option.id === 'enabled')?.label;
-  const disabled = row.options?.find((option) => option.id === 'disabled')?.label;
-
-  return {
-    enabled: enabled ?? enabledFallback,
-    disabled: disabled ?? disabledFallback,
-  };
-}
-
 function SettingsRowControl({
   row,
   theme,
@@ -192,13 +173,6 @@ function SettingsRowControl({
   isCodePaletteReady,
   language,
   setLanguage,
-  musicPlaybackRateLocked,
-  setMusicPlaybackRateLocked,
-  musicRememberPlacement,
-  setMusicRememberPlacement,
-  musicPlaybackMode,
-  setMusicPlaybackMode,
-  isMusicPreferencesReady,
 }: { row: SettingsRow } & SettingsInteractionProps) {
   if (row.controlType === 'theme-segmented') {
     const options: SettingsOption[] = row.options ?? [
@@ -250,39 +224,6 @@ function SettingsRowControl({
         onToggle={() => setEyeComfortFilter(!eyeComfortFilterEnabled)}
         isInteractive={isEyeComfortFilterReady}
         labels={{ enabled: enabledLabel, disabled: disabledLabel }}
-      />
-    );
-  }
-
-  if (row.controlType === 'music-rate-lock-toggle') {
-    return (
-      <SettingsBooleanToggle
-        enabled={musicPlaybackRateLocked}
-        onToggle={() => setMusicPlaybackRateLocked(!musicPlaybackRateLocked)}
-        isInteractive={isMusicPreferencesReady}
-        labels={resolveToggleLabels(row, 'Locked', 'Unlocked')}
-      />
-    );
-  }
-
-  if (row.controlType === 'music-placement-toggle') {
-    return (
-      <SettingsBooleanToggle
-        enabled={musicRememberPlacement}
-        onToggle={() => setMusicRememberPlacement(!musicRememberPlacement)}
-        isInteractive={isMusicPreferencesReady}
-        labels={resolveToggleLabels(row, 'Remembered', 'Default')}
-      />
-    );
-  }
-
-  if (row.controlType === 'music-playback-mode-segmented') {
-    return (
-      <SettingsSegmentedControl
-        options={row.options ?? []}
-        selected={isMusicPreferencesReady ? musicPlaybackMode : ''}
-        onSelect={setMusicPlaybackMode}
-        isInteractive={isMusicPreferencesReady}
       />
     );
   }

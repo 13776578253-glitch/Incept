@@ -133,3 +133,9 @@ pnpm music:import --validate
 这一套是**本地与内部环境**的方案。数据库只保存站点 URL（`/_music-media/<sha256>.<ext>`），绝不保存本机路径，所以将来换对象存储与 CDN 只需替换发布实现与 URL 前缀；清单契约、数据库表与播放器已经带上 B-19 的曲库模型，那一步不会让它们再改一次。
 
 发布前必须替换，原因是 `public/` 下的文件**无法做访问控制**，而音频体积远大于图片——Range 请求与 CDN 缓存也要在真实部署平台上验证，不能靠开发环境推断。
+
+## CLI 转发机制与包布局（2026-09-23 模块化迁移后）
+
+`pnpm music:manifest` / `music:import` / `music:cleanup` 现在是**纯转发器**（`scripts/music-*.mjs`）：参数原样交给 `pnpm --filter @incept/music exec tsx src/cli/<入口>.ts`，用法文案与参数语义逐字不变；新增 `--env-file` / `--mirror` 两个 plumbing 标志（显式指定环境文件与镜像根），`--help` 文案保持原样。镜像布局常量唯一定义在 `scripts/music-paths.mjs`，转发脚本与服务端装配共用。
+
+功能代码在 `packages/music`（`@incept/music`，分层 domain / ports / adapters / application / react / next / cli / endpoints / testing）。网页宿主只经三处接入：包 exports、服务端装配（`apps/web/src/server/music/assembly.ts`）、挂载注册（`apps/web/src/mount/music*`）。Prisma schema 与数据库迁移永久属于 `@incept/db`，本包不产生迁移。

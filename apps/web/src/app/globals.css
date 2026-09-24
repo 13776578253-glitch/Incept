@@ -3,6 +3,7 @@
 @import '../styles/theme.css';
 @import '../styles/motion.css';
 @import '../styles/layout.css';
+@source '../../../../packages/music';
 
 @custom-variant dark (&:where(.dark, .dark *));
 

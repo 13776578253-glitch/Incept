@@ -4,21 +4,18 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { findSettingsSectionContribution, mountManifest } from '@/mount/registry';
 import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
 import { useDocsCodePaletteContext } from '@/components/base/docs-code-palette-provider';
 import { useLanguage } from '@/hooks/use-language';
-import { useMusicPlayerPreferences } from '@/hooks/use-music-player-preferences';
-import type { MusicPlaybackMode } from '@/components/base/music-player-preferences-provider';
 
 import { localeConfig, type AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 
 import { AccountSettingsPanel } from '../account/account-settings-panel';
-import { MusicAdminPanel } from '../music/music-admin-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
 
-import type { MusicAdminData } from '@/server/music/music-admin';
 import type { SettingsSection } from '../shared/settings-types';
 
 function useMounted() {
@@ -56,30 +53,32 @@ function getLocalizedReturnPath(returnTo: string | null, locale: AppLocale) {
   return query ? `${localizedPath}?${query}` : localizedPath;
 }
 
-// 曲目与曲库管理是音乐分区的一部分，只对 owner 出现 /数据由服务端页面传下来，非 owner 为 null
-function MusicManagerBlock({
+// 注册表贡献分区：整块面板替代行渲染，数据来自服务端 loader
+function ContributionSectionPanel({
   section,
-  locale,
   data,
 }: {
   section: SettingsSection;
-  locale: AppLocale;
-  data: MusicAdminData | null;
+  data: Record<string, unknown>;
 }) {
-  if (section.id !== 'music' || data === null) {
+  const contribution = findSettingsSectionContribution(mountManifest, section.id);
+
+  if (!contribution) {
     return null;
   }
 
-  return <MusicAdminPanel locale={locale} data={data} />;
+  const Panel = contribution.panel;
+
+  return <Panel data={data[section.id] ?? null} />;
 }
 
 export function SettingsPageContent({
   viewerRole,
-  musicAdminData,
+  settingsContributionData,
 }: {
   viewerRole: 'guest' | 'pro' | 'owner';
-  // 只有 owner 会拿到；其余角色为 null，管理区不渲染
-  musicAdminData: MusicAdminData | null;
+  // 注册表贡献分区的 loader 数据：owner 门控，非 owner 为 null
+  settingsContributionData: Record<string, unknown>;
 }) {
   const mounted = useMounted();
   const router = useRouter();
@@ -96,15 +95,6 @@ export function SettingsPageContent({
     setCodePalette,
     isCodePaletteReady,
   } = useDocsCodePaletteContext();
-  const {
-    playbackRateLocked: musicPlaybackRateLocked,
-    rememberPlacement: musicRememberPlacement,
-    playbackMode: musicPlaybackMode,
-    isReady: isMusicPreferencesReady,
-    setPlaybackRateLocked: setMusicPlaybackRateLocked,
-    setRememberPlacement: setMusicRememberPlacement,
-    setPlaybackMode: setMusicPlaybackMode,
-  } = useMusicPlayerPreferences();
   const page = getSettingsPageData(language);
   const requestedSection = searchParams.get('section');
   const returnTo = searchParams.get('returnTo');
@@ -123,14 +113,6 @@ export function SettingsPageContent({
     isCodePaletteReady,
     language,
     setLanguage,
-    musicPlaybackRateLocked,
-    setMusicPlaybackRateLocked,
-    musicRememberPlacement,
-    setMusicRememberPlacement,
-    musicPlaybackMode,
-    // 渲染层的分段控件只接受 string，这里把值收窄回播放模式
-    setMusicPlaybackMode: (value: string) => setMusicPlaybackMode(value as MusicPlaybackMode),
-    isMusicPreferencesReady,
   };
   const handleBack = () => {
     const returnPath = getLocalizedReturnPath(returnTo, language);
@@ -167,10 +149,11 @@ export function SettingsPageContent({
       <div className="hidden lg:block">
         {selectedSection.id === 'account' ? (
           <AccountSettingsPanel language={language} viewerRole={viewerRole} />
+        ) : findSettingsSectionContribution(mountManifest, selectedSection.id) ? (
+          <ContributionSectionPanel section={selectedSection} data={settingsContributionData} />
         ) : (
           <div className="space-y-8">
             <SettingsSectionPanel section={selectedSection} {...interactions} />
-            <MusicManagerBlock section={selectedSection} locale={language} data={musicAdminData} />
           </div>
         )}
       </div>
@@ -179,10 +162,11 @@ export function SettingsPageContent({
         {page.sections.map((section) => (
           section.id === 'account' ? (
             <AccountSettingsPanel key={section.id} language={language} viewerRole={viewerRole} />
+          ) : findSettingsSectionContribution(mountManifest, section.id) ? (
+            <ContributionSectionPanel key={section.id} section={section} data={settingsContributionData} />
           ) : (
             <div key={section.id} className="space-y-8">
               <SettingsSectionPanel section={section} {...interactions} />
-              <MusicManagerBlock section={section} locale={language} data={musicAdminData} />
             </div>
           )
         ))}
