@@ -1,0 +1,53 @@
+import type {
+  LocalizedText,
+  Roadmap,
+  RoadmapColumn,
+  RoadmapEntry,
+  RoadmapEntryLink,
+  RoadmapEntryPriority,
+  RoadmapEntryType,
+  RoadmapStatus,
+} from '../domain';
+
+// 写端口：RoadmapRepository 的对偶面（Phase 3 规格，主控已评审）。
+// links 随 entry 事务性整体重写；计数（votes/comments）不可写（T4 计数非议题）。
+export type RoadmapEntryDraft = {
+  key: string;
+  status: RoadmapStatus;
+  type: RoadmapEntryType;
+  priority: RoadmapEntryPriority;
+  title: LocalizedText;
+  summary: LocalizedText;
+  order?: number;
+  links?: RoadmapEntryLink[];
+};
+
+export type RoadmapEntryPatch = Partial<Omit<RoadmapEntryDraft, 'key'>>;
+
+export type RoadmapWriter = {
+  createRoadmap: (input: {
+    key: string;
+    name: LocalizedText;
+    position?: number;
+  }) => Promise<Roadmap>;
+  updateRoadmap: (input: {
+    key: string;
+    patch: { name?: LocalizedText; position?: number };
+  }) => Promise<Roadmap>;
+  deleteRoadmap: (input: { key: string }) => Promise<{ key: string }>;
+  upsertColumn: (input: {
+    roadmapKey: string;
+    status: RoadmapStatus;
+    label: LocalizedText;
+    position?: number;
+  }) => Promise<RoadmapColumn>;
+  deleteColumn: (input: {
+    roadmapKey: string;
+    status: RoadmapStatus;
+  }) => Promise<{ roadmapKey: string; status: RoadmapStatus }>;
+  createEntry: (
+    input: RoadmapEntryDraft & { roadmapKey: string },
+  ) => Promise<RoadmapEntry>;
+  updateEntry: (input: { key: string; patch: RoadmapEntryPatch }) => Promise<RoadmapEntry>;
+  deleteEntry: (input: { key: string }) => Promise<{ key: string }>;
+};

@@ -83,14 +83,14 @@ function byPosition(a: { position: number }, b: { position: number }): number {
   return a.position - b.position;
 }
 
-function toColumn(row: RoadmapColumnRow): RoadmapColumn {
+export function toColumn(row: RoadmapColumnRow): RoadmapColumn {
   return {
     status: row.status as RoadmapStatus,
     label: { en: row.labelEn, zh: row.labelZh },
   };
 }
 
-function toRoadmap(row: RoadmapRow, columns: readonly RoadmapColumnRow[]): Roadmap {
+export function toRoadmap(row: RoadmapRow, columns: readonly RoadmapColumnRow[]): Roadmap {
   return {
     key: row.key,
     name: { en: row.nameEn, zh: row.nameZh },
@@ -99,7 +99,7 @@ function toRoadmap(row: RoadmapRow, columns: readonly RoadmapColumnRow[]): Roadm
 }
 
 // 行 → 域：position → order；entry.roadmap 记的是 roadmap key（校验口径），由父行带入。
-function toEntry(
+export function toEntry(
   row: RoadmapEntryRow & { links: readonly RoadmapEntryLinkRow[] },
   roadmapKey: string,
 ): RoadmapEntry {
