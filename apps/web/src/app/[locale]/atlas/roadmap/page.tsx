@@ -57,8 +57,8 @@ export default async function RoadmapMapPage({
       low: t('chips.priority.low'),
       none: t('chips.priority.none'),
     },
-    votesLabel: t('metrics.votes'),
-    commentsLabel: t('metrics.comments'),
+    votesLabel: t('metrics.votes', { count: '{count}' }),
+    commentsLabel: t('metrics.comments', { count: '{count}' }),
   };
 
   return (
