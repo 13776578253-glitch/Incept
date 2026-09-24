@@ -24,7 +24,7 @@ function makeInteractions(overrides: Partial<Interactions> = {}): Interactions {
   };
 }
 
-// music 的 4 个用例随分支收编迁往包内 music-settings-panel.test.tsx（等价随迁，断言逐字保留）
+// history: music 用例已迁入 @incept/music 的 music-settings-panel.test.tsx（断言逐字等价保留）
 
 it('renders ungrouped rows without a group heading', () => {
   const section: SettingsSection = {

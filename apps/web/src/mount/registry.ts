@@ -10,8 +10,8 @@ import type {
   SettingsSectionServerLoader,
 } from './types';
 
-// 静态注册表：生产为空，music 在挂载收编阶段（Phase 7）注册；示例贡献只存在于测试
-// 2026-09-23（Phase 7）：music 已注册进生产清单，上行「生产为空」一句随收编失效
+// 静态注册表：负责汇集全站插件贡献；示例贡献只存在于测试
+// history: music 模块化后作为首个贡献项在此注册
 import { musicMountContributions, musicSettingsSectionContribution } from './music';
 
 export const mountManifest: MountManifest = {
@@ -19,8 +19,8 @@ export const mountManifest: MountManifest = {
   settingsSections: [musicSettingsSectionContribution],
 };
 
-// 保留字分区 id：贡献注册不得复用，防劫持 account/music 整块分支
-// 2026-09-23（Phase 7）：music 硬编码已删除、分区归注册面持有，music 从保留字放行
+// 保留字分区 id：贡献注册不得复用，防劫持基础设置分区
+// history: music 原为硬编码保留字，模块化后归注册面持有并从保留字移除
 export const RESERVED_SETTINGS_SECTION_IDS = [
   'appearance',
   'language',
@@ -92,7 +92,7 @@ export function findSettingsSectionContribution(
   return collectSettingsSectionContributions(manifest).find((section) => section.id === id);
 }
 
-// owner 门控的 loader 执行：非 owner 不调用 loader，数据位为 null
+// owner 门控 loader 执行：非 owner 不调用 loader，数据位为 null
 export async function loadSettingsSectionContributionData(
   loaders: readonly SettingsSectionServerLoader[],
   isOwner: boolean,

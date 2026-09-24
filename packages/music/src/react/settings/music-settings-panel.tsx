@@ -15,7 +15,8 @@ export function getMusicSettingsSectionDescription(locale: MusicLocale): string 
   return locale === 'zh' ? '播放器偏好与曲库' : 'Player preferences and libraries.';
 }
 
-// 分区文案（原 host 侧 music-schema 的文案随收编迁移，逐字保留）
+// 分区文案
+// history: 原 host 侧 music-schema 的文案已迁移至包内内聚管理
 const SECTION_COPY: Record<
   MusicLocale,
   {
@@ -197,7 +198,8 @@ function PreferenceRow({
 }
 
 // music 分区整块面板：3 行播放器偏好 + 整块曲库管理（owner 门控：data 为 null 时不渲染管理区）
-// 7 个偏好字段在面板内部经 useMusicPlayerPreferences 读写（原 settings-renderer 的 7 个 props 随收编内移）
+// 7 个偏好字段在面板内部经 useMusicPlayerPreferences 读写
+// history: 原 settings-renderer 的 7 个 props 现已内移至面板内部聚合读写
 export function MusicSettingsPanel({
   locale,
   data,

@@ -1,4 +1,5 @@
-// 纯转发（Phase 4）：用法与参数由包内 CLI 定义并逐字保留；路径知识留在本脚本（决策 13）
+// CLI 转发器：用法与参数由 @incept/music/cli 定义并逐字保留；路径知识留在本脚本（决策 13）
+// history: 原独立 CLI 脚本已迁入包内，本脚本退化为纯转发层
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';

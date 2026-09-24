@@ -192,7 +192,7 @@ export async function publishMusicMedia({
 
 // 删除镜像里的一个文件：只接受裸文件名，任何路径成分都拒绝
 // 目录必填、由装配注入（决策 5）
-// 2026-09-23（Phase 3）：原「生产调用走默认镜像目录」一句已随 findRepoRoot 移除
+// history: 原「生产调用走默认镜像目录」已随 findRepoRoot 移除，统一由装配注入
 export async function removeMusicMediaByUrl(url: string, directory: string): Promise<boolean> {
   const prefix = `${musicMediaPublicPath}/`;
   const fileName = url.startsWith(prefix) ? url.slice(prefix.length) : '';
@@ -235,8 +235,8 @@ export type MusicUploadResult = {
 export async function storeMusicUpload(input: {
   stream: ReadableStream<Uint8Array>;
   filename: string;
-  // 可注入，便于用临时目录测试
-  // 2026-09-23（Phase 3）起必填、由装配注入（决策 5）
+  // 目标目录：由装配层显式注入（决策 5），便于用临时目录测试
+  // history: 原内部默认路径已移除，改为强制外部注入
   directory: string;
   // 可注入，便于测试超限路径；默认沿用镜像上限
   maxBytes?: number;

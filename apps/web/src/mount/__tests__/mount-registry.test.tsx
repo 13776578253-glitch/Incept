@@ -24,7 +24,7 @@ import type {
   SettingsSectionServerLoader,
 } from '../types';
 
-// 类型测试：manifest 必须能表达两种包裹深度、overlay、layout slot、section + loader
+// 类型测试：manifest 表达两种包裹深度、overlay、layout slot、section + loader
 type Expect<T extends true> = T;
 type Extends<A, B> = A extends B ? true : false;
 
@@ -82,7 +82,7 @@ const TYPE_LEVEL_MANIFEST = {
   ],
 } satisfies MountManifest;
 
-// B1（R10 强制）：loader 只存在于服务端注册表类型，与分区按 id 配对
+// loader 只存在于服务端注册表类型，与分区按 id 配对
 const TYPE_LEVEL_LOADERS = [
   { id: 'demo-section', serverLoader: async () => 42 },
 ] satisfies SettingsSectionServerLoader<number>[];
@@ -104,12 +104,12 @@ describe('mount manifest type level', () => {
 });
 
 describe('mount registry', () => {
-  // 2026-09-23（Phase 7）：music 于挂载收编注册进生产清单，原「registers nothing in production」断言随收编改写
+  // history: 原「registers nothing in production」断言随 music 挂载收编改为验证生产清单
   it('registers the music contributions in production', () => {
     expect(mountManifest.contributions).toHaveLength(3);
     expect(mountManifest.settingsSections).toHaveLength(1);
     expect(mountManifest.settingsSections[0].id).toBe('music');
-    // 回归锁：分区说明文案随收编迁移自内置 music-schema（主分支 description 字面量），侧栏依赖它渲染
+    // 回归锁：分区说明文案迁移自内置 music-schema（保持主分支字面量），侧栏依赖它渲染
     expect(mountManifest.settingsSections[0].description?.('zh')).toBe('播放器偏好与曲库');
     expect(mountManifest.settingsSections[0].description?.('en')).toBe(
       'Player preferences and libraries.',

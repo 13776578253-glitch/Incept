@@ -3,8 +3,8 @@ import path from 'node:path';
 
 import { musicAudioFormats } from '../domain/media';
 
-// 与 media-store 的白名单一致；不导入 app 模块，避免类型耦合
-// 2026-09-23（Phase 3）：同包后改由 domain/media 派生，上一行的「避免类型耦合」理由已失效
+// 音频扩展名白名单：由 domain/media 导出派生
+// history: 原各自维护白名单以避免类型耦合，同包后统一由 domain/media 派生
 export const MUSIC_AUDIO_EXTENSIONS: string[] = Object.keys(musicAudioFormats);
 
 async function collect(root: string, directory: string): Promise<string[]> {

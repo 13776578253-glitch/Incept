@@ -8,7 +8,8 @@ import { MusicPlayerFloatingMount, MusicSettingsPanel } from '@incept/music/reac
 import { useLanguage } from '@/hooks/use-language';
 import { localeConfig } from '@/i18n/config/locales';
 
-// 挂载配置：隐藏路由清单由注册面持有（原逐布局 JSX 传参随收编收敛到这里）
+// 挂载配置：隐藏路由清单由注册面持有
+// history: 原逐布局 JSX 传参已统一收敛至本配置
 export const MUSIC_HIDDEN_ROUTE_PREFIXES = [
   '/settings',
   '/workspace',
@@ -17,7 +18,7 @@ export const MUSIC_HIDDEN_ROUTE_PREFIXES = [
   '/docs/import-preview',
 ];
 
-// 浮层需要响应式 locale；next-intl 留在宿主，包只收 locale 值（修订 18 的边界口径）
+// 浮层 响应式 locale；next-intl 留在宿主，包只收 locale 值
 export function MusicFloatingOverlay() {
   const locale = useLocale();
 
@@ -30,7 +31,7 @@ export function MusicFloatingOverlay() {
   );
 }
 
-// 分区面板需要 locale；宿主语言 hook 在此转接，包面板只收 MusicLocale（修订 17② 的逆变接口）
+// 分区面板 locale；宿主语言 hook 在此转接，包面板只收 MusicLocale
 export function MusicSettingsSectionPanelHost({ data }: { data: MusicAdminData | null }) {
   const { language } = useLanguage();
 

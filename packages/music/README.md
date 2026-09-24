@@ -8,7 +8,7 @@
 
 | 变量 | 用途 | 消费点 |
 | --- | --- | --- |
-| `--z-feature-floating` | 浮层 z-index（原 `--z-music-player`，Phase 7 一次性更名） | `src/react/music-player/components/music-player-floating.tsx` 的两处 `z-[var(--z-feature-floating)]` |
+| `--z-feature-floating` | 浮层 z-index（history: 原 `--z-music-player` 已更名为通用浮层语义） | `src/react/music-player/components/music-player-floating.tsx` 的两处 `z-[var(--z-feature-floating)]` |
 | `--navbar-height` | 顶栏高度，浮层吸附几何的上边界 | `src/react/music-player/hooks/use-floating-position.ts:225` 的 **JS 运行时 `getComputedStyle` 读取点**；组件 class 中的 `calc` 引用 |
 
 其余 `--color-*` / `--duration-*` 主题变量随宿主 tokens 提供。两个 localStorage key（偏好）属兼容面，值与 key 名不变。

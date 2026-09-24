@@ -18,7 +18,8 @@ export function toLocaleFreePath(pathname: string, locales: readonly string[]): 
   return pathname === `/${matchedLocale}` ? '/' : pathname.slice(matchedLocale.length + 1);
 }
 
-// locales 与隐藏路由清单由 mount 配置传入（修订版 Phase 6：清单不再内置）
+// locales 与隐藏路由清单由 mount 配置传入
+// history: 隐藏路由清单原为包内内置，现由宿主 mount 配置显式传入
 export function createMusicPlayerRoutePolicy(config: MusicPlayerRoutePolicyConfig) {
   return {
     isMusicPlayerHiddenRoute(pathname: string): boolean {

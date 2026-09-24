@@ -4,8 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import { MusicSettingsPanel } from '../music-settings-panel';
 
-// 等价性注记：原 settings-renderer 的 4 个 music 用例语义随迁；偏好读写已内移进面板（7 个 props 收编），
-// 故以 vi.mock 注入与原用例相同的交互字段（含 ready 闸门），断言逐字保持
+// history: 原 settings-renderer 的 4 个 music 用例在偏好内移后随迁至本套件，保持断言等价
 const preferences = vi.hoisted(() => ({
   playbackRateLocked: true,
   rememberPlacement: true,

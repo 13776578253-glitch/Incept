@@ -1,4 +1,5 @@
 export { musicCatalogGet as GET } from '@/server/music/assembly';
 
-// force-dynamic 是语义配置、须留在路由文件静态可析；runtime='nodejs' 是文档默认值，随收编移除
+// force-dynamic 语义配置：留在路由文件静态可析
+// history: runtime='nodejs' 是 Next 16 默认值，已随路由工厂收编移除
 export const dynamic = 'force-dynamic';
