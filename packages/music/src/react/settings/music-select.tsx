@@ -81,9 +81,16 @@ export function MusicSelect({
             setIsOpen(true);
           }
         }}
-        className={`inline-flex w-full items-center justify-between gap-3 rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-3 text-[var(--color-text)] outline-none transition-colors hover:bg-[var(--color-nav-item-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] disabled:cursor-default disabled:opacity-50 ${buttonClassName}`}
+        className={`inline-flex w-full items-center justify-between gap-3 rounded-[9px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3 text-[var(--color-text)] outline-none transition-colors hover:bg-[color:var(--color-row-hover-bg)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] disabled:cursor-default disabled:opacity-50 ${buttonClassName}`}
       >
-        <span className="min-w-0 truncate">{selected?.label ?? ''}</span>
+        <span className="inline-flex min-w-0 items-center gap-2 truncate">
+          <span
+            aria-hidden="true"
+            className="size-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: 'var(--badge-sky-dot)' }}
+          />
+          <span className="truncate">{selected?.label ?? ''}</span>
+        </span>
         <svg
           aria-hidden="true"
           viewBox="0 0 12 8"
@@ -105,7 +112,7 @@ export function MusicSelect({
           id={listboxId}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute right-0 z-30 mt-1 min-w-full overflow-hidden rounded-[10px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 shadow-[var(--shadow-nav-dropdown)]"
+          className="absolute right-0 z-30 mt-1 min-w-full space-y-0.5 overflow-hidden rounded-[10px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 shadow-[var(--shadow-nav-dropdown)]"
         >
           {options.map((option) => {
             const isSelected = option.value === value;
@@ -121,13 +128,21 @@ export function MusicSelect({
                   setIsOpen(false);
                   buttonRef.current?.focus();
                 }}
-                className={`flex w-full items-center rounded-[7px] px-2.5 py-2 text-left text-[0.8125rem] leading-none whitespace-nowrap transition-colors ${
+                className={`flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[0.8125rem] leading-none whitespace-nowrap transition-colors ${
                   isSelected
-                    ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
+                    ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--badge-sky-fg)] shadow-[var(--shadow-pill-active)]'
                     : 'text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
                 }`}
               >
-                {option.label}
+                <span
+                  aria-hidden="true"
+                  className="size-1.5 shrink-0 rounded-full transition-opacity"
+                  style={{
+                    backgroundColor: 'var(--badge-sky-dot)',
+                    opacity: isSelected ? 1 : 0,
+                  }}
+                />
+                <span>{option.label}</span>
               </button>
             );
           })}

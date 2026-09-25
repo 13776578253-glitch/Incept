@@ -77,17 +77,25 @@ function LibraryRow({
           {copy.actionSave}
         </button>
       ) : null}
-      <span className="inline-flex h-8 w-5 items-center text-[0.75rem] leading-none text-[var(--color-nav-muted)]">
+      <span className="inline-flex h-8 min-w-6 items-center justify-center text-[0.75rem] leading-none tabular-nums text-[var(--color-nav-muted)]">
         {library.memberCount}
       </span>
       <span
-        className={
-          library.isActive
-            ? 'inline-flex h-8 w-16 items-center text-[0.72rem] leading-none text-[var(--color-nav-dropdown-description)]'
-            : 'inline-flex h-8 w-16 items-center text-[0.72rem] leading-none text-[var(--color-nav-muted)] opacity-80'
-        }
+        className="inline-flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-[0.7rem] font-medium leading-none"
+        style={{
+          color: library.isActive ? 'var(--badge-emerald-fg)' : 'var(--badge-amber-fg)',
+          backgroundColor: library.isActive ? 'var(--badge-emerald-bg)' : 'var(--badge-amber-bg)',
+          borderColor: library.isActive ? 'var(--badge-emerald-border)' : 'var(--badge-amber-border)',
+        }}
       >
-        {library.isActive ? copy.libraryActive : copy.libraryInactive}
+        <span
+          aria-hidden="true"
+          className="size-1.5 shrink-0 rounded-full"
+          style={{
+            backgroundColor: library.isActive ? 'var(--badge-emerald-dot)' : 'var(--badge-amber-dot)',
+          }}
+        />
+        <span>{library.isActive ? copy.libraryActive : copy.libraryInactive}</span>
       </span>
       <button
         type="button"
@@ -202,7 +210,7 @@ export function MusicLibraryEditor({
           aria-label={copy.newLibraryPlaceholder}
           placeholder={copy.newLibraryPlaceholder}
           onChange={(event) => setNewName(event.target.value)}
-          className="min-h-9 min-w-[12rem] flex-1 rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-bg)] px-3 text-[0.8125rem] text-[var(--color-text)] outline-none"
+          className="min-h-9 min-w-[12rem] flex-1 rounded-[9px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3 text-[0.8125rem] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-nav-muted)] focus:border-[var(--color-nav-search-hover-border)]"
         />
         <button
           type="button"
@@ -211,7 +219,7 @@ export function MusicLibraryEditor({
             onCreate(newName.trim());
             setNewName('');
           }}
-          className="rounded-[10px] border border-[var(--color-nav-dropdown-border)] px-3 py-1.5 text-[0.8125rem] text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
+          className="rounded-[10px] bg-[var(--color-pill-active-bg)] px-3 py-1.5 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-colors hover:bg-[color:var(--color-row-hover-bg)] disabled:opacity-50"
         >
           {copy.newLibraryAction}
         </button>

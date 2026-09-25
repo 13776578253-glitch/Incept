@@ -218,8 +218,8 @@ export function MusicUploadZone({
         }}
         className={`rounded-[12px] border border-dashed p-4 transition-colors ${
           isDragging
-            ? 'border-[var(--color-nav-item-active)] bg-[var(--color-nav-item-hover)]'
-            : 'border-[var(--color-nav-dropdown-border)]'
+            ? 'border-[var(--badge-sky-border)] bg-[var(--badge-sky-bg)]'
+            : 'border-[var(--color-border)] bg-[color:var(--color-row-bg)]'
         }`}
       >
         <p className="text-[0.75rem] leading-5 text-[var(--color-nav-dropdown-description)]">
@@ -231,7 +231,7 @@ export function MusicUploadZone({
             type="button"
             disabled={!canUpload}
             onClick={() => fileInputRef.current?.click()}
-            className="rounded-[10px] border border-[var(--color-nav-dropdown-border)] px-3 py-1.5 text-[0.8125rem] text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-50"
+            className="rounded-[10px] bg-[var(--color-pill-active-bg)] px-3 py-1.5 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-colors hover:bg-[color:var(--color-row-hover-bg)] disabled:cursor-default disabled:opacity-50"
           >
             {copy.chooseFiles}
           </button>
@@ -239,7 +239,7 @@ export function MusicUploadZone({
             type="button"
             disabled={!canUpload}
             onClick={() => folderInputRef.current?.click()}
-            className="rounded-[10px] border border-[var(--color-nav-dropdown-border)] px-3 py-1.5 text-[0.8125rem] text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-50"
+            className="rounded-[10px] bg-[var(--color-pill-active-bg)] px-3 py-1.5 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-colors hover:bg-[color:var(--color-row-hover-bg)] disabled:cursor-default disabled:opacity-50"
           >
             {copy.chooseFolder}
           </button>

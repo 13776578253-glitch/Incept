@@ -114,6 +114,31 @@ export function AccountSettingsPanel({
     }
   }
 
+  const roleBadgeStyle =
+    viewerRole === 'owner'
+      ? {
+          label: 'OWNER',
+          fg: 'var(--badge-indigo-fg)',
+          bg: 'var(--badge-indigo-bg)',
+          border: 'var(--badge-indigo-border)',
+          dot: 'var(--badge-indigo-dot)',
+        }
+      : viewerRole === 'pro'
+        ? {
+            label: 'PRO',
+            fg: 'var(--badge-sky-fg)',
+            bg: 'var(--badge-sky-bg)',
+            border: 'var(--badge-sky-border)',
+            dot: 'var(--badge-sky-dot)',
+          }
+        : {
+            label: 'GUEST',
+            fg: 'var(--badge-amber-fg)',
+            bg: 'var(--badge-amber-bg)',
+            border: 'var(--badge-amber-border)',
+            dot: 'var(--badge-amber-dot)',
+          };
+
   return (
     <section id="account" className="space-y-3">
       <header className="space-y-1.5">
@@ -126,9 +151,26 @@ export function AccountSettingsPanel({
       </header>
 
       <div className="max-w-[760px] py-5">
-        <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-          {copy.title}
-        </h3>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+            {copy.title}
+          </h3>
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.06em]"
+            style={{
+              color: roleBadgeStyle.fg,
+              backgroundColor: roleBadgeStyle.bg,
+              borderColor: roleBadgeStyle.border,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              className="size-1.5 rounded-full"
+              style={{ backgroundColor: roleBadgeStyle.dot }}
+            />
+            <span>{roleBadgeStyle.label}</span>
+          </span>
+        </div>
         <p className="mt-1.5 max-w-2xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
           {copy.description}
         </p>
@@ -141,12 +183,12 @@ export function AccountSettingsPanel({
               onChange={(event) => setCode(event.target.value)}
               placeholder={copy.placeholder}
               disabled={isSubmitting}
-              className="min-h-10 min-w-0 flex-1 rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] outline-none placeholder:text-[var(--color-nav-muted)] focus:border-[var(--color-nav-search-hover-border)]"
+              className="min-h-10 min-w-0 flex-1 rounded-[12px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-nav-muted)] focus:border-[var(--color-nav-search-hover-border)]"
             />
             <button
               type="submit"
               disabled={isSubmitting || !code.trim()}
-              className="min-h-10 shrink-0 rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-10 shrink-0 rounded-[12px] bg-[var(--color-pill-active-bg)] px-4 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-colors hover:bg-[color:var(--color-row-hover-bg)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {copy.action}
             </button>
@@ -156,14 +198,17 @@ export function AccountSettingsPanel({
             type="button"
             disabled={isSubmitting}
             onClick={handleLogout}
-            className="mt-4 min-h-10 rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 min-h-10 rounded-[12px] bg-[color:var(--color-row-bg)] px-4 text-[0.8125rem] font-medium text-[var(--color-text)] transition-colors hover:bg-[color:var(--color-row-hover-bg)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {copy.action}
           </button>
         )}
 
         {error ? (
-          <p className="mt-3 text-[0.75rem] leading-5 text-[var(--color-nav-dropdown-description)]">
+          <p
+            className="mt-3 text-[0.75rem] leading-5"
+            style={{ color: 'var(--badge-rose-fg)' }}
+          >
             {error}
           </p>
         ) : null}

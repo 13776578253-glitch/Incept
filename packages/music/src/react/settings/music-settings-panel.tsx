@@ -106,7 +106,7 @@ function SettingsSegmentedControl({
   isInteractive?: boolean;
 }) {
   return (
-    <div className="inline-flex flex-wrap items-center gap-1.5 rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1">
+    <div className="inline-flex flex-wrap items-center gap-1 rounded-[12px] bg-[color:var(--color-row-bg)] p-1">
       {options.map((option) => {
         const active = option.id === selected;
 
@@ -117,9 +117,9 @@ function SettingsSegmentedControl({
             disabled={!isInteractive}
             onClick={() => onSelect(option.id)}
             className={cx(
-              'rounded-[9px] px-2.5 py-1.5 text-[0.8125rem] transition-colors',
+              'rounded-[9px] px-3 py-1.5 text-[0.8125rem] transition-all duration-150',
               active
-                ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
+                ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
                 : 'text-[var(--color-nav-dropdown-description)]',
               isInteractive &&
                 !active &&
@@ -154,19 +154,27 @@ function SettingsBooleanToggle({
       disabled={!isInteractive}
       onClick={onToggle}
       className={cx(
-        'inline-flex rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 text-[0.8125rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]',
+        'inline-flex rounded-[12px] bg-[color:var(--color-row-bg)] p-1 text-[0.8125rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]',
         !enabled &&
-          'hover:border-[var(--color-nav-search-hover-border)] hover:text-[var(--color-text)]',
+          'hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]',
         !isInteractive && 'cursor-default opacity-80',
       )}
     >
       <span
         className={cx(
-          'inline-flex min-h-8 items-center justify-center rounded-[8px] px-3 py-1 text-[var(--color-nav-dropdown-description)] transition-colors',
-          enabled && 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]',
+          'inline-flex min-h-8 items-center justify-center gap-2 rounded-[9px] px-3 py-1 text-[var(--color-nav-dropdown-description)] transition-all duration-150',
+          enabled &&
+            'bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]',
         )}
       >
-        {enabled ? labels.enabled : labels.disabled}
+        <span
+          aria-hidden="true"
+          className="size-1.5 rounded-full transition-colors"
+          style={{
+            backgroundColor: enabled ? 'var(--badge-emerald-dot)' : 'var(--color-nav-muted)',
+          }}
+        />
+        <span>{enabled ? labels.enabled : labels.disabled}</span>
       </span>
     </button>
   );
