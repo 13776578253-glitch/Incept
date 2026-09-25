@@ -18,6 +18,15 @@
     "canceled": "Nothing is closed or declined."
   },
   "loadMore": "Load more",
+  "modal": {
+    "confirmDelete": "Delete this proposal? This cannot be undone.",
+    "saveFailed": "Save failed — changes were rolled back.",
+    "lastUpdated": "Last updated",
+    "createdLabel": "Created",
+    "pendingDetail": "Pending specification"
+  },
+  "importSucceeded": "Import complete.",
+  "importFailed": "Import failed.",
   "error": {
     "title": "This map could not be drawn",
     "description": "Something went wrong while loading the roadmap. Reload the page to try again."

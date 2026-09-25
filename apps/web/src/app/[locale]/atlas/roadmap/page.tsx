@@ -7,10 +7,11 @@ import { RoadmapBoard, RoadmapSwitcher, RoadmapToolbar } from '@incept/roadmap/r
 import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell';
 import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
-import { createRoadmapRepository } from '@/server/roadmap/assembly';
+import { createRoadmapRepository, isRoadmapOwner } from '@/server/roadmap/assembly';
 
 // 路线图 Phase 2：Prisma 读链（T3 装配注入，数据 = pnpm roadmap:seed 的初始入库内容）。
 // 多 roadmap 切换走 ?rd=（T2 裁定），列结构与显示名由每张 roadmap 自带（T1 裁定）。
+// U2：canEdit 由 isRoadmapOwner() 计算并下传，非 Owner 全部写控件隐藏（Module G）。
 export default async function RoadmapMapPage({
   params,
   searchParams,
@@ -30,6 +31,18 @@ export default async function RoadmapMapPage({
   if (!current || !board) {
     return notFound();
   }
+
+  const canEdit = await isRoadmapOwner();
+  const hrefs: Record<string, string> = {};
+
+  for (const roadmap of roadmaps) {
+    hrefs[roadmap.key] = withLocalePath(
+      locale,
+      `/atlas/roadmap?rd=${encodeURIComponent(roadmap.key)}`,
+    );
+  }
+
+  const allProjectsHref = withLocalePath(locale, '/atlas/roadmap');
 
   const chrome: RoadmapChrome = {
     switcherLabel: t('switcherLabel'),
@@ -56,6 +69,16 @@ export default async function RoadmapMapPage({
       low: t('chips.priority.low'),
       none: t('chips.priority.none'),
     },
+    confirmDelete: t('modal.confirmDelete'),
+    saveFailed: t('modal.saveFailed'),
+    importSucceeded: t('importSucceeded'),
+    importFailed: t('importFailed'),
+    lastUpdated: t('modal.lastUpdated'),
+    createdLabel: t('modal.createdLabel'),
+    pendingDetail: t('modal.pendingDetail'),
+    importLabel: t('importLabel'),
+    projectSelectLabel: t('projectSelectLabel'),
+    allProjectsLabel: t('allProjectsLabel'),
   };
 
   return (
@@ -83,12 +106,19 @@ export default async function RoadmapMapPage({
             roadmaps={roadmaps}
             currentKey={current.key}
             locale={locale}
-            importLabel={t('importLabel')}
-            projectSelectLabel={t('projectSelectLabel')}
-            allProjectsLabel={t('allProjectsLabel')}
+            chrome={chrome}
+            canEdit={canEdit}
+            hrefs={hrefs}
+            allProjectsHref={allProjectsHref}
           />
         </div>
-        <RoadmapBoard key={current.key} board={board} locale={locale} chrome={chrome} />
+        <RoadmapBoard
+          key={current.key}
+          board={board}
+          locale={locale}
+          chrome={chrome}
+          canEdit={canEdit}
+        />
       </div>
     </WorkspaceShell>
   );

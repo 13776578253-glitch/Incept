@@ -4,29 +4,38 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { Roadmap, RoadmapLocale } from '../domain';
 
+import { roadmapEndpoints } from '../endpoints';
+import type { RoadmapChrome } from './copy';
 import { IconChevronDown, IconImport, IconProjectTag } from './icons';
+import { roadmapRequest } from './request';
 
 type RoadmapToolbarProps = {
   roadmaps: readonly Roadmap[];
   currentKey: string;
   locale: RoadmapLocale;
-  importLabel: string;
-  projectSelectLabel: string;
-  allProjectsLabel: string;
+  chrome: RoadmapChrome;
+  canEdit: boolean;
+  hrefs: Record<string, string>;
+  allProjectsHref: string;
+  onChanged?: () => void;
 };
 
-// 顶栏右侧操作区：与路线图/图谱板切换器处于同一水平基线，依次放置导入按钮与项目下拉选择标签（具体交互与后端能力待下一轮接入）。
+// 顶栏右侧操作区：导入（U5 纯 JSON 文件上传，红线：只收人工清单、绝不派生自 docs/*）
+// 与选择项目（U6：锚点导航 ?rd=，与左侧切换器同源联动）。
 export function RoadmapToolbar({
   roadmaps,
   currentKey,
   locale,
-  importLabel,
-  projectSelectLabel,
-  allProjectsLabel,
+  chrome,
+  canEdit,
+  hrefs,
+  allProjectsHref,
+  onChanged,
 }: RoadmapToolbarProps) {
   const [open, setOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<string>('all');
+  const [importStatus, setImportStatus] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -52,23 +61,55 @@ export function RoadmapToolbar({
   }, [open]);
 
   const activeProjectName =
-    selectedProject === 'all'
-      ? projectSelectLabel
-      : (roadmaps.find((item) => item.key === selectedProject)?.name[locale] ??
-        roadmaps.find((item) => item.key === currentKey)?.name[locale] ??
-        projectSelectLabel);
+    roadmaps.find((item) => item.key === currentKey)?.name[locale] ??
+    chrome.projectSelectLabel ??
+    '';
+
+  async function handleImportFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      const manifest: unknown = JSON.parse(await file.text());
+
+      await roadmapRequest(roadmapEndpoints.import, 'POST', manifest);
+      setImportStatus(chrome.importSucceeded ?? '');
+      onChanged?.();
+    } catch {
+      setImportStatus(chrome.importFailed ?? '');
+    }
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-2.5">
-      <button
-        type="button"
-        className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--color-text-soft)] hover:bg-[var(--roadmap-lane-bg)]"
-      >
-        <span aria-hidden="true" className="inline-flex shrink-0 text-[var(--color-text-muted)]">
-          <IconImport />
-        </span>
-        {importLabel}
-      </button>
+      {canEdit && (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(event) => void handleImportFile(event)}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--color-text-soft)] hover:bg-[var(--roadmap-lane-bg)]"
+          >
+            <span aria-hidden="true" className="inline-flex shrink-0 text-[var(--color-text-muted)]">
+              <IconImport />
+            </span>
+            {chrome.importLabel}
+          </button>
+          {importStatus && (
+            <span role="status" className="text-[0.75rem] text-[var(--color-text-muted)]">
+              {importStatus}
+            </span>
+          )}
+        </>
+      )}
 
       <div ref={containerRef} className="relative">
         <button
@@ -98,42 +139,26 @@ export function RoadmapToolbar({
         {open && (
           <ul
             role="listbox"
-            aria-label={projectSelectLabel}
+            aria-label={chrome.projectSelectLabel}
             className="absolute right-0 z-20 mt-1.5 min-w-[168px] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
           >
-            <li role="option" aria-selected={selectedProject === 'all'} className="list-none">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProject('all');
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[0.8rem] transition-colors ${
-                  selectedProject === 'all'
-                    ? 'bg-[var(--roadmap-chip-bg)] font-medium text-[var(--color-text)]'
-                    : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--color-text)]'
-                }`}
+            <li role="option" aria-selected={false} className="list-none">
+              <a
+                href={allProjectsHref}
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[0.8rem] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--color-text)]"
               >
-                <span>{allProjectsLabel}</span>
-                {selectedProject === 'all' && (
-                  <span
-                    aria-hidden="true"
-                    className="size-1.5 rounded-full bg-[var(--roadmap-status-active,#2563eb)]"
-                  />
-                )}
-              </button>
+                <span>{chrome.allProjectsLabel}</span>
+              </a>
             </li>
             {roadmaps.map((roadmap) => {
-              const selected = selectedProject === roadmap.key;
+              const selected = currentKey === roadmap.key;
 
               return (
                 <li key={roadmap.key} role="option" aria-selected={selected} className="list-none">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedProject(roadmap.key);
-                      setOpen(false);
-                    }}
+                  <a
+                    href={hrefs[roadmap.key]}
+                    onClick={() => setOpen(false)}
                     className={`flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[0.8rem] transition-colors ${
                       selected
                         ? 'bg-[var(--roadmap-chip-bg)] font-medium text-[var(--color-text)]'
@@ -147,7 +172,7 @@ export function RoadmapToolbar({
                         className="size-1.5 rounded-full bg-[var(--roadmap-status-active,#2563eb)]"
                       />
                     )}
-                  </button>
+                  </a>
                 </li>
               );
             })}

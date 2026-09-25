@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import type {
+  LocalizedText,
   RoadmapEntry,
   RoadmapEntryPriority,
   RoadmapEntryType,
@@ -10,8 +11,10 @@ import type {
   RoadmapStatus,
 } from '../domain';
 
+import { roadmapEndpoints } from '../endpoints';
 import type { RoadmapChrome } from './copy';
 import { IconChevronDown, IconLink, IconSparkle, typeIcons } from './icons';
+import { roadmapRequest } from './request';
 
 type RoadmapDetailModalProps = {
   entry: RoadmapEntry;
@@ -19,8 +22,12 @@ type RoadmapDetailModalProps = {
   columnLabels: Partial<Record<RoadmapStatus, string>>;
   locale: RoadmapLocale;
   chrome: RoadmapChrome;
+  canEdit: boolean;
+  undoStatus?: RoadmapStatus;
   onClose: () => void;
   onSelectEntry: (entry: RoadmapEntry) => void;
+  onEntrySaved: (entry: RoadmapEntry) => void;
+  onEntryDeleted: (key: string) => void;
 };
 
 const statusPillStyles: Record<RoadmapStatus, { bg: string; fg: string; border: string }> = {
@@ -116,6 +123,53 @@ const statusDefaultNames: Record<RoadmapStatus, string> = {
 const boardTypeOptions: readonly RoadmapEntryType[] = ['feature', 'improvement', 'maintenance'];
 const priorityTagOptions: readonly RoadmapEntryPriority[] = ['high', 'middle', 'low', 'none'];
 
+// U1：单框双语拆分——按首个 ' / ' 拆 en/zh；无分隔符则双语同文（满足成对不变量）。
+function splitBilingualTitle(value: string): LocalizedText {
+  const index = value.indexOf(' / ');
+
+  if (index === -1) {
+    return { en: value.trim(), zh: value.trim() };
+  }
+
+  return { en: value.slice(0, index).trim(), zh: value.slice(index + 3).trim() };
+}
+
+// U1：写当前语种半边，另一语种为空时同文兜底。
+function withLocaleFallback(
+  current: LocalizedText | undefined,
+  value: string,
+  locale: RoadmapLocale,
+): LocalizedText {
+  const other: RoadmapLocale = locale === 'en' ? 'zh' : 'en';
+  const next: LocalizedText = { en: current?.en ?? '', zh: current?.zh ?? '', [locale]: value };
+
+  if (next[other].trim() === '') {
+    next[other] = value;
+  }
+
+  return next;
+}
+
+// 相对时间（Module E）：createdAt / updatedAt 的 ISO 字符串 → 诚实相对时间。
+function relativeTime(iso: string | undefined, locale: RoadmapLocale): string | null {
+  if (!iso) return null;
+
+  const target = new Date(iso).getTime();
+
+  if (Number.isNaN(target)) return null;
+
+  const minutes = Math.round((Date.now() - target) / 60000);
+  const rtf = new Intl.RelativeTimeFormat(locale === 'zh' ? 'zh-CN' : 'en', { numeric: 'auto' });
+
+  if (Math.abs(minutes) < 60) return rtf.format(-minutes, 'minute');
+
+  const hours = Math.round(minutes / 60);
+
+  if (Math.abs(hours) < 24) return rtf.format(-hours, 'hour');
+
+  return rtf.format(-Math.round(hours / 24), 'day');
+}
+
 // 条目详情弹窗（第 1 轮微调：弹窗上移至导航栏下方、右侧切换条下方仅在 Backlog 显示 + 按钮、移除 Comments 改为英文预留空白栏目、移除右侧 Upvoters 行）。
 export function RoadmapDetailModal({
   entry,
@@ -123,10 +177,16 @@ export function RoadmapDetailModal({
   columnLabels,
   locale,
   chrome,
+  canEdit,
+  undoStatus,
   onClose,
   onSelectEntry,
+  onEntrySaved,
+  onEntryDeleted,
 }: RoadmapDetailModalProps) {
   const [activeTab, setActiveTab] = useState<'details' | 'activity' | 'editor'>('activity');
+  const [mode, setMode] = useState<'view' | 'create'>('view');
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const defaultBilingualTitle =
     entry.title.en === entry.title.zh
@@ -135,7 +195,7 @@ export function RoadmapDetailModal({
 
   const [editedTitle, setEditedTitle] = useState(defaultBilingualTitle);
   const [editedSummary, setEditedSummary] = useState(entry.summary[locale]);
-  const [editedDetail, setEditedDetail] = useState('');
+  const [editedDetail, setEditedDetail] = useState(entry.detail?.[locale] ?? '');
   const [savedToast, setSavedToast] = useState(false);
 
   const [selectedType, setSelectedType] = useState<RoadmapEntryType>(entry.type ?? 'feature');
@@ -147,9 +207,11 @@ export function RoadmapDetailModal({
       entry.title.en === entry.title.zh
         ? entry.title.en
         : `${entry.title.en} / ${entry.title.zh}`;
+    setMode('view');
+    setSaveError(null);
     setEditedTitle(nextTitle);
     setEditedSummary(entry.summary[locale]);
-    setEditedDetail('');
+    setEditedDetail(entry.detail?.[locale] ?? '');
     setSavedToast(false);
     setSelectedType(entry.type ?? 'feature');
     setSelectedPriority(entry.priority);
@@ -209,10 +271,146 @@ export function RoadmapDetailModal({
   const CurrentTypeIcon = typeIcons[selectedType];
   const currentPriorityStyle = prioritySelectorStyles[selectedPriority];
   const isBacklog = entry.status === 'reviewing';
+  const isCreate = mode === 'create';
   const isDirty =
     editedTitle !== defaultBilingualTitle ||
     editedSummary !== entry.summary[locale] ||
-    editedDetail.trim().length > 0;
+    editedDetail !== (entry.detail?.[locale] ?? '');
+
+  const createdText = relativeTime(entry.createdAt, locale);
+  const updatedText = relativeTime(entry.updatedAt, locale);
+
+  function reportFailure(error: unknown) {
+    const message = error instanceof Error ? error.message : '';
+
+    setSaveError(message ? `${chrome.saveFailed} ${message}` : chrome.saveFailed);
+  }
+
+  // U1/U3：保存——编辑态 PATCH；新建态在 Save 才 POST。Title 按 ' / ' 拆分，Summary/Detail
+  // 写当前语种并同文兜底；detail 留空时编辑态显式清空（null）、新建态不带字段。
+  async function handleSave() {
+    const title = splitBilingualTitle(editedTitle);
+    const summary = withLocaleFallback(isCreate ? undefined : entry.summary, editedSummary, locale);
+    const detailBody =
+      editedDetail.trim() === ''
+        ? isCreate
+          ? {}
+          : entry.detail
+            ? { detail: null }
+            : {}
+        : { detail: withLocaleFallback(entry.detail, editedDetail, locale) };
+
+    try {
+      const saved = isCreate
+        ? await roadmapRequest<{ entry: RoadmapEntry }>(roadmapEndpoints.entries, 'POST', {
+            roadmapKey: entry.roadmap,
+            status: 'reviewing',
+            type: selectedType,
+            priority: selectedPriority,
+            title,
+            summary,
+            ...detailBody,
+          })
+        : await roadmapRequest<{ entry: RoadmapEntry }>(
+            roadmapEndpoints.entry(entry.key),
+            'PATCH',
+            { title, summary, ...detailBody },
+          );
+
+      setMode('view');
+      setSaveError(null);
+      setSavedToast(true);
+      onEntrySaved(saved.entry);
+    } catch (error) {
+      reportFailure(error);
+    }
+  }
+
+  // Module B：Board/Tags 选中即乐观更新 + PATCH，失败回滚并提示。
+  async function handleTypePick(typeOption: RoadmapEntryType) {
+    const previous = selectedType;
+
+    setSelectedType(typeOption);
+    setOpenSelector(null);
+    if (isCreate) return;
+
+    try {
+      const saved = await roadmapRequest<{ entry: RoadmapEntry }>(
+        roadmapEndpoints.entry(entry.key),
+        'PATCH',
+        { type: typeOption },
+      );
+
+      onEntrySaved(saved.entry);
+      setSaveError(null);
+    } catch (error) {
+      setSelectedType(previous);
+      reportFailure(error);
+    }
+  }
+
+  async function handlePriorityPick(priorityOption: RoadmapEntryPriority) {
+    const previous = selectedPriority;
+
+    setSelectedPriority(priorityOption);
+    setOpenSelector(null);
+    if (isCreate) return;
+
+    try {
+      const saved = await roadmapRequest<{ entry: RoadmapEntry }>(
+        roadmapEndpoints.entry(entry.key),
+        'PATCH',
+        { priority: priorityOption },
+      );
+
+      onEntrySaved(saved.entry);
+      setSaveError(null);
+    } catch (error) {
+      setSelectedPriority(previous);
+      reportFailure(error);
+    }
+  }
+
+  // Module C：Undo = 阶段回退一档（目标由板列序算出，经 undoStatus 注入）。
+  async function handleUndo() {
+    if (!undoStatus) return;
+
+    try {
+      const saved = await roadmapRequest<{ entry: RoadmapEntry }>(
+        roadmapEndpoints.entry(entry.key),
+        'PATCH',
+        { status: undoStatus },
+      );
+
+      onEntrySaved(saved.entry);
+      setSaveError(null);
+    } catch (error) {
+      reportFailure(error);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(chrome.confirmDelete)) return;
+
+    try {
+      await roadmapRequest(roadmapEndpoints.entry(entry.key), 'DELETE');
+      onEntryDeleted(entry.key);
+    } catch (error) {
+      reportFailure(error);
+    }
+  }
+
+  // U3：点 + 不发请求，进新建草稿态并切到 Editor；Save 才 POST。
+  function enterCreateMode() {
+    setMode('create');
+    setEditedTitle('');
+    setEditedSummary('');
+    setEditedDetail('');
+    setSavedToast(false);
+    setSaveError(null);
+    setActiveTab('editor');
+    setOpenSelector(null);
+  }
 
   return (
     <div
@@ -258,11 +456,12 @@ export function RoadmapDetailModal({
             </button>
           </div>
 
-          {isBacklog && (
+          {canEdit && isBacklog && !isCreate && (
             <button
               type="button"
               aria-label="Add Backlog entry"
               title="Add entry to Backlog"
+              onClick={enterCreateMode}
               className="flex size-8 items-center justify-center rounded-[8px] border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] shadow-md transition-colors hover:border-[var(--roadmap-status-active,#2563eb)] hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--roadmap-status-active,#2563eb)]"
             >
               <svg
@@ -349,59 +548,62 @@ export function RoadmapDetailModal({
               >
                 Activity feed
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('editor')}
-                className={`inline-flex items-center gap-1.5 border-b-2 pb-2.5 text-[0.82rem] font-medium transition-colors ${
-                  activeTab === 'editor'
-                    ? 'border-[var(--color-text)] text-[var(--color-text)]'
-                    : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
-                }`}
-              >
-                Editor
-              </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('editor')}
+                  className={`inline-flex items-center gap-1.5 border-b-2 pb-2.5 text-[0.82rem] font-medium transition-colors ${
+                    activeTab === 'editor'
+                      ? 'border-[var(--color-text)] text-[var(--color-text)]'
+                      : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                  }`}
+                >
+                  Editor
+                </button>
+              )}
             </div>
 
             {activeTab === 'activity' && (
               <div className="relative flex flex-col gap-0">
-                {/* 第一条状态变更记录 */}
-                <div className="flex items-center justify-between rounded-[10px] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] px-3.5 py-2.5 text-[0.8rem]">
-                  <span className="inline-flex items-center gap-2">
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <circle cx="8" cy="8" r="6.5" fill="#10b981" />
-                      <path
-                        d="m5.3 8.1 1.85 1.85L10.8 6.2"
-                        stroke="#ffffff"
-                        strokeWidth="1.75"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <span className="font-medium text-[var(--color-text)]">Soulter</span>
-                    <span className="text-[var(--color-text-muted)]">changed status to</span>
-                    <span className="font-medium" style={{ color: statusStyle.fg }}>
-                      {statusLabel}
+                {/* M4：节点只表述创建/最后更新；updatedAt 是 @updatedAt，严禁写成状态变更时间 */}
+                {createdText && (
+                  <>
+                    <div className="flex items-center justify-between rounded-[10px] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] px-3.5 py-2.5 text-[0.8rem]">
+                      <span className="inline-flex items-center gap-2">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <circle cx="8" cy="8" r="6.5" fill="#10b981" />
+                          <path
+                            d="m5.3 8.1 1.85 1.85L10.8 6.2"
+                            stroke="#ffffff"
+                            strokeWidth="1.75"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <span className="font-medium text-[var(--color-text)]">Soulter</span>
+                        <span className="text-[var(--color-text-muted)]">{chrome.createdLabel}</span>
+                      </span>
+                      <span className="text-[0.75rem] text-[var(--color-text-soft)]">{createdText}</span>
+                    </div>
+
+                    {/* 时间轴连接竖线 */}
+                    <div className="ml-5 h-3.5 w-px bg-[var(--color-border)]" />
+                  </>
+                )}
+
+                {updatedText && (
+                  <div className="flex items-center justify-between rounded-[10px] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] px-3.5 py-2.5 text-[0.8rem]">
+                    <span className="inline-flex items-center gap-2">
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <circle cx="8" cy="8" r="6" stroke="#3b82f6" strokeWidth="1.6" />
+                        <path d="M8 2a6 6 0 0 0 0 12V2Z" fill="#3b82f6" />
+                      </svg>
+                      <span className="font-medium text-[var(--color-text)]">Soulter</span>
+                      <span className="text-[var(--color-text-muted)]">{chrome.lastUpdated}</span>
                     </span>
-                  </span>
-                  <span className="text-[0.75rem] text-[var(--color-text-soft)]">8 months ago</span>
-                </div>
-
-                {/* 时间轴连接竖线 */}
-                <div className="ml-5 h-3.5 w-px bg-[var(--color-border)]" />
-
-                {/* 第二条状态变更记录 */}
-                <div className="flex items-center justify-between rounded-[10px] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] px-3.5 py-2.5 text-[0.8rem]">
-                  <span className="inline-flex items-center gap-2">
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <circle cx="8" cy="8" r="6" stroke="#3b82f6" strokeWidth="1.6" />
-                      <path d="M8 2a6 6 0 0 0 0 12V2Z" fill="#3b82f6" />
-                    </svg>
-                    <span className="font-medium text-[var(--color-text)]">Soulter</span>
-                    <span className="text-[var(--color-text-muted)]">changed status to</span>
-                    <span className="font-medium text-[#2563eb]">In Progress</span>
-                  </span>
-                  <span className="text-[0.75rem] text-[var(--color-text-soft)]">9 months ago</span>
-                </div>
+                    <span className="text-[0.75rem] text-[var(--color-text-soft)]">{updatedText}</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -412,7 +614,7 @@ export function RoadmapDetailModal({
                     {editedDetail}
                   </p>
                 ) : (
-                  'Pending specification'
+                  chrome.pendingDetail
                 )}
               </div>
             )}
@@ -434,10 +636,17 @@ export function RoadmapDetailModal({
                     <button
                       type="button"
                       onClick={() => {
-                        setEditedTitle(defaultBilingualTitle);
-                        setEditedSummary(entry.summary[locale]);
-                        setEditedDetail('');
+                        if (isCreate) {
+                          setEditedTitle('');
+                          setEditedSummary('');
+                          setEditedDetail('');
+                        } else {
+                          setEditedTitle(defaultBilingualTitle);
+                          setEditedSummary(entry.summary[locale]);
+                          setEditedDetail(entry.detail?.[locale] ?? '');
+                        }
                         setSavedToast(false);
+                        setSaveError(null);
                       }}
                       className="text-[0.72rem] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
                     >
@@ -525,7 +734,13 @@ export function RoadmapDetailModal({
                 {/* 底部保存与预览操作条 */}
                 <div className="flex items-center justify-between border-t border-[var(--color-border)] bg-[var(--roadmap-lane-bg)]/50 px-3.5 py-2">
                   <span className="text-[0.72rem] text-[var(--color-text-soft)]">
-                    {savedToast ? '✓ Draft updated in current view' : 'Changes reflect immediately in header'}
+                    {saveError ? (
+                      <span className="text-[#b91c1c]">{saveError}</span>
+                    ) : savedToast ? (
+                      '✓ Draft updated in current view'
+                    ) : (
+                      'Changes reflect immediately in header'
+                    )}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -537,7 +752,7 @@ export function RoadmapDetailModal({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSavedToast(true)}
+                      onClick={() => void handleSave()}
                       className="rounded-[6px] bg-[#5ba4cf] px-3 py-1 text-[0.73rem] font-medium text-white shadow-2xs transition-colors hover:bg-[#4a93be]"
                     >
                       Save
@@ -577,8 +792,10 @@ export function RoadmapDetailModal({
                   aria-label="Select Board"
                   aria-haspopup="listbox"
                   aria-expanded={openSelector === 'board'}
+                  disabled={!canEdit}
                   onClick={(event) => {
                     event.stopPropagation();
+                    if (!canEdit) return;
                     setOpenSelector((prev) => (prev === 'board' ? null : 'board'));
                   }}
                   style={{
@@ -596,17 +813,19 @@ export function RoadmapDetailModal({
                     <CurrentTypeIcon />
                   </span>
                   <span>{chrome.typeLabels[selectedType]}</span>
-                  <span
-                    aria-hidden="true"
-                    className={`ml-0.5 inline-flex text-[var(--color-text-soft)] transition-transform ${
-                      openSelector === 'board' ? 'rotate-180' : ''
-                    }`}
-                  >
-                    <IconChevronDown />
-                  </span>
+                  {canEdit && (
+                    <span
+                      aria-hidden="true"
+                      className={`ml-0.5 inline-flex text-[var(--color-text-soft)] transition-transform ${
+                        openSelector === 'board' ? 'rotate-180' : ''
+                      }`}
+                    >
+                      <IconChevronDown />
+                    </span>
+                  )}
                 </button>
 
-                {openSelector === 'board' && (
+                {canEdit && openSelector === 'board' && (
                   <ul
                     role="listbox"
                     aria-label="Board options"
@@ -621,10 +840,7 @@ export function RoadmapDetailModal({
                         <li key={typeOption} role="option" aria-selected={active}>
                           <button
                             type="button"
-                            onClick={() => {
-                              setSelectedType(typeOption);
-                              setOpenSelector(null);
-                            }}
+                            onClick={() => void handleTypePick(typeOption)}
                             className={`flex w-full items-center justify-between rounded-[6px] px-2.5 py-1.5 text-left text-[0.75rem] font-medium transition-colors ${
                               active
                                 ? 'bg-[var(--roadmap-lane-bg)] text-[var(--color-text)]'
@@ -667,8 +883,10 @@ export function RoadmapDetailModal({
                   aria-label="Select Tags"
                   aria-haspopup="listbox"
                   aria-expanded={openSelector === 'tags'}
+                  disabled={!canEdit}
                   onClick={(event) => {
                     event.stopPropagation();
+                    if (!canEdit) return;
                     setOpenSelector((prev) => (prev === 'tags' ? null : 'tags'));
                   }}
                   style={{
@@ -684,17 +902,19 @@ export function RoadmapDetailModal({
                     style={{ background: currentPriorityStyle.dot }}
                   />
                   <span>{chrome.priorityLabels[selectedPriority]}</span>
-                  <span
-                    aria-hidden="true"
-                    className={`ml-0.5 inline-flex text-[var(--color-text-soft)] transition-transform ${
-                      openSelector === 'tags' ? 'rotate-180' : ''
-                    }`}
-                  >
-                    <IconChevronDown />
-                  </span>
+                  {canEdit && (
+                    <span
+                      aria-hidden="true"
+                      className={`ml-0.5 inline-flex text-[var(--color-text-soft)] transition-transform ${
+                        openSelector === 'tags' ? 'rotate-180' : ''
+                      }`}
+                    >
+                      <IconChevronDown />
+                    </span>
+                  )}
                 </button>
 
-                {openSelector === 'tags' && (
+                {canEdit && openSelector === 'tags' && (
                   <ul
                     role="listbox"
                     aria-label="Tags options"
@@ -708,10 +928,7 @@ export function RoadmapDetailModal({
                         <li key={priorityOption} role="option" aria-selected={active}>
                           <button
                             type="button"
-                            onClick={() => {
-                              setSelectedPriority(priorityOption);
-                              setOpenSelector(null);
-                            }}
+                            onClick={() => void handlePriorityPick(priorityOption)}
                             className={`flex w-full items-center justify-between rounded-[6px] px-2.5 py-1.5 text-left text-[0.75rem] font-medium transition-colors ${
                               active
                                 ? 'bg-[var(--roadmap-lane-bg)] text-[var(--color-text)]'
@@ -747,7 +964,7 @@ export function RoadmapDetailModal({
 
             <div className="grid grid-cols-[84px_1fr] items-center pt-1">
               <span className="text-[var(--color-text-muted)]">Date</span>
-              <span className="text-[var(--color-text)]">12 months ago</span>
+              <span className="text-[var(--color-text)]">{createdText ?? '—'}</span>
             </div>
 
             <div className="grid grid-cols-[84px_1fr] items-center">
@@ -787,36 +1004,40 @@ export function RoadmapDetailModal({
             )}
           </div>
 
-          {/* 右下角回退/删除提议操作区（参考图二排版：删除或者回退此提议；白色 Undo + 蓝色 Delete，Backlog 仅显示蓝色 Delete） */}
-          <div className="border-t border-[var(--color-border)] p-6">
-            <h3 className="text-[0.86rem] font-semibold text-[var(--color-text)]">
-              Revert or delete
-            </h3>
-            <p className="mt-1 text-[0.76rem] leading-relaxed text-[var(--color-text-muted)]">
-              删除或者回退此提议
-            </p>
-            <div className="mt-3.5 flex items-center justify-between gap-2.5">
-              <div className="flex flex-wrap items-center gap-2">
-                {!isBacklog && (
+          {/* 右下角回退/删除提议操作区（U2：非 Owner 整块隐藏；Undo 目标由 undoStatus 注入） */}
+          {canEdit && (
+            <div className="border-t border-[var(--color-border)] p-6">
+              <h3 className="text-[0.86rem] font-semibold text-[var(--color-text)]">
+                Revert or delete
+              </h3>
+              <p className="mt-1 text-[0.76rem] leading-relaxed text-[var(--color-text-muted)]">
+                删除或者回退此提议
+              </p>
+              <div className="mt-3.5 flex items-center justify-between gap-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  {!isBacklog && undoStatus && (
+                    <button
+                      type="button"
+                      aria-label="Undo"
+                      onClick={() => void handleUndo()}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3.5 py-1.5 text-[0.78rem] font-medium text-[var(--color-text)] shadow-xs transition-colors hover:bg-[var(--roadmap-lane-bg)] dark:bg-[var(--color-bg)]"
+                    >
+                      Undo
+                    </button>
+                  )}
+
                   <button
                     type="button"
-                    aria-label="Undo"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3.5 py-1.5 text-[0.78rem] font-medium text-[var(--color-text)] shadow-xs transition-colors hover:bg-[var(--roadmap-lane-bg)] dark:bg-[var(--color-bg)]"
+                    aria-label="Delete"
+                    onClick={() => void handleDelete()}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[#5ba4cf] px-3.5 py-1.5 text-[0.78rem] font-medium text-white shadow-xs transition-colors hover:bg-[#4a93be]"
                   >
-                    Undo
+                    Delete
                   </button>
-                )}
-
-                <button
-                  type="button"
-                  aria-label="Delete"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#5ba4cf] px-3.5 py-1.5 text-[0.78rem] font-medium text-white shadow-xs transition-colors hover:bg-[#4a93be]"
-                >
-                  Delete
-                </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </aside>
       </div>
     </div>

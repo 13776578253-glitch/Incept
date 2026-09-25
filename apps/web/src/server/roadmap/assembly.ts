@@ -34,8 +34,12 @@ export function createRoadmapRepository(): RoadmapRepository {
   return createPrismaRoadmapRepository(client);
 }
 
+// U2：RSC 用的无 Request 门禁（规格指名放装配层）；路由门禁仍是 authorizeOwner（同源 + 本判定）。
+export const isRoadmapOwner = async (): Promise<boolean> =>
+  (await getCurrentViewer()).role === 'owner';
+
 export const authorizeOwner: AuthorizeOwner<Request> = async (request) =>
-  hasSameOrigin(request) && (await getCurrentViewer()).role === 'owner';
+  hasSameOrigin(request) && (await isRoadmapOwner());
 
 export function createRoadmapWriter(): RoadmapWriter {
   const client: RoadmapPrismaWriteClient = {
