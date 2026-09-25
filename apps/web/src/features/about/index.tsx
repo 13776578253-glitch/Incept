@@ -47,8 +47,13 @@ export function AboutFeature({ sections, activityHref }: AboutFeatureProps) {
           className="mx-auto w-full max-w-[var(--docs-content-width)] border-b border-[var(--color-border)] py-8 text-left md:py-10"
         >
           <div>
-            <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] md:text-[1.28rem]">
-              {section.title}
+            <h2 className="inline-flex items-center gap-2.5 text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] md:text-[1.28rem]">
+              <span
+                aria-hidden="true"
+                className="h-3.5 w-1 shrink-0 rounded-full"
+                style={{ backgroundColor: 'var(--badge-sky-dot)' }}
+              />
+              <span>{section.title}</span>
             </h2>
             <div className="mt-5 space-y-5">
               {section.blocks.map((block) => (
