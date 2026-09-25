@@ -200,4 +200,16 @@
 | **`U5`** | 顶栏「导入（Import）」功能 | **纯文件上传 JSON 清单批量写入**（`<input type="file" accept=".json" />`，不做粘贴面板，走 `/api/internal/roadmap/import`）；**严守 `roadmap-integration-surface` 决策红线：绝不从 `docs/NEXT.md`、`docs/BACKLOG.md` 或 `docs/finish-task/` 自动派生**。 |
 | **`U6`** | 顶栏「选择项目（Select project）」语义 | **与左侧 `路线图 / 图谱板` 联动切换不同项目的 Roadmap（`?rd=<key>`）**，只切换不同项目的看板。 |
 
+---
+
+[2026-09-25] - Update by AI完成改动:
+- 后端接线执行完成（按 §3 规格 Modules A–G + 主控 U1–U6 裁定 + M1–M5 评审修订，Phase 0–4 计划经主控批准后分四个提交落地）：
+  1. **Phase 0（`87b1fe4`）**：`RoadmapEntry` 增 `detailEn/detailZh`（可空双语对），migration `20260925120000_add_roadmap_entry_detail` 纯 datamodel diff 生成、`prisma migrate deploy` 授权执行；`detail?/createdAt?/updatedAt?` 进域类型与校验；`RoadmapEntryPatch` 显式放行 `detail: null`（M1：Partial 基 Omit 掉 detail，交集属性会把 null 挤掉）。
+  2. **Phase 1（`afe4d94`）**：`toEntry` 映射 detail（双 NULL 省略、单边值映射成空半边交校验拒绝）与 ISO 时间戳；writer 合并表达式钉死 `patch.detail === null ? undefined : (patch.detail ?? current.detail)`（M2）并从写回 row 回填时间戳；缺省 key 由 `title.en` slug 生成 + 碰撞后缀；fixtures/seed 补 detail 样本；M2 三态回归哨兵（含"未传不清空"）入测。
+  3. **Phase 2（`b4d17a7`）**：`RoadmapImportManifest`（仅条目）+ `writer.importEntries`（全量校验后单事务幂等 upsert、条目间 key 冲突拒绝、links 整体重写）+ `roadmapEndpoints.import` + `POST /api/internal/roadmap/import`（宿主 stub 同族惯例）；导入路由注释明示反自动派生红线（grep 确认零代码读取 docs/NEXT.md、BACKLOG.md、finish-task）。
+  4. **Phase 3（`2579ac9`）**：`assembly.isRoadmapOwner()`（规格指名位置）→ `canEdit` 下传；Editor Save（U1 拆分/兜底）、Backlog `+` 草稿态 Save 才 POST（U3）、Board/Tags 乐观 PATCH 失败回滚、Undo 回退一档、Delete 确认删除；`Date`/`Activity feed` 用 createdAt/updatedAt 诚实表述（M4：第二节点只写「最后更新于」，禁写状态变更时间）；toolbar 导入走原生文件上传（U5）与 Select project 锚点导航 `?rd=`（U6）；非 Owner 全部写控件隐藏（U2）；新增文案中英各一条进 messages + RoadmapChrome（M5）。
+- 验收证据分级（M3）：**主证据 = 组件测试**（15 例，含 canEdit=false 全写控件不可见）+ 假 viewer 服务端断言（`isRoadmapOwner()` 对 guest 为 false）+ 匿名 API 实测（POST/PATCH/DELETE/import 全部 `404 {"error":"Not found."}`）；匿名 HTML 抓取为**弱证据**（弹窗为客户端条件渲染），不作门禁。
+- 全量验证：五包 typecheck 绿、335 测试绿（roadmap 57 / web 18 / music 187 / core 73）、build 绿（含 import 路由）、`pnpm roadmap:seed` 幂等。owner 浏览器走查（弹窗 Save/Undo/Delete/+/导入 + studio 表单）留待主控。
+- Commit: [feat(db,roadmap) 87b1fe4 / feat(roadmap) afe4d94 / feat b4d17a7 / feat 2579ac9]，记录归 [docs]。
+
 
