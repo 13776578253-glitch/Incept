@@ -54,7 +54,7 @@ function fakeDeps(
     },
     createEntry: async (input) => {
       calls.push('entry.create');
-      return { ...createdEntry, key: input.key };
+      return { ...createdEntry, key: input.key ?? 'generated-key' };
     },
     updateEntry: async ({ key, patch }) => {
       calls.push('entry.update');
@@ -140,6 +140,17 @@ describe('roadmap route handlers', () => {
     const payload = (await response.json()) as { entry: RoadmapEntry };
 
     expect(payload.entry.key).toBe('sample-new');
+  });
+
+  it('creates an entry without a key and lets the writer derive one', async () => {
+    const calls: string[] = [];
+    const { key: _omitted, ...bodyWithoutKey } = validEntryBody;
+    const response = await createRoadmapEntriesRoute(fakeDeps(true, calls)).POST(
+      request('POST', bodyWithoutKey),
+    );
+
+    expect(response.status).toBe(201);
+    expect(calls).toEqual(['entry.create']);
   });
 
   it('rejects an entry body that breaks bilingual parity', async () => {

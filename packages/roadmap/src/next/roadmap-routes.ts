@@ -215,10 +215,14 @@ export function createRoadmapEntriesRoute(deps: RoadmapRouteDeps) {
 
     try {
       const roadmapKey = typeof body.roadmapKey === 'string' ? body.roadmapKey.trim() : '';
-      const key = typeof body.key === 'string' ? body.key.trim() : '';
+      const rawKey = typeof body.key === 'string' ? body.key.trim() : '';
 
-      if (roadmapKey === '' || key === '') {
-        return badRequest('"roadmapKey" and "key" must be non-empty strings.');
+      if (roadmapKey === '') {
+        return badRequest('"roadmapKey" must be a non-empty string.');
+      }
+
+      if (body.key !== undefined && rawKey === '') {
+        return badRequest('"key" must be a non-empty string when provided.');
       }
 
       const patch = parseEntryPatch(body);
@@ -231,12 +235,13 @@ export function createRoadmapEntriesRoute(deps: RoadmapRouteDeps) {
 
       const entry = await deps.writer.createEntry({
         roadmapKey,
-        key,
+        key: rawKey === '' ? undefined : rawKey,
         status: patch.status,
         type: patch.type,
         priority: patch.priority,
         title: patch.title,
         summary: patch.summary,
+        detail: patch.detail ?? undefined,
         order: patch.order,
         links: patch.links ?? [],
       });

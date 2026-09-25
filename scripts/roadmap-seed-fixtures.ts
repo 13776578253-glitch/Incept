@@ -94,11 +94,13 @@ async function main() {
           titleZh: entry.title.zh,
           summaryEn: entry.summary.en,
           summaryZh: entry.summary.zh,
+          detailEn: entry.detail?.en ?? null,
+          detailZh: entry.detail?.zh ?? null,
           votes: null,
           comments: null,
           position: entry.order,
         },
-        update: {
+      update: {
           status: entry.status,
           type: entry.type,
           priority: entry.priority,
@@ -106,6 +108,8 @@ async function main() {
           titleZh: entry.title.zh,
           summaryEn: entry.summary.en,
           summaryZh: entry.summary.zh,
+          detailEn: entry.detail?.en ?? null,
+          detailZh: entry.detail?.zh ?? null,
           votes: null,
           comments: null,
           position: entry.order,

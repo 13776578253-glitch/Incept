@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createPrismaRoadmapRepository,
+  toEntry,
   type RoadmapColumnRow,
   type RoadmapEntryRow,
   type RoadmapEntryLinkRow,
@@ -169,5 +170,20 @@ describe('createPrismaRoadmapRepository', () => {
       }),
     );
     await expect(priorityRepository.listBoard('sample-roadmap')).rejects.toThrow(/unknown priority/);
+  });
+
+  it('maps detail as a pair, omits it when both columns are null, and stamps ISO timestamps', () => {
+    const withDetail = toEntry(
+      { ...entryRow, detailEn: 'Detail', detailZh: '详情' },
+      'sample-roadmap',
+    );
+    const withoutDetail = toEntry(entryRow, 'sample-roadmap');
+    const halfPair = toEntry({ ...entryRow, detailEn: 'D', detailZh: null }, 'sample-roadmap');
+
+    expect(withDetail.detail).toEqual({ en: 'Detail', zh: '详情' });
+    expect(withoutDetail.detail).toBeUndefined();
+    expect(halfPair.detail).toEqual({ en: 'D', zh: '' });
+    expect(withDetail.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    expect(withDetail.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
 });

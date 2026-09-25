@@ -38,6 +38,12 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
       en: 'Shape replies around what the reader cares about.',
       zh: '围绕读者关心的内容组织回复。',
     },
+    detail: {
+      en: 'The reply method anchors on interest points first, then adds one concrete example.',
+      zh: '回复策略先锚定兴趣点，再补一个具体例子。',
+    },
+    createdAt: '2026-09-01T00:00:00.000Z',
+    updatedAt: '2026-09-10T00:00:00.000Z',
   },
   {
     key: 'sample-02',
@@ -66,6 +72,10 @@ export const fixtureEntries: readonly RoadmapEntry[] = [
     summary: {
       en: 'Queued next: long-term memory that stays with the conversation.',
       zh: '排在下一批：随对话留存的长期记忆。',
+    },
+    detail: {
+      en: 'Scoped memory storage, one scope per conversation.',
+      zh: '按会话划分作用域的记忆存储。',
     },
   },
   {

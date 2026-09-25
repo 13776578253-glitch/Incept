@@ -61,6 +61,7 @@ type FakeState = {
   })[];
   roadmaps?: (RoadmapRow & { columns: RoadmapColumnRow[] })[];
   calls?: string[];
+  entryWrites?: unknown[];
 };
 
 // 假写客户端：$transaction 直接以自身回调执行（不变式断言看 calls 序列）。
@@ -101,17 +102,29 @@ function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
     },
     roadmapEntry: {
       count: async () => state.entryCountByStatus ?? 0,
+      findUnique: async (args) =>
+        state.entryRows?.find((row) => row.key === args.where.key) ?? null,
       create: async (args) => {
         calls.push('entry.create');
-        return { ...entryRow, key: args.data.key, position: args.data.position };
+        (state.entryWrites ??= []).push(args.data);
+        return {
+          ...entryRow,
+          key: args.data.key,
+          detailEn: args.data.detailEn,
+          detailZh: args.data.detailZh,
+          position: args.data.position,
+        };
       },
       update: async (args) => {
         calls.push('entry.update');
+        (state.entryWrites ??= []).push(args.data);
         return {
           ...entryRow,
           status: args.data.status ?? entryRow.status,
           titleEn: args.data.titleEn ?? entryRow.titleEn,
           titleZh: args.data.titleZh ?? entryRow.titleZh,
+          detailEn: args.data.detailEn !== undefined ? args.data.detailEn : entryRow.detailEn,
+          detailZh: args.data.detailZh !== undefined ? args.data.detailZh : entryRow.detailZh,
           position: args.data.position ?? entryRow.position,
         };
       },
@@ -234,5 +247,91 @@ describe('createPrismaRoadmapWriter', () => {
     expect(roadmap.key).toBe('sample-fresh');
     expect(roadmap.name).toEqual({ en: 'Fresh', zh: '新板' });
     expect(roadmap.columns).toEqual([]);
+  });
+
+  it('persists, clears and preserves detail across the three patch states (M2 sentinel)', async () => {
+    const boards = [{ ...roadmapRow, columns: [columnRow], entries: [{ ...entryRow, links: [] }] }];
+
+    const setWrites: unknown[] = [];
+    const setWriter = createPrismaRoadmapWriter(fakeWriteClient({ boards, entryWrites: setWrites }));
+
+    await setWriter.updateEntry({
+      key: 'sample-01',
+      patch: { detail: { en: 'Detail', zh: '详情' } },
+    });
+    expect(setWrites[0]).toMatchObject({ detailEn: 'Detail', detailZh: '详情' });
+
+    const clearWrites: unknown[] = [];
+    const clearWriter = createPrismaRoadmapWriter(
+      fakeWriteClient({ boards, entryWrites: clearWrites }),
+    );
+
+    await clearWriter.updateEntry({ key: 'sample-01', patch: { detail: null } });
+    expect(clearWrites[0]).toMatchObject({ detailEn: null, detailZh: null });
+
+    const keepWrites: unknown[] = [];
+    const keepWriter = createPrismaRoadmapWriter(
+      fakeWriteClient({
+        boards: [
+          {
+            ...roadmapRow,
+            columns: [columnRow],
+            entries: [{ ...entryRow, detailEn: 'Kept', detailZh: '保留', links: [] }],
+          },
+        ],
+        entryWrites: keepWrites,
+      }),
+    );
+
+    await keepWriter.updateEntry({
+      key: 'sample-01',
+      patch: { title: { en: 'Renamed', zh: '改名' } },
+    });
+    expect(keepWrites[0]).toMatchObject({ detailEn: 'Kept', detailZh: '保留' });
+  });
+
+  it('derives a slug key when the draft omits one and adds suffixes on collision', async () => {
+    const writer = createPrismaRoadmapWriter(fakeWriteClient({ entryWrites: [] }));
+    const created = await writer.createEntry({
+      roadmapKey: 'sample-roadmap',
+      status: 'reviewing',
+      type: 'feature',
+      priority: 'high',
+      title: { en: 'Hello World', zh: '你好' },
+      summary: { en: 'S', zh: '摘' },
+    });
+
+    expect(created.key).toBe('hello-world');
+
+    const taken = createPrismaRoadmapWriter(
+      fakeWriteClient({
+        entryWrites: [],
+        entryRows: [{ ...entryRow, key: 'hello-world', links: [] }],
+      }),
+    );
+    const second = await taken.createEntry({
+      roadmapKey: 'sample-roadmap',
+      status: 'reviewing',
+      type: 'feature',
+      priority: 'high',
+      title: { en: 'Hello World', zh: '你好' },
+      summary: { en: 'S', zh: '摘' },
+    });
+
+    expect(second.key).toBe('hello-world-2');
+  });
+
+  it('writes detail as a pair on create and returns ISO timestamps from the row', async () => {
+    const entryWrites: unknown[] = [];
+    const writer = createPrismaRoadmapWriter(fakeWriteClient({ entryWrites }));
+
+    const entry = await writer.createEntry({
+      ...draft,
+      detail: { en: 'Detail', zh: '详情' },
+    });
+
+    expect(entryWrites[0]).toMatchObject({ detailEn: 'Detail', detailZh: '详情' });
+    expect(entry.createdAt).toBe('2026-09-24T00:00:00.000Z');
+    expect(entry.updatedAt).toBe('2026-09-24T00:00:00.000Z');
   });
 });

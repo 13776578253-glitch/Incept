@@ -110,6 +110,12 @@ export function toEntry(
     .sort(byPosition)
     .map((link) => ({ label: { en: link.labelEn, zh: link.labelZh }, href: link.href }));
 
+  // detail 成对（U1）：双 NULL = 无；单边值 = 数据损坏，映射成空半边让 validateEntry 拒绝。
+  const detail =
+    row.detailEn !== null || row.detailZh !== null
+      ? { en: row.detailEn ?? '', zh: row.detailZh ?? '' }
+      : undefined;
+
   return {
     key: row.key,
     roadmap: roadmapKey,
@@ -119,7 +125,10 @@ export function toEntry(
     priority: row.priority as RoadmapEntryPriority,
     title: { en: row.titleEn, zh: row.titleZh },
     summary: { en: row.summaryEn, zh: row.summaryZh },
+    ...(detail ? { detail } : {}),
     ...(links.length > 0 ? { links } : {}),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 

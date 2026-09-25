@@ -68,6 +68,7 @@ export type RoadmapPrismaTx = {
   };
   roadmapEntry: {
     count(args: { where: { roadmapId: string; status: RoadmapStatus } }): Promise<number>;
+    findUnique(args: { where: { key: string } }): Promise<RoadmapEntryRow | null>;
     create(args: {
       data: {
         roadmapId: string;
@@ -79,6 +80,8 @@ export type RoadmapPrismaTx = {
         titleZh: string;
         summaryEn: string;
         summaryZh: string;
+        detailEn: string | null;
+        detailZh: string | null;
         position: number;
       };
     }): Promise<RoadmapEntryRow>;
@@ -92,6 +95,8 @@ export type RoadmapPrismaTx = {
         titleZh?: string;
         summaryEn?: string;
         summaryZh?: string;
+        detailEn?: string | null;
+        detailZh?: string | null;
         position?: number;
       };
     }): Promise<RoadmapEntryRow>;
@@ -119,6 +124,16 @@ function assertStatus(value: string): asserts value is RoadmapStatus {
   }
 }
 
+// 缺省 key 由英文标题生成（U3）：仅保留 a-z0-9 段，全空退化为 "entry"；碰撞后缀由写口负责。
+function slugifyTitle(title: string): string {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return slug === '' ? 'entry' : slug;
+}
+
 // 行 → 域草稿合并：patch 只覆盖给出的字段，校验作用于合并结果（事务内读数）。
 function mergedEntry(
   current: RoadmapEntry,
@@ -132,6 +147,8 @@ function mergedEntry(
     priority: patch.priority ?? current.priority,
     title: patch.title ?? current.title,
     summary: patch.summary ?? current.summary,
+    // M2：=== null 判定必须在 ?? 之前，否则 null ?? current.detail 会吞掉清空。
+    detail: patch.detail === null ? undefined : (patch.detail ?? current.detail),
     links: patch.links ?? current.links,
   };
 }
@@ -145,6 +162,22 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
     const entries = board?.entries ?? [];
 
     return entries.length === 0 ? 10 : Math.max(...entries.map((entry) => entry.position)) + 10;
+  }
+
+  // key 全局唯一（schema @unique）：slug 逐候选查重，碰撞加 -2、-3 后缀。
+  async function resolveEntryKey(tx: RoadmapPrismaTx, titleEn: string): Promise<string> {
+    const base = slugifyTitle(titleEn);
+    let candidate = base;
+
+    for (let suffix = 2; ; suffix += 1) {
+      const existing = await tx.roadmapEntry.findUnique({ where: { key: candidate } });
+
+      if (!existing) {
+        return candidate;
+      }
+
+      candidate = `${base}-${suffix}`;
+    }
   }
 
   async function readRoadmapShape(
@@ -303,14 +336,16 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
     async createEntry(input) {
       return client.$transaction(async (tx) => {
         const { roadmap, roadmapId } = await readRoadmapShape(tx, input.roadmapKey);
+        const key = input.key ?? (await resolveEntryKey(tx, input.title.en));
         const draft = {
-          key: input.key,
+          key,
           order: input.order ?? (await nextPosition(tx, input.roadmapKey)),
           status: input.status,
           type: input.type,
           priority: input.priority,
           title: input.title,
           summary: input.summary,
+          detail: input.detail,
           links: input.links ?? [],
         };
         const entry: RoadmapEntry = { ...draft, roadmap: input.roadmapKey };
@@ -334,12 +369,19 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
             titleZh: entry.title.zh,
             summaryEn: entry.summary.en,
             summaryZh: entry.summary.zh,
+            detailEn: entry.detail?.en ?? null,
+            detailZh: entry.detail?.zh ?? null,
             position: entry.order,
           },
         });
         await writeLinks(tx, row.id, entry.links ?? []);
 
-        return { ...entry, links: entry.links ?? [] };
+        return {
+          ...entry,
+          links: entry.links ?? [],
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString(),
+        };
       });
     },
 
@@ -355,7 +397,7 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
 
         validateEntry(entry, roadmap);
 
-        await tx.roadmapEntry.update({
+        const row = await tx.roadmapEntry.update({
           where: { key },
           data: {
             status: entry.status,
@@ -365,6 +407,8 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
             titleZh: entry.title.zh,
             summaryEn: entry.summary.en,
             summaryZh: entry.summary.zh,
+            detailEn: entry.detail?.en ?? null,
+            detailZh: entry.detail?.zh ?? null,
             position: entry.order,
           },
         });
@@ -373,7 +417,11 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
           await writeLinks(tx, current.id, entry.links ?? []);
         }
 
-        return entry;
+        return {
+          ...entry,
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString(),
+        };
       });
     },
 

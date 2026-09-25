@@ -51,6 +51,7 @@ export function createRoadmapWriter(): RoadmapWriter {
     },
     roadmapEntry: {
       count: (args) => prisma.roadmapEntry.count(args),
+      findUnique: (args) => prisma.roadmapEntry.findUnique(args),
       create: (args) => prisma.roadmapEntry.create(args),
       update: (args) => prisma.roadmapEntry.update(args),
       delete: (args) => prisma.roadmapEntry.delete(args),
