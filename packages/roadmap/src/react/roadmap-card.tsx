@@ -8,33 +8,48 @@ type RoadmapCardProps = {
   entry: RoadmapEntry;
   locale: RoadmapLocale;
   chrome: RoadmapChrome;
+  onSelect?: (entry: RoadmapEntry) => void;
 };
 
 // 条目卡：主语言标题 + 次语言一行（双语对等可见）、chips。
 // T4 硬化：无投票/评论——卡片不渲染任何计数或投票/评论痕迹。
-export function RoadmapCard({ entry, locale, chrome }: RoadmapCardProps) {
+export function RoadmapCard({ entry, locale, chrome, onSelect }: RoadmapCardProps) {
   const secondary = locale === 'en' ? 'zh' : 'en';
   const links = entry.links ?? [];
 
   return (
-    <article className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg)] p-5 transition-transform duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--color-text-soft)]">
-      <h3
-        className="line-clamp-2 text-[1rem] font-medium leading-snug text-[var(--color-text)]"
-        title={entry.title[locale]}
-      >
-        {entry.title[locale]}
-      </h3>
-      <p
-        className="truncate text-[0.82rem] leading-6 text-[var(--color-text-soft)]"
-        title={entry.title[secondary]}
-      >
-        {entry.title[secondary]}
-      </p>
-      <p className="line-clamp-2 text-[0.82rem] leading-6 text-[var(--color-text-muted)]">
+    <article
+      onClick={() => onSelect?.(entry)}
+      onKeyDown={(event) => {
+        if ((event.key === 'Enter' || event.key === ' ') && onSelect) {
+          event.preventDefault();
+          onSelect(entry);
+        }
+      }}
+      tabIndex={onSelect ? 0 : undefined}
+      className={`flex flex-col gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--color-text-soft)] hover:shadow-[0_4px_12px_rgba(15,23,42,0.05)] ${
+        onSelect ? 'cursor-pointer' : ''
+      }`}
+    >
+      <div className="space-y-0.5">
+        <h3
+          className="line-clamp-2 text-[0.92rem] font-semibold leading-[1.38] text-[var(--color-text)]"
+          title={entry.title[locale]}
+        >
+          {entry.title[locale]}
+        </h3>
+        <p
+          className="truncate text-[0.78rem] leading-[1.35] text-[var(--color-text-soft)]"
+          title={entry.title[secondary]}
+        >
+          {entry.title[secondary]}
+        </p>
+      </div>
+      <p className="line-clamp-2 text-[0.8rem] leading-[1.48] text-[var(--color-text-muted)]">
         {entry.summary[locale]}
       </p>
-      <div className="flex flex-wrap items-center gap-2">
-        <RoadmapChip kind="type" label={chrome.typeLabels[entry.type]} />
+      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+        <RoadmapChip kind="type" entryType={entry.type} label={chrome.typeLabels[entry.type]} />
         <RoadmapChip
           kind="priority"
           priority={entry.priority}
@@ -46,7 +61,8 @@ export function RoadmapCard({ entry, locale, chrome }: RoadmapCardProps) {
             href={link.href}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2.5 py-1 text-[0.76rem] text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-soft)] hover:text-[var(--color-text)]"
+            onClick={(event) => event.stopPropagation()}
+            className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--roadmap-chip-bg)] px-2 py-0.5 text-[0.71rem] font-medium leading-4 text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-soft)] hover:text-[var(--color-text)]"
           >
             <IconLink />
             {link.label[locale]}
@@ -56,3 +72,4 @@ export function RoadmapCard({ entry, locale, chrome }: RoadmapCardProps) {
     </article>
   );
 }
+

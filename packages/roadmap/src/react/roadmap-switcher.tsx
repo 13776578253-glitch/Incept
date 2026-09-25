@@ -17,10 +17,11 @@ export function RoadmapSwitcher({
   label,
 }: RoadmapSwitcherProps) {
   return (
-    <nav aria-label={label} className="flex flex-wrap items-center gap-2">
-      <span className="text-[0.76rem] uppercase tracking-[0.2em] text-[var(--color-text-soft)]">
-        {label}
-      </span>
+    <nav
+      aria-label={label}
+      className="inline-flex flex-wrap items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] p-1"
+    >
+      <span className="sr-only">{label}</span>
       {roadmaps.map((roadmap) => {
         const current = roadmap.key === currentKey;
 
@@ -29,10 +30,10 @@ export function RoadmapSwitcher({
             key={roadmap.key}
             href={hrefFor(roadmap.key)}
             aria-current={current ? 'true' : undefined}
-            className={`rounded-full border px-3.5 py-2 text-[0.82rem] transition-colors ${
+            className={`inline-flex items-center rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all ${
               current
-                ? 'border-[var(--color-text-soft)] bg-[var(--roadmap-chip-bg)] text-[var(--color-text)]'
-                : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-soft)] hover:text-[var(--color-text)]'
+                ? 'border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.06)]'
+                : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
             }`}
           >
             {roadmap.name[locale]}
@@ -42,3 +43,4 @@ export function RoadmapSwitcher({
     </nav>
   );
 }
+

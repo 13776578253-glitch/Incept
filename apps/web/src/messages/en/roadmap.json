@@ -1,12 +1,15 @@
 {
   "page": {
     "eyebrow": "Roadmap",
-    "title": "Where each project is going",
-    "description": "One board per roadmap: what is queued, what is being built, and what has shipped. Entries are written and maintained by hand, in both languages."
+    "title": "Milestones & Backlog",
+    "description": ""
   },
   "switcherLabel": "Roadmaps",
   "boardLabel": "Roadmap board",
   "lanePickerLabel": "Choose a column",
+  "importLabel": "Import",
+  "projectSelectLabel": "Select project",
+  "allProjectsLabel": "All projects",
   "emptyLane": {
     "reviewing": "Nothing is under review. New ideas land here first.",
     "unstarted": "Nothing queued right now. Committed work waits here.",

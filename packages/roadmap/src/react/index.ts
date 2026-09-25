@@ -4,6 +4,9 @@ export * from './icons';
 export * from './roadmap-board';
 export * from './roadmap-card';
 export * from './roadmap-chip';
+export * from './roadmap-detail-modal';
 export * from './roadmap-lane';
 export * from './roadmap-states';
 export * from './roadmap-switcher';
+export * from './roadmap-toolbar';
+

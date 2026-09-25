@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import type { RoadmapChrome } from '@incept/roadmap/react';
-import { RoadmapBoard, RoadmapSwitcher } from '@incept/roadmap/react';
+import { RoadmapBoard, RoadmapSwitcher, RoadmapToolbar } from '@incept/roadmap/react';
 
 import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell';
 import type { AppLocale } from '@/i18n/config/locales';
@@ -60,25 +60,34 @@ export default async function RoadmapMapPage({
 
   return (
     <WorkspaceShell>
-      <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-6 px-6 pt-10 pb-16 lg:px-10">
-        <header className="max-w-[720px] space-y-4">
-          <p className="text-[0.76rem] uppercase tracking-[0.2em] text-[var(--color-text-soft)]">
-            {t('page.eyebrow')}
-          </p>
-          <h1 className="text-[clamp(2.4rem,5vw,4.6rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--color-text)]">
-            {t('page.title')}
-          </h1>
-          <p className="text-[1.02rem] leading-8 text-[var(--color-text-muted)]">
-            {t('page.description')}
-          </p>
+      <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-16 md:pt-10 md:pb-20 lg:px-10">
+        <header className="pb-16 md:pb-20">
+          <div className="max-w-[46rem] space-y-5">
+            <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
+              {t('page.eyebrow')}
+            </p>
+            <h1 className="max-w-[44rem] text-[2rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[2.65rem] md:leading-[1.08]">
+              {t('page.title')}
+            </h1>
+          </div>
         </header>
-        <RoadmapSwitcher
-          roadmaps={roadmaps}
-          currentKey={current.key}
-          locale={locale}
-          hrefFor={(key) => withLocalePath(locale, `/atlas/roadmap?rd=${encodeURIComponent(key)}`)}
-          label={chrome.switcherLabel}
-        />
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <RoadmapSwitcher
+            roadmaps={roadmaps}
+            currentKey={current.key}
+            locale={locale}
+            hrefFor={(key) => withLocalePath(locale, `/atlas/roadmap?rd=${encodeURIComponent(key)}`)}
+            label={chrome.switcherLabel}
+          />
+          <RoadmapToolbar
+            roadmaps={roadmaps}
+            currentKey={current.key}
+            locale={locale}
+            importLabel={t('importLabel')}
+            projectSelectLabel={t('projectSelectLabel')}
+            allProjectsLabel={t('allProjectsLabel')}
+          />
+        </div>
         <RoadmapBoard key={current.key} board={board} locale={locale} chrome={chrome} />
       </div>
     </WorkspaceShell>

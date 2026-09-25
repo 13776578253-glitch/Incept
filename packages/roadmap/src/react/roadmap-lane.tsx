@@ -5,7 +5,7 @@ import { useState } from 'react';
 import type { RoadmapEntry, RoadmapLocale, RoadmapStatus } from '../domain';
 
 import type { RoadmapChrome } from './copy';
-import { statusIcons } from './icons';
+import { statusColors, statusIcons } from './icons';
 import { RoadmapCard } from './roadmap-card';
 
 // 参考实测每列 limit 10 + Load more；列内按人定 order（调用方已排序）。
@@ -18,6 +18,7 @@ type RoadmapLaneProps = {
   locale: RoadmapLocale;
   chrome: RoadmapChrome;
   mobileVisible: boolean;
+  onSelectEntry?: (entry: RoadmapEntry) => void;
 };
 
 export function RoadmapLane({
@@ -27,34 +28,43 @@ export function RoadmapLane({
   locale,
   chrome,
   mobileVisible,
+  onSelectEntry,
 }: RoadmapLaneProps) {
   const [visible, setVisible] = useState(LANE_PAGE);
   const shown = entries.slice(0, visible);
   const StatusIcon = statusIcons[status];
+  const iconColor = statusColors[status];
 
   return (
     <section
       aria-label={label}
-      className={`${mobileVisible ? 'flex' : 'hidden'} min-w-0 flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] p-4 md:flex md:snap-start`}
+      className={`${mobileVisible ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] p-3 md:flex md:snap-start`}
     >
-      <header className="flex items-center gap-2 px-1">
-        <span aria-hidden="true" className="text-[var(--color-text-soft)]">
+      <header className="flex items-center gap-2 px-1 py-0.5">
+        <span aria-hidden="true" className="inline-flex shrink-0" style={{ color: iconColor }}>
           <StatusIcon />
         </span>
-        <h2 className="text-[0.95rem] font-medium text-[var(--color-text)]">{label}</h2>
-        <span className="ml-auto rounded-full bg-[var(--roadmap-chip-bg)] px-2 py-0.5 text-[0.76rem] text-[var(--color-text-muted)] tabular-nums">
+        <h2 className="text-[0.92rem] font-semibold tracking-[-0.01em] text-[var(--color-text)]">
+          {label}
+        </h2>
+        <span className="text-[0.82rem] font-medium text-[var(--color-text-soft)] tabular-nums">
           {entries.length}
         </span>
       </header>
       {entries.length === 0 ? (
-        <p className="px-1 text-[0.85rem] leading-6 text-[var(--color-text-soft)]">
+        <p className="rounded-lg border border-dashed border-[var(--color-border)] px-3 py-4 text-[0.8rem] leading-6 text-[var(--color-text-soft)]">
           {chrome.emptyLane[status]}
         </p>
       ) : (
-        <ul className="flex flex-col gap-4">
+        <ul className="flex flex-col gap-2.5">
           {shown.map((entry) => (
             <li key={entry.key} className="list-none">
-              <RoadmapCard entry={entry} locale={locale} chrome={chrome} />
+              <RoadmapCard
+                entry={entry}
+                locale={locale}
+                chrome={chrome}
+                onSelect={onSelectEntry}
+              />
             </li>
           ))}
         </ul>
@@ -63,7 +73,7 @@ export function RoadmapLane({
         <button
           type="button"
           onClick={() => setVisible((current) => current + LANE_PAGE)}
-          className="rounded-full border border-[var(--color-border)] px-4 py-2 text-[0.82rem] text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-soft)] hover:text-[var(--color-text)]"
+          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-soft)] hover:text-[var(--color-text)]"
         >
           {chrome.loadMore}
         </button>
@@ -71,3 +81,4 @@ export function RoadmapLane({
     </section>
   );
 }
+

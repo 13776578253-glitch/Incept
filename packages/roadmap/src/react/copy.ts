@@ -15,4 +15,8 @@ export type RoadmapChrome = {
   errorDescription: string;
   typeLabels: Record<RoadmapEntryType, string>;
   priorityLabels: Record<RoadmapEntryPriority, string>;
+  importLabel?: string;
+  projectSelectLabel?: string;
+  allProjectsLabel?: string;
 };
+

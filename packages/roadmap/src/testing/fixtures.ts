@@ -6,21 +6,21 @@ import type { Roadmap, RoadmapEntry } from '../domain';
 export const fixtureRoadmaps: readonly Roadmap[] = [
   {
     key: 'sample-roadmap',
-    name: { en: 'Sample Roadmap', zh: '示例路线图' },
+    name: { en: 'Roadmap', zh: '路线图' },
     columns: [
-      { status: 'reviewing', label: { en: 'Backlog', zh: '储备' } },
-      { status: 'unstarted', label: { en: 'Next up', zh: '接下来' } },
-      { status: 'active', label: { en: 'In Progress', zh: '进行中' } },
-      { status: 'completed', label: { en: 'Done', zh: '已完成' } },
+      { status: 'reviewing', label: { en: 'Backlog', zh: 'Backlog' } },
+      { status: 'unstarted', label: { en: 'Next up', zh: 'Next up' } },
+      { status: 'active', label: { en: 'In Progress', zh: 'In Progress' } },
+      { status: 'completed', label: { en: 'Done', zh: 'Done' } },
     ],
   },
   {
     key: 'sample-atlas',
-    name: { en: 'Sample Atlas Board', zh: '示例图谱板' },
+    name: { en: 'Atlas Board', zh: '图谱板' },
     columns: [
-      { status: 'unstarted', label: { en: 'Planned', zh: '已计划' } },
-      { status: 'active', label: { en: 'Building', zh: '构建中' } },
-      { status: 'completed', label: { en: 'Shipped', zh: '已发布' } },
+      { status: 'unstarted', label: { en: 'Planned', zh: 'Planned' } },
+      { status: 'active', label: { en: 'Building', zh: 'Building' } },
+      { status: 'completed', label: { en: 'Shipped', zh: 'Shipped' } },
     ],
   },
 ];
