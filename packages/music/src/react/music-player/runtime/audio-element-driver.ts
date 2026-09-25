@@ -1,4 +1,4 @@
-import type { PlayerRuntimeEvent } from '@incept/music-player-core';
+import type { PlayerRuntimeEvent } from '../../../core';
 
 export type AudioDriver = {
   dispose: () => void;

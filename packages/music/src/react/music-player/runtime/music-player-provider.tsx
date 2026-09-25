@@ -8,7 +8,7 @@ import {
   type PlayerIntent,
   type PlayerRuntimeEvent,
   type PlayerState,
-} from '@incept/music-player-core';
+} from '../../../core';
 import {
   createContext,
   useCallback,

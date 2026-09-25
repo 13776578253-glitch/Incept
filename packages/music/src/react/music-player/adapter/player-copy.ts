@@ -1,4 +1,4 @@
-import type { RepeatMode } from '@incept/music-player-core';
+import type { RepeatMode } from '../../../core';
 
 export type PlayerLocale = 'zh' | 'en';
 

@@ -1,4 +1,4 @@
-import type { MusicTrack } from '@incept/music-player-core';
+import type { MusicTrack } from '../../../core';
 
 export type MusicLibraryCatalogEntry = {
   key: string;
