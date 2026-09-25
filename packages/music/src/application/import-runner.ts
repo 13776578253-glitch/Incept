@@ -28,8 +28,8 @@ import type { MusicMediaMode, MusicMediaOperation } from '../domain/media';
 import type { MusicImportSummary, MusicTrackImportEntry } from '../domain/types';
 import type { MusicContentRootPort, MusicMirrorPort } from '../ports';
 
-// import-runner 编排（原 apps/web/src/server/music/import-runner.ts）：纯解析与纯校验在 ../domain/import-runner
-// 路径一律由装配层注入（决策 5）
+// import-runner 用例编排：纯解析与纯校验在 ../domain/import-runner，路径一律由装配层注入（决策 5）
+// history: 原 apps/web/src/server/music/import-runner.ts 拆分纯校验入 domain，编排留本层
 
 // 全量校验通过之后才允许写任何东西：解析内容根、读清单、逐条 inspect（只 stat 不读内容）
 export async function planMusicImport({

@@ -34,7 +34,7 @@ export type MountContribution =
   | MountFloatingOverlayContribution
   | MountLayoutSlotContribution;
 
-// 设置分区贡献：整块 React 面板；loader 只存在于服务端注册表类型（R10 强制，防服务端闭包进客户端包图）
+// 设置分区贡献：整块 React 面板；loader 只存在于服务端注册表类型（防止服务端闭包进入客户端包图）
 export type SettingsSectionContributionPanelProps = {
   data: unknown;
 };

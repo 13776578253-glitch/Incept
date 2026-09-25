@@ -1,5 +1,5 @@
-import { clampSeekSeconds, isPlaybackRateInRange } from '@incept/music-player-core';
-import type { PlayerIntent, PlayerState } from '@incept/music-player-core';
+import { clampSeekSeconds, isPlaybackRateInRange } from '../../../core';
+import type { PlayerIntent, PlayerState } from '../../../core';
 
 export type PlayerSideEffect =
   | { kind: 'pause' }

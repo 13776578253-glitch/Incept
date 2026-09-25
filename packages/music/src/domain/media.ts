@@ -1,4 +1,5 @@
-// 媒体契约（原 media-store 的纯部分）：公开路径、格式白名单与操作形状；IO 在 ../adapters/media-store
+// 媒体契约：公开路径、格式白名单与操作形状；文件 IO 在 ../adapters/media-store
+// history: 原内嵌于 media-store，模块化时剥离纯契约入 domain
 export const musicMediaPublicPath = '/_music-media';
 
 // 镜像最大值 128 MB

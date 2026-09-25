@@ -1,5 +1,5 @@
-// 清理入口（原 scripts/music-cleanup.mjs）：用法文案与参数行为逐字保留
-// 镜像目录由根转发脚本显式传入（--mirror，D.1 甲）；功能面经 exports 出口消费（验收 C3）
+// 清理入口：用法文案与参数行为保持一致；镜像目录由根转发脚本经 --mirror 显式传入，功能面经包 exports 出口消费
+// history: 原 scripts/music-cleanup.mjs 实现迁入包内，根脚本退化为纯转发器
 import path from 'node:path';
 
 import { applyMusicMirrorCleanup, inspectMusicMirrorCleanup } from '@incept/music/application';

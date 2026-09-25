@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
@@ -9,6 +9,9 @@ export default defineConfig({
     env: { NODE_ENV: 'test' },
     setupFiles: ['./src/testing/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // core 的 73 例使用 node:test 语义，由 test:core 以 node --test 独立运行，此处排除以免被 vitest 误吞
+    // history: 原 @incept/music-player-core 折叠入 src/core 后保留原生 node:test 执行通道
+    exclude: [...configDefaults.exclude, 'src/core/**'],
     unstubGlobals: true,
   },
 });
