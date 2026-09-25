@@ -69,7 +69,7 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
 
   const content = (
     <article
-      className="flex min-h-11 items-center justify-between gap-4 rounded-[11px] border border-transparent bg-[color-mix(in_srgb,var(--color-nav-item-hover)_62%,transparent)] px-4 py-2.5 transition-colors md:px-5"
+      className="flex min-h-11 items-center justify-between gap-4 rounded-[11px] border border-transparent bg-[color:var(--color-row-bg)] px-4 py-2.5 transition-colors hover:border-[color:var(--color-border)] hover:bg-[color:var(--color-nav-item-hover)] md:px-5"
       aria-label={article.title}
     >
       <div className="min-w-0">
@@ -77,7 +77,7 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
           <h3
             className={`max-w-[42ch] text-[0.98rem] font-medium leading-6 tracking-[-0.015em] md:text-[1rem] ${
               isLocked
-                ? 'text-[color-mix(in_srgb,var(--color-text)_82%,transparent)]'
+                ? 'text-[color:var(--color-text-locked)]'
                 : 'text-[var(--color-text)]'
             }`}
           >

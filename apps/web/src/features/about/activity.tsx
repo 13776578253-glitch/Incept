@@ -171,7 +171,7 @@ function ActivityScopePicker({
   t: ReturnType<typeof useTranslations<'about'>>;
 }) {
   return (
-    <div className="mt-3 flex items-center gap-1 rounded-[8px] bg-[color:color-mix(in_srgb,var(--color-text)_3%,transparent)] p-1">
+    <div className="mt-3 flex items-center gap-1 rounded-[8px] bg-[color:var(--color-surface-muted)] p-1">
       {(['account', 'repository'] as const).map((scope) => {
         const isSelected = scope === selectedScope;
 
@@ -183,7 +183,7 @@ function ActivityScopePicker({
             aria-pressed={isSelected}
             className={`rounded-[6px] px-2.5 py-1 text-[0.72rem] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] ${
               isSelected
-                ? 'bg-[var(--color-bg)] font-medium text-[var(--color-text)] shadow-[0_1px_2px_color-mix(in_srgb,var(--color-text)_12%,transparent)]'
+                ? 'bg-[var(--color-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-segmented-pill)]'
                 : 'text-[var(--color-nav-dropdown-description)] hover:text-[var(--color-text)]'
             }`}
           >
@@ -324,7 +324,7 @@ export function AboutActivityFeature({
                 />
               </div>
 
-              <div className="mt-6 overflow-x-auto rounded-[14px] border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-text)_1.5%,transparent)] p-4 md:p-5">
+              <div className="mt-6 overflow-x-auto rounded-[14px] border border-[var(--color-border)] bg-[color:var(--color-surface-subtle)] p-4 md:p-5">
                 {gitData ? (
                   <ActivityCalendar days={gitData.days} colorClassNames={gitActivityClassNames} />
                 ) : (
@@ -360,7 +360,7 @@ export function AboutActivityFeature({
                 </h2>
               </div>
 
-              <div className="mt-6 overflow-x-auto rounded-[14px] border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-text)_1.5%,transparent)] p-4 md:p-5">
+              <div className="mt-6 overflow-x-auto rounded-[14px] border border-[var(--color-border)] bg-[color:var(--color-surface-subtle)] p-4 md:p-5">
                 <ActivityCalendar
                   days={writingActivity.days}
                   colorClassNames={writingActivityClassNames}

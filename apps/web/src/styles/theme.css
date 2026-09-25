@@ -1,5 +1,7 @@
 :root {
   --color-bg: var(--color-white);
+  --color-surface: #fafafa;
+  --color-accent: var(--color-gray-900);
   --color-text: var(--color-gray-900);
   --color-text-soft: rgba(23, 23, 23, 0.46);
   --color-text-muted: rgba(23, 23, 23, 0.68);
@@ -22,10 +24,24 @@
   --color-nav-create-hover-bg: #232323;
   --color-nav-create-text: var(--color-white);
   --shadow-nav-dropdown: 0 18px 44px rgba(17, 17, 17, 0.12);
+  --shadow-toast: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --callout-context-border: rgba(76, 129, 196, 0.14);
+  --callout-context-bg: rgba(76, 129, 196, 0.045);
+  --callout-tip-border: rgba(34, 120, 87, 0.16);
+  --callout-tip-bg: rgba(34, 120, 87, 0.05);
+  --callout-attention-border: rgba(164, 96, 32, 0.18);
+  --callout-attention-bg: rgba(164, 96, 32, 0.06);
+  --callout-warning-border: rgba(198, 74, 28, 0.42);
+  --callout-warning-bg: rgba(198, 74, 28, 0.16);
+  --callout-meta-border: rgba(120, 96, 196, 0.18);
+  --callout-meta-bg: rgba(120, 96, 196, 0.06);
+  --callout-default-bg: color-mix(in srgb, var(--color-nav-item-active) 45%, transparent);
 }
 
 .dark {
   --color-bg: #050505;
+  --color-surface: #0e0e0e;
+  --color-accent: #f5f5f5;
   --color-text: #f5f5f5;
   --color-text-soft: rgba(245, 245, 245, 0.5);
   --color-text-muted: rgba(245, 245, 245, 0.76);
@@ -48,10 +64,22 @@
   --color-nav-create-hover-bg: #ffffff;
   --color-nav-create-text: #050505;
   --shadow-nav-dropdown: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --shadow-toast: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --callout-context-border: rgba(96, 152, 224, 0.24);
+  --callout-context-bg: rgba(96, 152, 224, 0.08);
+  --callout-tip-border: rgba(52, 168, 122, 0.26);
+  --callout-tip-bg: rgba(52, 168, 122, 0.08);
+  --callout-attention-border: rgba(214, 138, 56, 0.28);
+  --callout-attention-bg: rgba(214, 138, 56, 0.09);
+  --callout-warning-border: rgba(224, 96, 48, 0.45);
+  --callout-warning-bg: rgba(224, 96, 48, 0.16);
+  --callout-meta-border: rgba(152, 126, 228, 0.28);
+  --callout-meta-bg: rgba(152, 126, 228, 0.09);
 }
 
 html[data-eye-comfort-filter='warm']:not(.dark) {
   --color-bg: #fffaf0;
+  --color-surface: #faf3e6;
   --color-navbar-bg: rgba(255, 250, 240, 0.94);
   --color-nav-dropdown-bg: #fffdf7;
   --color-nav-search-bg: rgba(255, 252, 245, 0.92);

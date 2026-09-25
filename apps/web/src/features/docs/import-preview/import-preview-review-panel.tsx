@@ -31,7 +31,7 @@ function renderCollectionSources(preview: DocsImportPreviewModel) {
   return sources.map((source) => (
     <div
       key={`${source.meta.locale}-${source.meta.documentKey ?? source.meta.slug}`}
-      className="rounded-[0.75rem] border border-[color:color-mix(in_srgb,var(--color-border)_45%,transparent)] px-3 py-2"
+      className="rounded-[0.75rem] border border-[color:var(--color-border-subtle)] px-3 py-2"
     >
       <div className="flex items-start justify-between gap-3">
         <p className="min-w-0 break-words text-[0.9rem] text-[var(--color-text)]">
@@ -123,7 +123,7 @@ export function ImportPreviewReviewPanel({
   const accessVisibilityDescription = buildAccessVisibilityDescription(preview);
 
   return (
-    <div className="space-y-6 rounded-[1rem] border border-[color:color-mix(in_srgb,var(--color-border)_65%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_96%,transparent)] p-6">
+    <div className="space-y-6 rounded-[1rem] border border-[color:var(--color-border-card)] bg-[color:var(--color-surface-card)] p-6">
       <div className="space-y-2">
         <p className="text-[0.72rem] uppercase tracking-[0.2em] text-[var(--color-text-soft)]">
           Import preview
@@ -141,7 +141,7 @@ export function ImportPreviewReviewPanel({
       </div>
 
       {preview.draft.draftType === 'collectionDirectory' ? (
-        <div className="space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+        <div className="space-y-2 border-t border-[color:var(--color-border-divider)] pt-4">
           <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
             Articles in this batch
           </p>
@@ -150,7 +150,7 @@ export function ImportPreviewReviewPanel({
       ) : null}
 
       {preview.draft.collectionChanges?.length ? (
-        <div className="space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+        <div className="space-y-2 border-t border-[color:var(--color-border-divider)] pt-4">
           <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
             Batch changes
           </p>
@@ -204,7 +204,7 @@ export function ImportPreviewReviewPanel({
         </p>
       </div>
 
-      <div className="space-y-3 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+      <div className="space-y-3 border-t border-[color:var(--color-border-divider)] pt-4">
         <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
           Post-import visibility
         </p>
@@ -229,7 +229,7 @@ export function ImportPreviewReviewPanel({
       </div>
 
       {collectionDescription ? (
-        <div className="border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+        <div className="border-t border-[color:var(--color-border-divider)] pt-4">
           <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
             Collection relationship
           </p>
@@ -240,7 +240,7 @@ export function ImportPreviewReviewPanel({
       ) : null}
 
       {preview.draft.collectionTree?.length ? (
-        <div className="space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+        <div className="space-y-2 border-t border-[color:var(--color-border-divider)] pt-4">
           <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
             Collection navigation
           </p>
@@ -250,7 +250,7 @@ export function ImportPreviewReviewPanel({
         </div>
       ) : null}
 
-      <div className="space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+      <div className="space-y-2 border-t border-[color:var(--color-border-divider)] pt-4">
         <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
           Validation
         </p>
@@ -285,7 +285,7 @@ export function ImportPreviewReviewPanel({
           preview.draft.issues.map((issue, index) => (
             <div
               key={`${issue.code}-${index}`}
-              className="rounded-[0.8rem] border border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] px-4 py-3"
+              className="rounded-[0.8rem] border border-[color:var(--color-border-divider)] px-4 py-3"
             >
               <p className="text-[0.78rem] font-medium uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
                 {issue.level}

@@ -17,7 +17,7 @@ function StatCard({
   description,
 }: StatCardProps) {
   return (
-    <article className="rounded-[1rem] border border-[color:color-mix(in_srgb,var(--color-border)_60%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_96%,transparent)] p-5">
+    <article className="rounded-[1rem] border border-[color:var(--color-border-muted)] bg-[color:var(--color-surface-card)] p-5">
       <p className="text-[0.74rem] uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
         {label}
       </p>

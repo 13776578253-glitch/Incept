@@ -77,7 +77,7 @@ export function DocsLibraryTable({
   }
 
   return (
-    <section className="space-y-5 rounded-[1rem] border border-[color:color-mix(in_srgb,var(--color-border)_60%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_96%,transparent)] p-5">
+    <section className="space-y-5 rounded-[1rem] border border-[color:var(--color-border-muted)] bg-[color:var(--color-surface-card)] p-5">
       <div className="space-y-4">
         <div className="space-y-2">
           <p className="text-[0.74rem] uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
@@ -100,7 +100,7 @@ export function DocsLibraryTable({
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder={t('filters.searchPlaceholder')}
-              className="w-full rounded-[0.8rem] border border-[color:color-mix(in_srgb,var(--color-border)_58%,transparent)] bg-transparent px-3 py-2.5 text-[0.95rem] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-text-soft)] focus:border-[color:color-mix(in_srgb,var(--color-accent)_50%,var(--color-border))]"
+              className="w-full rounded-[0.8rem] border border-[color:var(--color-border-input)] bg-[var(--color-bg)] px-3 py-2.5 text-[0.95rem] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-text-soft)] focus:border-[color:var(--color-border-focus)]"
             />
           </label>
 
@@ -111,7 +111,7 @@ export function DocsLibraryTable({
             <select
               value={routeTypeFilter}
               onChange={(event) => setRouteTypeFilter(event.target.value as RouteTypeFilter)}
-              className="w-full rounded-[0.8rem] border border-[color:color-mix(in_srgb,var(--color-border)_58%,transparent)] bg-transparent px-3 py-2.5 text-[0.95rem] text-[var(--color-text)] outline-none transition-colors focus:border-[color:color-mix(in_srgb,var(--color-accent)_50%,var(--color-border))]"
+              className="w-full rounded-[0.8rem] border border-[color:var(--color-border-input)] bg-[var(--color-bg)] px-3 py-2.5 text-[0.95rem] text-[var(--color-text)] outline-none transition-colors focus:border-[color:var(--color-border-focus)]"
             >
               <option value="all">{t('filters.all')}</option>
               <option value="singleArticle">{t('routeType.singleArticle')}</option>
@@ -126,7 +126,7 @@ export function DocsLibraryTable({
             <select
               value={localeFilter}
               onChange={(event) => setLocaleFilter(event.target.value as LocaleFilter)}
-              className="w-full rounded-[0.8rem] border border-[color:color-mix(in_srgb,var(--color-border)_58%,transparent)] bg-transparent px-3 py-2.5 text-[0.95rem] text-[var(--color-text)] outline-none transition-colors focus:border-[color:color-mix(in_srgb,var(--color-accent)_50%,var(--color-border))]"
+              className="w-full rounded-[0.8rem] border border-[color:var(--color-border-input)] bg-[var(--color-bg)] px-3 py-2.5 text-[0.95rem] text-[var(--color-text)] outline-none transition-colors focus:border-[color:var(--color-border-focus)]"
             >
               <option value="all">{t('filters.all')}</option>
               <option value="en">en</option>
@@ -141,7 +141,7 @@ export function DocsLibraryTable({
             <select
               value={accessRoleFilter}
               onChange={(event) => setAccessRoleFilter(event.target.value as AccessRoleFilter)}
-              className="w-full rounded-[0.8rem] border border-[color:color-mix(in_srgb,var(--color-border)_58%,transparent)] bg-transparent px-3 py-2.5 text-[0.95rem] text-[var(--color-text)] outline-none transition-colors focus:border-[color:color-mix(in_srgb,var(--color-accent)_50%,var(--color-border))]"
+              className="w-full rounded-[0.8rem] border border-[color:var(--color-border-input)] bg-[var(--color-bg)] px-3 py-2.5 text-[0.95rem] text-[var(--color-text)] outline-none transition-colors focus:border-[color:var(--color-border-focus)]"
             >
               <option value="all">{t('filters.all')}</option>
               <option value="guest">{t('roles.guest')}</option>
@@ -174,7 +174,7 @@ export function DocsLibraryTable({
               ].map((label) => (
                 <th
                   key={label}
-                  className="border-b border-[color:color-mix(in_srgb,var(--color-border)_55%,transparent)] px-3 py-3 text-[0.76rem] font-medium uppercase tracking-[0.14em] text-[var(--color-text-soft)]"
+                  className="border-b border-[color:var(--color-border-table-head)] px-3 py-3 text-[0.76rem] font-medium uppercase tracking-[0.14em] text-[var(--color-text-soft)]"
                 >
                   {label}
                 </th>
@@ -194,25 +194,25 @@ export function DocsLibraryTable({
             ) : (
               filteredEntries.map((entry) => (
                 <tr key={`${entry.documentId}-${entry.locale}-${entry.slug}`}>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top">
                     <div className="space-y-1">
                       <p className="font-medium text-[var(--color-text)]">{entry.title}</p>
                       <p className="text-[0.88rem] text-[var(--color-text-soft)]">{entry.slug}</p>
                     </div>
                   </td>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
                     {entry.locale}
                   </td>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
                     {t(`routeType.${entry.routeType}`)}
                   </td>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
                     {entry.kind}
                   </td>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
                     {t(`roles.${entry.accessRole}`)}
                   </td>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top text-[0.92rem] leading-7 text-[var(--color-text-muted)]">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] leading-7 text-[var(--color-text-muted)]">
                     {entry.routeType === 'collectionArticle' ? (
                       <div className="space-y-1">
                         <p className="text-[var(--color-text)]">
@@ -226,18 +226,18 @@ export function DocsLibraryTable({
                       <span className="text-[var(--color-text-soft)]">{t('table.none')}</span>
                     )}
                   </td>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
                     {entry.position ?? <span className="text-[var(--color-text-soft)]">{t('table.none')}</span>}
                   </td>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top">
                     <code className="break-all text-[0.85rem] text-[var(--color-text-soft)]">
                       {entry.finalRoute}
                     </code>
                   </td>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
                     {formatDate(entry.updatedAt)}
                   </td>
-                  <td className="border-b border-[color:color-mix(in_srgb,var(--color-border)_32%,transparent)] px-3 py-4 align-top">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top">
                     <div className="flex flex-col gap-2">
                       <Link
                         href={entry.finalRoute}

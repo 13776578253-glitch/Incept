@@ -36,7 +36,7 @@ export function HomeBlogList({
               <Link
                 key={entry.id}
                 href={withLocalePath(locale, entry.href)}
-                className="grid gap-5 rounded-[12px] px-3 py-8 transition-colors hover:bg-[color-mix(in_srgb,var(--color-nav-item-hover)_55%,transparent)] md:grid-cols-[156px_minmax(0,1fr)] md:items-center md:gap-7 md:px-4"
+                className="grid gap-5 rounded-[12px] px-3 py-8 transition-colors hover:bg-[color:var(--color-row-hover-bg)] md:grid-cols-[156px_minmax(0,1fr)] md:items-center md:gap-7 md:px-4"
               >
                 <div className="w-full max-w-[156px] justify-self-center overflow-hidden rounded-[18px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)]">
                   <img

@@ -13,7 +13,7 @@ function renderInlineContentItem(item: DocsParagraphInlineModel, index: number) 
         href={item.href}
         target={isExternal ? '_blank' : undefined}
         rel={isExternal ? 'noreferrer' : undefined}
-        className="underline decoration-[color:color-mix(in_srgb,var(--color-text)_20%,transparent)] underline-offset-[0.18em] transition-colors hover:text-[var(--color-text)] hover:decoration-[var(--color-text-muted)]"
+        className="underline decoration-[color:var(--color-link-decoration)] underline-offset-[0.18em] transition-colors hover:text-[var(--color-text)] hover:decoration-[var(--color-text-muted)]"
       >
         {item.label}
       </a>
@@ -24,7 +24,7 @@ function renderInlineContentItem(item: DocsParagraphInlineModel, index: number) 
     return (
       <span
         key={`${item.text}-${index}`}
-        className="text-[color-mix(in_srgb,var(--color-text-soft)_72%,transparent)] line-through"
+        className="text-[color:var(--color-text-strikethrough)] line-through"
       >
         {item.text}
       </span>

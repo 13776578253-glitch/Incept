@@ -10,15 +10,15 @@ export function DocsCalloutBlock({
   const toneClassName =
     tone === 'tip'
       ? variant === 'context'
-        ? 'border-[rgba(76,129,196,0.14)] bg-[rgba(76,129,196,0.045)]'
-        : 'border-[rgba(34,120,87,0.16)] bg-[rgba(34,120,87,0.05)]'
+        ? 'border-[color:var(--callout-context-border)] bg-[color:var(--callout-context-bg)]'
+        : 'border-[color:var(--callout-tip-border)] bg-[color:var(--callout-tip-bg)]'
       : tone === 'attention'
-        ? 'border-[rgba(164,96,32,0.18)] bg-[rgba(164,96,32,0.06)]'
+        ? 'border-[color:var(--callout-attention-border)] bg-[color:var(--callout-attention-bg)]'
         : tone === 'warning'
-          ? 'border-[rgba(198,74,28,0.42)] bg-[rgba(198,74,28,0.16)]'
+          ? 'border-[color:var(--callout-warning-border)] bg-[color:var(--callout-warning-bg)]'
           : tone === 'meta'
-            ? 'border-[rgba(120,96,196,0.18)] bg-[rgba(120,96,196,0.06)]'
-            : 'border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-nav-item-active)_45%,transparent)]';
+            ? 'border-[color:var(--callout-meta-border)] bg-[color:var(--callout-meta-bg)]'
+            : 'border-[var(--color-border)] bg-[color:var(--callout-default-bg)]';
   const variantClassName =
     variant === 'soft' || variant === 'context'
       ? 'rounded-[14px] px-4 py-3'

@@ -124,7 +124,7 @@
 .page-shell-settings-sidebar {
   min-width: 0;
   position: fixed;
-  top: calc(var(--navbar-height) + 24px);
+  top: calc(var(--navbar-height) + 32px);
   left: max(24px, calc((100vw - 1160px) / 2 + 24px));
   width: 188px;
   z-index: 20;

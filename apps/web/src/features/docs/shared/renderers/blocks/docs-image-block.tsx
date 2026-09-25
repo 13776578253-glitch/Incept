@@ -11,7 +11,7 @@ export function DocsImageBlock({
       <img
         src={src}
         alt={alt}
-        className="block w-full rounded-[14px] border border-[color:color-mix(in_srgb,var(--color-text)_8%,transparent)] bg-[var(--color-bg)] object-cover"
+        className="block w-full rounded-[14px] border border-[color:var(--color-border-image)] bg-[var(--color-bg)] object-cover"
       />
       {caption ? (
         <figcaption className="mt-3 text-[0.88rem] leading-6 text-[var(--color-text-soft)]">

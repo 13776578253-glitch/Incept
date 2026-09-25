@@ -16,7 +16,7 @@ export function AboutFeature({ sections, activityHref }: AboutFeatureProps) {
     <main className="mx-auto w-full max-w-[var(--docs-shell-max-width)] px-5 pb-20 md:px-8 md:pb-28">
       <section className="mx-auto flex min-h-[27rem] w-full max-w-[var(--docs-content-width)] flex-col items-center justify-center border-b border-[var(--color-border)] py-10 text-center md:min-h-[34rem] md:py-14">
         <div className="flex flex-col items-center gap-7 md:gap-8">
-          <div className="relative size-32 shrink-0 overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[0_18px_42px_-30px_color-mix(in_srgb,var(--color-text)_66%,transparent)] md:size-36">
+          <div className="relative size-32 shrink-0 overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[var(--shadow-avatar)] md:size-36">
             <Image
               src="/images/about/avatar-test.jpg"
               alt={t('identity.avatarAlt')}

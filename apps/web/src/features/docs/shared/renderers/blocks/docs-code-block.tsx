@@ -57,7 +57,7 @@ export function DocsCodeBlock({
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex size-8 items-center justify-center rounded-[4px] border border-transparent bg-transparent text-[#9a9a9a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-text)_14%,transparent)] hover:bg-[#f6f6f6] hover:text-[#333333] dark:text-[var(--color-text-soft)] dark:hover:bg-[color:color-mix(in_srgb,var(--color-bg)_72%,var(--color-text)_28%)] dark:hover:text-[var(--color-text)]"
+          className="inline-flex size-8 items-center justify-center rounded-[4px] border border-transparent bg-transparent text-[#9a9a9a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-ring-focus)] hover:bg-[#f6f6f6] hover:text-[#333333] dark:text-[var(--color-text-soft)] dark:hover:bg-[color:var(--docs-code-btn-hover-dark)] dark:hover:text-[var(--color-text)]"
           aria-label={copied ? 'Copied code' : 'Copy code'}
           title={copied ? 'Copied' : 'Copy'}
         >
