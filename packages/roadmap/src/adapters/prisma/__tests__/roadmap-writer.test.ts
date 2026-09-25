@@ -43,6 +43,8 @@ const entryRow: RoadmapEntryRow = {
   titleZh: '基于兴趣点的回复策略',
   summaryEn: 'Shape replies around the reader.',
   summaryZh: '围绕读者组织回复。',
+  detailEn: null,
+  detailZh: null,
   votes: null,
   comments: null,
   position: 10,

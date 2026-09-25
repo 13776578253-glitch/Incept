@@ -18,11 +18,16 @@ export type RoadmapEntryDraft = {
   priority: RoadmapEntryPriority;
   title: LocalizedText;
   summary: LocalizedText;
+  detail?: LocalizedText;
   order?: number;
   links?: RoadmapEntryLink[];
 };
 
-export type RoadmapEntryPatch = Partial<Omit<RoadmapEntryDraft, 'key'>>;
+// Patch 的 detail 显式放行 null（M1）：null = 清空，未传（undefined）= 不动（M2 哨兵）。
+// Partial 基必须 Omit 掉 detail——同名属性在交集里取类型交集，会把 null 挤掉导致无法编译。
+export type RoadmapEntryPatch = Partial<Omit<RoadmapEntryDraft, 'key' | 'detail'>> & {
+  detail?: LocalizedText | null;
+};
 
 export type RoadmapWriter = {
   createRoadmap: (input: {

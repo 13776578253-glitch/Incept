@@ -89,6 +89,18 @@ export function validateEntry(entry: RoadmapEntry, roadmap: Roadmap): void {
   assertLocalizedText(entry.title, 'entry.title');
   assertLocalizedText(entry.summary, 'entry.summary');
 
+  if (entry.detail) {
+    assertLocalizedText(entry.detail, 'entry.detail');
+  }
+
+  for (const field of ['createdAt', 'updatedAt'] as const) {
+    const value = entry[field];
+
+    if (value !== undefined && (typeof value !== 'string' || value.trim() === '')) {
+      fail(`entry.${field}`, 'expected a non-empty ISO timestamp string when present');
+    }
+  }
+
   for (const [index, link] of (entry.links ?? []).entries()) {
     assertLocalizedText(link.label, `entry.links[${index}].label`);
 

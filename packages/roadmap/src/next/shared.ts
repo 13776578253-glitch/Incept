@@ -148,6 +148,10 @@ export function parseEntryPatch(body: Record<string, unknown>): RoadmapEntryPatc
     patch.order = order;
   }
 
+  if (body.detail !== undefined) {
+    patch.detail = body.detail === null ? null : parseLocalizedText(body.detail, 'detail');
+  }
+
   patch.links = parseLinks(body.links);
 
   return patch;

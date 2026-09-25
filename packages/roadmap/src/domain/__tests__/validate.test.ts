@@ -92,6 +92,24 @@ describe('validateEntry', () => {
       validateEntry({ ...entry, links: [{ label: { en: 'Link', zh: '链接' }, href: ' ' }] }, roadmap),
     ).toThrow(/non-empty string/);
   });
+  it('validates detail and timestamps when present', () => {
+    expect(() =>
+      validateEntry(
+        {
+          ...entry,
+          detail: { en: 'Detail', zh: '详情' },
+          createdAt: '2026-09-25T00:00:00.000Z',
+          updatedAt: '2026-09-25T01:00:00.000Z',
+        },
+        roadmap,
+      ),
+    ).not.toThrow();
+    expect(() => validateEntry({ ...entry, detail: { en: 'Detail', zh: '' } }, roadmap)).toThrow(
+      /both languages/,
+    );
+    expect(() => validateEntry({ ...entry, createdAt: '' }, roadmap)).toThrow(/ISO timestamp/);
+    expect(() => validateEntry({ ...entry, updatedAt: '   ' }, roadmap)).toThrow(/ISO timestamp/);
+  });
 });
 
 describe('validateBoard', () => {

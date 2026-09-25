@@ -321,7 +321,8 @@ model MusicLibraryItem {
    nameEn / nameZh 成对存储，完整双语对等由 domain 校验兜底。
    position 决定切换器、列与条目的人定顺序（同 music 先例）。
    votes / comments 休眠列（T4 硬化：不做投票/评论）：域模型与界面零暴露，值恒 NULL；
-   删除列待主控单独授权的迁移。 */
+   删除列待主控单独授权的迁移。
+   detailEn / detailZh 人写详情（U1 裁定）：可空双语对，成对写入、成对清空。 */
 enum RoadmapStatus {
   reviewing
   unstarted
@@ -390,6 +391,8 @@ model RoadmapEntry {
   links     RoadmapEntryLink[]
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
+  detailEn  String?
+  detailZh  String?
 
   @@index([roadmapId, status, position])
   @@map("roadmap_entries")

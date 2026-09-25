@@ -43,6 +43,8 @@ export type RoadmapEntryRow = {
   titleZh: string;
   summaryEn: string;
   summaryZh: string;
+  detailEn: string | null;
+  detailZh: string | null;
   votes: number | null;
   comments: number | null;
   position: number;

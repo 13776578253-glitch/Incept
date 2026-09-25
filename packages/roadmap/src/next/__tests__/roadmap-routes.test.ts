@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { RoadmapEntry } from '../../domain';
-import type { RoadmapBoard, RoadmapWriter } from '../../ports';
+import type { RoadmapBoard, RoadmapEntryPatch, RoadmapWriter } from '../../ports';
 import type { RoadmapRouteContext, RoadmapRouteDeps } from '../shared';
 import {
   createRoadmapColumnItemRoute,
@@ -32,7 +32,11 @@ const createdEntry: RoadmapEntry = {
   summary: { en: 'Summary', zh: '摘要' },
 };
 
-function fakeDeps(authorized: boolean, calls: string[] = []): RoadmapRouteDeps {
+function fakeDeps(
+  authorized: boolean,
+  calls: string[] = [],
+  updates: RoadmapEntryPatch[] = [],
+): RoadmapRouteDeps {
   const writer: RoadmapWriter = {
     createRoadmap: async (input) => ({ ...board.roadmap, key: input.key, columns: [] }),
     updateRoadmap: async () => board.roadmap,
@@ -52,8 +56,9 @@ function fakeDeps(authorized: boolean, calls: string[] = []): RoadmapRouteDeps {
       calls.push('entry.create');
       return { ...createdEntry, key: input.key };
     },
-    updateEntry: async ({ key }) => {
+    updateEntry: async ({ key, patch }) => {
       calls.push('entry.update');
+      updates.push(patch);
       return { ...createdEntry, key };
     },
     deleteEntry: async ({ key }) => {
@@ -140,6 +145,40 @@ describe('roadmap route handlers', () => {
   it('rejects an entry body that breaks bilingual parity', async () => {
     const response = await createRoadmapEntriesRoute(fakeDeps(true)).POST(
       request('POST', { ...validEntryBody, title: { en: 'Only', zh: '' } }),
+    );
+
+    expect(response.status).toBe(400);
+    const payload = (await response.json()) as { error: string };
+
+    expect(payload.error).toMatch(/both languages/);
+  });
+
+  it('parses detail on PATCH: pair passes, explicit null clears, absent is untouched', async () => {
+    const updates: RoadmapEntryPatch[] = [];
+    const deps = fakeDeps(true, [], updates);
+
+    await createRoadmapEntryItemRoute(deps).PATCH(
+      request('PATCH', { detail: { en: 'Detail', zh: '详情' } }),
+      context({ key: 'sample-new' }),
+    );
+    await createRoadmapEntryItemRoute(deps).PATCH(
+      request('PATCH', { detail: null }),
+      context({ key: 'sample-new' }),
+    );
+    await createRoadmapEntryItemRoute(deps).PATCH(
+      request('PATCH', { title: { en: 'T', zh: '题' } }),
+      context({ key: 'sample-new' }),
+    );
+
+    expect(updates[0].detail).toEqual({ en: 'Detail', zh: '详情' });
+    expect(updates[1].detail).toBeNull();
+    expect('detail' in updates[2]).toBe(false);
+  });
+
+  it('rejects a detail that breaks bilingual parity', async () => {
+    const response = await createRoadmapEntryItemRoute(fakeDeps(true)).PATCH(
+      request('PATCH', { detail: { en: 'Only', zh: '' } }),
+      context({ key: 'sample-new' }),
     );
 
     expect(response.status).toBe(400);

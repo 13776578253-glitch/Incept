@@ -51,5 +51,8 @@ export type RoadmapEntry = {
   priority: RoadmapEntryPriority;
   title: LocalizedText;
   summary: LocalizedText;
+  detail?: LocalizedText;
   links?: RoadmapEntryLink[];
+  createdAt?: string;
+  updatedAt?: string;
 };
