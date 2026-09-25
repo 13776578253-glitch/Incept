@@ -5,15 +5,30 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createSiteNavigation } from '@/components/layouts/site-navigation';
+import type { PrimaryNavItem } from '@/components/layouts/navigation.types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLanguage } from '@/hooks/use-language';
 import { MobileSiteHeader } from '@/components/layouts/site-header-mo';
 
-function isItemActive(pathname: string, matchPrefix?: string, href?: string) {
+function isItemActive(
+  pathname: string,
+  matchPrefix?: string,
+  href?: string,
+  groups?: PrimaryNavItem['groups'],
+) {
   if (!pathname) return false;
   if (href && pathname === href) return true;
   if (matchPrefix && matchPrefix !== '/' && pathname.startsWith(matchPrefix)) {
     return true;
+  }
+  if (groups?.length) {
+    for (const group of groups) {
+      for (const sub of group.items) {
+        if (sub.href === pathname || (sub.href !== '/' && pathname.startsWith(`${sub.href}/`))) {
+          return true;
+        }
+      }
+    }
   }
   return false;
 }
@@ -94,7 +109,7 @@ export function SiteHeader() {
   const t = useTranslations('navigation');
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
   const { colorScheme, setColorScheme } = useColorScheme();
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -154,7 +169,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--color-navbar-border)] bg-[var(--color-navbar-bg)] shadow-[0_1px_0_0_var(--color-navbar-border)] backdrop-blur-md">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--color-navbar-border)] bg-[var(--color-navbar-bg)] backdrop-blur-md">
       <div className="flex h-[var(--navbar-height)] w-full items-center px-4 md:px-6 xl:grid xl:grid-cols-[minmax(14rem,1fr)_auto_minmax(26rem,1fr)] xl:gap-10 xl:px-10 2xl:px-12">
         <Link
           href={`/${language}`}
@@ -166,7 +181,7 @@ export function SiteHeader() {
 
         <nav className="hidden items-center justify-center gap-1 md:flex md:flex-1 md:px-6 xl:flex-none xl:px-0 xl:justify-self-center">
           {navigation.map((item) => {
-            const active = isItemActive(pathname, item.matchPrefix, item.href);
+            const active = isItemActive(pathname, item.matchPrefix, item.href, item.groups);
             const hasGroups = Boolean(item.groups?.length);
             const isDropdownOpen = openDropdown === item.id;
 
@@ -187,7 +202,7 @@ export function SiteHeader() {
                   aria-expanded={hasGroups ? isDropdownOpen : undefined}
                   className={`flex items-center gap-1 rounded-full px-4 py-1.5 text-[0.92rem] transition-colors ${
                     active
-                      ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
+                      ? 'font-medium text-[var(--color-text)] hover:bg-[var(--color-nav-item-hover)]'
                       : 'text-[var(--color-nav-item)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
                   }`}
                   onFocus={() => {
@@ -212,36 +227,42 @@ export function SiteHeader() {
                     onMouseEnter={() => openMenu(item.id)}
                     onMouseLeave={scheduleCloseMenu}
                   >
-                    <div className="overflow-hidden rounded-[16px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1.5 shadow-[var(--shadow-nav-dropdown)]">
+                    <div className="space-y-0.5 overflow-hidden rounded-[16px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1.5 shadow-[var(--shadow-nav-dropdown)]">
                       {item.groups?.flatMap((group) =>
-                        group.items.map((navItem) => (
-                          <Link
-                            key={navItem.id}
-                            href={navItem.href}
-                            className={`group block rounded-[10px] px-2.5 py-2 transition-colors hover:bg-[var(--color-nav-item-hover)] ${
-                              pathname === navItem.href ? 'bg-[var(--color-nav-item-hover)]' : ''
-                            }`}
-                            onClick={() => setOpenDropdown(null)}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="text-[0.82rem] font-medium leading-[1.15rem] text-[var(--color-text)]">
-                                {navItem.label}
-                                </div>
-                                {navItem.description ? (
-                                  <div className="mt-0.5 text-[0.7rem] leading-[1.2rem] text-[var(--color-nav-dropdown-description)]">
-                                    {navItem.description}
+                        group.items.map((navItem) => {
+                          const subActive = pathname === navItem.href;
+
+                          return (
+                            <Link
+                              key={navItem.id}
+                              href={navItem.href}
+                              className={`group block rounded-[11px] px-3 py-2 transition-all duration-[var(--duration-fast)] ${
+                                subActive
+                                  ? 'bg-[var(--color-pill-active-bg)] shadow-[var(--shadow-pill-active)]'
+                                  : 'hover:bg-[var(--color-nav-item-hover)]'
+                              }`}
+                              onClick={() => setOpenDropdown(null)}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="text-[0.82rem] font-medium leading-[1.15rem] text-[var(--color-text)]">
+                                    {navItem.label}
                                   </div>
-                                ) : null}
+                                  {navItem.description ? (
+                                    <div className="mt-0.5 text-[0.7rem] leading-[1.2rem] text-[var(--color-nav-dropdown-description)]">
+                                      {navItem.description}
+                                    </div>
+                                  ) : null}
+                                </div>
+                                <span className="mt-0.5 text-[var(--color-nav-muted)] opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true">
+                                  <svg viewBox="0 0 16 16" className="size-3" fill="none">
+                                    <path d="M3.5 8h9m-3.5-3.5L12.5 8 9 11.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                </span>
                               </div>
-                              <span className="mt-0.5 text-[var(--color-nav-muted)] opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true">
-                                <svg viewBox="0 0 16 16" className="size-3" fill="none">
-                                  <path d="M3.5 8h9m-3.5-3.5L12.5 8 9 11.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                              </span>
-                            </div>
-                          </Link>
-                        )),
+                            </Link>
+                          );
+                        }),
                       )}
                     </div>
                   </div>
@@ -254,13 +275,18 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2 md:gap-3 xl:ml-0 xl:justify-self-end">
           <button
             type="button"
-            className="hidden w-[11.5rem] items-center justify-between gap-3 rounded-full border border-[var(--color-nav-search-border)] bg-[var(--color-nav-search-bg)] px-4.5 py-2 text-[0.9rem] text-[var(--color-nav-search-placeholder)] transition-colors hover:border-[var(--color-nav-search-hover-border)] hover:bg-[var(--color-nav-search-hover-bg)] hover:text-[var(--color-text)] lg:inline-flex xl:w-[12.75rem]"
+            className="hidden w-[12rem] items-center justify-between gap-2 rounded-full border border-[var(--color-nav-search-border)] bg-[var(--color-nav-search-bg)] px-3.5 py-1.5 text-[0.84rem] text-[var(--color-nav-search-placeholder)] shadow-[var(--shadow-card-sm)] transition-all duration-[var(--duration-fast)] hover:border-[var(--color-nav-search-hover-border)] hover:bg-[var(--color-nav-search-hover-bg)] hover:text-[var(--color-text)] lg:inline-flex xl:w-[13.25rem]"
             aria-label={t('actions.search')}
           >
-            <span className="truncate">{t('actions.search')}</span>
-            <span className="text-[var(--color-nav-muted)]">
-              <SearchIcon className="size-[1.05rem]" />
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <span className="text-[var(--color-nav-muted)]">
+                <SearchIcon className="size-3.5" />
+              </span>
+              <span className="truncate">{t('actions.search')}</span>
             </span>
+            <kbd className="rounded-md border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-1.5 py-0.5 font-mono text-[0.68rem] font-medium leading-none text-[var(--color-nav-muted)]">
+              /
+            </kbd>
           </button>
 
           <Link
