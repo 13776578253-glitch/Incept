@@ -3,9 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, it } from 'vitest';
 
-// core 纯度守卫（折叠前提条件）：core 是纯逻辑状态机，源文件只允许本目录相对导入。
-// 独立包时代由空 dependencies + types: [] 在模块解析层拒绝一切外部包（实测折叠后 TS2307 3→0，
-// 禁令是清零而非降级），故本守卫是物理外壳拆除的执法替代：违规即红。
+// core 纯度守卫：core 是纯逻辑状态机，源文件只允许本目录相对导入，测试文件仅额外允许 node: 内置模块。
+// history: 原独立包 @incept/music-player-core 靠空 dependencies + types: [] 在解析层阻断外部依赖，折叠入本包后改由本守卫强制执行
 const coreDir = path.join(import.meta.dirname, '..', 'core');
 
 function importSpecifiers(source: string): string[] {

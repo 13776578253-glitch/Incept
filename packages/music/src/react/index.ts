@@ -1,4 +1,4 @@
-// react 层出口：音乐 UI（主框架 React）；music-player-floating 的 usePathname 是路由响应式所需（修订 18 注）
+// react 层出口：音乐 UI（主框架 React）；music-player-floating 的 usePathname 用于路由响应式隐藏
 export * from './locale';
 export * from './music-player';
 export * from './preferences/music-player-preferences-provider';

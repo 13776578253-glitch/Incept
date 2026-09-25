@@ -2,7 +2,7 @@
 
 音乐功能包（in-process workspace 包）。宿主（apps/web）只经 exports 出口 / 装配 / 注册面接入；Prisma schema 与迁移永久归 `@incept/db`。
 
-分层与出口：`./domain`、`./ports`、`./adapters`、`./application`、`./react`、`./next`、`./cli`、`./endpoints`、`./testing`、`./testing/setup`。
+分层与出口：`./domain`、`./ports`、`./adapters`、`./application`、`./react`、`./next`、`./cli`、`./endpoints`、`./testing`、`./testing/setup`。内部纯状态机内核位于 `src/core`（history: 原独立包 `@incept/music-player-core` 已折叠入本目录，由 `core-purity.test.ts` 守卫强制零外部依赖）。
 
 ## 宿主提供的 CSS 变量清单（组件样式随包、变量合同归 Web）
 

@@ -14,8 +14,8 @@ import {
   type MusicTrackPatch,
 } from '../../domain';
 
-// manage 的 Prisma 执行侧（原 packages/db/src/music/manage.ts 拆分而来）：纯规划在 ../../domain/manage.ts
-// 事务边界、调用层级与顺序原样保留
+// manage 的 Prisma 执行侧：纯规划在 ../../domain/manage.ts，事务边界、调用层级与顺序原样保留
+// history: 原 packages/db/src/music/manage.ts 按纯规划与数据库执行拆分为 domain 与 adapter 两层
 
 // 永久删除：只删行与成员关系；镜像文件由清理入口（`pnpm music:cleanup`）回收
 export async function deleteMusicTrack(input: { trackKey: string }): Promise<{ trackKey: string }> {

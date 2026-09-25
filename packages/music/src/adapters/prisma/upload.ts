@@ -12,8 +12,8 @@ import {
   type MusicUploadOutcome,
 } from '../../domain';
 
-// upload 的 Prisma 执行侧（原 packages/db/src/music/upload.ts 拆分而来）：纯规划与去重提示在 ../../domain/upload.ts
-// 并发上传同一份内容时重试一次
+// upload 的 Prisma 执行侧：纯规划与去重提示在 ../../domain/upload.ts，并发上传同一份内容时重试一次
+// history: 原 packages/db/src/music/upload.ts 按纯规划与数据库执行拆分为 domain 与 adapter 两层
 const uploadAttempts = 2;
 
 export async function uploadMusicTrack(input: {

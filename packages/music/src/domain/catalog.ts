@@ -1,4 +1,5 @@
-// 目录读取的纯形状与选择常量（原 packages/db/src/music/queries/list.ts 的纯部分，随迁移先行入 domain）
+// 目录读取的纯形状与选择常量
+// history: 原位于 packages/db/src/music/queries/list.ts，纯字段选择与目录类型剥离入 domain
 import type { MusicLibraryRecord, MusicTrackRecord } from './types';
 
 export const musicTrackSelection = {

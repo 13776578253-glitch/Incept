@@ -35,7 +35,7 @@ export const musicMountContributions: readonly MountContribution[] = [
 ];
 
 // label 直接传包函数：(locale: MusicLocale) => string 赋给 (locale: AppLocale) => string，
-// 编译器在此验证修订 17② 的逆变前提（AppLocale ⊆ MusicLocale）
+// 编译器在此验证函数参数逆变前提（AppLocale ⊆ MusicLocale）
 export const musicSettingsSectionContribution: SettingsSectionContribution =
   defineSettingsSectionContribution<MusicAdminData>({
     id: 'music',

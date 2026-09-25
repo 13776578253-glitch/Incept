@@ -1,5 +1,5 @@
-// 导入入口（原 scripts/music-import.mjs）：用法文案与参数行为逐字保留
-// env 与镜像目录由根转发脚本显式传入（--env-file / --mirror，D.1 甲）；功能面经 exports 出口消费（验收 C3）
+// 导入入口：用法文案与参数行为保持一致；env 与镜像目录由根转发脚本经 --env-file / --mirror 显式传入，功能面经包 exports 出口消费
+// history: 原 scripts/music-import.mjs 实现迁入包内，根脚本退化为纯转发器
 import path from 'node:path';
 
 import { planMusicImport, publishMusicImportMedia, commitMusicImport, validateMusicMirror } from '@incept/music/application';
