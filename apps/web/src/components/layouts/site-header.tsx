@@ -154,7 +154,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--color-navbar-border)] bg-[var(--color-navbar-bg)] shadow-[0_1px_0_0_var(--color-navbar-border)]">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--color-navbar-border)] bg-[var(--color-navbar-bg)] shadow-[0_1px_0_0_var(--color-navbar-border)] backdrop-blur-md">
       <div className="flex h-[var(--navbar-height)] w-full items-center px-4 md:px-6 xl:grid xl:grid-cols-[minmax(14rem,1fr)_auto_minmax(26rem,1fr)] xl:gap-10 xl:px-10 2xl:px-12">
         <Link
           href={`/${language}`}
@@ -266,10 +266,10 @@ export function SiteHeader() {
           <Link
             href={settingsHref}
             aria-label={t('actions.settings')}
-            className={`hidden p-1.5 transition-colors md:inline-flex ${
+            className={`hidden size-9 items-center justify-center rounded-full transition-colors md:inline-flex ${
               isSettingsActive
-                ? 'rounded-full bg-[var(--color-nav-item-active)] text-[var(--color-nav-item)]'
-                : 'text-[var(--color-nav-muted)] hover:text-[var(--color-text)]'
+                ? 'bg-[var(--color-nav-item-active)] text-[var(--color-nav-item)]'
+                : 'text-[var(--color-nav-muted)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
             }`}
           >
             <SettingsIcon />
@@ -279,7 +279,7 @@ export function SiteHeader() {
             type="button"
             onClick={() => setColorScheme(nextTheme)}
             aria-label={t('actions.themeToggle')}
-            className="hidden text-[var(--color-nav-muted)] transition-colors hover:text-[var(--color-text)] md:inline-flex"
+            className="hidden size-9 items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] md:inline-flex"
           >
             {isDark ? <MoonIcon /> : <SunIcon />}
           </button>

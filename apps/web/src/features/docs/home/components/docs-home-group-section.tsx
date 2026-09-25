@@ -15,8 +15,8 @@ export function DocsHomeGroupSection({
   return (
     <section id={sectionId} className="scroll-mt-28">
       <div>
-        <div className="mb-4 flex items-end justify-center gap-150">
-          <div className="text-center">
+        <div className="mb-3.5 flex items-baseline justify-between gap-4 px-1">
+          <div className="min-w-0">
             <h2 className="text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--color-text)] md:text-[1.1rem]">
               {group.label}
             </h2>

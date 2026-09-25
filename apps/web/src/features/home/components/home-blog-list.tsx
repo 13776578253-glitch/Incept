@@ -18,8 +18,8 @@ export function HomeBlogList({
 }: HomeBlogListProps) {
   return (
     <section className="py-8 md:py-10">
-      <div className="mx-auto max-w-[880px]">
-        <div className="xl:pl-12 2xl:pl-16">
+      <div className="mx-auto max-w-[920px]">
+        <div className="xl:pl-12 2xl:pl-22">
           <div className="mb-8 flex items-end justify-between gap-6">
             <div className="space-y-3">
               <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
@@ -36,7 +36,7 @@ export function HomeBlogList({
               <Link
                 key={entry.id}
                 href={withLocalePath(locale, entry.href)}
-                className="grid gap-5 rounded-[12px] px-3 py-8 transition-colors hover:bg-[color:var(--color-row-hover-bg)] md:grid-cols-[156px_minmax(0,1fr)] md:items-center md:gap-7 md:px-4"
+                className="-mx-3 grid gap-5 rounded-[12px] px-3 py-8 transition-colors hover:bg-[color:var(--color-row-hover-bg)] md:-mx-4 md:grid-cols-[156px_minmax(0,1fr)] md:items-center md:gap-7 md:px-4"
               >
                 <div className="w-full max-w-[156px] justify-self-center overflow-hidden rounded-[18px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)]">
                   <img
