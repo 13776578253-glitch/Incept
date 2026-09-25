@@ -8,6 +8,7 @@ import {
   createRoadmapColumnsRoute,
   createRoadmapEntryItemRoute,
   createRoadmapEntriesRoute,
+  createRoadmapImportRoute,
   createRoadmapItemRoute,
   createRoadmapsRoute,
 } from '../roadmap-routes';
@@ -65,6 +66,14 @@ function fakeDeps(
       calls.push('entry.delete');
       return { key };
     },
+    importEntries: async ({ entries }) => {
+      calls.push('entry.import');
+      return entries.map((item, index) => ({
+        ...createdEntry,
+        key: item.key ?? `generated-${index}`,
+        roadmap: item.roadmapKey,
+      }));
+    },
   };
 
   return {
@@ -119,6 +128,7 @@ describe('roadmap route handlers', () => {
       createRoadmapEntriesRoute(deps).POST(request('POST', {})),
       createRoadmapEntryItemRoute(deps).PATCH(request('PATCH', {}), context({ key: 'k' })),
       createRoadmapEntryItemRoute(deps).DELETE(request('DELETE'), context({ key: 'k' })),
+      createRoadmapImportRoute(deps).POST(request('POST', {})),
     ];
 
     for (const pending of calls) {
@@ -196,6 +206,56 @@ describe('roadmap route handlers', () => {
     const payload = (await response.json()) as { error: string };
 
     expect(payload.error).toMatch(/both languages/);
+  });
+
+  it('imports a manifest for the owner and rejects malformed ones', async () => {
+    const calls: string[] = [];
+    const happy = await createRoadmapImportRoute(fakeDeps(true, calls)).POST(
+      request('POST', {
+        entries: [
+          {
+            roadmapKey: 'sample-roadmap',
+            status: 'reviewing',
+            type: 'feature',
+            priority: 'middle',
+            title: { en: 'Imported', zh: '导入条目' },
+            summary: { en: 'From manifest', zh: '来自清单' },
+          },
+        ],
+      }),
+    );
+
+    expect(happy.status).toBe(200);
+    expect(calls).toEqual(['entry.import']);
+    const payload = (await happy.json()) as { entries: RoadmapEntry[] };
+
+    expect(payload.entries[0].key).toBe('generated-0');
+
+    const notList = await createRoadmapImportRoute(fakeDeps(true)).POST(
+      request('POST', { entries: 'nope' }),
+    );
+
+    expect(notList.status).toBe(400);
+
+    const brokenParity = await createRoadmapImportRoute(fakeDeps(true)).POST(
+      request('POST', {
+        entries: [
+          {
+            roadmapKey: 'sample-roadmap',
+            status: 'reviewing',
+            type: 'feature',
+            priority: 'middle',
+            title: { en: 'Imported', zh: '' },
+            summary: { en: 'From manifest', zh: '来自清单' },
+          },
+        ],
+      }),
+    );
+
+    expect(brokenParity.status).toBe(400);
+    const error = (await brokenParity.json()) as { error: string };
+
+    expect(error.error).toMatch(/both languages/);
   });
 
   it('lists boards for the owner and deletes through the writer', async () => {

@@ -7,6 +7,7 @@ import {
   type Roadmap,
   type RoadmapColumn,
   type RoadmapEntry,
+  type RoadmapEntryImportItem,
   type RoadmapEntryLink,
   type RoadmapEntryPriority,
   type RoadmapEntryType,
@@ -164,16 +165,22 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
     return entries.length === 0 ? 10 : Math.max(...entries.map((entry) => entry.position)) + 10;
   }
 
-  // key 全局唯一（schema @unique）：slug 逐候选查重，碰撞加 -2、-3 后缀。
-  async function resolveEntryKey(tx: RoadmapPrismaTx, titleEn: string): Promise<string> {
+  // key 全局唯一（schema @unique）：slug 逐候选查重，碰撞加 -2、-3 后缀；taken 为清单内已占用。
+  async function resolveEntryKey(
+    tx: RoadmapPrismaTx,
+    titleEn: string,
+    taken: ReadonlySet<string> = new Set(),
+  ): Promise<string> {
     const base = slugifyTitle(titleEn);
     let candidate = base;
 
     for (let suffix = 2; ; suffix += 1) {
-      const existing = await tx.roadmapEntry.findUnique({ where: { key: candidate } });
+      if (!taken.has(candidate)) {
+        const existing = await tx.roadmapEntry.findUnique({ where: { key: candidate } });
 
-      if (!existing) {
-        return candidate;
+        if (!existing) {
+          return candidate;
+        }
       }
 
       candidate = `${base}-${suffix}`;
@@ -429,6 +436,113 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
       await client.roadmapEntry.delete({ where: { key } });
 
       return { key };
+    },
+
+    // 导入（U5）：人工维护的 JSON 清单批量 upsert。计划阶段全量校验、提交阶段单事务写入，
+    // 任何一条失败整体拒绝；只消费传入的清单数据，绝不读取仓库文件（反自动派生红线）。
+    async importEntries({ entries }) {
+      if (entries.length === 0) {
+        fail('the import manifest carries no entries');
+      }
+
+      return client.$transaction(async (tx) => {
+        type ImportPlan = {
+          item: RoadmapEntryImportItem;
+          key: string;
+          order: number;
+          roadmapKey: string;
+          roadmapId: string;
+          existing: RoadmapEntryRow | null;
+        };
+
+        const shapes = new Map<string, { roadmap: Roadmap; roadmapId: string }>();
+        const takenKeys = new Set<string>();
+        const plans: ImportPlan[] = [];
+
+        for (const item of entries) {
+          let shape = shapes.get(item.roadmapKey);
+
+          if (!shape) {
+            shape = await readRoadmapShape(tx, item.roadmapKey);
+            shapes.set(item.roadmapKey, shape);
+          }
+
+          const key = item.key ?? (await resolveEntryKey(tx, item.title.en, takenKeys));
+
+          if (takenKeys.has(key)) {
+            fail(`the manifest repeats the key "${key}"`);
+          }
+
+          const existing = await tx.roadmapEntry.findUnique({ where: { key } });
+
+          if (existing && existing.roadmapId !== shape.roadmapId) {
+            fail(`the entry "${key}" already lives on another roadmap`);
+          }
+
+          const order = item.order ?? existing?.position ?? (await nextPosition(tx, item.roadmapKey));
+          const entry: RoadmapEntry = {
+            key,
+            roadmap: item.roadmapKey,
+            order,
+            status: item.status,
+            type: item.type,
+            priority: item.priority,
+            title: item.title,
+            summary: item.summary,
+            ...(item.detail ? { detail: item.detail } : {}),
+            ...(item.links && item.links.length > 0 ? { links: item.links } : {}),
+          };
+
+          validateEntry(entry, shape.roadmap);
+          takenKeys.add(key);
+          plans.push({
+            item,
+            key,
+            order,
+            roadmapKey: item.roadmapKey,
+            roadmapId: shape.roadmapId,
+            existing,
+          });
+        }
+
+        const results: RoadmapEntry[] = [];
+
+        for (const plan of plans) {
+          const data = {
+            status: plan.item.status,
+            type: plan.item.type,
+            priority: plan.item.priority,
+            titleEn: plan.item.title.en,
+            titleZh: plan.item.title.zh,
+            summaryEn: plan.item.summary.en,
+            summaryZh: plan.item.summary.zh,
+            detailEn: plan.item.detail?.en ?? null,
+            detailZh: plan.item.detail?.zh ?? null,
+            position: plan.order,
+          };
+          const row = plan.existing
+            ? await tx.roadmapEntry.update({ where: { key: plan.key }, data })
+            : await tx.roadmapEntry.create({ data: { roadmapId: plan.roadmapId, key: plan.key, ...data } });
+
+          await writeLinks(tx, row.id, plan.item.links ?? []);
+          results.push({
+            key: plan.key,
+            roadmap: plan.roadmapKey,
+            order: plan.order,
+            status: plan.item.status,
+            type: plan.item.type,
+            priority: plan.item.priority,
+            title: plan.item.title,
+            summary: plan.item.summary,
+            ...(plan.item.detail ? { detail: plan.item.detail } : {}),
+            links: plan.item.links ?? [],
+            createdAt: row.createdAt.toISOString(),
+            updatedAt: row.updatedAt.toISOString(),
+          });
+        }
+
+        return results;
+      });
     },
   };
 }

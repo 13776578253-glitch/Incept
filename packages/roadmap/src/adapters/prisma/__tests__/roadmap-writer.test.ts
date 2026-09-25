@@ -334,4 +334,108 @@ describe('createPrismaRoadmapWriter', () => {
     expect(entry.createdAt).toBe('2026-09-24T00:00:00.000Z');
     expect(entry.updatedAt).toBe('2026-09-24T00:00:00.000Z');
   });
+
+  it('imports entries as an all-or-nothing batch with upsert and link rewrite', async () => {
+    const entryWrites: unknown[] = [];
+    const calls: string[] = [];
+    const writer = createPrismaRoadmapWriter(
+      fakeWriteClient({
+        entryWrites,
+        calls,
+        entryRows: [{ ...entryRow, key: 'existing-key', links: [] }],
+      }),
+    );
+
+    const results = await writer.importEntries({
+      entries: [
+        {
+          roadmapKey: 'sample-roadmap',
+          key: 'existing-key',
+          status: 'reviewing',
+          type: 'feature',
+          priority: 'middle',
+          title: { en: 'Updated', zh: '更新' },
+          summary: { en: 'S', zh: '摘' },
+          links: [{ label: { en: 'L', zh: '链接' }, href: 'https://example.com/i' }],
+        },
+        {
+          roadmapKey: 'sample-roadmap',
+          status: 'reviewing',
+          type: 'feature',
+          priority: 'middle',
+          title: { en: 'Brand New', zh: '全新' },
+          summary: { en: 'S', zh: '摘' },
+        },
+      ],
+    });
+
+    expect(results.map((entry) => entry.key)).toEqual(['existing-key', 'brand-new']);
+    expect(calls).toContain('entry.update');
+    expect(calls).toContain('entry.create');
+    expect(calls).toContain('links.create');
+
+    const badWrites: unknown[] = [];
+    const badCalls: string[] = [];
+    const badWriter = createPrismaRoadmapWriter(
+      fakeWriteClient({ entryWrites: badWrites, calls: badCalls }),
+    );
+
+    await expect(
+      badWriter.importEntries({
+        entries: [
+          {
+            roadmapKey: 'sample-roadmap',
+            status: 'reviewing',
+            type: 'feature',
+            priority: 'middle',
+            title: { en: 'Fine', zh: '好' },
+            summary: { en: 'S', zh: '摘' },
+          },
+          {
+            roadmapKey: 'sample-roadmap',
+            status: 'reviewing',
+            type: 'feature',
+            priority: 'middle',
+            title: { en: 'Broken', zh: '' },
+            summary: { en: 'S', zh: '摘' },
+          },
+        ],
+      }),
+    ).rejects.toThrow(/both languages/);
+    expect(badWrites).toEqual([]);
+    expect(badCalls).not.toContain('entry.create');
+  });
+
+  it('rejects an empty manifest and repeated keys', async () => {
+    const writer = createPrismaRoadmapWriter(fakeWriteClient());
+
+    await expect(writer.importEntries({ entries: [] })).rejects.toThrow(/no entries/);
+
+    const repeat = createPrismaRoadmapWriter(fakeWriteClient());
+
+    await expect(
+      repeat.importEntries({
+        entries: [
+          {
+            roadmapKey: 'sample-roadmap',
+            key: 'same',
+            status: 'reviewing',
+            type: 'feature',
+            priority: 'middle',
+            title: { en: 'A', zh: '甲' },
+            summary: { en: 'S', zh: '摘' },
+          },
+          {
+            roadmapKey: 'sample-roadmap',
+            key: 'same',
+            status: 'reviewing',
+            type: 'feature',
+            priority: 'middle',
+            title: { en: 'B', zh: '乙' },
+            summary: { en: 'S', zh: '摘' },
+          },
+        ],
+      }),
+    ).rejects.toThrow(/repeats the key/);
+  });
 });

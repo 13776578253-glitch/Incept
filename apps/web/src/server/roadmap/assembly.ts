@@ -4,6 +4,7 @@ import {
   createRoadmapColumnsRoute,
   createRoadmapEntryItemRoute,
   createRoadmapEntriesRoute,
+  createRoadmapImportRoute,
   createRoadmapItemRoute,
   createRoadmapsRoute,
 } from '@incept/roadmap/next';
@@ -104,3 +105,4 @@ export const columnDelete = columnItemRoute.DELETE;
 export const entryCreate = entriesRoute.POST;
 export const entryUpdate = entryItemRoute.PATCH;
 export const entryDelete = entryItemRoute.DELETE;
+export const roadmapImport = createRoadmapImportRoute(roadmapRouteDeps).POST;

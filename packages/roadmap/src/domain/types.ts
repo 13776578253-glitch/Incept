@@ -56,3 +56,21 @@ export type RoadmapEntry = {
   createdAt?: string;
   updatedAt?: string;
 };
+
+// 导入清单（U5，仅条目 upsert 裁定）：人工维护的 JSON，key 缺省时由写口按标题生成。
+export type RoadmapEntryImportItem = {
+  roadmapKey: string;
+  key?: string;
+  status: RoadmapStatus;
+  type: RoadmapEntryType;
+  priority: RoadmapEntryPriority;
+  title: LocalizedText;
+  summary: LocalizedText;
+  detail?: LocalizedText;
+  order?: number;
+  links?: RoadmapEntryLink[];
+};
+
+export type RoadmapImportManifest = {
+  entries: RoadmapEntryImportItem[];
+};

@@ -8,4 +8,5 @@ export const roadmapEndpoints = {
     `/api/internal/roadmap/columns/${encodeURIComponent(roadmapKey)}/${encodeURIComponent(status)}`,
   entries: '/api/internal/roadmap/entries',
   entry: (key: string) => `/api/internal/roadmap/entries/${encodeURIComponent(key)}`,
+  import: '/api/internal/roadmap/import',
 };

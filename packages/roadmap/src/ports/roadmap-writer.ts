@@ -3,6 +3,7 @@ import type {
   Roadmap,
   RoadmapColumn,
   RoadmapEntry,
+  RoadmapEntryImportItem,
   RoadmapEntryLink,
   RoadmapEntryPriority,
   RoadmapEntryType,
@@ -55,4 +56,6 @@ export type RoadmapWriter = {
   ) => Promise<RoadmapEntry>;
   updateEntry: (input: { key: string; patch: RoadmapEntryPatch }) => Promise<RoadmapEntry>;
   deleteEntry: (input: { key: string }) => Promise<{ key: string }>;
+  // 导入（U5）：仅条目 upsert，按 (roadmapKey, key) 幂等；条目间 key 冲突拒绝。
+  importEntries: (input: { entries: RoadmapEntryImportItem[] }) => Promise<RoadmapEntry[]>;
 };

@@ -13,6 +13,7 @@ import {
   readJsonBody,
   type RoadmapRouteContext,
   type RoadmapRouteDeps,
+  parseImportManifest,
 } from './shared';
 
 // 板集合：GET 供管理面板整板读取（列 + 条目），POST 建板。
@@ -293,4 +294,29 @@ export function createRoadmapEntryItemRoute(deps: RoadmapRouteDeps) {
   }
 
   return { PATCH, DELETE };
+}
+
+// 导入（U5）：POST 批量 upsert 人工维护的 JSON 清单（仅条目）。反自动派生红线：本路由只解析
+// 请求体，绝不读取或解析 docs/NEXT.md、docs/BACKLOG.md、docs/finish-task/（决策第 1 条原文）。
+export function createRoadmapImportRoute(deps: RoadmapRouteDeps) {
+  async function POST(request: Request) {
+    const denied = await guardOwner(request, deps.authorizeOwner);
+
+    if (denied) return denied;
+
+    const body = await readJsonBody(request);
+
+    if (!body) return badRequest('The request body must be a JSON object.');
+
+    try {
+      const manifest = parseImportManifest(body);
+      const entries = await deps.writer.importEntries(manifest);
+
+      return NextResponse.json({ entries });
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : 'The manifest was not imported.');
+    }
+  }
+
+  return { POST };
 }

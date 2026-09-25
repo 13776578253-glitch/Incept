@@ -6,7 +6,7 @@ import type {
   RoadmapEntryType,
   RoadmapStatus,
 } from '../domain';
-import { ROADMAP_STATUSES } from '../domain';
+import { ROADMAP_STATUSES, type RoadmapImportManifest } from '../domain';
 import type {
   AuthorizeOwner,
   RoadmapBoard,
@@ -155,6 +155,57 @@ export function parseEntryPatch(body: Record<string, unknown>): RoadmapEntryPatc
   patch.links = parseLinks(body.links);
 
   return patch;
+}
+
+// 导入清单解析（U5）：只接受上传 JSON 形状的请求体。反自动派生红线：本函数与导入路由
+// 绝不读取或解析 docs/NEXT.md、docs/BACKLOG.md、docs/finish-task/（决策第 1 条）。
+export function parseImportManifest(body: Record<string, unknown>): RoadmapImportManifest {
+  const entries = body.entries;
+
+  if (!Array.isArray(entries)) {
+    throw new Error('"entries" must be a list.');
+  }
+
+  return {
+    entries: entries.map((raw, index) => {
+      if (typeof raw !== 'object' || raw === null) {
+        throw new Error(`"entries[${index}]" must be an object.`);
+      }
+
+      const item = raw as Record<string, unknown>;
+      const roadmapKey = typeof item.roadmapKey === 'string' ? item.roadmapKey.trim() : '';
+      const key = typeof item.key === 'string' ? item.key.trim() : '';
+
+      if (roadmapKey === '') {
+        throw new Error(`"entries[${index}].roadmapKey" must be a non-empty string.`);
+      }
+
+      if (item.key !== undefined && key === '') {
+        throw new Error(`"entries[${index}].key" must be a non-empty string when provided.`);
+      }
+
+      const patch = parseEntryPatch(item);
+
+      if (!patch.status || !patch.type || !patch.priority || !patch.title || !patch.summary) {
+        throw new Error(
+          `"entries[${index}]" requires "status", "type", "priority", "title" and "summary".`,
+        );
+      }
+
+      return {
+        roadmapKey,
+        ...(key === '' ? {} : { key }),
+        status: patch.status,
+        type: patch.type,
+        priority: patch.priority,
+        title: patch.title,
+        summary: patch.summary,
+        ...(patch.detail ? { detail: patch.detail } : {}),
+        order: patch.order,
+        links: patch.links ?? [],
+      };
+    }),
+  };
 }
 
 export type { RoadmapBoard };
