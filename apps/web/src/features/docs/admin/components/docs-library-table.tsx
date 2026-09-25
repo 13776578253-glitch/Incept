@@ -201,16 +201,80 @@ export function DocsLibraryTable({
                     </div>
                   </td>
                   <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
-                    {entry.locale}
+                    <span className="inline-flex items-center rounded-full border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2 py-0.5 text-[0.72rem] font-medium uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                      {entry.locale}
+                    </span>
                   </td>
                   <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
-                    {t(`routeType.${entry.routeType}`)}
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.74rem] font-medium whitespace-nowrap"
+                      style={
+                        entry.routeType === 'collectionArticle'
+                          ? {
+                              color: 'var(--badge-indigo-fg)',
+                              backgroundColor: 'var(--badge-indigo-bg)',
+                              borderColor: 'var(--badge-indigo-border)',
+                            }
+                          : {
+                              color: 'var(--badge-sky-fg)',
+                              backgroundColor: 'var(--badge-sky-bg)',
+                              borderColor: 'var(--badge-sky-border)',
+                            }
+                      }
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="size-1.5 shrink-0 rounded-full"
+                        style={{
+                          backgroundColor:
+                            entry.routeType === 'collectionArticle'
+                              ? 'var(--badge-indigo-dot)'
+                              : 'var(--badge-sky-dot)',
+                        }}
+                      />
+                      {t(`routeType.${entry.routeType}`)}
+                    </span>
                   </td>
                   <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
                     {entry.kind}
                   </td>
                   <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
-                    {t(`roles.${entry.accessRole}`)}
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.74rem] font-medium whitespace-nowrap"
+                      style={
+                        entry.accessRole === 'private'
+                          ? {
+                              color: 'var(--badge-rose-fg)',
+                              backgroundColor: 'var(--badge-rose-bg)',
+                              borderColor: 'var(--badge-rose-border)',
+                            }
+                          : entry.accessRole === 'pro'
+                            ? {
+                                color: 'var(--badge-amber-fg)',
+                                backgroundColor: 'var(--badge-amber-bg)',
+                                borderColor: 'var(--badge-amber-border)',
+                              }
+                            : {
+                                color: 'var(--badge-emerald-fg)',
+                                backgroundColor: 'var(--badge-emerald-bg)',
+                                borderColor: 'var(--badge-emerald-border)',
+                              }
+                      }
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="size-1.5 shrink-0 rounded-full"
+                        style={{
+                          backgroundColor:
+                            entry.accessRole === 'private'
+                              ? 'var(--badge-rose-dot)'
+                              : entry.accessRole === 'pro'
+                                ? 'var(--badge-amber-dot)'
+                                : 'var(--badge-emerald-dot)',
+                        }}
+                      />
+                      {t(`roles.${entry.accessRole}`)}
+                    </span>
                   </td>
                   <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] leading-7 text-[var(--color-text-muted)]">
                     {entry.routeType === 'collectionArticle' ? (
@@ -226,30 +290,30 @@ export function DocsLibraryTable({
                       <span className="text-[var(--color-text-soft)]">{t('table.none')}</span>
                     )}
                   </td>
-                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)] tabular-nums">
                     {entry.position ?? <span className="text-[var(--color-text-soft)]">{t('table.none')}</span>}
                   </td>
                   <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top">
-                    <code className="break-all text-[0.85rem] text-[var(--color-text-soft)]">
+                    <code className="break-all rounded-md border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2 py-0.5 text-[0.8rem] text-[var(--color-text-muted)]">
                       {entry.finalRoute}
                     </code>
                   </td>
-                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.92rem] text-[var(--color-text-muted)]">
+                  <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top text-[0.88rem] text-[var(--color-text-muted)] tabular-nums">
                     {formatDate(entry.updatedAt)}
                   </td>
                   <td className="border-b border-[color:var(--color-border-faint)] px-3 py-4 align-top">
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col items-start gap-1.5">
                       <Link
                         href={entry.finalRoute}
                         target="_blank"
-                        className="text-[0.9rem] font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-text-soft)]"
+                        className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1 text-[0.76rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-colors hover:border-[var(--color-text-soft)]"
                       >
                         {t('actions.openRoute')}
                       </Link>
                       <button
                         type="button"
                         onClick={() => handleCopyRoute(entry.finalRoute)}
-                        className="text-left text-[0.88rem] text-[var(--color-text-soft)] transition-colors hover:text-[var(--color-text)]"
+                        className="inline-flex items-center rounded-full border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2.5 py-1 text-[0.75rem] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
                       >
                         {copiedRoute === entry.finalRoute
                           ? t('actions.copied')

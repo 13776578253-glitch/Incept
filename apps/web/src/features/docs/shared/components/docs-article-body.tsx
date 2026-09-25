@@ -52,7 +52,7 @@ export function DocsArticleBody({
               </span>
               {backToListLabel}
             </Link>
-            <p className="text-right text-[0.75rem] text-[var(--color-nav-muted)]">
+            <p className="text-right text-[0.75rem] tabular-nums text-[var(--color-nav-muted)]">
               {readingMeta}
             </p>
           </div>

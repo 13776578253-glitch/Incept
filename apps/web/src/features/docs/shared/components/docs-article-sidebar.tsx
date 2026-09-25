@@ -47,7 +47,7 @@ export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {
           href={withLocalePath(locale, item.href)}
           className={`block rounded-[10px] px-2.5 py-1.5 text-[0.84rem] leading-6 transition-colors ${
             item.active
-              ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
+              ? 'font-medium text-[var(--color-text)]'
               : 'text-[var(--color-text-soft)] hover:text-[var(--color-text-muted)]'
           }`}
         >

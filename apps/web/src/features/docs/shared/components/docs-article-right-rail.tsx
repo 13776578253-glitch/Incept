@@ -168,7 +168,7 @@ function renderOutlineItems(items: DocsOutlineItemModel[], activeId: string, dep
       <li key={item.id} className="relative" style={depth ? { marginLeft: `${depth * 0.75}rem` } : undefined}>
         <span
           aria-hidden="true"
-          className={`absolute top-1 h-4 w-px bg-[var(--color-text)] transition-opacity duration-200 ${
+          className={`absolute top-1 h-4 w-[2px] rounded-full bg-[var(--badge-indigo-dot)] transition-opacity duration-200 ${
             active ? 'opacity-100' : 'opacity-0'
           }`}
           style={{ left: depth ? '-0.75rem' : '-1.5rem' }}
@@ -180,7 +180,7 @@ function renderOutlineItems(items: DocsOutlineItemModel[], activeId: string, dep
             depth === 0 ? '' : 'text-[12px]'
           } ${
             active
-              ? 'text-[var(--color-text)]'
+              ? 'font-medium text-[var(--color-text)]'
               : 'text-[var(--color-text-soft)] hover:text-[var(--color-text-muted)]'
           }`}
         >
