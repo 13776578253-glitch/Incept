@@ -261,3 +261,9 @@
   - `@incept/roadmap` 7 个测试文件、61 项单测全部通过（含新增的相似条目词元匹配、阈值拦截与弹窗条件隐藏测试）。
   - `@incept/roadmap` 与 `apps/web` 全量 TypeScript 类型检查 0 报错。
 
+[2026-09-26] - Update by AI（「全部项目」占位移除，主控裁定）:
+- **裁定**：项目下拉中的「全部项目」只是占位、路由语义错误（点进去只是默认单板）；多项目 roadmap 集合（项目 1、项目 2…）由切换器本身承载，真正的聚合视图如将来需要再另行裁定，不留占位。
+- **改动**（`7817c0a`）：删除 `RoadmapToolbar` 下拉的「全部项目」列表项与 `allProjectsHref`/`allProjectsLabel` 全链路（组件 props、page 计算与传参、`RoadmapChrome` 字段、messages 中英两键），下拉变纯项目切换器（`?rd=` 锚点）；U6 测试补回归断言（`全部项目` 链接不存在）。
+- **验证**：`@incept/roadmap` 61 项单测全绿、五包 typecheck 绿。
+- Commit: [fix(roadmap) 7817c0a]，记录归 [docs]。
+
