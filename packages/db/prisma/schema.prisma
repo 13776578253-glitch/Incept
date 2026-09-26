@@ -316,3 +316,114 @@ model MusicLibraryItem {
   @@index([trackId])
   @@map("music_library_items")
 }
+
+/* 路线图 / 人写内容（roadmap-integration-surface 决策）：多 roadmap，各带自己的列映射。
+   nameEn / nameZh 成对存储，完整双语对等由 domain 校验兜底。
+   position 决定切换器、列与条目的人定顺序（同 music 先例）。
+   votes / comments 休眠列（T4 硬化：不做投票/评论）：域模型与界面零暴露，值恒 NULL；
+   删除列待主控单独授权的迁移。
+   detailEn / detailZh 人写详情（U1 裁定）：可空双语对，成对写入、成对清空。 */
+enum RoadmapStatus {
+  reviewing
+  unstarted
+  active
+  completed
+  canceled
+}
+
+enum RoadmapEntryType {
+  feature
+  improvement
+  maintenance
+}
+
+enum RoadmapEntryPriority {
+  high
+  middle
+  low
+  none
+}
+
+model Roadmap {
+  id        String          @id @default(cuid())
+  key       String          @unique
+  nameEn    String
+  nameZh    String
+  position  Int
+  projectId String?
+  project   RoadmapProject? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  columns   RoadmapColumn[]
+  entries   RoadmapEntry[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([position])
+  @@index([projectId])
+  @@map("roadmaps")
+}
+
+model RoadmapProject {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  nameEn    String
+  nameZh    String
+  position  Int
+  roadmaps  Roadmap[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([position])
+  @@map("roadmap_projects")
+}
+
+model RoadmapColumn {
+  id       String         @id @default(cuid())
+  roadmapId String
+  roadmap  Roadmap        @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  status   RoadmapStatus
+  labelEn  String
+  labelZh  String
+  position Int
+
+  @@unique([roadmapId, status])
+  @@index([roadmapId, position])
+  @@map("roadmap_columns")
+}
+
+model RoadmapEntry {
+  id        String               @id @default(cuid())
+  roadmapId String
+  roadmap   Roadmap              @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  key       String               @unique
+  status    RoadmapStatus
+  type      RoadmapEntryType
+  priority  RoadmapEntryPriority
+  titleEn   String
+  titleZh   String
+  summaryEn String
+  summaryZh String
+  votes     Int?
+  comments  Int?
+  position  Int
+  links     RoadmapEntryLink[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  detailEn  String?
+  detailZh  String?
+
+  @@index([roadmapId, status, position])
+  @@map("roadmap_entries")
+}
+
+model RoadmapEntryLink {
+  id       String       @id @default(cuid())
+  entryId  String
+  entry    RoadmapEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  labelEn  String
+  labelZh  String
+  href     String
+  position Int
+
+  @@index([entryId, position])
+  @@map("roadmap_entry_links")
+}

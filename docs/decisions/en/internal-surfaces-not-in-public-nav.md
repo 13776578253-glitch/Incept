@@ -35,6 +35,18 @@ The revision keeps the original boundary rather than relaxing it:
 
 Everything below about the remaining hidden surfaces still applies unchanged.
 
+## Update 2026-09-23: The `roadmap` Map Is Repositioned as a Human-Curated Integration Surface
+
+The `roadmap` entry is repositioned before any of its data work began. The roadmap is a store of human-written content — highly abstract, spanning projects as an integration surface — and is not derived from the task records. Its full definition is `docs/decisions/roadmap-integration-surface.md`. This update disposes of the earlier statements it touches, one by one:
+
+- **Superseded: the sentence "Any entry that cannot be described as a view derived from existing content does not belong here."** Replaced by: an entry qualifies when it is a view over material that exists independently of the map itself, including human-curated roadmap entries kept in a storage channel outside this section. The map still produces no material of its own; authoring happens elsewhere.
+- The 2026-09-23 bullet "It adds no data access. The hub is a static entry list, reads no database, and needs no viewer." keeps its force for the hub only. `/atlas/roadmap` will read the curated content storage through its package port; viewer and visibility policy are settled together with storage.
+- **Extended, not relaxed: the mounting-honesty rule "an entry may be mounted ahead of its map only if both its card and its page state plainly that the map is not implemented."** While fixtures are the data source and storage is not yet wired, both the card and the page must state "Sample data — not yet connected to storage". Nothing may claim a real connection before storage lands.
+- **Kept and bound: "the docs back-office stays in studio and must not be pulled back into the atlas section" and "It lists `/atlas/architecture`, `/atlas/roadmap` and `/atlas/keywords`, and nothing outside its own subtree."** Whatever form the owner-gated authoring surface takes, it stays on a studio/internal path: never inside the atlas subtree, never linked from an atlas card.
+- **Registered: the reconsideration named in "If a second non-map entry is ever wanted here, that is the point to reconsider whether the section is still coherent."** A cross-project integration surface stretches "maps of the project", which is exactly the moment that sentence anticipates. The reconsideration is hereby raised; whether the roadmap stays under `/atlas/roadmap` or becomes a top-level surface is settled at the module's storage gate. Until then the route and navigation stay as they are.
+- The atlas card note that promised milestones "read from the task records rather than retyped" is corrected in the same round this update lands; no window is left where the card advertises an abandoned approach.
+- The player remains hidden on `/atlas` (`features/music-player/adapter/player-route-policy.ts`). This update does not change the player policy.
+
 ## Public Navigation Rules
 
 Public navigation does not show:

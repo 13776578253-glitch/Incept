@@ -1,0 +1,88 @@
+{
+  "page": {
+    "eyebrow": "Roadmap",
+    "title": "Milestones & Backlog",
+    "description": ""
+  },
+  "switcherLabel": "Roadmaps",
+  "boardLabel": "Roadmap board",
+  "lanePickerLabel": "Choose a column",
+  "importLabel": "Import",
+  "projectSelectLabel": "Select project",
+  "emptyState": "No roadmap project has a board yet.",
+  "emptyLane": {
+    "reviewing": "Nothing is under review. New ideas land here first.",
+    "unstarted": "Nothing queued right now. Committed work waits here.",
+    "active": "Nothing is being built right now.",
+    "completed": "Nothing has shipped here yet.",
+    "canceled": "Nothing is closed or declined."
+  },
+  "loadMore": "Load more",
+  "modal": {
+    "confirmDelete": "Delete this proposal? This cannot be undone.",
+    "saveFailed": "Save failed — changes were rolled back.",
+    "lastUpdated": "Last updated",
+    "createdLabel": "Created",
+    "pendingDetail": "Pending specification"
+  },
+  "importSucceeded": "Import complete.",
+  "importFailed": "Import failed.",
+  "error": {
+    "title": "This map could not be drawn",
+    "description": "Something went wrong while loading the roadmap. Reload the page to try again."
+  },
+  "chips": {
+    "type": {
+      "feature": "Feature Request",
+      "improvement": "Improvement",
+      "maintenance": "Maintenance"
+    },
+    "priority": {
+      "high": "High Priority",
+      "middle": "Middle Priority",
+      "low": "Low Priority",
+      "none": "No Priority"
+    }
+  },
+  "admin": {
+    "heading": "Roadmap admin",
+    "boardsLabel": "Roadmaps",
+    "projectsLabel": "Projects",
+    "columnsLabel": "Columns",
+    "entriesLabel": "Entries",
+    "emptySelection": "Select a roadmap on the left to edit its columns and entries.",
+    "emptyProjectSelection": "Select a project to manage it.",
+    "projectKey": "Project key",
+    "projectNameEn": "Project name (English)",
+    "projectNameZh": "Project name (Chinese)",
+    "projectDeleteBlocked": "A project with roadmaps cannot be deleted.",
+    "fieldKey": "Key",
+    "nameEn": "Name (English)",
+    "nameZh": "Name (Chinese)",
+    "titleEn": "Title (English)",
+    "titleZh": "Title (Chinese)",
+    "summaryEn": "Summary (English)",
+    "summaryZh": "Summary (Chinese)",
+    "labelEn": "Label (English)",
+    "labelZh": "Label (Chinese)",
+    "fieldStatus": "Status",
+    "fieldType": "Type",
+    "fieldPriority": "Priority",
+    "fieldOrder": "Order",
+    "fieldHref": "Link URL",
+    "addLink": "Add link",
+    "removeLink": "Remove link",
+    "create": "Create",
+    "update": "Save",
+    "deleteLabel": "Delete",
+    "confirmDelete": "Confirm delete",
+    "failed": "The request failed.",
+    "status": {
+      "reviewing": "Reviewing",
+      "unstarted": "Unstarted",
+      "active": "Active",
+      "completed": "Completed",
+      "canceled": "Canceled"
+    }
+  }
+}

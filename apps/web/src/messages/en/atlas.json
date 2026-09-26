@@ -13,7 +13,7 @@
     "roadmap": {
       "label": "Roadmap",
       "description": "What is done, in progress and planned.",
-      "note": "Planned: milestones and open work read from the task records rather than retyped."
+      "note": "A human-curated integration roadmap across projects, in both languages."
     },
     "keywords": {
       "label": "Keywords",
