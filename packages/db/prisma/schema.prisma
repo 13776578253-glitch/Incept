@@ -350,13 +350,30 @@ model Roadmap {
   nameEn    String
   nameZh    String
   position  Int
+  projectId String?
+  project   RoadmapProject? @relation(fields: [projectId], references: [id], onDelete: Restrict)
   columns   RoadmapColumn[]
   entries   RoadmapEntry[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
   @@index([position])
+  @@index([projectId])
   @@map("roadmaps")
+}
+
+model RoadmapProject {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  nameEn    String
+  nameZh    String
+  position  Int
+  roadmaps  Roadmap[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([position])
+  @@map("roadmap_projects")
 }
 
 model RoadmapColumn {
