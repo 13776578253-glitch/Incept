@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import type { Roadmap, RoadmapLocale } from '../domain';
+import type { RoadmapLocale, RoadmapProject } from '../domain';
 
 import { roadmapEndpoints } from '../endpoints';
 import type { RoadmapChrome } from './copy';
@@ -10,8 +10,8 @@ import { IconChevronDown, IconImport, IconProjectTag } from './icons';
 import { roadmapRequest } from './request';
 
 type RoadmapToolbarProps = {
-  roadmaps: readonly Roadmap[];
-  currentKey: string;
+  projects: readonly RoadmapProject[];
+  currentProjectKey: string;
   locale: RoadmapLocale;
   chrome: RoadmapChrome;
   canEdit: boolean;
@@ -20,10 +20,10 @@ type RoadmapToolbarProps = {
 };
 
 // 顶栏右侧操作区：导入（U5 纯 JSON 文件上传，红线：只收人工清单、绝不派生自 docs/*）
-// 与选择项目（U6：锚点导航 ?rd=，与左侧切换器同源联动）。
+// 与选择项目（项目链接落到对应项目的首板）。
 export function RoadmapToolbar({
-  roadmaps,
-  currentKey,
+  projects,
+  currentProjectKey,
   locale,
   chrome,
   canEdit,
@@ -59,7 +59,7 @@ export function RoadmapToolbar({
   }, [open]);
 
   const activeProjectName =
-    roadmaps.find((item) => item.key === currentKey)?.name[locale] ??
+    projects.find((item) => item.key === currentProjectKey)?.name[locale] ??
     chrome.projectSelectLabel ??
     '';
 
@@ -140,13 +140,13 @@ export function RoadmapToolbar({
             aria-label={chrome.projectSelectLabel}
             className="absolute right-0 z-20 mt-1.5 min-w-[168px] rounded-[10px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-popover-bg,var(--color-bg))] p-1 shadow-[0_12px_32px_rgba(0,0,0,0.22)]"
           >
-            {roadmaps.map((roadmap) => {
-              const selected = currentKey === roadmap.key;
+            {projects.map((project) => {
+              const selected = currentProjectKey === project.key;
 
               return (
-                <li key={roadmap.key} role="option" aria-selected={selected} className="list-none">
+                <li key={project.key} role="option" aria-selected={selected} className="list-none">
                   <a
-                    href={hrefs[roadmap.key]}
+                    href={hrefs[project.key]}
                     onClick={() => setOpen(false)}
                     className={`flex w-full items-center justify-between rounded-[6px] px-3 py-1.5 text-left text-[0.8rem] transition-colors ${
                       selected
@@ -154,7 +154,7 @@ export function RoadmapToolbar({
                         : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-chip-bg)] hover:text-[var(--color-text)]'
                     }`}
                   >
-                    <span>{roadmap.name[locale]}</span>
+                    <span>{project.name[locale]}</span>
                     {selected && (
                       <span
                         aria-hidden="true"

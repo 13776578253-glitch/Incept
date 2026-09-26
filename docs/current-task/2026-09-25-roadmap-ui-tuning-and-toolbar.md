@@ -262,8 +262,17 @@
   - `@incept/roadmap` 与 `apps/web` 全量 TypeScript 类型检查 0 报错。
 
 [2026-09-26] - Update by AI（「全部项目」占位移除，主控裁定）:
-- **裁定**：项目下拉中的「全部项目」只是占位、路由语义错误（点进去只是默认单板）；多项目 roadmap 集合（项目 1、项目 2…）由切换器本身承载，真正的聚合视图如将来需要再另行裁定，不留占位。
+- **裁定（2026-09-25，语义于 2026-09-26 扩展）**：「全部项目」是占位且已删除。本轮项目维度将跨项目轴上移到独立 `RoadmapProject`，Roadmap 收窄为项目内看板；右侧下拉用 `?project=<key>` 切换项目，左侧切换器只列该项目的板，合法 `rd` 优先。
 - **改动**（`7817c0a`）：删除 `RoadmapToolbar` 下拉的「全部项目」列表项与 `allProjectsHref`/`allProjectsLabel` 全链路（组件 props、page 计算与传参、`RoadmapChrome` 字段、messages 中英两键），下拉变纯项目切换器（`?rd=` 锚点）；U6 测试补回归断言（`全部项目` 链接不存在）。
 - **验证**：`@incept/roadmap` 61 项单测全绿、五包 typecheck 绿。
 - Commit: [fix(roadmap) 7817c0a]，记录归 [docs]。
 
+## 2026-09-26 项目维度与右侧下拉语义重做
+
+- 本轮计划修订为 Phase 0–4：新增 `RoadmapProject`；数据库 `projectId` 暂 nullable，FK `onDelete: Restrict` 并显式索引；域层 Roadmap 强制带项目，所有读侧过滤无项目板以避免公开页 500。
+- 发布顺序约束：先应用 Phase 0 migration，再执行新版幂等 seed，最后部署 Phase 1 严格域校验代码。当前 worktree 只包含代码，未运行共享数据库 migration 或 seed。
+- Phase 1 覆盖三个 `toRoadmap` 调用路径，包括 repository 的列表/单板及 writer 的 `readRoadmapShape`/`createRoadmap`；create 通过 relation connect 并 include 项目。writer/host 结构化 Prisma 类型同步包含项目委托。
+- Phase 2 增加 owner-gated 项目 GET/POST、PATCH/DELETE stub：`apps/web/src/app/api/internal/roadmap/projects/route.ts` 与 `apps/web/src/app/api/internal/roadmap/projects/[key]/route.ts`；Roadmap 创建必填 `projectKey`，更新可改挂项目。
+- Phase 3 页面遵循 `?project=<key>&rd=<key>`，合法 `rd` 优先；无效/缺失参数按项目首板与首个有板项目回退，空项目显示空状态。管理面支持项目创建、改名、删除和 Roadmap 改挂。
+- 导入保持完整操作边界：只接受人工 JSON 条目清单，校验后事务 upsert 条目及链接；不接受项目字段、不读取任务记录，不从 `docs/NEXT.md`、`docs/BACKLOG.md`、`docs/finish-task/` 派生内容。
+- 决策文档开放问题 4 记载 T2 扩展而非推翻，问题 5 与 U6 旧下拉语义均明确 superseded；B-28 已记录新宿主触点。

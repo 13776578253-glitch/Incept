@@ -9,6 +9,7 @@
   "lanePickerLabel": "Choose a column",
   "importLabel": "Import",
   "projectSelectLabel": "Select project",
+  "emptyState": "No roadmap project has a board yet.",
   "emptyLane": {
     "reviewing": "Nothing is under review. New ideas land here first.",
     "unstarted": "Nothing queued right now. Committed work waits here.",
@@ -46,9 +47,15 @@
   "admin": {
     "heading": "Roadmap admin",
     "boardsLabel": "Roadmaps",
+    "projectsLabel": "Projects",
     "columnsLabel": "Columns",
     "entriesLabel": "Entries",
     "emptySelection": "Select a roadmap on the left to edit its columns and entries.",
+    "emptyProjectSelection": "Select a project to manage it.",
+    "projectKey": "Project key",
+    "projectNameEn": "Project name (English)",
+    "projectNameZh": "Project name (Chinese)",
+    "projectDeleteBlocked": "A project with roadmaps cannot be deleted.",
     "fieldKey": "Key",
     "nameEn": "Name (English)",
     "nameZh": "Name (Chinese)",

@@ -8,9 +8,15 @@ import type {
 export type RoadmapAdminChrome = {
   heading: string;
   boardsLabel: string;
+  projectsLabel: string;
   columnsLabel: string;
   entriesLabel: string;
   emptySelection: string;
+  emptyProjectSelection: string;
+  projectKey: string;
+  projectNameEn: string;
+  projectNameZh: string;
+  projectDeleteBlocked: string;
   fieldKey: string;
   nameEn: string;
   nameZh: string;

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 
 import { ROADMAP_ENTRY_PRIORITIES, ROADMAP_ENTRY_TYPES, ROADMAP_STATUSES } from '../../domain';
-import type { RoadmapEntryLink, RoadmapStatus } from '../../domain';
+import type { RoadmapEntryLink, RoadmapProject, RoadmapStatus } from '../../domain';
 import type { RoadmapBoard } from '../../ports';
 import { roadmapEndpoints } from '../../endpoints';
 
@@ -11,6 +11,7 @@ import type { RoadmapAdminChrome } from './roadmap-admin-chrome';
 
 type RoadmapAdminPanelProps = {
   boards: RoadmapBoard[];
+  projects: RoadmapProject[];
   chrome: RoadmapAdminChrome;
 };
 
@@ -319,9 +320,11 @@ function EntryForm({
   );
 }
 
-export function RoadmapAdminPanel({ boards: initialBoards, chrome }: RoadmapAdminPanelProps) {
+export function RoadmapAdminPanel({ boards: initialBoards, projects: initialProjects, chrome }: RoadmapAdminPanelProps) {
   const [boards, setBoards] = useState(initialBoards);
+  const [projects, setProjects] = useState(initialProjects);
   const [selectedKey, setSelectedKey] = useState<string | null>(initialBoards[0]?.roadmap.key ?? null);
+  const [selectedProjectKey, setSelectedProjectKey] = useState<string | null>(initialProjects[0]?.key ?? null);
   const [error, setError] = useState<string | null>(null);
   const selected = boards.find((board) => board.roadmap.key === selectedKey) ?? null;
 
@@ -330,6 +333,9 @@ export function RoadmapAdminPanel({ boards: initialBoards, chrome }: RoadmapAdmi
     const payload = (await response.json()) as { boards: RoadmapBoard[] };
 
     setBoards(payload.boards);
+    const projectsResponse = await fetch(roadmapEndpoints.projects);
+    const projectsPayload = (await projectsResponse.json()) as { projects: RoadmapProject[] };
+    setProjects(projectsPayload.projects);
   }
 
   function report(message: string): void {
@@ -356,6 +362,46 @@ export function RoadmapAdminPanel({ boards: initialBoards, chrome }: RoadmapAdmi
       ) : null}
       <div className="grid gap-6 lg:grid-cols-[280px_1fr_1.4fr]">
         <section aria-label={chrome.boardsLabel} className="flex flex-col gap-4">
+          <h2 className="text-[0.95rem] font-medium text-[var(--color-text)]">{chrome.projectsLabel}</h2>
+          <form className="flex flex-col gap-2" onSubmit={(event) => run(async () => {
+            event.preventDefault();
+            await api(roadmapEndpoints.projects, 'POST', {
+              key: textOf(event, 'projectKey'),
+              name: { en: textOf(event, 'projectNameEn'), zh: textOf(event, 'projectNameZh') },
+            });
+            (event.currentTarget as HTMLFormElement).reset();
+          })}>
+            <input name="projectKey" required className={inputClass} placeholder={chrome.projectKey} />
+            <input name="projectNameEn" required className={inputClass} placeholder={chrome.projectNameEn} />
+            <input name="projectNameZh" required className={inputClass} placeholder={chrome.projectNameZh} />
+            <button type="submit" className={buttonClass}>{chrome.create}</button>
+          </form>
+          <ul className="flex flex-col gap-2">
+            {projects.map((project) => (
+              <li key={project.key}>
+                <button type="button" className={`${buttonClass} w-full justify-start ${project.key === selectedProjectKey ? 'border-[var(--color-text-soft)]' : ''}`} onClick={() => setSelectedProjectKey(project.key)}>
+                  {project.name.en} / {project.name.zh}
+                </button>
+                {project.key === selectedProjectKey ? (
+                  <form className="mt-2 flex flex-col gap-2" onSubmit={(event) => void run(async () => {
+                    event.preventDefault();
+                    await api(roadmapEndpoints.project(project.key), 'PATCH', {
+                      name: { en: textOf(event, 'editProjectNameEn'), zh: textOf(event, 'editProjectNameZh') },
+                    });
+                  })}>
+                    <input name="editProjectNameEn" required className={inputClass} defaultValue={project.name.en} />
+                    <input name="editProjectNameZh" required className={inputClass} defaultValue={project.name.zh} />
+                    <div className="flex gap-2">
+                    <button type="submit" className={buttonClass}>{chrome.update}</button>
+                    <button type="button" className={dangerButtonClass} onClick={() => void run(async () => {
+                      try { await api(roadmapEndpoints.project(project.key), 'DELETE'); } catch (error) { throw new Error(error instanceof Error ? error.message : chrome.projectDeleteBlocked); }
+                    })}>{chrome.deleteLabel}</button>
+                    </div>
+                  </form>
+                ) : null}
+              </li>
+            ))}
+          </ul>
           <h2 className="text-[0.95rem] font-medium text-[var(--color-text)]">{chrome.boardsLabel}</h2>
           <form
             className="flex flex-col gap-2"
@@ -365,6 +411,7 @@ export function RoadmapAdminPanel({ boards: initialBoards, chrome }: RoadmapAdmi
                 await api(roadmapEndpoints.roadmaps, 'POST', {
                   key: textOf(event, 'key'),
                   name: { en: textOf(event, 'nameEn'), zh: textOf(event, 'nameZh') },
+                  projectKey: selectedProjectKey,
                 });
                 (event.currentTarget as HTMLFormElement).reset();
               })
@@ -381,6 +428,12 @@ export function RoadmapAdminPanel({ boards: initialBoards, chrome }: RoadmapAdmi
             <label className={labelClass}>
               {chrome.nameZh}
               <input name="nameZh" required className={inputClass} />
+            </label>
+            <label className={labelClass}>
+              {chrome.projectsLabel}
+              <select name="projectKey" required className={inputClass} value={selectedProjectKey ?? ''} onChange={(event) => setSelectedProjectKey(event.target.value)}>
+                {projects.map((project) => <option key={project.key} value={project.key}>{project.name.en} / {project.name.zh}</option>)}
+              </select>
             </label>
             <button type="submit" className={buttonClass}>
               {chrome.create}
@@ -415,6 +468,7 @@ export function RoadmapAdminPanel({ boards: initialBoards, chrome }: RoadmapAdmi
                     event.preventDefault();
                     await api(roadmapEndpoints.roadmap(selected.roadmap.key), 'PATCH', {
                       name: { en: textOf(event, 'nameEn'), zh: textOf(event, 'nameZh') },
+                      projectKey: textOf(event, 'projectKey'),
                     });
                   })
                 }
@@ -436,6 +490,12 @@ export function RoadmapAdminPanel({ boards: initialBoards, chrome }: RoadmapAdmi
                     className={inputClass}
                     defaultValue={selected.roadmap.name.zh}
                   />
+                </label>
+                <label className={labelClass}>
+                  {chrome.projectsLabel}
+                  <select name="projectKey" className={inputClass} defaultValue={selected.roadmap.project.key}>
+                    {projects.map((project) => <option key={project.key} value={project.key}>{project.name.en} / {project.name.zh}</option>)}
+                  </select>
                 </label>
                 <div className="flex gap-2">
                   <button type="submit" className={buttonClass}>

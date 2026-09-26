@@ -9,6 +9,7 @@
   "lanePickerLabel": "选择阶段列",
   "importLabel": "导入",
   "projectSelectLabel": "选择项目",
+  "emptyState": "暂无包含看板的路线图项目。",
   "emptyLane": {
     "reviewing": "暂无 Backlog 条目。",
     "unstarted": "暂无 Next up 排队条目。",
@@ -46,9 +47,15 @@
   "admin": {
     "heading": "路线图管理",
     "boardsLabel": "路线图板",
+    "projectsLabel": "项目",
     "columnsLabel": "列",
     "entriesLabel": "条目",
     "emptySelection": "在左侧选择一块路线图板，编辑它的列与条目。",
+    "emptyProjectSelection": "选择一个项目进行管理。",
+    "projectKey": "项目标识",
+    "projectNameEn": "项目名称（英文）",
+    "projectNameZh": "项目名称（中文）",
+    "projectDeleteBlocked": "仍有路线图板的项目不能删除。",
     "fieldKey": "标识",
     "nameEn": "名称（英文）",
     "nameZh": "名称（中文）",

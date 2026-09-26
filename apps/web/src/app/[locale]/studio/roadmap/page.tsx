@@ -7,7 +7,7 @@ import { ROADMAP_STATUSES } from '@incept/roadmap/domain';
 
 import type { AppLocale } from '@/i18n/config/locales';
 import { getCurrentViewer } from '@/server/auth';
-import { loadRoadmapAdminBoards } from '@/server/roadmap/assembly';
+import { loadRoadmapAdminBoards, loadRoadmapAdminProjects } from '@/server/roadmap/assembly';
 
 // studio/roadmap：owner 门控的写入面（internal-surfaces 绑定：不进 atlas 子树、不进前台导航）。
 export default async function StudioRoadmapPage({
@@ -23,13 +23,20 @@ export default async function StudioRoadmapPage({
 
   const t = await getTranslations({ locale, namespace: 'roadmap' });
   const boards = await loadRoadmapAdminBoards();
+  const projects = await loadRoadmapAdminProjects();
 
   const chrome: RoadmapAdminChrome = {
     heading: t('admin.heading'),
     boardsLabel: t('admin.boardsLabel'),
+    projectsLabel: t('admin.projectsLabel'),
     columnsLabel: t('admin.columnsLabel'),
     entriesLabel: t('admin.entriesLabel'),
     emptySelection: t('admin.emptySelection'),
+    emptyProjectSelection: t('admin.emptyProjectSelection'),
+    projectKey: t('admin.projectKey'),
+    projectNameEn: t('admin.projectNameEn'),
+    projectNameZh: t('admin.projectNameZh'),
+    projectDeleteBlocked: t('admin.projectDeleteBlocked'),
     fieldKey: t('admin.fieldKey'),
     nameEn: t('admin.nameEn'),
     nameZh: t('admin.nameZh'),
@@ -67,5 +74,5 @@ export default async function StudioRoadmapPage({
     },
   };
 
-  return <RoadmapAdminPanel boards={boards} chrome={chrome} />;
+  return <RoadmapAdminPanel boards={boards} projects={projects} chrome={chrome} />;
 }

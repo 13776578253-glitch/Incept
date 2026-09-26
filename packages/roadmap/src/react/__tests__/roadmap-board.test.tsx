@@ -379,32 +379,32 @@ describe('RoadmapSwitcher', () => {
 });
 
 describe('RoadmapToolbar', () => {
-  // U6：选择项目 = 锚点导航 ?rd=，与切换器同源联动。
+  // 右侧下拉切换项目；项目项是项目入口，与左侧的项目内板切换器分工。
   it('renders the import button and project dropdown as anchor navigation', async () => {
     const repository = createFixtureRoadmapRepository();
-    const roadmaps = await repository.listRoadmaps();
+    const projects = await repository.listProjects();
 
     render(
       <RoadmapToolbar
-        roadmaps={roadmaps}
-        currentKey={roadmaps[0].key}
+        projects={projects}
+        currentProjectKey={projects[0].key}
         locale="zh"
         chrome={zhChrome}
         canEdit
         hrefs={{
-          'sample-roadmap': '/zh/atlas/roadmap?rd=sample-roadmap',
-          'sample-atlas': '/zh/atlas/roadmap?rd=sample-atlas',
+          'project-one': '/zh/atlas/roadmap?project=project-one',
+          'project-two': '/zh/atlas/roadmap?project=project-two',
         }}
       />,
     );
 
     expect(screen.getByRole('button', { name: '导入' })).toBeTruthy();
-    // U6：触发器展示当前看板名（与切换器同源），下拉项是 ?rd= 锚点。
-    const trigger = screen.getByRole('button', { name: '路线图' });
+    // 右侧下拉展示项目名，选项指向项目内首板。
+    const trigger = screen.getByRole('button', { name: '项目一' });
     fireEvent.click(trigger);
     expect(screen.getByRole('listbox', { name: '选择项目' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /路线图/ }).getAttribute('href')).toBe(
-      '/zh/atlas/roadmap?rd=sample-roadmap',
+    expect(screen.getByRole('link', { name: /项目二/ }).getAttribute('href')).toBe(
+      '/zh/atlas/roadmap?project=project-two',
     );
     // 主控裁定：「全部项目」只是占位、路由语义错误，已移除——下拉是纯项目切换器。
     expect(screen.queryByRole('link', { name: '全部项目' })).toBeNull();
@@ -414,14 +414,15 @@ describe('RoadmapToolbar', () => {
   it('hides Import for non-owners and uploads a JSON manifest for the owner', async () => {
     const repository = createFixtureRoadmapRepository();
     const roadmaps = await repository.listRoadmaps();
+    const projects = await repository.listProjects();
     const props = {
-      roadmaps,
-      currentKey: roadmaps[0].key,
+      projects,
+      currentProjectKey: projects[0].key,
       locale: 'zh' as const,
       chrome: zhChrome,
       hrefs: {
-        'sample-roadmap': '/zh/atlas/roadmap?rd=sample-roadmap',
-        'sample-atlas': '/zh/atlas/roadmap?rd=sample-atlas',
+        'project-one': '/zh/atlas/roadmap?project=project-one',
+        'project-two': '/zh/atlas/roadmap?project=project-two',
       },
     };
 
