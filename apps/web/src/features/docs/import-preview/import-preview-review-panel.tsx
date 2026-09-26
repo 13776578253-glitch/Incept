@@ -31,7 +31,7 @@ function renderCollectionSources(preview: DocsImportPreviewModel) {
   return sources.map((source) => (
     <div
       key={`${source.meta.locale}-${source.meta.documentKey ?? source.meta.slug}`}
-      className="rounded-[0.75rem] border border-[color:color-mix(in_srgb,var(--color-border)_45%,transparent)] px-3 py-2"
+      className="rounded-[0.75rem] border border-[color:var(--color-border-subtle)] px-3 py-2"
     >
       <div className="flex items-start justify-between gap-3">
         <p className="min-w-0 break-words text-[0.9rem] text-[var(--color-text)]">
@@ -123,7 +123,7 @@ export function ImportPreviewReviewPanel({
   const accessVisibilityDescription = buildAccessVisibilityDescription(preview);
 
   return (
-    <div className="space-y-6 rounded-[1rem] border border-[color:color-mix(in_srgb,var(--color-border)_65%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_96%,transparent)] p-6">
+    <div className="space-y-6 rounded-[1rem] border border-[color:var(--color-border-card)] bg-[color:var(--color-surface-card)] p-6">
       <div className="space-y-2">
         <p className="text-[0.72rem] uppercase tracking-[0.2em] text-[var(--color-text-soft)]">
           Import preview
@@ -141,24 +141,62 @@ export function ImportPreviewReviewPanel({
       </div>
 
       {preview.draft.draftType === 'collectionDirectory' ? (
-        <div className="space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+        <div className="space-y-2.5 border-t border-[color:var(--color-border-divider)] pt-4">
           <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
             Articles in this batch
           </p>
-          <div className="space-y-2">{renderCollectionSources(preview)}</div>
+          <div className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--surface-recessed-bg)] p-2.5">
+            {renderCollectionSources(preview)}
+          </div>
         </div>
       ) : null}
 
       {preview.draft.collectionChanges?.length ? (
-        <div className="space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+        <div className="space-y-2.5 border-t border-[color:var(--color-border-divider)] pt-4">
           <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
             Batch changes
           </p>
-          <div className="space-y-1 text-[0.9rem] leading-7 text-[var(--color-text-muted)]">
+          <div className="space-y-1.5 text-[0.9rem] leading-7 text-[var(--color-text-muted)]">
             {preview.draft.collectionChanges.map((change, index) => (
-              <p key={`${change.key}-${change.status}-${index}`} className="break-words">
-                <span className="font-medium text-[var(--color-text)]">{change.status}</span>{' '}
-                {change.key} <span className="text-[var(--color-text-soft)]">({change.type})</span>
+              <p key={`${change.key}-${change.status}-${index}`} className="flex flex-wrap items-center gap-2 break-words">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.72rem] font-medium leading-4"
+                  style={
+                    change.status === 'removed'
+                      ? {
+                          color: 'var(--badge-rose-fg)',
+                          backgroundColor: 'var(--badge-rose-bg)',
+                          borderColor: 'var(--badge-rose-border)',
+                        }
+                      : change.status === 'updated' || change.status === 'renamed'
+                        ? {
+                            color: 'var(--badge-sky-fg)',
+                            backgroundColor: 'var(--badge-sky-bg)',
+                            borderColor: 'var(--badge-sky-border)',
+                          }
+                        : {
+                            color: 'var(--badge-emerald-fg)',
+                            backgroundColor: 'var(--badge-emerald-bg)',
+                            borderColor: 'var(--badge-emerald-border)',
+                          }
+                  }
+                >
+                  <span
+                    aria-hidden="true"
+                    className="size-1.5 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor:
+                        change.status === 'removed'
+                          ? 'var(--badge-rose-dot)'
+                          : change.status === 'updated' || change.status === 'renamed'
+                            ? 'var(--badge-sky-dot)'
+                            : 'var(--badge-emerald-dot)',
+                    }}
+                  />
+                  {change.status}
+                </span>
+                <span>{change.key}</span>
+                <span className="text-[var(--color-text-soft)]">({change.type})</span>
               </p>
             ))}
           </div>
@@ -204,7 +242,7 @@ export function ImportPreviewReviewPanel({
         </p>
       </div>
 
-      <div className="space-y-3 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+      <div className="space-y-3 border-t border-[color:var(--color-border-divider)] pt-4">
         <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
           Post-import visibility
         </p>
@@ -229,7 +267,7 @@ export function ImportPreviewReviewPanel({
       </div>
 
       {collectionDescription ? (
-        <div className="border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+        <div className="border-t border-[color:var(--color-border-divider)] pt-4">
           <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
             Collection relationship
           </p>
@@ -240,7 +278,7 @@ export function ImportPreviewReviewPanel({
       ) : null}
 
       {preview.draft.collectionTree?.length ? (
-        <div className="space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+        <div className="space-y-2 border-t border-[color:var(--color-border-divider)] pt-4">
           <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
             Collection navigation
           </p>
@@ -250,13 +288,64 @@ export function ImportPreviewReviewPanel({
         </div>
       ) : null}
 
-      <div className="space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] pt-4">
+      <div className="space-y-2.5 border-t border-[color:var(--color-border-divider)] pt-4">
         <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
           Validation
         </p>
-        <p className="text-[0.95rem] text-[var(--color-text-muted)]">
-          {preview.errorCount} error(s), {preview.warningCount} warning(s)
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.76rem] font-medium tabular-nums"
+            style={
+              preview.errorCount > 0
+                ? {
+                    color: 'var(--badge-rose-fg)',
+                    backgroundColor: 'var(--badge-rose-bg)',
+                    borderColor: 'var(--badge-rose-border)',
+                  }
+                : {
+                    color: 'var(--badge-emerald-fg)',
+                    backgroundColor: 'var(--badge-emerald-bg)',
+                    borderColor: 'var(--badge-emerald-border)',
+                  }
+            }
+          >
+            <span
+              aria-hidden="true"
+              className="size-1.5 shrink-0 rounded-full"
+              style={{
+                backgroundColor:
+                  preview.errorCount > 0 ? 'var(--badge-rose-dot)' : 'var(--badge-emerald-dot)',
+              }}
+            />
+            {preview.errorCount} error(s)
+          </span>
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.76rem] font-medium tabular-nums"
+            style={
+              preview.warningCount > 0
+                ? {
+                    color: 'var(--badge-amber-fg)',
+                    backgroundColor: 'var(--badge-amber-bg)',
+                    borderColor: 'var(--badge-amber-border)',
+                  }
+                : {
+                    color: 'var(--color-text-muted)',
+                    backgroundColor: 'var(--surface-chip-bg)',
+                    borderColor: 'var(--surface-chip-border)',
+                  }
+            }
+          >
+            <span
+              aria-hidden="true"
+              className="size-1.5 shrink-0 rounded-full"
+              style={{
+                backgroundColor:
+                  preview.warningCount > 0 ? 'var(--badge-amber-dot)' : 'var(--color-text-soft)',
+              }}
+            />
+            {preview.warningCount} warning(s)
+          </span>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -285,7 +374,7 @@ export function ImportPreviewReviewPanel({
           preview.draft.issues.map((issue, index) => (
             <div
               key={`${issue.code}-${index}`}
-              className="rounded-[0.8rem] border border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] px-4 py-3"
+              className="rounded-[0.8rem] border border-[color:var(--color-border-divider)] px-4 py-3"
             >
               <p className="text-[0.78rem] font-medium uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
                 {issue.level}

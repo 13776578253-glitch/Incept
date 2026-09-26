@@ -57,7 +57,7 @@ export function PlayerCompact({
 
   const containerClassName =
     variant === 'pill'
-      ? `flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] py-1.5 pl-1.5 pr-2 shadow-[var(--shadow-nav-dropdown)] ${widthClass}`
+      ? `flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] py-1.5 pl-1.5 pr-2 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-md ${widthClass}`
       : `flex items-center gap-2 py-1.5 pl-1.5 pr-2 ${widthClass}`;
 
   return (
@@ -67,7 +67,7 @@ export function PlayerCompact({
         data-player-interactive
         onClick={onTogglePlay}
         aria-label={isPlaying ? pauseLabel : playLabel}
-        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--color-nav-item-active)] text-[var(--color-text)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)]"
+        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-all duration-[var(--duration-fast)] hover:scale-105 hover:bg-[var(--color-nav-item-hover)] active:scale-95"
       >
         {isPlaying ? <PlayerPauseIcon className="h-4 w-4" /> : <PlayerPlayIcon className="h-4 w-4" />}
       </button>

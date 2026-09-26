@@ -54,12 +54,19 @@ export function PlayerExpanded({
     // 底栏复用 compact 的 bare 变体
     <section
       aria-label={copy.expandList}
-      className={`overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] shadow-[var(--shadow-nav-dropdown)] ${
+      className={`overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] shadow-[var(--shadow-nav-dropdown)] backdrop-blur-md ${
         fullWidth ? 'w-full' : playerSurfaceWidthClass
       }`}
     >
       <header className="flex items-center gap-3 px-4 pb-2 pt-3">
-        <h3 className="min-w-0 flex-1 truncate text-[0.86rem] font-medium text-[var(--color-text)]">{heading}</h3>
+        <h3 className="inline-flex min-w-0 flex-1 items-center gap-2 truncate text-[0.86rem] font-medium text-[var(--color-text)]">
+          <span
+            aria-hidden="true"
+            className="size-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: 'var(--badge-sky-dot)' }}
+          />
+          <span className="truncate">{heading}</span>
+        </h3>
         <button
           type="button"
           data-player-interactive

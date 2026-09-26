@@ -32,13 +32,19 @@ export function PlayerPlaylist({ items, emptyLabel, playLabel, onSelect }: Playe
             onClick={() => onSelect(item.id)}
             aria-label={`${playLabel}: ${item.title}`}
             aria-current={item.isCurrent ? 'true' : undefined}
-            className="flex h-11 w-full cursor-pointer items-center gap-3 px-4 text-left transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)]"
+            className={`flex h-11 w-full cursor-pointer items-center gap-3 px-4 text-left transition-colors duration-[var(--duration-fast)] ${
+              item.isCurrent
+                ? 'bg-[color:var(--color-row-bg)]'
+                : 'hover:bg-[var(--color-nav-item-hover)]'
+            }`}
           >
             <span
               aria-hidden
-              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                item.isCurrent ? 'bg-[var(--color-nav-item-active)]' : ''
-              } text-[var(--color-nav-muted)]`}
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors ${
+                item.isCurrent
+                  ? 'bg-[var(--badge-sky-bg)] text-[var(--badge-sky-icon)]'
+                  : 'bg-[var(--color-nav-item-hover)] text-[var(--color-nav-muted)]'
+              }`}
             >
               <PlayerPlayIcon className="h-2.5 w-2.5" />
             </span>

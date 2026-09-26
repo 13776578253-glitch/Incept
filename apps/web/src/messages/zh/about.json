@@ -27,7 +27,7 @@
     },
     "blog": {
       "eyebrow": "Blog activity",
-      "title": "写作与发布",
+      "title": "Writing and publishing",
       "rollingRange": "截至 {end} 的最近 52 周",
       "calendarRange": "{year} 年写作记录",
       "summary": "{articles} 篇文章 · {units} 字",

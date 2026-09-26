@@ -44,8 +44,8 @@ export function DocsChecklistBlock({
     ? 'text-[1.02rem] leading-8 text-[var(--color-text)]'
     : 'text-[1rem] leading-8 text-[var(--color-text-muted)]';
   const completedTextClassName = emphasis
-    ? 'text-[color-mix(in_srgb,var(--color-text)_56%,transparent)] line-through'
-    : 'text-[color-mix(in_srgb,var(--color-text-soft)_72%,transparent)] line-through';
+    ? 'text-[color:var(--color-text-completed)] line-through'
+    : 'text-[color:var(--color-text-strikethrough)] line-through';
 
   return (
     <ul className={listClassName}>

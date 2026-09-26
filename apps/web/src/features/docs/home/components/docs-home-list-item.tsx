@@ -69,7 +69,7 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
 
   const content = (
     <article
-      className="flex min-h-11 items-center justify-between gap-4 rounded-[11px] border border-transparent bg-[color-mix(in_srgb,var(--color-nav-item-hover)_62%,transparent)] px-4 py-2.5 transition-colors md:px-5"
+      className="group flex min-h-11 items-center justify-between gap-4 rounded-[11px] border border-transparent bg-[color:var(--color-row-bg)] px-4 py-2.5 transition-colors hover:bg-[color:var(--color-row-hover-bg)] md:px-5"
       aria-label={article.title}
     >
       <div className="min-w-0">
@@ -77,15 +77,17 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
           <h3
             className={`max-w-[42ch] text-[0.98rem] font-medium leading-6 tracking-[-0.015em] md:text-[1rem] ${
               isLocked
-                ? 'text-[color-mix(in_srgb,var(--color-text)_82%,transparent)]'
+                ? 'text-[color:var(--color-text-locked)]'
                 : 'text-[var(--color-text)]'
             }`}
           >
             <span className="inline-flex items-center gap-2">
-              <span className="text-[var(--color-nav-muted)]">
+              <span className="inline-flex shrink-0 text-[var(--color-nav-muted)] transition-colors duration-300 group-hover:text-[#0284c7] group-focus-visible:text-[#0284c7] dark:group-hover:text-[#38bdf8] dark:group-focus-visible:text-[#38bdf8]">
                 {article.entryType === 'collection' ? <CollectionIcon /> : <ArticleIcon />}
               </span>
-              <span>{article.title}</span>
+              <span className="bg-gradient-to-r from-[var(--color-text)] to-[var(--color-text)] bg-clip-text transition-all duration-300 group-hover:from-[#1d4ed8] group-hover:via-[#2563eb] group-hover:to-[#0ea5e9] group-hover:text-transparent group-focus-visible:from-[#1d4ed8] group-focus-visible:via-[#2563eb] group-focus-visible:to-[#0ea5e9] group-focus-visible:text-transparent dark:group-hover:from-[#93c5fd] dark:group-hover:via-[#60a5fa] dark:group-hover:to-[#38bdf8] dark:group-focus-visible:from-[#93c5fd] dark:group-focus-visible:via-[#60a5fa] dark:group-focus-visible:to-[#38bdf8]">
+                {article.title}
+              </span>
             </span>
           </h3>
 
@@ -97,10 +99,17 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-3 text-[0.72rem] text-[var(--color-nav-muted)]">
-        <span>{formatPublishedDate(article.publishedAt, locale)}</span>
+      <div className="flex shrink-0 items-center gap-2.5 text-[0.72rem] text-[var(--color-nav-muted)]">
+        <span className="tabular-nums">{formatPublishedDate(article.publishedAt, locale)}</span>
         {isLocked ? (
-          <span className="inline-flex items-center gap-1 text-[0.74rem] text-[var(--color-nav-muted)]">
+          <span
+            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.7rem] font-medium"
+            style={{
+              color: 'var(--badge-amber-fg)',
+              backgroundColor: 'var(--badge-amber-bg)',
+              borderColor: 'var(--badge-amber-border)',
+            }}
+          >
             <LockIcon />
             <span>{roleLabel}</span>
           </span>
@@ -113,9 +122,9 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
   );
 
   const details = expanded ? (
-    <div className="px-4 pb-4 pt-2 md:px-5">
+    <div className="px-4 pb-3 pt-2 md:px-5">
       {/* TODO: Render tags from the tag system here; keep this area borderless until then. */}
-      {tags.length ? tags.map((tag) => <span key={tag} className="mt-2 mr-2 inline-flex rounded-full bg-[var(--color-nav-item-active)] px-2.5 py-1 text-[0.7rem] text-[var(--color-nav-muted)]">{tag}</span>) : null}
+      {tags.length ? tags.map((tag) => <span key={tag} className="mt-1 mr-2 inline-flex items-center gap-1 rounded-full border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2.5 py-0.5 text-[0.7rem] font-medium text-[var(--color-text-muted)]"><span aria-hidden="true" className="text-[var(--color-text-soft)]">#</span>{tag}</span>) : null}
     </div>
   ) : null;
 
@@ -127,7 +136,7 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
     <div className="overflow-hidden rounded-[12px]">
       <Link
       href={href}
-      className="block rounded-[12px] transition-transform hover:-translate-y-px"
+      className="group block rounded-[12px] outline-none transition-transform hover:-translate-y-px"
       >{content}</Link>{details}
     </div>
   );

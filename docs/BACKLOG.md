@@ -229,8 +229,8 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 ### B-29 Comma-Bearing Tailwind Arbitrary Values Generate No Rules
 
 - Source: ~30 class strings across `apps/web/src` using `border-[color:color-mix(...)]` / `bg-[color-mix(...)]` / `shadow-[...color-mix(...)]` (docs/admin tables, import-preview panels, about/activity, home/blog, docs blocks, …).
-- Status: Open. Found on 2026-09-24 while diagnosing the settings sidebar styling: Tailwind v4 emits **no CSS rule** for arbitrary values that contain commas (`color-mix(in_srgb,...)`), while standard utilities in the same class string generate fine. The build's CSS contains exactly one `color-mix` (hand-written CSS), i.e. every such utility silently does nothing — the site-wide "slightly off" chrome is this.
-- The settings sidebar case is fixed by routing the mix through tokens variables (`--settings-nav-active-border` / `--settings-nav-active-bg`, comma-free `var()` arbitrary values generate correctly). Apply the same variable-indirection pattern (or plain CSS) to the remaining sites, or drop the dead classes once a visual pass confirms what they were supposed to do.
+- Status: Closed on 2026-09-25 on branch `feature/style`. Kept for history.
+- Defined the previously missing `--color-surface` and `--color-accent` variables across `:root`, `.dark`, and `html[data-eye-comfort-filter='warm']:not(.dark)` in `theme.css`, and routed all remaining `color-mix(...)` and `rgba(...)` arbitrary value utilities across `about`, `home`, `docs/home`, `docs/admin`, `docs/import-preview`, `docs/article`, and `docs/shared/renderers/blocks` through semantic CSS variables in `tokens.css` and `theme.css`.
 
 ## Review Before Any Code Decision
 

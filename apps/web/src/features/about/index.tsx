@@ -16,7 +16,7 @@ export function AboutFeature({ sections, activityHref }: AboutFeatureProps) {
     <main className="mx-auto w-full max-w-[var(--docs-shell-max-width)] px-5 pb-20 md:px-8 md:pb-28">
       <section className="mx-auto flex min-h-[27rem] w-full max-w-[var(--docs-content-width)] flex-col items-center justify-center border-b border-[var(--color-border)] py-10 text-center md:min-h-[34rem] md:py-14">
         <div className="flex flex-col items-center gap-7 md:gap-8">
-          <div className="relative size-32 shrink-0 overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[0_18px_42px_-30px_color-mix(in_srgb,var(--color-text)_66%,transparent)] md:size-36">
+          <div className="relative size-32 shrink-0 overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[var(--shadow-avatar)] md:size-36">
             <Image
               src="/images/about/avatar-test.jpg"
               alt={t('identity.avatarAlt')}
@@ -47,8 +47,13 @@ export function AboutFeature({ sections, activityHref }: AboutFeatureProps) {
           className="mx-auto w-full max-w-[var(--docs-content-width)] border-b border-[var(--color-border)] py-8 text-left md:py-10"
         >
           <div>
-            <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] md:text-[1.28rem]">
-              {section.title}
+            <h2 className="inline-flex items-center gap-2.5 text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] md:text-[1.28rem]">
+              <span
+                aria-hidden="true"
+                className="h-3.5 w-1 shrink-0 rounded-full"
+                style={{ backgroundColor: 'var(--badge-sky-dot)' }}
+              />
+              <span>{section.title}</span>
             </h2>
             <div className="mt-5 space-y-5">
               {section.blocks.map((block) => (

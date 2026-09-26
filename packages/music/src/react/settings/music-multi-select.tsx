@@ -72,7 +72,7 @@ export function MusicMultiSelect({
         aria-controls={isOpen ? listboxId : undefined}
         disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
-        className={`inline-flex w-full items-center justify-between gap-2 rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-2.5 text-[var(--color-text)] outline-none transition-colors hover:bg-[var(--color-nav-item-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] disabled:cursor-default disabled:opacity-50 ${buttonClassName}`}
+        className={`inline-flex w-full items-center justify-between gap-2 rounded-[9px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-2.5 text-[var(--color-text)] outline-none transition-colors hover:bg-[color:var(--color-row-hover-bg)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] disabled:cursor-default disabled:opacity-50 ${buttonClassName}`}
       >
         <span className="min-w-0 truncate">
           {selectedLabels.length > 0 ? selectedLabels.join(', ') : placeholder}
@@ -99,7 +99,7 @@ export function MusicMultiSelect({
           role="listbox"
           aria-label={ariaLabel}
           aria-multiselectable="true"
-          className="absolute left-0 z-30 mt-1 min-w-full overflow-hidden rounded-[10px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 shadow-[var(--shadow-nav-dropdown)]"
+          className="absolute left-0 z-30 mt-1 min-w-full space-y-0.5 overflow-hidden rounded-[10px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 shadow-[var(--shadow-nav-dropdown)]"
         >
           {options.map((option) => {
             const isSelected = values.includes(option.value);
@@ -114,15 +114,23 @@ export function MusicMultiSelect({
                 title={option.title}
                 // 展开状态保持
                 onClick={() => onToggle(option.value)}
-                className={`flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left text-[0.78rem] leading-none whitespace-nowrap transition-colors disabled:cursor-default disabled:opacity-50 ${
+                className={`flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left text-[0.78rem] leading-none whitespace-nowrap transition-colors disabled:cursor-default ${
                   isSelected
-                    ? 'text-[var(--color-text)]'
-                    : 'text-[var(--color-nav-dropdown-description)]'
+                    ? 'bg-[var(--badge-sky-bg)] font-medium text-[var(--badge-sky-fg)]'
+                    : 'text-[var(--color-nav-dropdown-description)] disabled:opacity-50'
                 } ${
-                  option.disabled ? '' : 'hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
+                  option.disabled
+                    ? ''
+                    : isSelected
+                      ? 'hover:brightness-105'
+                      : 'hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
                 }`}
               >
-                <span aria-hidden="true" className="w-3 shrink-0 text-[0.7rem]">
+                <span
+                  aria-hidden="true"
+                  className="inline-flex w-3.5 shrink-0 items-center justify-center text-[0.75rem]"
+                  style={{ color: isSelected ? 'var(--badge-sky-icon)' : undefined }}
+                >
                   {isSelected ? '✓' : ''}
                 </span>
                 <span className="truncate">{option.label}</span>

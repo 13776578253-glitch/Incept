@@ -125,13 +125,21 @@ function MusicTrackRow({
       </td>
       <td className="px-1 py-2 text-center text-[0.75rem]">
         <span
-          className={
-            track.isActive
-              ? 'inline-flex h-7 w-full items-center justify-center leading-none text-[var(--color-nav-dropdown-description)]'
-              : 'inline-flex h-7 w-full items-center justify-center leading-none text-[var(--color-nav-muted)] opacity-80'
-          }
+          className="inline-flex h-6 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-[0.7rem] font-medium leading-none"
+          style={{
+            color: track.isActive ? 'var(--badge-emerald-fg)' : 'var(--badge-amber-fg)',
+            backgroundColor: track.isActive ? 'var(--badge-emerald-bg)' : 'var(--badge-amber-bg)',
+            borderColor: track.isActive ? 'var(--badge-emerald-border)' : 'var(--badge-amber-border)',
+          }}
         >
-          {track.isActive ? copy.statusActive : copy.statusInactive}
+          <span
+            aria-hidden="true"
+            className="size-1.5 shrink-0 rounded-full"
+            style={{
+              backgroundColor: track.isActive ? 'var(--badge-emerald-dot)' : 'var(--badge-amber-dot)',
+            }}
+          />
+          <span>{track.isActive ? copy.statusActive : copy.statusInactive}</span>
         </span>
       </td>
       <td className="px-1 py-2">
@@ -207,7 +215,7 @@ export function MusicTrackTable({
           aria-label={copy.searchPlaceholder}
           placeholder={copy.searchPlaceholder}
           onChange={(event) => setSearch(event.target.value)}
-          className="min-h-9 min-w-[12rem] flex-1 rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-bg)] px-3 text-[0.8125rem] text-[var(--color-text)] outline-none"
+          className="min-h-9 min-w-[12rem] flex-1 rounded-[9px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3 text-[0.8125rem] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-nav-muted)] focus:border-[var(--color-nav-search-hover-border)]"
         />
         <MusicSelect
           value={libraryFilter}
@@ -225,13 +233,13 @@ export function MusicTrackTable({
       <div className="overflow-x-auto">
         <table className="w-full table-fixed border-separate border-spacing-0 text-left">
           <colgroup>
-            <col className="w-[30%]" />
-            <col className="w-[16%]" />
+            <col className="w-[28%]" />
             <col className="w-[15%]" />
             <col className="w-[13%]" />
+            <col className="w-[14%]" />
             <col className="w-[8%]" />
-            <col className="w-[9%]" />
-            <col className="w-[9%]" />
+            <col className="w-[12%]" />
+            <col className="w-[10%]" />
           </colgroup>
           <thead>
             <tr className="text-[0.7rem] uppercase tracking-[0.12em] text-[var(--color-nav-muted)]">

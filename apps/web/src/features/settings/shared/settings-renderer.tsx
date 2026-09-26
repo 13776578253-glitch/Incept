@@ -32,7 +32,7 @@ function SettingsSegmentedControl({
   isInteractive?: boolean;
 }) {
   return (
-    <div className="inline-flex flex-wrap items-center gap-1.5 rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1">
+    <div className="inline-flex flex-wrap items-center gap-1 rounded-[12px] bg-[color:var(--color-row-bg)] p-1">
       {options.map((option) => {
         const active = option.id === selected;
 
@@ -43,9 +43,9 @@ function SettingsSegmentedControl({
             disabled={!isInteractive}
             onClick={() => onSelect(option.id)}
             className={cx(
-              'rounded-[9px] px-2.5 py-1.5 text-[0.8125rem] transition-colors',
+              'rounded-[9px] px-3 py-1.5 text-[0.8125rem] transition-all duration-150',
               active
-                ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
+                ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
                 : 'text-[var(--color-nav-dropdown-description)]',
               isInteractive &&
                 !active &&
@@ -63,21 +63,30 @@ function SettingsSegmentedControl({
 
 function SettingsStaticControl({ row }: { row: SettingsRow }) {
   const baseClassName =
-    'inline-flex min-h-10 items-center justify-between gap-3 rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-3.5 py-2 text-[0.8125rem] text-[var(--color-text)]';
+    'inline-flex min-h-10 items-center justify-between gap-3 rounded-[12px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3.5 py-2 text-[0.8125rem] text-[var(--color-text)]';
   const mutedClassName =
-    'border-[var(--color-nav-dropdown-border)] text-[var(--color-nav-dropdown-description)] opacity-80';
+    'border-[var(--color-border)] text-[var(--color-nav-dropdown-description)] opacity-80';
 
   if (row.controlType === 'status') {
+    const isLocked = row.state === 'locked';
+
     return (
       <span
-        className={cx(
-          'inline-flex min-h-10 items-center rounded-full border px-3.5 text-[0.8125rem]',
-          row.state === 'locked'
-            ? 'border-[var(--color-nav-dropdown-border)] text-[var(--color-nav-dropdown-description)]'
-            : 'border-[var(--color-nav-dropdown-border)] text-[var(--color-text)]',
-        )}
+        className="inline-flex min-h-9 items-center gap-2 rounded-full border px-3.5 text-[0.8125rem] font-medium"
+        style={{
+          color: isLocked ? 'var(--badge-amber-fg)' : 'var(--badge-emerald-fg)',
+          backgroundColor: isLocked ? 'var(--badge-amber-bg)' : 'var(--badge-emerald-bg)',
+          borderColor: isLocked ? 'var(--badge-amber-border)' : 'var(--badge-emerald-border)',
+        }}
       >
-        {row.value}
+        <span
+          aria-hidden="true"
+          className="size-1.5 rounded-full"
+          style={{
+            backgroundColor: isLocked ? 'var(--badge-amber-dot)' : 'var(--badge-emerald-dot)',
+          }}
+        />
+        <span>{row.value}</span>
       </span>
     );
   }
@@ -100,7 +109,7 @@ function SettingsStaticControl({ row }: { row: SettingsRow }) {
         <input
           disabled
           placeholder={row.placeholder}
-          className="min-h-10 w-full rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-3.5 text-[0.8125rem] text-[var(--color-nav-dropdown-description)] outline-none placeholder:text-[var(--color-nav-muted)]"
+          className="min-h-10 w-full rounded-[12px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3.5 text-[0.8125rem] text-[var(--color-nav-dropdown-description)] outline-none placeholder:text-[var(--color-nav-muted)]"
         />
         {row.actionLabel ? (
           <button
@@ -142,19 +151,26 @@ function SettingsBooleanToggle({
       disabled={!isInteractive}
       onClick={onToggle}
       className={cx(
-        'inline-flex rounded-[12px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 text-[0.8125rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]',
-        !enabled &&
-          'hover:border-[var(--color-nav-search-hover-border)] hover:text-[var(--color-text)]',
+        'inline-flex rounded-[12px] bg-[color:var(--color-row-bg)] p-1 text-[0.8125rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]',
+        !enabled && 'hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]',
         !isInteractive && 'cursor-default opacity-80',
       )}
     >
       <span
         className={cx(
-          'inline-flex min-h-8 items-center justify-center rounded-[8px] px-3 py-1 text-[var(--color-nav-dropdown-description)] transition-colors',
-          enabled && 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]',
+          'inline-flex min-h-8 items-center justify-center gap-2 rounded-[9px] px-3 py-1 text-[var(--color-nav-dropdown-description)] transition-all duration-150',
+          enabled &&
+            'bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]',
         )}
       >
-        {enabled ? labels.enabled : labels.disabled}
+        <span
+          aria-hidden="true"
+          className="size-1.5 rounded-full transition-colors"
+          style={{
+            backgroundColor: enabled ? 'var(--badge-emerald-dot)' : 'var(--color-nav-muted)',
+          }}
+        />
+        <span>{enabled ? labels.enabled : labels.disabled}</span>
       </span>
     </button>
   );
@@ -240,7 +256,7 @@ function SettingsRowView({ row, ...interactions }: { row: SettingsRow } & Settin
             {row.label}
           </h3>
           {row.badge ? (
-            <span className="rounded-full border border-[var(--color-nav-dropdown-border)] px-2 py-0.5 text-[0.62rem] uppercase tracking-[0.12em] text-[var(--color-nav-muted)] opacity-80">
+            <span className="rounded-full border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2 py-0.5 text-[0.62rem] font-medium uppercase tracking-[0.12em] text-[var(--color-nav-muted)]">
               {row.badge}
             </span>
           ) : null}
