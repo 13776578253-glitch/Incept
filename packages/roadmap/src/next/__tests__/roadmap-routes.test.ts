@@ -19,7 +19,7 @@ const board: RoadmapBoard = {
   roadmap: {
     key: 'sample-roadmap',
     name: { en: 'Sample Roadmap', zh: '示例路线图' },
-    project: { key: 'project-one', name: { en: 'Project One', zh: '项目一' } },
+    project: { key: 'project-one', name: { en: 'Project One', zh: '项目一' }, roadmapEnabled: true, atlasEnabled: true },
     columns: [{ status: 'reviewing', label: { en: 'Backlog', zh: '储备' } }],
   },
   entries: [],
@@ -42,8 +42,8 @@ function fakeDeps(
   updates: RoadmapEntryPatch[] = [],
 ): RoadmapRouteDeps {
   const writer: RoadmapWriter = {
-    createProject: async (input) => ({ key: input.key, name: input.name }),
-    updateProject: async ({ key, patch }) => ({ key, name: patch.name ?? { en: 'Project', zh: '项目' } }),
+    createProject: async (input) => ({ key: input.key, name: input.name, roadmapEnabled: input.roadmapEnabled ?? true, atlasEnabled: input.atlasEnabled ?? true }),
+    updateProject: async ({ key, patch }) => ({ key, name: patch.name ?? { en: 'Project', zh: '项目' }, roadmapEnabled: patch.roadmapEnabled ?? true, atlasEnabled: patch.atlasEnabled ?? true }),
     deleteProject: async ({ key }) => ({ key }),
     createRoadmap: async (input) => ({ ...board.roadmap, key: input.key, columns: [] }),
     updateRoadmap: async () => board.roadmap,

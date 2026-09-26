@@ -5,11 +5,11 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/hooks/use-language';
 import { getSettingsPageData } from '../shared/settings-schema';
 
-function SettingsSidebar() {
+function SettingsSidebar({ viewerRole }: { viewerRole: 'guest' | 'pro' | 'owner' }) {
   const { language } = useLanguage();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const page = getSettingsPageData(language);
+  const page = getSettingsPageData(language, viewerRole === 'owner');
   const requestedSection = searchParams.get('section');
   const activeSection = page.sections.some((section) => section.id === requestedSection)
     ? requestedSection
@@ -51,6 +51,6 @@ function SettingsSidebar() {
   );
 }
 
-export function SettingsPageSidebar() {
-  return <SettingsSidebar />;
+export function SettingsPageSidebar({ viewerRole }: { viewerRole: 'guest' | 'pro' | 'owner' }) {
+  return <SettingsSidebar viewerRole={viewerRole} />;
 }

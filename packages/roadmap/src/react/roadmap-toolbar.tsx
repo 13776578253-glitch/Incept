@@ -17,6 +17,7 @@ type RoadmapToolbarProps = {
   canEdit: boolean;
   hrefs: Record<string, string>;
   onChanged?: () => void;
+  showProjectSelector?: boolean;
 };
 
 // 顶栏右侧操作区：导入（U5 纯 JSON 文件上传，红线：只收人工清单、绝不派生自 docs/*）
@@ -29,6 +30,7 @@ export function RoadmapToolbar({
   canEdit,
   hrefs,
   onChanged,
+  showProjectSelector = true,
 }: RoadmapToolbarProps) {
   const [open, setOpen] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
@@ -109,7 +111,7 @@ export function RoadmapToolbar({
         </>
       )}
 
-      <div ref={containerRef} className="relative">
+      {showProjectSelector && <div ref={containerRef} className="relative">
         <button
           type="button"
           aria-haspopup="listbox"
@@ -167,7 +169,7 @@ export function RoadmapToolbar({
             })}
           </ul>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

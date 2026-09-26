@@ -95,6 +95,14 @@ export function parseOrder(value: unknown, field: string): number | undefined {
   return value;
 }
 
+export function parseBoolean(value: unknown, field: string): boolean {
+  if (typeof value !== 'boolean') {
+    throw new Error(`"${field}" must be a boolean.`);
+  }
+
+  return value;
+}
+
 export function parseLinks(value: unknown): { label: LocalizedText; href: string }[] | undefined {
   if (value === undefined || value === null) {
     return undefined;

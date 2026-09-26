@@ -34,6 +34,8 @@ export type RoadmapColumn = {
 export type RoadmapProject = {
   key: string;
   name: LocalizedText;
+  roadmapEnabled: boolean;
+  atlasEnabled: boolean;
 };
 
 export type Roadmap = {

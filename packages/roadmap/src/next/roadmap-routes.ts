@@ -7,6 +7,7 @@ import {
   badRequest,
   guardOwner,
   parseEntryPatch,
+  parseBoolean,
   parseEnum,
   parseLocalizedText,
   parseOrder,
@@ -140,7 +141,13 @@ export function createRoadmapProjectsRoute(deps: RoadmapRouteDeps) {
     try {
       const key = typeof body.key === 'string' ? body.key.trim() : '';
       if (!key) return badRequest('"key" must be a non-empty string.');
-      const project = await deps.writer.createProject({ key, name: parseLocalizedText(body.name, 'name'), position: parseOrder(body.position, 'position') });
+      const project = await deps.writer.createProject({
+        key,
+        name: parseLocalizedText(body.name, 'name'),
+        position: parseOrder(body.position, 'position'),
+        ...(body.roadmapEnabled !== undefined ? { roadmapEnabled: parseBoolean(body.roadmapEnabled, 'roadmapEnabled') } : {}),
+        ...(body.atlasEnabled !== undefined ? { atlasEnabled: parseBoolean(body.atlasEnabled, 'atlasEnabled') } : {}),
+      });
       return NextResponse.json({ project }, { status: 201 });
     } catch (error) {
       return badRequest(error instanceof Error ? error.message : 'The project was not created.');
@@ -157,11 +164,13 @@ export function createRoadmapProjectItemRoute(deps: RoadmapRouteDeps) {
     const body = await readJsonBody(request);
     if (!body) return badRequest('The request body must be a JSON object.');
     try {
-      const patch: { name?: ReturnType<typeof parseLocalizedText>; position?: number } = {};
+      const patch: { name?: ReturnType<typeof parseLocalizedText>; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean } = {};
       if (body.name !== undefined) patch.name = parseLocalizedText(body.name, 'name');
       const position = parseOrder(body.position, 'position');
       if (position !== undefined) patch.position = position;
-      if (!patch.name && patch.position === undefined) return badRequest('The project update has no fields.');
+      if (body.roadmapEnabled !== undefined) patch.roadmapEnabled = parseBoolean(body.roadmapEnabled, 'roadmapEnabled');
+      if (body.atlasEnabled !== undefined) patch.atlasEnabled = parseBoolean(body.atlasEnabled, 'atlasEnabled');
+      if (!patch.name && patch.position === undefined && patch.roadmapEnabled === undefined && patch.atlasEnabled === undefined) return badRequest('The project update has no fields.');
       return NextResponse.json({ project: await deps.writer.updateProject({ key, patch }) });
     } catch (error) {
       return badRequest(error instanceof Error ? error.message : 'The project was not updated.');

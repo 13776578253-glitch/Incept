@@ -27,7 +27,7 @@ const roadmapRow: RoadmapRow = {
 };
 
 const projectRow: RoadmapProjectRow = {
-  id: 'project_1', key: 'project-one', nameEn: 'Project One', nameZh: '项目一', position: 10,
+  id: 'project_1', key: 'project-one', nameEn: 'Project One', nameZh: '项目一', position: 10, roadmapEnabled: true, atlasEnabled: true,
   createdAt: new Date('2026-09-24T00:00:00Z'), updatedAt: new Date('2026-09-24T00:00:00Z'),
 };
 
@@ -81,7 +81,7 @@ function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
     roadmapProject: {
       findMany: async () => [projectRow],
       findUnique: async () => projectRow,
-      create: async (args) => ({ ...projectRow, key: args.data.key, nameEn: args.data.nameEn, nameZh: args.data.nameZh, position: args.data.position }),
+      create: async (args) => ({ ...projectRow, key: args.data.key, nameEn: args.data.nameEn, nameZh: args.data.nameZh, position: args.data.position, roadmapEnabled: args.data.roadmapEnabled, atlasEnabled: args.data.atlasEnabled }),
       update: async () => projectRow,
       delete: async () => projectRow,
     },

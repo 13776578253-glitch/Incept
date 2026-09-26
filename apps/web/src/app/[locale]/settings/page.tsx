@@ -6,6 +6,7 @@ import {
 import { loadSettingsSectionContributionData } from '@/mount/registry';
 import { settingsSectionServerLoaders } from '@/mount/server';
 import { getCurrentViewer } from '@/server/auth';
+import { loadRoadmapAdminProjects } from '@/server/roadmap/assembly';
 
 export default async function SettingsPage() {
   const viewer = await getCurrentViewer();
@@ -16,12 +17,14 @@ export default async function SettingsPage() {
     settingsSectionServerLoaders,
     viewer.role === 'owner',
   );
+  const projects = viewer.role === 'owner' ? await loadRoadmapAdminProjects() : [];
 
   return (
-    <SettingsShell sidebar={<SettingsPageSidebar />}>
+    <SettingsShell sidebar={<SettingsPageSidebar viewerRole={viewer.role} />}>
       <SettingsPageContent
         viewerRole={viewer.role}
         settingsContributionData={settingsContributionData}
+        projects={projects}
       />
     </SettingsShell>
   );

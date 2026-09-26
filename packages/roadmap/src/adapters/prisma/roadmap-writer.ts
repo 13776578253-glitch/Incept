@@ -59,8 +59,8 @@ export type RoadmapPrismaTx = {
   roadmapProject: {
     findMany(args: { orderBy: { position: 'asc' } }): Promise<RoadmapProjectRow[]>;
     findUnique(args: { where: { key: string } }): Promise<RoadmapProjectRow | null>;
-    create(args: { data: { key: string; nameEn: string; nameZh: string; position: number } }): Promise<RoadmapProjectRow>;
-    update(args: { where: { key: string }; data: { nameEn?: string; nameZh?: string; position?: number } }): Promise<RoadmapProjectRow>;
+    create(args: { data: { key: string; nameEn: string; nameZh: string; position: number; roadmapEnabled: boolean; atlasEnabled: boolean } }): Promise<RoadmapProjectRow>;
+    update(args: { where: { key: string }; data: { nameEn?: string; nameZh?: string; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean } }): Promise<RoadmapProjectRow>;
     delete(args: { where: { key: string } }): Promise<RoadmapProjectRow>;
   };
   roadmapColumn: {
@@ -264,24 +264,34 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
   }
 
   return {
-    async createProject({ key, name, position }) {
+    async createProject({ key, name, position, roadmapEnabled = true, atlasEnabled = true }) {
       if (key.trim() === '') fail('project key must be a non-empty string');
+      if (!roadmapEnabled && !atlasEnabled) fail('at least one public surface must remain enabled');
       assertLocalizedText(name, 'name');
       return client.$transaction(async (tx) => {
         const rows = await tx.roadmapProject.findMany({ orderBy: { position: 'asc' } });
         const resolved = position ?? (rows.length === 0 ? 10 : Math.max(...rows.map((row) => row.position)) + 10);
-        const row = await tx.roadmapProject.create({ data: { key, nameEn: name.en, nameZh: name.zh, position: resolved } });
-        return { key: row.key, name: { en: row.nameEn, zh: row.nameZh } };
+        const row = await tx.roadmapProject.create({ data: { key, nameEn: name.en, nameZh: name.zh, position: resolved, roadmapEnabled, atlasEnabled } });
+        return { key: row.key, name: { en: row.nameEn, zh: row.nameZh }, roadmapEnabled: row.roadmapEnabled, atlasEnabled: row.atlasEnabled };
       });
     },
 
     async updateProject({ key, patch }) {
       if (patch.name) assertLocalizedText(patch.name, 'patch.name');
+      if (patch.roadmapEnabled === false && patch.atlasEnabled === false) {
+        fail('at least one public surface must remain enabled');
+      }
       const row = await client.roadmapProject.update({
         where: { key },
-        data: { ...(patch.name ? { nameEn: patch.name.en, nameZh: patch.name.zh } : {}), ...(patch.position !== undefined ? { position: patch.position } : {}) },
+        data: {
+          ...(patch.name ? { nameEn: patch.name.en, nameZh: patch.name.zh } : {}),
+          ...(patch.position !== undefined ? { position: patch.position } : {}),
+          ...(patch.roadmapEnabled !== undefined ? { roadmapEnabled: patch.roadmapEnabled } : {}),
+          ...(patch.atlasEnabled !== undefined ? { atlasEnabled: patch.atlasEnabled } : {}),
+        },
       });
-      return { key: row.key, name: { en: row.nameEn, zh: row.nameZh } };
+      if (!row.roadmapEnabled && !row.atlasEnabled) fail('at least one public surface must remain enabled');
+      return { key: row.key, name: { en: row.nameEn, zh: row.nameZh }, roadmapEnabled: row.roadmapEnabled, atlasEnabled: row.atlasEnabled };
     },
 
     async deleteProject({ key }) {

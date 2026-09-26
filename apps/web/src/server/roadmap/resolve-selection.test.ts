@@ -28,7 +28,7 @@ describe('resolveRoadmapSelection', () => {
   it('keeps a valid but empty project empty', async () => {
     const repository = createFixtureRoadmapRepository();
     const projects = await repository.listProjects();
-    const emptyProject = { key: 'empty', name: { en: 'Empty', zh: '空项目' } };
+    const emptyProject = { key: 'empty', name: { en: 'Empty', zh: '空项目' }, roadmapEnabled: true, atlasEnabled: true };
 
     expect(resolveRoadmapSelection([emptyProject, ...projects], await repository.listRoadmaps(), 'empty')).toBeNull();
   });

@@ -32,8 +32,8 @@ export type RoadmapEntryPatch = Partial<Omit<RoadmapEntryDraft, 'key' | 'detail'
 };
 
 export type RoadmapWriter = {
-  createProject: (input: { key: string; name: LocalizedText; position?: number }) => Promise<RoadmapProject>;
-  updateProject: (input: { key: string; patch: { name?: LocalizedText; position?: number } }) => Promise<RoadmapProject>;
+  createProject: (input: { key: string; name: LocalizedText; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean }) => Promise<RoadmapProject>;
+  updateProject: (input: { key: string; patch: { name?: LocalizedText; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean } }) => Promise<RoadmapProject>;
   deleteProject: (input: { key: string }) => Promise<{ key: string }>;
   createRoadmap: (input: {
     key: string;

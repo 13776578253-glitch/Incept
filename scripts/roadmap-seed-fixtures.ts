@@ -47,8 +47,8 @@ async function main() {
   for (const [projectIndex, project] of fixtureProjects.entries()) {
     const row = await prisma.roadmapProject.upsert({
       where: { key: project.key },
-      create: { key: project.key, nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10 },
-      update: { nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10 },
+      create: { key: project.key, nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10, roadmapEnabled: project.roadmapEnabled, atlasEnabled: project.atlasEnabled },
+      update: { nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10, roadmapEnabled: project.roadmapEnabled, atlasEnabled: project.atlasEnabled },
     });
     projectRows.set(project.key, row);
   }

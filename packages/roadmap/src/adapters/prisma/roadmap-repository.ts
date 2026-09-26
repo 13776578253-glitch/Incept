@@ -31,6 +31,8 @@ export type RoadmapProjectRow = {
   nameEn: string;
   nameZh: string;
   position: number;
+  roadmapEnabled: boolean;
+  atlasEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -111,7 +113,12 @@ export function toColumn(row: RoadmapColumnRow): RoadmapColumn {
 }
 
 export function toProject(row: RoadmapProjectRow): RoadmapProject {
-  return { key: row.key, name: { en: row.nameEn, zh: row.nameZh } };
+  return {
+    key: row.key,
+    name: { en: row.nameEn, zh: row.nameZh },
+    roadmapEnabled: row.roadmapEnabled,
+    atlasEnabled: row.atlasEnabled,
+  };
 }
 
 export function toRoadmap(
@@ -121,7 +128,12 @@ export function toRoadmap(
   return {
     key: row.key,
     name: { en: row.nameEn, zh: row.nameZh },
-    project: row.project ? toProject(row.project) : { key: '', name: { en: '', zh: '' } },
+    project: row.project ? toProject(row.project) : {
+      key: '',
+      name: { en: '', zh: '' },
+      roadmapEnabled: true,
+      atlasEnabled: true,
+    },
     columns: [...columns].sort(byPosition).map(toColumn),
   };
 }

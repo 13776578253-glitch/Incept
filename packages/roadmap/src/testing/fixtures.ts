@@ -4,8 +4,8 @@ import type { Roadmap, RoadmapEntry, RoadmapProject } from '../domain';
 // 样本刻意覆盖极端：超长标题（卡片两行截断）、空列、双语长文本。T4 硬化：无计数样本。
 
 export const fixtureProjects: readonly RoadmapProject[] = [
-  { key: 'project-one', name: { en: 'Project One', zh: '项目一' } },
-  { key: 'project-two', name: { en: 'Project Two', zh: '项目二' } },
+  { key: 'project-one', name: { en: 'Project One', zh: '项目一' }, roadmapEnabled: true, atlasEnabled: true },
+  { key: 'project-two', name: { en: 'Project Two', zh: '项目二' }, roadmapEnabled: true, atlasEnabled: true },
 ];
 
 export const fixtureRoadmaps: readonly Roadmap[] = [

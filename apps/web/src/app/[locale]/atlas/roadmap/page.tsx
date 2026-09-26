@@ -8,6 +8,7 @@ import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 import { createRoadmapRepository, isRoadmapOwner } from '@/server/roadmap/assembly';
 import { resolveRoadmapSelection } from '@/server/roadmap/resolve-selection';
+import { LockedSurface, SurfaceNavigation } from '@/features/atlas';
 
 // 路线图页面：项目由 ?project= 选择，项目内板由 ?rd= 选择；合法 rd 优先。
 // T3 装配注入 Prisma 读链，列结构与显示名由每张 Roadmap 自带（T1 裁定）。
@@ -28,7 +29,7 @@ export default async function RoadmapMapPage({
   const projects = await repository.listProjects();
   const selection = resolveRoadmapSelection(projects, roadmaps, projectKey, rd);
   const current = selection?.roadmap;
-  const currentProject = selection?.project;
+  const currentProject = selection?.project ?? projects.find((candidate) => candidate.key === projectKey) ?? projects[0];
   const currentProjectRoadmaps = currentProject
     ? roadmaps.filter((roadmap) => roadmap.project.key === currentProject.key)
     : [];
@@ -80,20 +81,26 @@ export default async function RoadmapMapPage({
     projectSelectLabel: t('projectSelectLabel'),
   };
 
-  if (!current || !board || !currentProject) {
+  if (!currentProject) {
     return (
       <WorkspaceShell>
-        <div className="mx-auto w-full max-w-[1480px] px-6 py-16 lg:px-10">
-          <h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-[var(--color-text)]">{t('page.title')}</h1>
-          <p className="mt-3 text-[0.9rem] text-[var(--color-text-soft)]">{t('emptyState')}</p>
-        </div>
+        <div className="mx-auto w-full max-w-[1480px] px-6 py-16 lg:px-10"><p className="text-[0.9rem] text-[var(--color-text-soft)]">{t('emptyState')}</p></div>
       </WorkspaceShell>
     );
   }
 
+  if (!currentProject.roadmapEnabled) {
+    return <WorkspaceShell><SurfaceNavigation projects={projects} currentProject={currentProject} locale={locale} activeSurface="roadmap" /><LockedSurface locale={locale} surface="roadmap" /></WorkspaceShell>;
+  }
+
+  if (!current || !board) {
+    return <WorkspaceShell><SurfaceNavigation projects={projects} currentProject={currentProject} locale={locale} activeSurface="roadmap" /><div className="mx-auto w-full max-w-[1480px] px-6 py-12 lg:px-10"><p className="text-[0.9rem] text-[var(--color-text-soft)]">{t('emptyState')}</p></div></WorkspaceShell>;
+  }
+
   return (
     <WorkspaceShell>
-      <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-16 md:flex md:h-[calc(100dvh-var(--navbar-height,64px))] md:min-h-[560px] md:flex-col md:overflow-hidden md:pt-7 md:pb-6 lg:px-10">
+      <SurfaceNavigation projects={projects} currentProject={currentProject} locale={locale} activeSurface="roadmap" />
+      <div className="mx-auto w-full max-w-[1480px] px-6 pt-8 pb-16 md:flex md:h-[calc(100dvh-var(--navbar-height,64px))] md:min-h-[560px] md:flex-col md:overflow-hidden md:pt-10 md:pb-6 lg:px-10">
         <header className="pb-8 md:shrink-0 md:pb-5">
           <div className="max-w-[46rem] space-y-2.5 md:space-y-3">
             <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
@@ -119,6 +126,7 @@ export default async function RoadmapMapPage({
             chrome={chrome}
             canEdit={canEdit}
             hrefs={hrefs}
+            showProjectSelector={false}
           />
         </div>
         <RoadmapBoard

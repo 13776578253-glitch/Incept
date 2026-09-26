@@ -7,7 +7,7 @@ import { AtlasHub } from './components/atlas-hub';
 import { atlasEntries, type AtlasCardModel } from './atlas-registry';
 
 // 图谱总览：每张卡片进入 /atlas/<key>
-export function AtlasIndexFeature() {
+export function AtlasIndexFeature({ projectKey }: { projectKey: string }) {
   const t = useTranslations('atlas');
   const locale = useLocale() as AppLocale;
 
@@ -16,7 +16,7 @@ export function AtlasIndexFeature() {
     label: t(entry.labelKey),
     description: t(entry.descriptionKey),
     note: t(entry.noteKey),
-    href: withLocalePath(locale, entry.path),
+    href: `${withLocalePath(locale, entry.path)}?project=${encodeURIComponent(projectKey)}`,
   }));
 
   return (

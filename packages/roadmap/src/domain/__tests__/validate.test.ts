@@ -6,7 +6,7 @@ import { validateBoard, validateEntry, validateRoadmap } from '../validate';
 const roadmap: Roadmap = {
   key: 'sample',
   name: { en: 'Sample', zh: '示例' },
-  project: { key: 'project-one', name: { en: 'Project One', zh: '项目一' } },
+  project: { key: 'project-one', name: { en: 'Project One', zh: '项目一' }, roadmapEnabled: true, atlasEnabled: true },
   columns: [
     { status: 'unstarted', label: { en: 'Next', zh: '接下来' } },
     { status: 'active', label: { en: 'Now', zh: '进行中' } },

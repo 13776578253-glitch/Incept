@@ -6,7 +6,7 @@ import { getAiSettingsSection } from '../ai/ai-schema';
 import { getAppearanceSettingsSection } from '../appearance/appearance-schema';
 import { getLanguageSettingsSection } from '../language/language-schema';
 
-export function getSettingsPageData(locale: AppLocale): SettingsPageData {
+export function getSettingsPageData(locale: AppLocale, includeProjects = false): SettingsPageData {
   const isZh = locale === 'zh';
 
   return {
@@ -16,6 +16,13 @@ export function getSettingsPageData(locale: AppLocale): SettingsPageData {
       getAppearanceSettingsSection(locale),
       getLanguageSettingsSection(locale),
       getAccountSettingsSection(locale),
+      ...(includeProjects ? [{
+        id: 'projects',
+        label: isZh ? '项目与功能' : 'Projects & surfaces',
+        description: isZh ? '管理项目名称，以及路线图和图谱的开放状态。' : 'Manage project names and whether Roadmap and Atlas are available.',
+        visibility: 'admin' as const,
+        rows: [],
+      }] : []),
       // 注册表贡献分区按 order 追加
       // history: 原 music 硬编码已由注册面持有，贡献分区插在 ai 之前以保持原分区顺序
       ...collectSettingsSectionContributions(mountManifest).map((contribution) => ({

@@ -23,7 +23,7 @@ const baseRow = {
 };
 
 const projectRow: RoadmapProjectRow = {
-  id: 'project_1', key: 'project-one', nameEn: 'Project One', nameZh: '项目一', position: 10,
+  id: 'project_1', key: 'project-one', nameEn: 'Project One', nameZh: '项目一', position: 10, roadmapEnabled: true, atlasEnabled: true,
   createdAt: new Date('2026-09-23T00:00:00Z'), updatedAt: new Date('2026-09-23T00:00:00Z'),
 };
 
