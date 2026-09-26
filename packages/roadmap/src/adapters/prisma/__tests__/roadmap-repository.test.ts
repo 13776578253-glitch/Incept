@@ -98,7 +98,12 @@ describe('createPrismaRoadmapRepository', () => {
 
     expect(roadmaps.map((roadmap) => roadmap.key)).toEqual(['sample-roadmap', 'sample-atlas']);
     expect(roadmaps[0].name).toEqual({ en: 'Sample Roadmap', zh: '示例路线图' });
-    expect(roadmaps[0].project).toEqual({ key: 'project-one', name: { en: 'Project One', zh: '项目一' } });
+    expect(roadmaps[0].project).toEqual({
+      key: 'project-one',
+      name: { en: 'Project One', zh: '项目一' },
+      roadmapEnabled: true,
+      atlasEnabled: true,
+    });
     expect(roadmaps[0].columns.map((column) => column.status)).toEqual(['active', 'reviewing']);
   });
 

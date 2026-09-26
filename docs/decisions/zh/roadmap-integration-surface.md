@@ -23,7 +23,7 @@ Accepted on 2026-09-23。暂缓的实施阶段登记在 `docs/BACKLOG.md`（B-28
 4. **存储与著述留待二次讨论（deferred）。** 该延期是刻意的；见"开放问题"。
 5. **路线图以进程内 feature 包 `packages/roadmap`（`@incept/roadmap`）交付**，沿用 music 包模板：分层梯度（domain 与 ports 禁 React/Next/Node；application 是 Node 可用编排层；react 认 React；next 认 Next；cli 与 adapters 认 Node）、边界强制（package `exports`、分层 tsconfig、pnpm 隔离、包独立 typecheck）、路径与配置注入、最小宿主面。本文档只记录 roadmap 特有增量。
 6. **分层草案：** domain（纯类型与校验，含 LocalizedText 对）、ports（RoadmapRepository 读端口先行；写端口随著述决策落地）、adapters（存储适配——此前只有 fixture/内存适配）、application、react、next、cli（著述定案后）、testing。
-7. **宿主触点**包括 `/atlas/roadmap` 页面与装配、owner 门控的 studio 页面及内部 API stub。本轮项目扩展新增 `/api/internal/roadmap/projects` 与 `/api/internal/roadmap/projects/[key]` 两个明确的宿主触点。不新增 mount 贡献类型。著述面留在 studio/内部路径，绝不进入 atlas 子树，也不从 atlas 卡片链接。
+7. **宿主触点**包括 `/atlas/roadmap` 页面与装配、owner 门控的 studio 页面及内部 API stub。本轮项目扩展新增 `/api/internal/roadmap/projects` 与 `/api/internal/roadmap/projects/[key]` 两个明确的宿主触点。2026-09-26 项目表面扩展还具名登记 `apps/web/src/features/settings/projects/project-surfaces-panel.tsx`（owner 设置页 CRUD 与表面开关）、`apps/web/src/features/settings/shared/settings-schema.ts`、`apps/web/src/features/settings/page/settings-page-content.tsx`、`apps/web/src/features/settings/page/settings-page-sidebar.tsx`、`apps/web/src/app/[locale]/settings/page.tsx`、`apps/web/src/features/atlas/components/surface-navigation.tsx`；公开路由消费者为 `/atlas`、`/atlas/architecture`、`/atlas/keywords`、`/atlas/roadmap`。不新增 mount 贡献类型。`?locked=<surface>` 是禁用目标的可选导航提示，不是状态真源或访问控制；服务端渲染状态由项目持久化的 `atlasEnabled` / `roadmapEnabled` 字段决定。Atlas 目录/内容仍来自现有静态 `atlas-registry.ts`；尚未实现按项目持久化的 Atlas 内容模型，后续讨论已登记在 B-28。著述面留在 studio/内部路径，绝不进入 atlas 子树，也不从 atlas 卡片链接。
 
 ## 被否决的方案
 
