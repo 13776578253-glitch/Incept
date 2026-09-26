@@ -227,8 +227,9 @@ describe('RoadmapBoard', () => {
     fireEvent.click(backlogCard);
     const backlogDialog = screen.getByRole('dialog');
     expect(within(backlogDialog).getByRole('button', { name: 'Add Backlog entry' })).toBeTruthy();
-    expect(within(backlogDialog).queryByRole('button', { name: 'Undo' })).toBeNull();
+    expect(within(backlogDialog).queryByText('Undo')).toBeNull();
     expect(within(backlogDialog).getByRole('button', { name: 'Delete' })).toBeTruthy();
+    expect(within(backlogDialog).queryByText('View all similar requests')).toBeNull();
   });
 
   // M3 主证据：canEdit=false 时全部写控件不可见（非 Owner 门控 U2）。

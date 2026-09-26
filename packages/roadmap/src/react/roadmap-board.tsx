@@ -75,7 +75,7 @@ export function RoadmapBoard({
   }
 
   return (
-    <section aria-label={chrome.boardLabel} className="flex flex-col gap-3">
+    <section aria-label={chrome.boardLabel} className="flex flex-col gap-3 md:min-h-0 md:flex-1">
       <div
         role="group"
         aria-label={chrome.lanePickerLabel}
@@ -93,8 +93,8 @@ export function RoadmapBoard({
               onClick={() => setSelected(column.status)}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[0.8rem] font-medium transition-colors ${
                 selected === column.status
-                  ? 'border-[var(--color-text-soft)] bg-[var(--roadmap-chip-bg)] text-[var(--color-text)] shadow-xs'
-                  : 'border-[var(--color-border)] text-[var(--color-text-muted)]'
+                  ? 'border-[var(--roadmap-border-hover,var(--color-text-soft))] bg-[var(--roadmap-chip-bg)] text-[var(--color-text)] shadow-xs'
+                  : 'border-[var(--roadmap-border,var(--color-border))] text-[var(--color-text-muted)]'
               }`}
             >
               <span
@@ -112,7 +112,7 @@ export function RoadmapBoard({
           );
         })}
       </div>
-      <div className="flex flex-col gap-3.5 md:grid md:auto-cols-[minmax(288px,1fr)] md:grid-flow-col md:items-start md:gap-4 md:snap-x md:overflow-x-auto">
+      <div className="flex flex-col gap-3.5 md:grid md:min-h-0 md:flex-1 md:grid-rows-[minmax(0,1fr)] md:auto-cols-[minmax(288px,1fr)] md:grid-flow-col md:items-start md:gap-4 md:snap-x md:overflow-x-auto">
         {columns.map((column) => {
           const displayLabel = column.label.en || column.label[locale];
 

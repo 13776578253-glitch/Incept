@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
-import type {
-  LocalizedText,
-  RoadmapEntry,
-  RoadmapEntryPriority,
-  RoadmapEntryType,
-  RoadmapLocale,
-  RoadmapStatus,
+import {
+  findSimilarEntry,
+  type LocalizedText,
+  type RoadmapEntry,
+  type RoadmapEntryPriority,
+  type RoadmapEntryType,
+  type RoadmapLocale,
+  type RoadmapStatus,
 } from '../domain';
 
 import { roadmapEndpoints } from '../endpoints';
@@ -32,29 +34,29 @@ type RoadmapDetailModalProps = {
 
 const statusPillStyles: Record<RoadmapStatus, { bg: string; fg: string; border: string }> = {
   completed: {
-    bg: 'rgba(16, 185, 129, 0.12)',
-    fg: '#059669',
-    border: 'rgba(16, 185, 129, 0.28)',
+    bg: 'rgba(16, 185, 129, 0.1)',
+    fg: 'var(--roadmap-status-completed, #059669)',
+    border: 'rgba(16, 185, 129, 0.2)',
   },
   active: {
-    bg: 'rgba(37, 99, 235, 0.1)',
-    fg: '#2563eb',
-    border: 'rgba(37, 99, 235, 0.25)',
+    bg: 'rgba(59, 130, 246, 0.1)',
+    fg: 'var(--roadmap-status-active, #2563eb)',
+    border: 'rgba(59, 130, 246, 0.2)',
   },
   unstarted: {
-    bg: 'rgba(124, 58, 237, 0.1)',
-    fg: '#7c3aed',
-    border: 'rgba(124, 58, 237, 0.25)',
+    bg: 'rgba(139, 92, 246, 0.1)',
+    fg: 'var(--roadmap-status-unstarted, #7c3aed)',
+    border: 'rgba(139, 92, 246, 0.2)',
   },
   reviewing: {
-    bg: 'rgba(71, 85, 105, 0.1)',
-    fg: '#475569',
-    border: 'rgba(71, 85, 105, 0.22)',
+    bg: 'var(--roadmap-chip-bg, rgba(71, 85, 105, 0.1))',
+    fg: 'var(--roadmap-status-reviewing, #475569)',
+    border: 'var(--roadmap-chip-border, rgba(71, 85, 105, 0.18))',
   },
   canceled: {
-    bg: 'rgba(225, 29, 72, 0.1)',
-    fg: '#e11d48',
-    border: 'rgba(225, 29, 72, 0.24)',
+    bg: 'rgba(244, 63, 94, 0.1)',
+    fg: 'var(--roadmap-status-canceled, #e11d48)',
+    border: 'rgba(244, 63, 94, 0.2)',
   },
 };
 
@@ -170,6 +172,21 @@ function relativeTime(iso: string | undefined, locale: RoadmapLocale): string | 
   return rtf.format(-Math.round(hours / 24), 'day');
 }
 
+function formatCalendarDate(iso: string | undefined, locale: RoadmapLocale): string | null {
+  if (!iso) return null;
+
+  const parsed = new Date(iso);
+
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  const rel = relativeTime(iso, locale);
+
+  return rel ? `${year}-${month}-${day} (${rel})` : `${year}-${month}-${day}`;
+}
+
 // 条目详情弹窗（第 1 轮微调：弹窗上移至导航栏下方、右侧切换条下方仅在 Backlog 显示 + 按钮、移除 Comments 改为英文预留空白栏目、移除右侧 Upvoters 行）。
 export function RoadmapDetailModal({
   entry,
@@ -225,9 +242,7 @@ export function RoadmapDetailModal({
       ? allEntries[currentIndex + 1]
       : undefined;
 
-  const similarEntry =
-    allEntries.find((item) => item.key !== entry.key && item.type === entry.type) ??
-    allEntries.find((item) => item.key !== entry.key);
+  const similarEntry = findSimilarEntry(entry, allEntries);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -412,13 +427,21 @@ export function RoadmapDetailModal({
     setOpenSelector(null);
   }
 
-  return (
+  const createdDateText = formatCalendarDate(entry.createdAt, locale);
+  const updatedDateText = formatCalendarDate(entry.updatedAt, locale);
+
+  const modalNode = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={editedTitle}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          event.preventDefault();
+        }
+      }}
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/35 px-4 pt-[calc(var(--navbar-height,64px)+24px)] pb-12 backdrop-blur-[3px] sm:px-6 sm:pt-[calc(var(--navbar-height,64px)+32px)]"
+      className="fixed inset-0 z-50 flex transform-gpu items-start justify-center overflow-y-auto bg-black/45 px-4 pt-[calc(var(--navbar-height,64px)+24px)] pb-12 backdrop-blur-[3px] will-change-[opacity] sm:px-6 sm:pt-[calc(var(--navbar-height,64px)+32px)] dark:bg-black/72"
     >
       <div
         onClick={(event) => {
@@ -427,17 +450,17 @@ export function RoadmapDetailModal({
             setOpenSelector(null);
           }
         }}
-        className="relative flex w-full max-w-[920px] flex-col overflow-visible rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg)] shadow-[0_24px_64px_rgba(15,23,42,0.22)] md:flex-row"
+        className="relative flex w-full max-w-[920px] flex-col overflow-visible rounded-[16px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-modal-bg,var(--color-bg))] shadow-[0_24px_64px_rgba(0,0,0,0.38)] md:flex-row"
       >
         {/* 右侧外部上下条目切换浮动按钮 + 仅在展开弹窗且处于 Backlog 时显示的「+」新增条目按钮 */}
         <div className="-right-11 top-0 hidden flex-col gap-2 lg:absolute lg:flex">
-          <div className="flex flex-col overflow-hidden rounded-[8px] border border-[var(--color-border)] bg-[var(--color-bg)] shadow-md">
+          <div className="flex flex-col overflow-hidden rounded-[8px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-modal-bg,var(--color-bg))] shadow-md">
             <button
               type="button"
               aria-label="Previous entry"
               disabled={!prevEntry}
               onClick={() => prevEntry && onSelectEntry(prevEntry)}
-              className="flex size-8 items-center justify-center border-b border-[var(--color-border)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--color-text)] disabled:opacity-35"
+              className="flex size-8 items-center justify-center border-b border-[var(--roadmap-border,var(--color-border))] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--color-text)] disabled:opacity-35"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
                 <path d="M6 3.5 2.5 7.5h7z" />
@@ -462,7 +485,7 @@ export function RoadmapDetailModal({
               aria-label="Add Backlog entry"
               title="Add entry to Backlog"
               onClick={enterCreateMode}
-              className="flex size-8 items-center justify-center rounded-[8px] border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] shadow-md transition-colors hover:border-[var(--roadmap-status-active,#2563eb)] hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--roadmap-status-active,#2563eb)]"
+              className="flex size-8 items-center justify-center rounded-[8px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-modal-bg,var(--color-bg))] text-[var(--color-text-muted)] shadow-md transition-colors hover:border-[var(--roadmap-status-active,#2563eb)] hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--roadmap-status-active,#2563eb)]"
             >
               <svg
                 width="14"
@@ -481,7 +504,7 @@ export function RoadmapDetailModal({
         </div>
 
         {/* 左侧主内容列 */}
-        <div className="flex min-w-0 flex-1 flex-col gap-5 p-6 sm:p-7">
+        <div className="flex min-w-0 flex-1 flex-col gap-5 rounded-t-[15px] p-6 sm:p-7 md:rounded-tr-none md:rounded-l-[15px]">
           <div className="space-y-2">
             <h2 className="text-[1.15rem] font-semibold leading-snug tracking-[-0.01em] text-[var(--color-text)] sm:text-[1.22rem]">
               {editedTitle}
@@ -493,11 +516,11 @@ export function RoadmapDetailModal({
 
           {/* View all similar requests 折叠卡片盒 */}
           {similarEntry && (
-            <div className="overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-bg)]">
+            <div className="overflow-hidden rounded-[10px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))]">
               <button
                 type="button"
                 onClick={() => onSelectEntry(similarEntry)}
-                className="flex w-full items-center justify-between border-b border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] px-3.5 py-2 text-left text-[0.78rem] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
+                className="flex w-full items-center justify-between border-b border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-lane-bg)] px-3.5 py-2 text-left text-[0.78rem] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
               >
                 <span className="inline-flex items-center gap-1.5">
                   <span aria-hidden="true" className="text-[#64748b]">
@@ -525,7 +548,7 @@ export function RoadmapDetailModal({
 
           {/* Details / Activity feed / Editor 分段标签页 */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-5 border-b border-[var(--color-border)]">
+            <div className="flex items-center gap-5 border-b border-[var(--roadmap-divider,var(--color-border))]">
               <button
                 type="button"
                 onClick={() => setActiveTab('details')}
@@ -565,10 +588,10 @@ export function RoadmapDetailModal({
 
             {activeTab === 'activity' && (
               <div className="relative flex flex-col gap-0">
-                {/* M4：节点只表述创建/最后更新；updatedAt 是 @updatedAt，严禁写成状态变更时间 */}
-                {createdText && (
+                {/* 节点 1：真实创建时间记录 */}
+                {createdDateText && (
                   <>
-                    <div className="flex items-center justify-between rounded-[10px] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] px-3.5 py-2.5 text-[0.8rem]">
+                    <div className="flex items-center justify-between rounded-[10px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-lane-bg)] px-3.5 py-2.5 text-[0.8rem]">
                       <span className="inline-flex items-center gap-2">
                         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                           <circle cx="8" cy="8" r="6.5" fill="#10b981" />
@@ -580,35 +603,42 @@ export function RoadmapDetailModal({
                             strokeLinejoin="round"
                           />
                         </svg>
-                        <span className="font-medium text-[var(--color-text)]">Soulter</span>
-                        <span className="text-[var(--color-text-muted)]">{chrome.createdLabel}</span>
+                        <span className="font-medium text-[var(--color-text)]">cpp</span>
+                        <span className="text-[var(--color-text-muted)]">
+                          {locale === 'zh' ? '创建了此提议' : 'created this proposal'}
+                        </span>
                       </span>
-                      <span className="text-[0.75rem] text-[var(--color-text-soft)]">{createdText}</span>
+                      <span className="text-[0.75rem] text-[var(--color-text-soft)]">{createdDateText}</span>
                     </div>
 
                     {/* 时间轴连接竖线 */}
-                    <div className="ml-5 h-3.5 w-px bg-[var(--color-border)]" />
+                    <div className="ml-5 h-3.5 w-px bg-[var(--roadmap-divider,var(--color-border))]" />
                   </>
                 )}
 
-                {updatedText && (
-                  <div className="flex items-center justify-between rounded-[10px] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] px-3.5 py-2.5 text-[0.8rem]">
+                {/* 节点 2：动态阶段与修改记录（方案 3-A） */}
+                {updatedDateText && (
+                  <div className="flex items-center justify-between rounded-[10px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-lane-bg)] px-3.5 py-2.5 text-[0.8rem]">
                     <span className="inline-flex items-center gap-2">
                       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <circle cx="8" cy="8" r="6" stroke="#3b82f6" strokeWidth="1.6" />
                         <path d="M8 2a6 6 0 0 0 0 12V2Z" fill="#3b82f6" />
                       </svg>
-                      <span className="font-medium text-[var(--color-text)]">Soulter</span>
-                      <span className="text-[var(--color-text-muted)]">{chrome.lastUpdated}</span>
+                      <span className="font-medium text-[var(--color-text)]">cpp</span>
+                      <span className="text-[var(--color-text-muted)]">
+                        {locale === 'zh'
+                          ? `更新了提议（当前阶段：${statusLabel} · 优先级：${chrome.priorityLabels[selectedPriority]}）`
+                          : `updated proposal (currently ${statusLabel} · ${chrome.priorityLabels[selectedPriority]})`}
+                      </span>
                     </span>
-                    <span className="text-[0.75rem] text-[var(--color-text-soft)]">{updatedText}</span>
+                    <span className="text-[0.75rem] text-[var(--color-text-soft)]">{updatedDateText}</span>
                   </div>
                 )}
               </div>
             )}
 
             {activeTab === 'details' && (
-              <div className="flex min-h-[104px] items-center justify-center rounded-[10px] border border-dashed border-[var(--color-border)] bg-[var(--roadmap-lane-bg)]/50 px-4 py-6 text-[0.78rem] text-[var(--color-text-soft)]">
+              <div className="flex min-h-[104px] items-center justify-center rounded-[10px] border border-dashed border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-lane-bg)]/50 px-4 py-6 text-[0.78rem] text-[var(--color-text-soft)]">
                 {editedDetail.trim() ? (
                   <p className="w-full whitespace-pre-wrap text-left text-[0.82rem] leading-relaxed text-[var(--color-text)]">
                     {editedDetail}
@@ -620,15 +650,15 @@ export function RoadmapDetailModal({
             )}
 
             {activeTab === 'editor' && (
-              <div className="overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-bg)] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+              <div className="overflow-hidden rounded-[10px] border border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
                 {/* 编辑器顶栏状态与重置操作 */}
-                <div className="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--roadmap-lane-bg)]/80 px-3.5 py-2">
+                <div className="flex items-center justify-between border-b border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-lane-bg)]/80 px-3.5 py-2">
                   <div className="inline-flex items-center gap-2">
                     <span className="size-1.5 rounded-full bg-[#3b82f6]" />
                     <span className="text-[0.74rem] font-semibold tracking-wide text-[var(--color-text)]">
                       Proposal Editor
                     </span>
-                    <span className="rounded-[5px] border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 text-[0.68rem] text-[var(--color-text-soft)]">
+                    <span className="rounded-[5px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-1.5 py-0.5 text-[0.68rem] text-[var(--color-text-soft)]">
                       Live sync
                     </span>
                   </div>
@@ -656,7 +686,7 @@ export function RoadmapDetailModal({
                 </div>
 
                 {/* 分栏紧凑表单字段 */}
-                <div className="divide-y divide-[var(--color-border)]">
+                <div className="divide-y divide-[var(--roadmap-divider,var(--color-border))]">
                   <label className="flex flex-col gap-1.5 p-3.5 transition-colors focus-within:bg-[var(--roadmap-lane-bg)]/30">
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-1.5 text-[0.74rem] font-semibold text-[var(--color-text)]">
@@ -677,7 +707,7 @@ export function RoadmapDetailModal({
                         setEditedTitle(event.target.value);
                         setSavedToast(false);
                       }}
-                      className="w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)]/45 px-3 py-1.5 text-[0.82rem] font-medium text-[var(--color-text)] outline-none transition-all focus:border-[#3b82f6] focus:bg-[var(--color-bg)] focus:ring-2 focus:ring-[#3b82f6]/12"
+                      className="w-full rounded-[7px] border border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-lane-bg)]/45 px-3 py-1.5 text-[0.82rem] font-medium text-[var(--color-text)] outline-none transition-all focus:border-[#3b82f6] focus:bg-[var(--roadmap-card-bg,var(--color-bg))] focus:ring-2 focus:ring-[#3b82f6]/12"
                     />
                   </label>
 
@@ -701,7 +731,7 @@ export function RoadmapDetailModal({
                         setEditedSummary(event.target.value);
                         setSavedToast(false);
                       }}
-                      className="w-full resize-none rounded-[7px] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)]/45 px-3 py-1.5 text-[0.81rem] leading-relaxed text-[var(--color-text)] outline-none transition-all focus:border-[#3b82f6] focus:bg-[var(--color-bg)] focus:ring-2 focus:ring-[#3b82f6]/12"
+                      className="w-full resize-none rounded-[7px] border border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-lane-bg)]/45 px-3 py-1.5 text-[0.81rem] leading-relaxed text-[var(--color-text)] outline-none transition-all focus:border-[#3b82f6] focus:bg-[var(--roadmap-card-bg,var(--color-bg))] focus:ring-2 focus:ring-[#3b82f6]/12"
                     />
                   </label>
 
@@ -726,13 +756,13 @@ export function RoadmapDetailModal({
                         setSavedToast(false);
                       }}
                       placeholder="输入具体内容与方案说明..."
-                      className="w-full resize-none rounded-[7px] border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)]/45 px-3 py-2 text-[0.81rem] leading-relaxed text-[var(--color-text)] outline-none transition-all focus:border-[#3b82f6] focus:bg-[var(--color-bg)] focus:ring-2 focus:ring-[#3b82f6]/12"
+                      className="w-full resize-none rounded-[7px] border border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-lane-bg)]/45 px-3 py-2 text-[0.81rem] leading-relaxed text-[var(--color-text)] outline-none transition-all focus:border-[#3b82f6] focus:bg-[var(--roadmap-card-bg,var(--color-bg))] focus:ring-2 focus:ring-[#3b82f6]/12"
                     />
                   </label>
                 </div>
 
                 {/* 底部保存与预览操作条 */}
-                <div className="flex items-center justify-between border-t border-[var(--color-border)] bg-[var(--roadmap-lane-bg)]/50 px-3.5 py-2">
+                <div className="flex items-center justify-between border-t border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-lane-bg)]/50 px-3.5 py-2">
                   <span className="text-[0.72rem] text-[var(--color-text-soft)]">
                     {saveError ? (
                       <span className="text-[#b91c1c]">{saveError}</span>
@@ -746,7 +776,7 @@ export function RoadmapDetailModal({
                     <button
                       type="button"
                       onClick={() => setActiveTab('details')}
-                      className="rounded-[6px] border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1 text-[0.73rem] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
+                      className="rounded-[6px] border border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-2.5 py-1 text-[0.73rem] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
                     >
                       Preview Details
                     </button>
@@ -764,8 +794,8 @@ export function RoadmapDetailModal({
           </div>
         </div>
 
-        {/* 右侧元数据与回退/删除侧栏 */}
-        <aside className="flex w-full shrink-0 flex-col justify-between border-t border-[var(--color-border)] bg-[var(--roadmap-lane-bg)]/45 md:w-[288px] md:border-t-0 md:border-l">
+        {/* 右侧元数据与回退/删除侧栏（rounded-b-[15px] md:rounded-r-[15px] 防止外层 overflow-visible 时直角背景溢出圆角边框） */}
+        <aside className="flex w-full shrink-0 flex-col justify-between rounded-b-[15px] border-t border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-lane-bg)]/55 md:w-[288px] md:rounded-bl-none md:rounded-r-[15px] md:border-t-0 md:border-l">
           <div className="space-y-3.5 p-6 text-[0.8rem]">
             <div className="grid grid-cols-[84px_1fr] items-center">
               <span className="text-[var(--color-text-muted)]">Status</span>
@@ -830,7 +860,7 @@ export function RoadmapDetailModal({
                     role="listbox"
                     aria-label="Board options"
                     onClick={(event) => event.stopPropagation()}
-                    className="absolute left-0 z-30 mt-1.5 w-[164px] rounded-[9px] border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
+                    className="absolute left-0 z-30 mt-1.5 w-[164px] rounded-[9px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-popover-bg,var(--color-bg))] p-1 shadow-[0_12px_32px_rgba(0,0,0,0.22)]"
                   >
                     {boardTypeOptions.map((typeOption) => {
                       const active = selectedType === typeOption;
@@ -843,8 +873,8 @@ export function RoadmapDetailModal({
                             onClick={() => void handleTypePick(typeOption)}
                             className={`flex w-full items-center justify-between rounded-[6px] px-2.5 py-1.5 text-left text-[0.75rem] font-medium transition-colors ${
                               active
-                                ? 'bg-[var(--roadmap-lane-bg)] text-[var(--color-text)]'
-                                : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-lane-bg)]/65 hover:text-[var(--color-text)]'
+                                ? 'bg-[var(--roadmap-chip-bg)] text-[var(--color-text)]'
+                                : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-chip-bg)]/70 hover:text-[var(--color-text)]'
                             }`}
                           >
                             <span className="inline-flex items-center gap-2 truncate">
@@ -860,7 +890,7 @@ export function RoadmapDetailModal({
                             {active && (
                               <span
                                 aria-hidden="true"
-                                className="ml-1.5 shrink-0 text-[0.72rem] font-semibold text-[#2563eb]"
+                                className="ml-1.5 shrink-0 text-[0.72rem] font-semibold text-[var(--roadmap-status-active,#2563eb)]"
                               >
                                 ✓
                               </span>
@@ -919,7 +949,7 @@ export function RoadmapDetailModal({
                     role="listbox"
                     aria-label="Tags options"
                     onClick={(event) => event.stopPropagation()}
-                    className="absolute left-0 z-30 mt-1.5 w-[164px] rounded-[9px] border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
+                    className="absolute left-0 z-30 mt-1.5 w-[164px] rounded-[9px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-popover-bg,var(--color-bg))] p-1 shadow-[0_12px_32px_rgba(0,0,0,0.22)]"
                   >
                     {priorityTagOptions.map((priorityOption) => {
                       const active = selectedPriority === priorityOption;
@@ -931,8 +961,8 @@ export function RoadmapDetailModal({
                             onClick={() => void handlePriorityPick(priorityOption)}
                             className={`flex w-full items-center justify-between rounded-[6px] px-2.5 py-1.5 text-left text-[0.75rem] font-medium transition-colors ${
                               active
-                                ? 'bg-[var(--roadmap-lane-bg)] text-[var(--color-text)]'
-                                : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-lane-bg)]/65 hover:text-[var(--color-text)]'
+                                ? 'bg-[var(--roadmap-chip-bg)] text-[var(--color-text)]'
+                                : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-chip-bg)]/70 hover:text-[var(--color-text)]'
                             }`}
                           >
                             <span className="inline-flex items-center gap-2 truncate">
@@ -948,7 +978,7 @@ export function RoadmapDetailModal({
                             {active && (
                               <span
                                 aria-hidden="true"
-                                className="ml-1.5 shrink-0 text-[0.72rem] font-semibold text-[#2563eb]"
+                                className="ml-1.5 shrink-0 text-[0.72rem] font-semibold text-[var(--roadmap-status-active,#2563eb)]"
                               >
                                 ✓
                               </span>
@@ -964,22 +994,22 @@ export function RoadmapDetailModal({
 
             <div className="grid grid-cols-[84px_1fr] items-center pt-1">
               <span className="text-[var(--color-text-muted)]">Date</span>
-              <span className="text-[var(--color-text)]">{createdText ?? '—'}</span>
+              <span className="text-[var(--color-text)]">{createdDateText ?? '—'}</span>
             </div>
 
             <div className="grid grid-cols-[84px_1fr] items-center">
               <span className="text-[var(--color-text-muted)]">Author</span>
               <div className="inline-flex items-center gap-2">
                 <span className="relative inline-flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-amber-500 text-[0.7rem] font-semibold text-white">
-                  S
+                  C
                   <span
                     aria-hidden="true"
-                    className="absolute -top-0.5 -right-0.5 flex size-2.5 items-center justify-center rounded-full bg-[#3b82f6] text-[7px] text-white ring-1 ring-white"
+                    className="absolute -top-0.5 -right-0.5 flex size-2.5 items-center justify-center rounded-full bg-[#3b82f6] text-[7px] text-white ring-1 ring-[var(--roadmap-modal-bg,var(--color-bg))]"
                   >
                     ✓
                   </span>
                 </span>
-                <span className="font-medium text-[var(--color-text)]">Soulter</span>
+                <span className="font-medium text-[var(--color-text)]">cpp</span>
               </div>
             </div>
 
@@ -993,7 +1023,7 @@ export function RoadmapDetailModal({
                       href={link.href}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-0.5 text-[0.71rem] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                      className="inline-flex items-center gap-1 rounded-full border border-[var(--roadmap-chip-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-2 py-0.5 text-[0.71rem] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                     >
                       <IconLink />
                       {link.label[locale]}
@@ -1006,7 +1036,7 @@ export function RoadmapDetailModal({
 
           {/* 右下角回退/删除提议操作区（U2：非 Owner 整块隐藏；Undo 目标由 undoStatus 注入） */}
           {canEdit && (
-            <div className="border-t border-[var(--color-border)] p-6">
+            <div className="border-t border-[var(--roadmap-divider,var(--color-border))] p-6">
               <h3 className="text-[0.86rem] font-semibold text-[var(--color-text)]">
                 Revert or delete
               </h3>
@@ -1020,7 +1050,7 @@ export function RoadmapDetailModal({
                       type="button"
                       aria-label="Undo"
                       onClick={() => void handleUndo()}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3.5 py-1.5 text-[0.78rem] font-medium text-[var(--color-text)] shadow-xs transition-colors hover:bg-[var(--roadmap-lane-bg)] dark:bg-[var(--color-bg)]"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-3.5 py-1.5 text-[0.78rem] font-medium text-[var(--color-text)] shadow-xs transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-lane-bg)]"
                     >
                       Undo
                     </button>
@@ -1042,4 +1072,6 @@ export function RoadmapDetailModal({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalNode, document.body) : modalNode;
 }

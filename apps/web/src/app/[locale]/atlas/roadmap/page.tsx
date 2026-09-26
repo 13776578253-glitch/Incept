@@ -83,18 +83,18 @@ export default async function RoadmapMapPage({
 
   return (
     <WorkspaceShell>
-      <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-16 md:pt-10 md:pb-20 lg:px-10">
-        <header className="pb-16 md:pb-20">
-          <div className="max-w-[46rem] space-y-5">
+      <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-16 md:flex md:h-[calc(100dvh-var(--navbar-height,64px))] md:min-h-[560px] md:flex-col md:overflow-hidden md:pt-7 md:pb-6 lg:px-10">
+        <header className="pb-8 md:shrink-0 md:pb-5">
+          <div className="max-w-[46rem] space-y-2.5 md:space-y-3">
             <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
               {t('page.eyebrow')}
             </p>
-            <h1 className="max-w-[44rem] text-[2rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[2.65rem] md:leading-[1.08]">
+            <h1 className="max-w-[44rem] text-[2rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[2.45rem] md:leading-[1.08]">
               {t('page.title')}
             </h1>
           </div>
         </header>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 md:shrink-0">
           <RoadmapSwitcher
             roadmaps={roadmaps}
             currentKey={current.key}

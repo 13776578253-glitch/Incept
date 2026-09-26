@@ -19,7 +19,7 @@ export function RoadmapSwitcher({
   return (
     <nav
       aria-label={label}
-      className="inline-flex flex-wrap items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] p-1"
+      className="inline-flex flex-wrap items-center gap-1 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-lane-bg)] p-1"
     >
       <span className="sr-only">{label}</span>
       {roadmaps.map((roadmap) => {
@@ -32,7 +32,7 @@ export function RoadmapSwitcher({
             aria-current={current ? 'true' : undefined}
             className={`inline-flex items-center rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all ${
               current
-                ? 'border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.06)]'
+                ? 'border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.06)]'
                 : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
             }`}
           >

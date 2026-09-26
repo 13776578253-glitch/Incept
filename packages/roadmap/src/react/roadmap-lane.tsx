@@ -38,9 +38,9 @@ export function RoadmapLane({
   return (
     <section
       aria-label={label}
-      className={`${mobileVisible ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] p-3 md:flex md:snap-start`}
+      className={`${mobileVisible ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 rounded-xl border border-[var(--roadmap-lane-border,transparent)] bg-[var(--roadmap-lane-bg)] p-3 md:flex md:max-h-full md:min-h-0 md:self-start md:snap-start md:overflow-hidden`}
     >
-      <header className="flex items-center gap-2 px-1 py-0.5">
+      <header className="flex shrink-0 items-center gap-2 px-1 py-0.5">
         <span aria-hidden="true" className="inline-flex shrink-0" style={{ color: iconColor }}>
           <StatusIcon />
         </span>
@@ -52,11 +52,11 @@ export function RoadmapLane({
         </span>
       </header>
       {entries.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[var(--color-border)] px-3 py-4 text-[0.8rem] leading-6 text-[var(--color-text-soft)]">
+        <p className="rounded-xl border border-dashed border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))]/40 px-3.5 py-4 text-[0.8rem] leading-6 text-[var(--color-text-soft)]">
           {chrome.emptyLane[status]}
         </p>
       ) : (
-        <ul className="flex flex-col gap-2.5">
+        <ul className="flex flex-col gap-2.5 py-0.5 md:min-h-0 md:flex-1 md:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {shown.map((entry) => (
             <li key={entry.key} className="list-none">
               <RoadmapCard
@@ -73,7 +73,7 @@ export function RoadmapLane({
         <button
           type="button"
           onClick={() => setVisible((current) => current + LANE_PAGE)}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-soft)] hover:text-[var(--color-text)]"
+          className="shrink-0 rounded-lg border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))] hover:text-[var(--color-text)]"
         >
           {chrome.loadMore}
         </button>

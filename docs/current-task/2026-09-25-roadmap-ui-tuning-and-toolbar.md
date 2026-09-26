@@ -212,4 +212,52 @@
 - 全量验证：五包 typecheck 绿、335 测试绿（roadmap 57 / web 18 / music 187 / core 73）、build 绿（含 import 路由）、`pnpm roadmap:seed` 幂等。owner 浏览器走查（弹窗 Save/Undo/Delete/+/导入 + studio 表单）留待主控。
 - Commit: [feat(db,roadmap) 87b1fe4 / feat(roadmap) afe4d94 / feat b4d17a7 / feat 2579ac9]，记录归 [docs]。
 
+[2026-09-25] - Update by AI（样式二次调优第一轮：暗色模式白边消除、展开弹窗发蓝背景修正与单页分栏隐藏滚动）:
+- **暗色模式面板与选项白边消除（对应需求 1）**：
+  - 在 `apps/web/src/styles/theme.css`（`:root` / `.dark` / `warm` 护眼模式）中引入专属暗色层级表面与低对比边界变量：`--roadmap-lane-bg: #0c0c0f`、`--roadmap-card-bg: #131317`、`--roadmap-modal-bg: #111115`、`--roadmap-popover-bg: #16161c`、`--roadmap-border: rgba(255, 255, 255, 0.065)`、`--roadmap-border-hover: rgba(255, 255, 255, 0.13)`，并将 `.dark` 下 `type` / `priority` 胶囊边框透明度由 `0.25~0.28` 下调至 `0.16~0.18`。
+  - 在 `RoadmapLane`、`RoadmapCard`、`RoadmapSwitcher` 与 `RoadmapToolbar` 中将原 `border-[var(--color-border)]` 与 `hover:border-[var(--color-text-soft)]` 替换为 `--roadmap-border` 与 `--roadmap-border-hover`。
+  - 修复 `RoadmapToolbar` 下拉选项由于 `tokens.css` 中 `--radius-lg: 20px` 导致的胶囊状亮边包裹问题，将下拉列表容器改为 `rounded-[10px] bg-[var(--roadmap-popover-bg)]`，内部选项行改为 `rounded-[6px]` 无边框柔和选中底色。
+- **展开弹窗背景发蓝与内部白边修正（对应需求 2）**：
+  - 原因定位：`packages/roadmap/src/react/roadmap-detail-modal.tsx` 遮罩层此前使用了 `bg-slate-950/35`（`#020617` 藏青蓝色），叠加 `backdrop-blur-[3px]` 后在纯黑 `#050505` 页面上会将整屏染成深蓝色。
+  - 修复：将遮罩层改为中性纯黑 `bg-black/45 dark:bg-black/72`；将弹窗主面板与内部 `View all similar requests`、`Activity feed` 时间轴节点、`Proposal Editor` 输入框、右侧 `Board`/`Tags` 浮层、作者认证角标 `ring` 以及 `Undo` 按钮全部切换为 `--roadmap-modal-bg`、`--roadmap-card-bg` 与 `--roadmap-border`，并将 `statusPillStyles` 改为引用主题感知的 `--roadmap-status-*` 变量。
+- **桌面端标签页锁死单屏高度 + 各状态纵列独立滑动且隐藏滚动条（对应需求 3）**：
+  - 在 `apps/web/src/app/[locale]/atlas/roadmap/page.tsx` 中将桌面端页面外层容器固定为单屏视口高度 `md:flex md:h-[calc(100dvh-var(--navbar-height,64px))] md:flex-col md:overflow-hidden`，头部与工具栏设为 `md:shrink-0`。
+  - 在 `packages/roadmap/src/react/roadmap-board.tsx` 与 `packages/roadmap/src/react/roadmap-lane.tsx` 中设为 `md:min-h-0 md:flex-1 md:items-stretch` 与 `md:max-h-full md:min-h-0 md:overflow-hidden`，令每一列（`Backlog` / `Next up` / `In Progress` / `Done`）的卡片列表 `<ul className="... md:min-h-0 md:flex-1 md:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">` 在列内独立纵向滚动并隐藏滚动条，不再撑高或滚动整个浏览器标签页。
+
+[2026-09-25] - Update by AI（样式二次调优第二轮：暗色模式发紫验证与纯中性灰校正、嵌套边框与白边彻底清零、看板网格按条目动态伸缩）:
+- **验证并修复暗色背景轻微发紫问题（对应需求 4，图 4）**：
+  - **原因验证**：第一轮暗色表面色值使用了 `#0c0c0f`（RGB `12, 12, 15`）、`#131317`（RGB `19, 19, 23`）、`#111115`（RGB `17, 17, 21`）与 `#16161c`（RGB `22, 22, 28`）。由于这些颜色的蓝色通道（`B`）高于红/绿通道（`R = G < B`），在 HSL 色相环中恰好落在 **Hue `240°`（蓝紫/靛紫色相）**，在页面纯中性黑 `#050505`（`R=G=B=5`，饱和度 `0%`）衬托下必然呈现轻微发紫。
+  - **修复**：在 `apps/web/src/styles/theme.css` 中将 `.dark` 所有表面色全部替换为 **100% 纯中性无彩色灰（`R = G = B`，饱和度 `0%`）**：`--roadmap-lane-bg: #0b0b0b`、`--roadmap-card-bg: #141414`、`--roadmap-card-hover-bg: #191919`、`--roadmap-modal-bg: #121212`、`--roadmap-popover-bg: #181818`、`--roadmap-chip-bg: #1e1e1e`。
+- **彻底解决暗色模式白边与三层嵌套边框问题（对应需求 1、需求 2，图 1、图 2）**：
+  - **原因**：Chromium 在圆角元素（`rounded-full` / `rounded-xl`）上绘制 `rgba(255, 255, 255, 0.065)` 半透明白色边框时，白色像素在暗底边缘抗锯齿会产生一圈明显白边（`导入` / `图谱板 v` 按钮及卡片边缘）；同时「列外框 border → 卡片 border → 标签胶囊 border」形成三层同心圆角嵌套框；且在较矮窗口下硬高度截断导致图 1 中单张卡片底部的 `Improvement` / `Middle Priority` 被裁切。
+  - **修复**：
+    1. 在 `.dark` 下将 `--roadmap-lane-border`、`--roadmap-border`、`--roadmap-border-hover`、`--roadmap-chip-border` 及全部 `type`/`priority` 胶囊边框统一设为 `transparent`（零白边、零同心嵌套框），仅用纯中性灰阶表面明度（`#050505` → `#0b0b0b` → `#141414` → `#191919`）区分层级；弹窗内部结构分割线独立使用 `--roadmap-divider: #1f1f1f`（深炭灰，不反白光）。
+    2. 在 `page.tsx` 增加 `md:min-h-[560px]` 并在 `RoadmapLane` 的 `<ul>` 增加 `py-0.5`，保证即使窗口极矮时单张卡片也绝不会被裁切底部标签。
+- **看板网格动态延伸与收缩（对应需求 3，图 3）**：
+  - **原因**：第一轮在 `RoadmapBoard` 上使用了 `md:items-stretch`，导致当页面锁死全屏高度时，只有 1 个卡片（`Planned 1`、`Shipped 1`）或 0 个卡片（`Building 0`）的纵列也被强制拉长到底部。
+  - **修复**：将 `RoadmapBoard` 网格改为 `md:grid-rows-[minmax(0,1fr)] md:items-start`，配合 `RoadmapLane` 的 `md:max-h-full md:self-start`：当列内只有 0 个（空占位算作 1 个）或 1~2 个卡片时，纵列背景框**自动收缩包裹卡片位置**；当列内卡片增多时动态向下延伸，直至触达单屏底部上限（`max-h-full`）后在列内开启无滚动条独立纵向滑动。
+
+[2026-09-26] - Update by AI（第三轮：弹窗圆角裁剪修复、Author 改为 cpp/C、createPortal 消除退出闪屏，以及 Activity feed / Similar requests 后端方案汇报）:
+- **弹窗圆角边框裁剪错误修复（对应需求 1，图 1）**：
+  - **原因**：`RoadmapDetailModal` 外层容器为了放置右侧 `-right-11` 悬浮按钮使用了 `overflow-visible rounded-[16px]`，而内部右侧 `<aside>` 带有浅灰背景却未设置右侧圆角，导致 90° 直角灰底溢出 16px 圆角外框。
+  - **修复**：为 `<aside>` 补充 `rounded-b-[15px] md:rounded-bl-none md:rounded-r-[15px]`，左侧主列补充 `rounded-t-[15px] md:rounded-tr-none md:rounded-l-[15px]`，严丝合缝贴合 16px 圆角内缘。
+- **Author 固定写死为 `cpp`、头像字母改为 `C`（对应需求 2，图 2）**：
+  - 已将右侧元数据栏 `Author` 头像字母由 `S` 改为 **`C`**、名称由 `Soulter` 改为 **`cpp`**，并同步更新 `Activity feed` 时间轴节点中的署名为 **`cpp`**。
+- **点击空白处退出详情模式单次闪屏修复（对应需求 5）**：
+  - **原因**：此前 `RoadmapDetailModal` 直接作为子节点内联挂载在 `<section aria-label={chrome.boardLabel}>` 看板布局树内部，且 `<article tabIndex={0}>` 缺少 `outline-none`；点击空白遮罩卸载时，浏览器在同一帧内销毁 `backdrop-blur-[3px]` 合成层、重排父级 `<section>` 并触发底层卡片焦点环重绘，造成单帧全屏闪烁。
+  - **修复**：改用 `createPortal(modalNode, document.body)` 将弹窗提升至 `document.body` 顶层独立挂载（与看板 `<section>` 布局树完全解耦），在遮罩层添加 `transform-gpu will-change-[opacity]` 与 `onMouseDown` 焦点防抖，并为 `RoadmapCard` 补充 `outline-none`。
+- **`Date` 与 `Activity feed` 落地（对应需求 3，按主控裁定落地方案 3-A）**：
+  - **右侧元数据 `Date`**：升级为 `formatCalendarDate`（`YYYY-MM-DD (相对时间)`，如 `2026-09-25 (昨天)`），优先使用条目的真实 `createdAt`。
+  - **`Activity feed` 轻量动态时间轴（方案 3-A，零新表零冗余）**：
+    - 节点 1：提议创建节点（绿色打勾图标，显示 `cpp` 创建了此提议，右侧附带格式化创建日期）。
+    - 节点 2：当前阶段与优先级更新动态摘要（蓝色半实心圆图标，动态反映当前条目的阶段名称与优先级标签，并附带最后更新时间 `updatedAt`）。
+  - **议题三方案 3-B 归档为 Backlog 优化项**：完整的 `RoadmapEntryActivity` 事件流审计表方案已按主控裁定注册至 `docs/BACKLOG.md`（条目 `B-30 Roadmap Entry Audit Trail & Activity Event Stream (Scheme 3-B)`），留待后续多人协作审计需求出现时启动。
+- **`View all similar requests` 相似提议算法与门禁（对应需求 4，按主控裁定落地方案 4-B）**：
+  - 新增 `packages/roadmap/src/domain/similar.ts` 与单测 `packages/roadmap/src/domain/__tests__/similar.test.ts`。
+  - **分词器（`tokenizeBilingualText`）**：提取长度 $\ge 3$ 的英文单词（过滤停用词）及中文 2-gram / 3-gram 词元。
+  - **相似度打分（`scoreSimilarity`）**：标题核心词命中每项 $+10$ 分；小结词元命中每项 $+3$ 分；在已有文本重合前提下同类型 $+2$ 分、同优先级 $+1$ 分。
+  - **严格门禁与自动隐藏（`MIN_SIMILARITY_SCORE = 10`）**：仅当候选项最高分达到 10 分（至少命中 1 个标题关键重合词或多个小结词元）时才推荐匹配条目；若无任何相似提议，`findSimilarEntry` 返回 `null`，弹窗内**彻底隐藏 `View all similar requests` 整个板块**（单测已全量覆盖有相似条目与无相似条目两种分支）。
+- **全量验证与单测**：
+  - `@incept/roadmap` 7 个测试文件、61 项单测全部通过（含新增的相似条目词元匹配、阈值拦截与弹窗条件隐藏测试）。
+  - `@incept/roadmap` 与 `apps/web` 全量 TypeScript 类型检查 0 报错。
 

@@ -96,7 +96,7 @@ export function RoadmapToolbar({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--color-text-soft)] hover:bg-[var(--roadmap-lane-bg)]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))]"
           >
             <span aria-hidden="true" className="inline-flex shrink-0 text-[var(--color-text-muted)]">
               <IconImport />
@@ -117,7 +117,7 @@ export function RoadmapToolbar({
           aria-haspopup="listbox"
           aria-expanded={open}
           onClick={() => setOpen((prev) => !prev)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--roadmap-lane-bg)] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-text-soft)]"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--roadmap-lane-bg))] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))]"
         >
           <span
             aria-hidden="true"
@@ -140,13 +140,13 @@ export function RoadmapToolbar({
           <ul
             role="listbox"
             aria-label={chrome.projectSelectLabel}
-            className="absolute right-0 z-20 mt-1.5 min-w-[168px] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+            className="absolute right-0 z-20 mt-1.5 min-w-[168px] rounded-[10px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-popover-bg,var(--color-bg))] p-1 shadow-[0_12px_32px_rgba(0,0,0,0.22)]"
           >
             <li role="option" aria-selected={false} className="list-none">
               <a
                 href={allProjectsHref}
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[0.8rem] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--color-text)]"
+                className="flex w-full items-center justify-between rounded-[6px] px-3 py-1.5 text-left text-[0.8rem] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--roadmap-chip-bg)] hover:text-[var(--color-text)]"
               >
                 <span>{chrome.allProjectsLabel}</span>
               </a>
@@ -159,10 +159,10 @@ export function RoadmapToolbar({
                   <a
                     href={hrefs[roadmap.key]}
                     onClick={() => setOpen(false)}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[0.8rem] transition-colors ${
+                    className={`flex w-full items-center justify-between rounded-[6px] px-3 py-1.5 text-left text-[0.8rem] transition-colors ${
                       selected
                         ? 'bg-[var(--roadmap-chip-bg)] font-medium text-[var(--color-text)]'
-                        : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--color-text)]'
+                        : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-chip-bg)] hover:text-[var(--color-text)]'
                     }`}
                   >
                     <span>{roadmap.name[locale]}</span>

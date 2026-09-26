@@ -27,7 +27,7 @@ export function RoadmapCard({ entry, locale, chrome, onSelect }: RoadmapCardProp
         }
       }}
       tabIndex={onSelect ? 0 : undefined}
-      className={`flex flex-col gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--color-text-soft)] hover:shadow-[0_4px_12px_rgba(15,23,42,0.05)] ${
+      className={`flex flex-col gap-2.5 rounded-xl border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-4 py-3.5 outline-none shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-card-bg))] hover:shadow-[0_4px_12px_rgba(15,23,42,0.05)] ${
         onSelect ? 'cursor-pointer' : ''
       }`}
     >
@@ -62,7 +62,7 @@ export function RoadmapCard({ entry, locale, chrome, onSelect }: RoadmapCardProp
             target="_blank"
             rel="noreferrer"
             onClick={(event) => event.stopPropagation()}
-            className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--roadmap-chip-bg)] px-2 py-0.5 text-[0.71rem] font-medium leading-4 text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-soft)] hover:text-[var(--color-text)]"
+            className="inline-flex items-center gap-1 rounded-full border border-[var(--roadmap-chip-border,var(--color-border))] bg-[var(--roadmap-chip-bg)] px-2 py-0.5 text-[0.71rem] font-medium leading-4 text-[var(--color-text-muted)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:text-[var(--color-text)]"
           >
             <IconLink />
             {link.label[locale]}
