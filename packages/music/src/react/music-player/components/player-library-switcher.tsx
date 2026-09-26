@@ -39,13 +39,20 @@ export function PlayerLibrarySwitcher({
             data-player-interactive
             aria-pressed={active}
             onClick={() => onSelect(option.key)}
-            className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full border px-2.5 py-1 text-[0.75rem] transition-colors duration-[var(--duration-fast)] ${
+            className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[0.75rem] transition-all duration-[var(--duration-fast)] ${
               active
-                ? 'border-[var(--color-nav-item-active)] bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
-                : 'border-[var(--color-nav-dropdown-border)] text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
+                ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
+                : 'text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
             }`}
           >
-            {option.label}
+            {active ? (
+              <span
+                aria-hidden="true"
+                className="size-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: 'var(--badge-sky-dot)' }}
+              />
+            ) : null}
+            <span>{option.label}</span>
           </button>
         );
       })}
