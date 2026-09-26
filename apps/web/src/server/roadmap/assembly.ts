@@ -1,5 +1,7 @@
 import { prisma } from '@incept/db';
 import {
+  createRoadmapProjectItemRoute,
+  createRoadmapProjectsRoute,
   createRoadmapColumnItemRoute,
   createRoadmapColumnsRoute,
   createRoadmapEntryItemRoute,
@@ -19,12 +21,17 @@ import type {
   RoadmapRepository,
   RoadmapWriter,
 } from '@incept/roadmap/ports';
+import type { RoadmapProject } from '@incept/roadmap/domain';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
 
 // 宿主装配（决策 5/6/7）：门禁、连接、读写端口的宿主实现；包只认 ports，不感知会话模型。
 export function createRoadmapRepository(): RoadmapRepository {
   const client: Parameters<typeof createPrismaRoadmapRepository>[0] = {
+    roadmapProject: {
+      findMany: (query) => prisma.roadmapProject.findMany(query),
+      findUnique: (query) => prisma.roadmapProject.findUnique(query),
+    },
     roadmap: {
       findMany: (query) => prisma.roadmap.findMany(query),
       findUnique: (query) => prisma.roadmap.findUnique(query),
@@ -46,9 +53,17 @@ export function createRoadmapWriter(): RoadmapWriter {
     roadmap: {
       findUnique: (query) => prisma.roadmap.findUnique(query),
       findMany: (query) => prisma.roadmap.findMany(query),
+      count: (args) => prisma.roadmap.count(args),
       create: (args) => prisma.roadmap.create(args),
       update: (args) => prisma.roadmap.update(args),
       delete: (args) => prisma.roadmap.delete(args),
+    },
+    roadmapProject: {
+      findMany: (args) => prisma.roadmapProject.findMany(args),
+      findUnique: (args) => prisma.roadmapProject.findUnique(args),
+      create: (args) => prisma.roadmapProject.create(args),
+      update: (args) => prisma.roadmapProject.update(args),
+      delete: (args) => prisma.roadmapProject.delete(args),
     },
     roadmapColumn: {
       upsert: (args) => prisma.roadmapColumn.upsert(args),
@@ -65,6 +80,7 @@ export function createRoadmapWriter(): RoadmapWriter {
       deleteMany: (args) => prisma.roadmapEntryLink.deleteMany(args),
       create: (args) => prisma.roadmapEntryLink.create(args),
     },
+    // Prisma transaction proxy exposes roadmap.count for the project deletion invariant.
     $transaction: (fn) => prisma.$transaction((tx) => fn(tx)),
   };
 
@@ -85,6 +101,10 @@ export async function loadRoadmapAdminBoards(): Promise<RoadmapBoard[]> {
   return boards;
 }
 
+export async function loadRoadmapAdminProjects(): Promise<RoadmapProject[]> {
+  return createRoadmapRepository().listProjects();
+}
+
 // 路由装配：6 个 route handler 工厂的宿主绑定；app/api 下的 stub 只 re-export 这些具名 handler。
 const roadmapRouteDeps = {
   authorizeOwner,
@@ -93,6 +113,8 @@ const roadmapRouteDeps = {
 };
 
 const roadmapsRoute = createRoadmapsRoute(roadmapRouteDeps);
+const projectsRoute = createRoadmapProjectsRoute(roadmapRouteDeps);
+const projectItemRoute = createRoadmapProjectItemRoute(roadmapRouteDeps);
 const roadmapItemRoute = createRoadmapItemRoute(roadmapRouteDeps);
 const columnsRoute = createRoadmapColumnsRoute(roadmapRouteDeps);
 const columnItemRoute = createRoadmapColumnItemRoute(roadmapRouteDeps);
@@ -101,6 +123,10 @@ const entryItemRoute = createRoadmapEntryItemRoute(roadmapRouteDeps);
 
 export const roadmapsGet = roadmapsRoute.GET;
 export const roadmapsPost = roadmapsRoute.POST;
+export const projectsGet = projectsRoute.GET;
+export const projectsPost = projectsRoute.POST;
+export const projectUpdate = projectItemRoute.PATCH;
+export const projectDelete = projectItemRoute.DELETE;
 export const roadmapUpdate = roadmapItemRoute.PATCH;
 export const roadmapDelete = roadmapItemRoute.DELETE;
 export const columnUpsert = columnsRoute.POST;

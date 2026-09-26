@@ -46,14 +46,17 @@ export function createRoadmapsRoute(deps: RoadmapRouteDeps) {
 
     try {
       const key = typeof body.key === 'string' ? body.key.trim() : '';
+      const projectKey = typeof body.projectKey === 'string' ? body.projectKey.trim() : '';
 
       if (key === '') {
         return badRequest('"key" must be a non-empty string.');
       }
+      if (projectKey === '') return badRequest('"projectKey" must be a non-empty string.');
 
       const roadmap = await deps.writer.createRoadmap({
         key,
         name: parseLocalizedText(body.name, 'name'),
+        projectKey,
         position: parseOrder(body.position, 'position'),
       });
 
@@ -79,7 +82,7 @@ export function createRoadmapItemRoute(deps: RoadmapRouteDeps) {
     if (!body) return badRequest('The request body must be a JSON object.');
 
     try {
-      const patch: { name?: ReturnType<typeof parseLocalizedText>; position?: number } = {};
+      const patch: { name?: ReturnType<typeof parseLocalizedText>; position?: number; projectKey?: string } = {};
 
       if (body.name !== undefined) {
         patch.name = parseLocalizedText(body.name, 'name');
@@ -89,6 +92,10 @@ export function createRoadmapItemRoute(deps: RoadmapRouteDeps) {
 
       if (position !== undefined) {
         patch.position = position;
+      }
+      if (body.projectKey !== undefined) {
+        if (typeof body.projectKey !== 'string' || body.projectKey.trim() === '') return badRequest('"projectKey" must be a non-empty string.');
+        patch.projectKey = body.projectKey.trim();
       }
 
       const roadmap = await deps.writer.updateRoadmap({ key, patch });
@@ -115,6 +122,61 @@ export function createRoadmapItemRoute(deps: RoadmapRouteDeps) {
     }
   }
 
+  return { PATCH, DELETE };
+}
+
+export function createRoadmapProjectsRoute(deps: RoadmapRouteDeps) {
+  async function GET(request: Request) {
+    const denied = await guardOwner(request, deps.authorizeOwner);
+    if (denied) return denied;
+    return NextResponse.json({ projects: await deps.reader.listProjects() });
+  }
+
+  async function POST(request: Request) {
+    const denied = await guardOwner(request, deps.authorizeOwner);
+    if (denied) return denied;
+    const body = await readJsonBody(request);
+    if (!body) return badRequest('The request body must be a JSON object.');
+    try {
+      const key = typeof body.key === 'string' ? body.key.trim() : '';
+      if (!key) return badRequest('"key" must be a non-empty string.');
+      const project = await deps.writer.createProject({ key, name: parseLocalizedText(body.name, 'name'), position: parseOrder(body.position, 'position') });
+      return NextResponse.json({ project }, { status: 201 });
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : 'The project was not created.');
+    }
+  }
+  return { GET, POST };
+}
+
+export function createRoadmapProjectItemRoute(deps: RoadmapRouteDeps) {
+  async function PATCH(request: Request, context: RoadmapRouteContext) {
+    const denied = await guardOwner(request, deps.authorizeOwner);
+    if (denied) return denied;
+    const { key } = await context.params;
+    const body = await readJsonBody(request);
+    if (!body) return badRequest('The request body must be a JSON object.');
+    try {
+      const patch: { name?: ReturnType<typeof parseLocalizedText>; position?: number } = {};
+      if (body.name !== undefined) patch.name = parseLocalizedText(body.name, 'name');
+      const position = parseOrder(body.position, 'position');
+      if (position !== undefined) patch.position = position;
+      if (!patch.name && patch.position === undefined) return badRequest('The project update has no fields.');
+      return NextResponse.json({ project: await deps.writer.updateProject({ key, patch }) });
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : 'The project was not updated.');
+    }
+  }
+  async function DELETE(request: Request, context: RoadmapRouteContext) {
+    const denied = await guardOwner(request, deps.authorizeOwner);
+    if (denied) return denied;
+    const { key } = await context.params;
+    try {
+      return NextResponse.json(await deps.writer.deleteProject({ key }));
+    } catch (error) {
+      return badRequest(error instanceof Error ? error.message : 'The project was not deleted.');
+    }
+  }
   return { PATCH, DELETE };
 }
 

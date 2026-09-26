@@ -10,6 +10,8 @@ import {
   createRoadmapEntriesRoute,
   createRoadmapImportRoute,
   createRoadmapItemRoute,
+  createRoadmapProjectItemRoute,
+  createRoadmapProjectsRoute,
   createRoadmapsRoute,
 } from '../roadmap-routes';
 
@@ -17,6 +19,7 @@ const board: RoadmapBoard = {
   roadmap: {
     key: 'sample-roadmap',
     name: { en: 'Sample Roadmap', zh: '示例路线图' },
+    project: { key: 'project-one', name: { en: 'Project One', zh: '项目一' } },
     columns: [{ status: 'reviewing', label: { en: 'Backlog', zh: '储备' } }],
   },
   entries: [],
@@ -39,6 +42,9 @@ function fakeDeps(
   updates: RoadmapEntryPatch[] = [],
 ): RoadmapRouteDeps {
   const writer: RoadmapWriter = {
+    createProject: async (input) => ({ key: input.key, name: input.name }),
+    updateProject: async ({ key, patch }) => ({ key, name: patch.name ?? { en: 'Project', zh: '项目' } }),
+    deleteProject: async ({ key }) => ({ key }),
     createRoadmap: async (input) => ({ ...board.roadmap, key: input.key, columns: [] }),
     updateRoadmap: async () => board.roadmap,
     deleteRoadmap: async ({ key }) => {
@@ -79,6 +85,8 @@ function fakeDeps(
   return {
     authorizeOwner: async () => authorized,
     reader: {
+      listProjects: async () => [board.roadmap.project],
+      getProject: async () => board.roadmap.project,
       listRoadmaps: async () => [board.roadmap],
       listBoard: async () => board,
     },
@@ -129,6 +137,10 @@ describe('roadmap route handlers', () => {
       createRoadmapEntryItemRoute(deps).PATCH(request('PATCH', {}), context({ key: 'k' })),
       createRoadmapEntryItemRoute(deps).DELETE(request('DELETE'), context({ key: 'k' })),
       createRoadmapImportRoute(deps).POST(request('POST', {})),
+      createRoadmapProjectsRoute(deps).GET(request('GET')),
+      createRoadmapProjectsRoute(deps).POST(request('POST', {})),
+      createRoadmapProjectItemRoute(deps).PATCH(request('PATCH', {}), context({ key: 'project-one' })),
+      createRoadmapProjectItemRoute(deps).DELETE(request('DELETE'), context({ key: 'project-one' })),
     ];
 
     for (const pending of calls) {
@@ -150,6 +162,37 @@ describe('roadmap route handlers', () => {
     const payload = (await response.json()) as { entry: RoadmapEntry };
 
     expect(payload.entry.key).toBe('sample-new');
+  });
+
+  it('requires a project to create a roadmap and accepts project reassignment', async () => {
+    const missing = await createRoadmapsRoute(fakeDeps(true)).POST(request('POST', {
+      key: 'sample-new', name: { en: 'New', zh: '新' },
+    }));
+    expect(missing.status).toBe(400);
+    expect((await missing.json()).error).toMatch(/projectKey/);
+
+    const calls: string[] = [];
+    const deps = fakeDeps(true, calls);
+    const created = await createRoadmapsRoute(deps).POST(request('POST', {
+      key: 'sample-new', projectKey: 'project-one', name: { en: 'New', zh: '新' },
+    }));
+    expect(created.status).toBe(201);
+    const reassigned = await createRoadmapItemRoute(deps).PATCH(request('PATCH', { projectKey: 'project-two' }), context({ key: 'sample-roadmap' }));
+    expect(reassigned.status).toBe(200);
+  });
+
+  it('creates and renames projects; non-empty project deletion is rejected by the writer', async () => {
+    const calls: string[] = [];
+    const deps = fakeDeps(true, calls);
+    const created = await createRoadmapProjectsRoute(deps).POST(request('POST', {
+      key: 'project-new', name: { en: 'New Project', zh: '新项目' },
+    }));
+    expect(created.status).toBe(201);
+    const renamed = await createRoadmapProjectItemRoute(deps).PATCH(request('PATCH', {
+      name: { en: 'Renamed', zh: '已改名' },
+    }), context({ key: 'project-one' }));
+    expect(renamed.status).toBe(200);
+    expect(await createRoadmapProjectItemRoute(deps).DELETE(request('DELETE'), context({ key: 'project-one' })).then((response) => response.status)).toBe(200);
   });
 
   it('creates an entry without a key and lets the writer derive one', async () => {

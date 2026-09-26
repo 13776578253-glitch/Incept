@@ -18,7 +18,7 @@ import type {
 // 路由工厂的依赖注入（music 决策 6/10 同形）：门禁、读端口、写端口由宿主装配提供。
 export type RoadmapRouteDeps = {
   authorizeOwner: AuthorizeOwner<Request>;
-  reader: Pick<RoadmapRepository, 'listRoadmaps' | 'listBoard'>;
+  reader: Pick<RoadmapRepository, 'listProjects' | 'getProject' | 'listRoadmaps' | 'listBoard'>;
   writer: RoadmapWriter;
 };
 
