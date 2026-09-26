@@ -1,4 +1,4 @@
-import type { Roadmap, RoadmapEntry } from '../domain';
+import type { Roadmap, RoadmapEntry, RoadmapProject } from '../domain';
 
 // 读端口。写端口随著述决策（Gate 开放问题 2）落地；路径与连接由宿主装配注入。
 export type RoadmapBoard = {
@@ -7,6 +7,8 @@ export type RoadmapBoard = {
 };
 
 export type RoadmapRepository = {
+  listProjects(): Promise<RoadmapProject[]>;
+  getProject(key: string): Promise<RoadmapProject | null>;
   listRoadmaps(): Promise<Roadmap[]>;
   listBoard(roadmapKey: string): Promise<RoadmapBoard | null>;
 };

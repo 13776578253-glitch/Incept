@@ -31,9 +31,15 @@ export type RoadmapColumn = {
   label: LocalizedText;
 };
 
+export type RoadmapProject = {
+  key: string;
+  name: LocalizedText;
+};
+
 export type Roadmap = {
   key: string;
   name: LocalizedText;
+  project: RoadmapProject;
   columns: RoadmapColumn[];
 };
 

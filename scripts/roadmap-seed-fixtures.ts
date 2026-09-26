@@ -1,6 +1,6 @@
 // 用法: pnpm roadmap:seed
 // 初始 Seed（主控授权）：把 @incept/roadmap/testing 的 fixture 双语数据幂等写入 roadmap 四表。
-// 只写 roadmaps / roadmap_columns / roadmap_entries / roadmap_entry_links，不动其他表。
+// 只写 roadmap_projects / roadmaps / roadmap_columns / roadmap_entries / roadmap_entry_links，不动其他表。
 // votes / comments 显式写 NULL：T4 硬化为不做投票/评论，此为休眠列的历史样本值清除通道。
 // 走 tsx + 动态 import 的脚本↔TS 共享通道（music 脚本同款）；写入前过 domain 全量校验。
 import path from 'node:path';
@@ -31,7 +31,7 @@ async function main() {
   const db = await import(pathToFileURL(path.join(projectRoot, 'packages/db/src/index.ts')).href);
 
   const { prisma } = db;
-  const { fixtureRoadmaps, fixtureEntries } = fixtures;
+  const { fixtureProjects, fixtureRoadmaps, fixtureEntries } = fixtures;
 
   for (const roadmap of fixtureRoadmaps) {
     domain.validateRoadmap(roadmap);
@@ -42,8 +42,19 @@ async function main() {
   }
 
   const counts = { roadmaps: 0, columns: 0, entries: 0, links: 0 };
+  const projectRows = new Map();
+
+  for (const [projectIndex, project] of fixtureProjects.entries()) {
+    const row = await prisma.roadmapProject.upsert({
+      where: { key: project.key },
+      create: { key: project.key, nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10 },
+      update: { nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10 },
+    });
+    projectRows.set(project.key, row);
+  }
 
   for (const [roadmapIndex, roadmap] of fixtureRoadmaps.entries()) {
+    const projectRow = projectRows.get(roadmap.project.key);
     const roadmapRow = await prisma.roadmap.upsert({
       where: { key: roadmap.key },
       create: {
@@ -51,10 +62,12 @@ async function main() {
         nameEn: roadmap.name.en,
         nameZh: roadmap.name.zh,
         position: (roadmapIndex + 1) * 10,
+        projectId: projectRow.id,
       },
       update: {
         nameEn: roadmap.name.en,
         nameZh: roadmap.name.zh,
+        projectId: projectRow.id,
       },
     });
     counts.roadmaps += 1;

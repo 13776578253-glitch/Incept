@@ -34,6 +34,14 @@ export function validateRoadmap(roadmap: Roadmap): void {
 
   assertLocalizedText(roadmap.name, 'roadmap.name');
 
+  if (!roadmap.project || typeof roadmap.project !== 'object') {
+    fail('roadmap.project', 'expected a project');
+  }
+  if (typeof roadmap.project.key !== 'string' || roadmap.project.key.trim() === '') {
+    fail('roadmap.project.key', 'expected a non-empty string');
+  }
+  assertLocalizedText(roadmap.project.name, 'roadmap.project.name');
+
   if (!Array.isArray(roadmap.columns) || roadmap.columns.length === 0) {
     fail('roadmap.columns', 'a roadmap declares at least one column');
   }

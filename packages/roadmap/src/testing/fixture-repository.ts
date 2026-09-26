@@ -1,6 +1,6 @@
 import { validateBoard } from '../domain';
 import type { RoadmapBoard, RoadmapRepository } from '../ports';
-import { fixtureEntries, fixtureRoadmaps } from './fixtures';
+import { fixtureEntries, fixtureProjects, fixtureRoadmaps } from './fixtures';
 
 // 内存 fixture 仓储：Gate 前唯一数据源（决策条目 3），创建时全量校验，坏样本直接抛错。
 export function createFixtureRoadmapRepository(): RoadmapRepository {
@@ -25,6 +25,12 @@ export function createFixtureRoadmapRepository(): RoadmapRepository {
   }
 
   return {
+    async listProjects() {
+      return [...fixtureProjects];
+    },
+    async getProject(key) {
+      return fixtureProjects.find((project) => project.key === key) ?? null;
+    },
     async listRoadmaps() {
       return [...fixtureRoadmaps];
     },

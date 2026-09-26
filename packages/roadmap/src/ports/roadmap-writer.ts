@@ -8,6 +8,7 @@ import type {
   RoadmapEntryPriority,
   RoadmapEntryType,
   RoadmapStatus,
+  RoadmapProject,
 } from '../domain';
 
 // 写端口：RoadmapRepository 的对偶面（Phase 3 规格，主控已评审）。
@@ -31,14 +32,18 @@ export type RoadmapEntryPatch = Partial<Omit<RoadmapEntryDraft, 'key' | 'detail'
 };
 
 export type RoadmapWriter = {
+  createProject: (input: { key: string; name: LocalizedText; position?: number }) => Promise<RoadmapProject>;
+  updateProject: (input: { key: string; patch: { name?: LocalizedText; position?: number } }) => Promise<RoadmapProject>;
+  deleteProject: (input: { key: string }) => Promise<{ key: string }>;
   createRoadmap: (input: {
     key: string;
     name: LocalizedText;
+    projectKey: string;
     position?: number;
   }) => Promise<Roadmap>;
   updateRoadmap: (input: {
     key: string;
-    patch: { name?: LocalizedText; position?: number };
+    patch: { name?: LocalizedText; position?: number; projectKey?: string };
   }) => Promise<Roadmap>;
   deleteRoadmap: (input: { key: string }) => Promise<{ key: string }>;
   upsertColumn: (input: {

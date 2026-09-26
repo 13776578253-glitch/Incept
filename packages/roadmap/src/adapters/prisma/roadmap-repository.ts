@@ -8,6 +8,7 @@ import {
   type RoadmapEntryPriority,
   type RoadmapEntryType,
   type RoadmapStatus,
+  type RoadmapProject,
 } from '../../domain';
 import type { RoadmapBoard, RoadmapRepository } from '../../ports';
 
@@ -19,9 +20,22 @@ export type RoadmapRow = {
   nameEn: string;
   nameZh: string;
   position: number;
+  projectId: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type RoadmapProjectRow = {
+  id: string;
+  key: string;
+  nameEn: string;
+  nameZh: string;
+  position: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type RoadmapWithProject = RoadmapRow & { project: RoadmapProjectRow | null };
 
 export type RoadmapColumnRow = {
   id: string;
@@ -61,22 +75,26 @@ export type RoadmapEntryLinkRow = {
   position: number;
 };
 
-export type RoadmapWithColumns = RoadmapRow & { columns: RoadmapColumnRow[] };
+export type RoadmapWithColumns = RoadmapWithProject & { columns: RoadmapColumnRow[] };
 
-export type RoadmapWithChildren = RoadmapRow & {
+export type RoadmapWithChildren = RoadmapWithProject & {
   columns: RoadmapColumnRow[];
   entries: (RoadmapEntryRow & { links: RoadmapEntryLinkRow[] })[];
 };
 
 export type RoadmapPrismaClient = {
+  roadmapProject: {
+    findMany(query: { orderBy: { position: 'asc' } }): Promise<RoadmapProjectRow[]>;
+    findUnique(query: { where: { key: string } }): Promise<RoadmapProjectRow | null>;
+  };
   roadmap: {
     findMany(query: {
       orderBy: { position: 'asc' };
-      include: { columns: true };
+      include: { columns: true; project: true };
     }): Promise<RoadmapWithColumns[]>;
     findUnique(query: {
       where: { key: string };
-      include: { columns: true; entries: { include: { links: true } } };
+      include: { columns: true; project: true; entries: { include: { links: true } } };
     }): Promise<RoadmapWithChildren | null>;
   };
 };
@@ -92,10 +110,18 @@ export function toColumn(row: RoadmapColumnRow): RoadmapColumn {
   };
 }
 
-export function toRoadmap(row: RoadmapRow, columns: readonly RoadmapColumnRow[]): Roadmap {
+export function toProject(row: RoadmapProjectRow): RoadmapProject {
+  return { key: row.key, name: { en: row.nameEn, zh: row.nameZh } };
+}
+
+export function toRoadmap(
+  row: RoadmapWithProject,
+  columns: readonly RoadmapColumnRow[],
+): Roadmap {
   return {
     key: row.key,
     name: { en: row.nameEn, zh: row.nameZh },
+    project: row.project ? toProject(row.project) : { key: '', name: { en: '', zh: '' } },
     columns: [...columns].sort(byPosition).map(toColumn),
   };
 }
@@ -135,13 +161,22 @@ export function toEntry(
 // 读链仓储：映射后过 domain 校验，坏行直接抛错（与 fixture 仓储同口径）。
 export function createPrismaRoadmapRepository(prisma: RoadmapPrismaClient): RoadmapRepository {
   return {
+    async listProjects(): Promise<RoadmapProject[]> {
+      return (await prisma.roadmapProject.findMany({ orderBy: { position: 'asc' } })).map(toProject);
+    },
+
+    async getProject(key: string): Promise<RoadmapProject | null> {
+      const row = await prisma.roadmapProject.findUnique({ where: { key } });
+      return row ? toProject(row) : null;
+    },
+
     async listRoadmaps(): Promise<Roadmap[]> {
       const rows = await prisma.roadmap.findMany({
         orderBy: { position: 'asc' },
-        include: { columns: true },
+        include: { columns: true, project: true },
       });
 
-      return rows.map((row) => {
+      return rows.filter((row) => row.project !== null).map((row) => {
         const roadmap = toRoadmap(row, row.columns);
         validateRoadmap(roadmap);
         return roadmap;
@@ -151,10 +186,10 @@ export function createPrismaRoadmapRepository(prisma: RoadmapPrismaClient): Road
     async listBoard(roadmapKey: string): Promise<RoadmapBoard | null> {
       const row = await prisma.roadmap.findUnique({
         where: { key: roadmapKey },
-        include: { columns: true, entries: { include: { links: true } } },
+        include: { columns: true, project: true, entries: { include: { links: true } } },
       });
 
-      if (!row) {
+      if (!row || !row.project) {
         return null;
       }
 

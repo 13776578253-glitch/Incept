@@ -6,6 +6,7 @@ import {
   type RoadmapColumnRow,
   type RoadmapEntryRow,
   type RoadmapEntryLinkRow,
+  type RoadmapProjectRow,
   type RoadmapWithChildren,
   type RoadmapWithColumns,
 } from '../roadmap-repository';
@@ -16,8 +17,14 @@ const baseRow = {
   nameEn: 'Sample Roadmap',
   nameZh: '示例路线图',
   position: 10,
+  projectId: 'project_1',
   createdAt: new Date('2026-09-23T00:00:00Z'),
   updatedAt: new Date('2026-09-23T00:00:00Z'),
+};
+
+const projectRow: RoadmapProjectRow = {
+  id: 'project_1', key: 'project-one', nameEn: 'Project One', nameZh: '项目一', position: 10,
+  createdAt: new Date('2026-09-23T00:00:00Z'), updatedAt: new Date('2026-09-23T00:00:00Z'),
 };
 
 const columnRow: RoadmapColumnRow = {
@@ -55,6 +62,10 @@ function fakeClient(options: {
   board?: RoadmapWithChildren | null;
 }) {
   return {
+    roadmapProject: {
+      findMany: async () => [projectRow],
+      findUnique: async () => projectRow,
+    },
     roadmap: {
       findMany: async () => options.roadmaps ?? [],
       findUnique: async () => options.board ?? null,
@@ -67,7 +78,7 @@ describe('createPrismaRoadmapRepository', () => {
     const repository = createPrismaRoadmapRepository(
       fakeClient({
         roadmaps: [
-          { ...baseRow, columns: [{ ...columnRow, position: 20 }, { ...columnRow, id: 'col_0', status: 'active', position: 10 }] },
+          { ...baseRow, project: projectRow, columns: [{ ...columnRow, position: 20 }, { ...columnRow, id: 'col_0', status: 'active', position: 10 }] },
           {
             ...baseRow,
             id: 'rm_2',
@@ -75,6 +86,8 @@ describe('createPrismaRoadmapRepository', () => {
             nameEn: 'Sample Atlas Board',
             nameZh: '示例图谱板',
             position: 20,
+            projectId: 'project_2',
+            project: { ...projectRow, id: 'project_2', key: 'project-two', nameEn: 'Project Two', nameZh: '项目二' },
             columns: [{ ...columnRow, id: 'col_2', status: 'completed', labelEn: 'Shipped', labelZh: '已发布' }],
           },
         ],
@@ -85,6 +98,7 @@ describe('createPrismaRoadmapRepository', () => {
 
     expect(roadmaps.map((roadmap) => roadmap.key)).toEqual(['sample-roadmap', 'sample-atlas']);
     expect(roadmaps[0].name).toEqual({ en: 'Sample Roadmap', zh: '示例路线图' });
+    expect(roadmaps[0].project).toEqual({ key: 'project-one', name: { en: 'Project One', zh: '项目一' } });
     expect(roadmaps[0].columns.map((column) => column.status)).toEqual(['active', 'reviewing']);
   });
 
@@ -93,6 +107,7 @@ describe('createPrismaRoadmapRepository', () => {
       fakeClient({
         board: {
           ...baseRow,
+          project: projectRow,
           columns: [columnRow],
           entries: [
             {
@@ -144,11 +159,21 @@ describe('createPrismaRoadmapRepository', () => {
     expect(await repository.listBoard('missing')).toBeNull();
   });
 
+  it('hides roadmaps without a project and returns null for their board', async () => {
+    const repository = createPrismaRoadmapRepository(fakeClient({
+      roadmaps: [{ ...baseRow, project: null, columns: [columnRow] }],
+      board: { ...baseRow, project: null, columns: [columnRow], entries: [] },
+    }));
+    expect(await repository.listRoadmaps()).toEqual([]);
+    expect(await repository.listBoard(baseRow.key)).toBeNull();
+  });
+
   it('rejects rows that break bilingual parity', async () => {
     const repository = createPrismaRoadmapRepository(
       fakeClient({
         board: {
           ...baseRow,
+          project: projectRow,
           columns: [{ ...columnRow, labelZh: '   ' }],
           entries: [],
         },
@@ -160,13 +185,13 @@ describe('createPrismaRoadmapRepository', () => {
 
   it('rejects rows with an unknown status or priority', async () => {
     const statusRepository = createPrismaRoadmapRepository(
-      fakeClient({ board: { ...baseRow, columns: [{ ...columnRow, status: 'shipped' }], entries: [] } }),
+      fakeClient({ board: { ...baseRow, project: projectRow, columns: [{ ...columnRow, status: 'shipped' }], entries: [] } }),
     );
     await expect(statusRepository.listBoard('sample-roadmap')).rejects.toThrow(/unknown status/);
 
     const priorityRepository = createPrismaRoadmapRepository(
       fakeClient({
-        board: { ...baseRow, columns: [columnRow], entries: [{ ...entryRow, priority: 'urgent' }] },
+        board: { ...baseRow, project: projectRow, columns: [columnRow], entries: [{ ...entryRow, priority: 'urgent' }] },
       }),
     );
     await expect(priorityRepository.listBoard('sample-roadmap')).rejects.toThrow(/unknown priority/);

@@ -11,6 +11,8 @@ import type {
   RoadmapEntryLinkRow,
   RoadmapEntryRow,
   RoadmapRow,
+  RoadmapProjectRow,
+  RoadmapWithProject,
 } from '../roadmap-repository';
 
 const roadmapRow: RoadmapRow = {
@@ -19,8 +21,14 @@ const roadmapRow: RoadmapRow = {
   nameEn: 'Sample Roadmap',
   nameZh: '示例路线图',
   position: 10,
+  projectId: 'project_1',
   createdAt: new Date('2026-09-24T00:00:00Z'),
   updatedAt: new Date('2026-09-24T00:00:00Z'),
+};
+
+const projectRow: RoadmapProjectRow = {
+  id: 'project_1', key: 'project-one', nameEn: 'Project One', nameZh: '项目一', position: 10,
+  createdAt: new Date('2026-09-24T00:00:00Z'), updatedAt: new Date('2026-09-24T00:00:00Z'),
 };
 
 const columnRow: RoadmapColumnRow = {
@@ -55,11 +63,11 @@ const entryRow: RoadmapEntryRow = {
 type FakeState = {
   entryCountByStatus?: number;
   entryRows?: (RoadmapEntryRow & { links: RoadmapEntryLinkRow[] })[];
-  boards?: (RoadmapRow & {
+  boards?: (RoadmapWithProject & {
     columns: RoadmapColumnRow[];
     entries: (RoadmapEntryRow & { links: RoadmapEntryLinkRow[] })[];
   })[];
-  roadmaps?: (RoadmapRow & { columns: RoadmapColumnRow[] })[];
+  roadmaps?: (RoadmapWithProject & { columns: RoadmapColumnRow[] })[];
   calls?: string[];
   entryWrites?: unknown[];
 };
@@ -68,17 +76,28 @@ type FakeState = {
 function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
   const calls = state.calls ?? [];
   const board = () =>
-    state.boards?.[0] ?? { ...roadmapRow, columns: [columnRow], entries: [] };
+    state.boards?.[0] ?? { ...roadmapRow, project: projectRow, columns: [columnRow], entries: [] };
   const tx: RoadmapPrismaTx = {
+    roadmapProject: {
+      findMany: async () => [projectRow],
+      findUnique: async () => projectRow,
+      create: async (args) => ({ ...projectRow, key: args.data.key, nameEn: args.data.nameEn, nameZh: args.data.nameZh, position: args.data.position }),
+      update: async () => projectRow,
+      delete: async () => projectRow,
+    },
     roadmap: {
       findUnique: async () => board(),
-      findMany: async () => state.roadmaps ?? [{ ...roadmapRow, columns: [columnRow] }],
+      findMany: async () => state.roadmaps ?? [{ ...roadmapRow, project: projectRow, columns: [columnRow] }],
+      count: async () => state.entryCountByStatus ?? 0,
       create: async (args) => ({
         ...roadmapRow,
+        project: projectRow,
+        projectId: projectRow.id,
         key: args.data.key,
         nameEn: args.data.nameEn,
         nameZh: args.data.nameZh,
         position: args.data.position,
+        columns: [],
       }),
       update: async (args) => ({
         ...roadmapRow,
@@ -216,6 +235,7 @@ describe('createPrismaRoadmapWriter', () => {
     const boards = [
       {
         ...roadmapRow,
+        project: projectRow,
         columns: [columnRow],
         entries: [{ ...entryRow, links: [] }],
       },
@@ -242,6 +262,7 @@ describe('createPrismaRoadmapWriter', () => {
     const roadmap = await writer.createRoadmap({
       key: 'sample-fresh',
       name: { en: 'Fresh', zh: '新板' },
+      projectKey: 'project-one',
     });
 
     expect(roadmap.key).toBe('sample-fresh');
@@ -250,7 +271,7 @@ describe('createPrismaRoadmapWriter', () => {
   });
 
   it('persists, clears and preserves detail across the three patch states (M2 sentinel)', async () => {
-    const boards = [{ ...roadmapRow, columns: [columnRow], entries: [{ ...entryRow, links: [] }] }];
+    const boards = [{ ...roadmapRow, project: projectRow, columns: [columnRow], entries: [{ ...entryRow, links: [] }] }];
 
     const setWrites: unknown[] = [];
     const setWriter = createPrismaRoadmapWriter(fakeWriteClient({ boards, entryWrites: setWrites }));
@@ -275,6 +296,7 @@ describe('createPrismaRoadmapWriter', () => {
         boards: [
           {
             ...roadmapRow,
+            project: projectRow,
             columns: [columnRow],
             entries: [{ ...entryRow, detailEn: 'Kept', detailZh: '保留', links: [] }],
           },

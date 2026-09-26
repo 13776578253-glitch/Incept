@@ -6,6 +6,7 @@ import { validateBoard, validateEntry, validateRoadmap } from '../validate';
 const roadmap: Roadmap = {
   key: 'sample',
   name: { en: 'Sample', zh: '示例' },
+  project: { key: 'project-one', name: { en: 'Project One', zh: '项目一' } },
   columns: [
     { status: 'unstarted', label: { en: 'Next', zh: '接下来' } },
     { status: 'active', label: { en: 'Now', zh: '进行中' } },
@@ -45,6 +46,12 @@ describe('validateRoadmap', () => {
     expect(() => validateRoadmap({ ...roadmap, name: { en: 'Sample', zh: '' } })).toThrow(
       /both languages/,
     );
+  });
+
+  it('requires a project with a complete key and bilingual name', () => {
+    expect(() => validateRoadmap({ ...roadmap, project: undefined as never })).toThrow(/expected a project/);
+    expect(() => validateRoadmap({ ...roadmap, project: { ...roadmap.project, key: ' ' } })).toThrow(/project.key/);
+    expect(() => validateRoadmap({ ...roadmap, project: { ...roadmap.project, name: { en: 'Project One', zh: '' } } })).toThrow(/both languages/);
   });
 });
 

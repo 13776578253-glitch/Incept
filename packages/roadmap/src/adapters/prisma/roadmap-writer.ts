@@ -23,6 +23,8 @@ import {
   type RoadmapEntryLinkRow,
   type RoadmapEntryRow,
   type RoadmapRow,
+  type RoadmapProjectRow,
+  type RoadmapWithProject,
 } from './roadmap-repository';
 
 // 写端口的结构化 Prisma 句柄：事务回调只拿事务代理（Prisma TransactionClient 同形）。
@@ -30,9 +32,10 @@ export type RoadmapPrismaTx = {
   roadmap: {
     findUnique(query: {
       where: { key: string };
-      include: { columns: true; entries: { include: { links: true } } };
+      include: { columns: true; project: true; entries: { include: { links: true } } };
     }): Promise<
       | (RoadmapRow & {
+          project: RoadmapProjectRow | null;
           columns: RoadmapColumnRow[];
           entries: (RoadmapEntryRow & { links: RoadmapEntryLinkRow[] })[];
         })
@@ -40,16 +43,25 @@ export type RoadmapPrismaTx = {
     >;
     findMany(query: {
       orderBy: { position: 'asc' };
-      include: { columns: true };
-    }): Promise<(RoadmapRow & { columns: RoadmapColumnRow[] })[]>;
+      include: { columns: true; project: true };
+    }): Promise<(RoadmapWithProject & { columns: RoadmapColumnRow[] })[]>;
+    count(args: { where: { projectId: string } }): Promise<number>;
     create(args: {
-      data: { key: string; nameEn: string; nameZh: string; position: number };
-    }): Promise<RoadmapRow>;
+      data: { key: string; nameEn: string; nameZh: string; position: number; project: { connect: { key: string } } };
+      include: { project: true; columns: true };
+    }): Promise<RoadmapWithProject & { columns: RoadmapColumnRow[] }>;
     update(args: {
       where: { key: string };
-      data: { nameEn?: string; nameZh?: string; position?: number };
+      data: { nameEn?: string; nameZh?: string; position?: number; projectId?: string };
     }): Promise<RoadmapRow>;
     delete(args: { where: { key: string } }): Promise<RoadmapRow>;
+  };
+  roadmapProject: {
+    findMany(args: { orderBy: { position: 'asc' } }): Promise<RoadmapProjectRow[]>;
+    findUnique(args: { where: { key: string } }): Promise<RoadmapProjectRow | null>;
+    create(args: { data: { key: string; nameEn: string; nameZh: string; position: number } }): Promise<RoadmapProjectRow>;
+    update(args: { where: { key: string }; data: { nameEn?: string; nameZh?: string; position?: number } }): Promise<RoadmapProjectRow>;
+    delete(args: { where: { key: string } }): Promise<RoadmapProjectRow>;
   };
   roadmapColumn: {
     upsert(args: {
@@ -158,7 +170,7 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
   async function nextPosition(tx: RoadmapPrismaTx, roadmapKey: string): Promise<number> {
     const board = await tx.roadmap.findUnique({
       where: { key: roadmapKey },
-      include: { columns: true, entries: { include: { links: true } } },
+      include: { columns: true, project: true, entries: { include: { links: true } } },
     });
     const entries = board?.entries ?? [];
 
@@ -193,11 +205,15 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
   ): Promise<{ roadmap: Roadmap; roadmapId: string }> {
     const row = await tx.roadmap.findUnique({
       where: { key: roadmapKey },
-      include: { columns: true, entries: { include: { links: true } } },
+      include: { columns: true, project: true, entries: { include: { links: true } } },
     });
 
     if (!row) {
       fail(`the roadmap "${roadmapKey}" does not exist`);
+    }
+
+    if (!row.project) {
+      fail(`the roadmap "${roadmapKey}" has no project`);
     }
 
     return { roadmap: toRoadmap(row, row.columns), roadmapId: row.id };
@@ -229,13 +245,13 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
   ): Promise<RoadmapEntryRow & { links: RoadmapEntryLinkRow[]; roadmapKey: string }> {
     const board = await tx.roadmap.findMany({
       orderBy: { position: 'asc' },
-      include: { columns: true },
+      include: { columns: true, project: true },
     });
 
     for (const roadmapRow of board) {
       const full = await tx.roadmap.findUnique({
         where: { key: roadmapRow.key },
-        include: { columns: true, entries: { include: { links: true } } },
+        include: { columns: true, project: true, entries: { include: { links: true } } },
       });
       const entry = full?.entries.find((candidate) => candidate.key === entryKey);
 
@@ -248,13 +264,44 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
   }
 
   return {
-    async createRoadmap({ key, name, position }) {
+    async createProject({ key, name, position }) {
+      if (key.trim() === '') fail('project key must be a non-empty string');
+      assertLocalizedText(name, 'name');
+      return client.$transaction(async (tx) => {
+        const rows = await tx.roadmapProject.findMany({ orderBy: { position: 'asc' } });
+        const resolved = position ?? (rows.length === 0 ? 10 : Math.max(...rows.map((row) => row.position)) + 10);
+        const row = await tx.roadmapProject.create({ data: { key, nameEn: name.en, nameZh: name.zh, position: resolved } });
+        return { key: row.key, name: { en: row.nameEn, zh: row.nameZh } };
+      });
+    },
+
+    async updateProject({ key, patch }) {
+      if (patch.name) assertLocalizedText(patch.name, 'patch.name');
+      const row = await client.roadmapProject.update({
+        where: { key },
+        data: { ...(patch.name ? { nameEn: patch.name.en, nameZh: patch.name.zh } : {}), ...(patch.position !== undefined ? { position: patch.position } : {}) },
+      });
+      return { key: row.key, name: { en: row.nameEn, zh: row.nameZh } };
+    },
+
+    async deleteProject({ key }) {
+      await client.$transaction(async (tx) => {
+        const project = await tx.roadmapProject.findUnique({ where: { key } });
+        if (!project) fail(`the project "${key}" does not exist`);
+        const count = await tx.roadmap.count({ where: { projectId: project.id } });
+        if (count > 0) fail(`the project "${key}" still has roadmaps`);
+        await tx.roadmapProject.delete({ where: { key } });
+      });
+      return { key };
+    },
+
+    async createRoadmap({ key, name, projectKey, position }) {
       assertLocalizedText(name, 'name');
 
       return client.$transaction(async (tx) => {
         const existing = await tx.roadmap.findMany({
           orderBy: { position: 'asc' },
-          include: { columns: true },
+          include: { columns: true, project: true },
         });
 
         if (existing.some((row) => row.key === key)) {
@@ -264,10 +311,13 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
         const resolved =
           position ?? (existing.length === 0 ? 10 : Math.max(...existing.map((row) => row.position)) + 10);
         const row = await tx.roadmap.create({
-          data: { key, nameEn: name.en, nameZh: name.zh, position: resolved },
+          data: { key, nameEn: name.en, nameZh: name.zh, position: resolved, project: { connect: { key: projectKey } } },
+          include: { project: true, columns: true },
         });
 
-        return toRoadmap(row, []);
+        if (!row.project) fail(`the roadmap "${key}" was created without a project`);
+
+        return toRoadmap(row, row.columns);
       });
     },
 
@@ -277,16 +327,19 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
       }
 
       return client.$transaction(async (tx) => {
+        const project = patch.projectKey === undefined ? undefined : await tx.roadmapProject.findUnique({ where: { key: patch.projectKey } });
+        if (patch.projectKey !== undefined && !project) fail(`the project "${patch.projectKey}" does not exist`);
         const row = await tx.roadmap.update({
           where: { key },
           data: {
             ...(patch.name ? { nameEn: patch.name.en, nameZh: patch.name.zh } : {}),
             ...(patch.position !== undefined ? { position: patch.position } : {}),
+            ...(project ? { projectId: project.id } : {}),
           },
         });
         const { roadmap } = await readRoadmapShape(tx, key);
 
-        return { ...roadmap, name: { en: row.nameEn, zh: row.nameZh } };
+        return roadmap;
       });
     },
 

@@ -1,12 +1,18 @@
-import type { Roadmap, RoadmapEntry } from '../domain';
+import type { Roadmap, RoadmapEntry, RoadmapProject } from '../domain';
 
 // fixture 只允许存在于 testing/（决策条目 3）：这是 Gate 前唯一的数据源，全部是示例内容。
 // 样本刻意覆盖极端：超长标题（卡片两行截断）、空列、双语长文本。T4 硬化：无计数样本。
+
+export const fixtureProjects: readonly RoadmapProject[] = [
+  { key: 'project-one', name: { en: 'Project One', zh: '项目一' } },
+  { key: 'project-two', name: { en: 'Project Two', zh: '项目二' } },
+];
 
 export const fixtureRoadmaps: readonly Roadmap[] = [
   {
     key: 'sample-roadmap',
     name: { en: 'Roadmap', zh: '路线图' },
+    project: fixtureProjects[0],
     columns: [
       { status: 'reviewing', label: { en: 'Backlog', zh: 'Backlog' } },
       { status: 'unstarted', label: { en: 'Next up', zh: 'Next up' } },
@@ -17,6 +23,7 @@ export const fixtureRoadmaps: readonly Roadmap[] = [
   {
     key: 'sample-atlas',
     name: { en: 'Atlas Board', zh: '图谱板' },
+    project: fixtureProjects[1],
     columns: [
       { status: 'unstarted', label: { en: 'Planned', zh: 'Planned' } },
       { status: 'active', label: { en: 'Building', zh: 'Building' } },
