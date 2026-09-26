@@ -24,6 +24,5 @@ export type RoadmapChrome = {
   pendingDetail: string;
   importLabel?: string;
   projectSelectLabel?: string;
-  allProjectsLabel?: string;
 };
 

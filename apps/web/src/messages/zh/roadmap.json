@@ -9,7 +9,6 @@
   "lanePickerLabel": "选择阶段列",
   "importLabel": "导入",
   "projectSelectLabel": "选择项目",
-  "allProjectsLabel": "全部项目",
   "emptyLane": {
     "reviewing": "暂无 Backlog 条目。",
     "unstarted": "暂无 Next up 排队条目。",

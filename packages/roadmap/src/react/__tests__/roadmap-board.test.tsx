@@ -44,14 +44,12 @@ const chrome: RoadmapChrome = {
   pendingDetail: 'Pending specification',
   importLabel: 'Import',
   projectSelectLabel: 'Select project',
-  allProjectsLabel: 'All projects',
 };
 
 const zhChrome: RoadmapChrome = {
   ...chrome,
   importLabel: '导入',
   projectSelectLabel: '选择项目',
-  allProjectsLabel: '全部项目',
   importSucceeded: '导入完成。',
   importFailed: '导入失败。',
 };
@@ -397,7 +395,6 @@ describe('RoadmapToolbar', () => {
           'sample-roadmap': '/zh/atlas/roadmap?rd=sample-roadmap',
           'sample-atlas': '/zh/atlas/roadmap?rd=sample-atlas',
         }}
-        allProjectsHref="/zh/atlas/roadmap"
       />,
     );
 
@@ -409,9 +406,8 @@ describe('RoadmapToolbar', () => {
     expect(screen.getByRole('link', { name: /路线图/ }).getAttribute('href')).toBe(
       '/zh/atlas/roadmap?rd=sample-roadmap',
     );
-    expect(screen.getByRole('link', { name: '全部项目' }).getAttribute('href')).toBe(
-      '/zh/atlas/roadmap',
-    );
+    // 主控裁定：「全部项目」只是占位、路由语义错误，已移除——下拉是纯项目切换器。
+    expect(screen.queryByRole('link', { name: '全部项目' })).toBeNull();
   });
 
   // U2：非 Owner 隐藏导入按钮；U5：选文件即 POST import。
@@ -427,7 +423,6 @@ describe('RoadmapToolbar', () => {
         'sample-roadmap': '/zh/atlas/roadmap?rd=sample-roadmap',
         'sample-atlas': '/zh/atlas/roadmap?rd=sample-atlas',
       },
-      allProjectsHref: '/zh/atlas/roadmap',
     };
 
     const anonymous = render(<RoadmapToolbar {...props} canEdit={false} />);

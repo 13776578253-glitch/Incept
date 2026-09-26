@@ -16,7 +16,6 @@ type RoadmapToolbarProps = {
   chrome: RoadmapChrome;
   canEdit: boolean;
   hrefs: Record<string, string>;
-  allProjectsHref: string;
   onChanged?: () => void;
 };
 
@@ -29,7 +28,6 @@ export function RoadmapToolbar({
   chrome,
   canEdit,
   hrefs,
-  allProjectsHref,
   onChanged,
 }: RoadmapToolbarProps) {
   const [open, setOpen] = useState(false);
@@ -142,15 +140,6 @@ export function RoadmapToolbar({
             aria-label={chrome.projectSelectLabel}
             className="absolute right-0 z-20 mt-1.5 min-w-[168px] rounded-[10px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-popover-bg,var(--color-bg))] p-1 shadow-[0_12px_32px_rgba(0,0,0,0.22)]"
           >
-            <li role="option" aria-selected={false} className="list-none">
-              <a
-                href={allProjectsHref}
-                onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-between rounded-[6px] px-3 py-1.5 text-left text-[0.8rem] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--roadmap-chip-bg)] hover:text-[var(--color-text)]"
-              >
-                <span>{chrome.allProjectsLabel}</span>
-              </a>
-            </li>
             {roadmaps.map((roadmap) => {
               const selected = currentKey === roadmap.key;
 

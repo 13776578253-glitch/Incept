@@ -42,8 +42,6 @@ export default async function RoadmapMapPage({
     );
   }
 
-  const allProjectsHref = withLocalePath(locale, '/atlas/roadmap');
-
   const chrome: RoadmapChrome = {
     switcherLabel: t('switcherLabel'),
     boardLabel: t('boardLabel'),
@@ -78,7 +76,6 @@ export default async function RoadmapMapPage({
     pendingDetail: t('modal.pendingDetail'),
     importLabel: t('importLabel'),
     projectSelectLabel: t('projectSelectLabel'),
-    allProjectsLabel: t('allProjectsLabel'),
   };
 
   return (
@@ -109,7 +106,6 @@ export default async function RoadmapMapPage({
             chrome={chrome}
             canEdit={canEdit}
             hrefs={hrefs}
-            allProjectsHref={allProjectsHref}
           />
         </div>
         <RoadmapBoard

@@ -9,7 +9,6 @@
   "lanePickerLabel": "Choose a column",
   "importLabel": "Import",
   "projectSelectLabel": "Select project",
-  "allProjectsLabel": "All projects",
   "emptyLane": {
     "reviewing": "Nothing is under review. New ideas land here first.",
     "unstarted": "Nothing queued right now. Committed work waits here.",
