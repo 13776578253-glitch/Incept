@@ -24,7 +24,7 @@ export function ProjectSurfacesPanel({
 
   async function save(project: Project) {
     if (!project.roadmapEnabled && !project.atlasEnabled) {
-      setMessage(isZh ? '至少保留路线图或图谱中的一项。' : 'Keep at least one surface enabled.');
+      setMessage(isZh ? '至少保留路线图或规划图中的一项。' : 'Keep at least one surface enabled.');
       return;
     }
     setPending(project.key);
@@ -91,7 +91,7 @@ export function ProjectSurfacesPanel({
       <header className="space-y-1.5">
         <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">{isZh ? '项目与功能' : 'Projects & surfaces'}</h2>
         <p className="text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-          {isZh ? '每个项目可分别启用路线图和图谱。两种入口始终显示；关闭的功能会以锁定状态呈现。' : 'Enable Roadmap and Atlas per project. Both entry points stay visible, with disabled surfaces shown as locked.'}
+          {isZh ? '每个项目可分别启用路线图和规划图。两种入口始终显示；关闭的功能会以锁定状态呈现。' : 'Enable Roadmap and Planning Board per project. Both entry points stay visible, with disabled surfaces shown as locked.'}
         </p>
       </header>
       <form onSubmit={(event) => void createProject(event)} className="grid gap-3 rounded-2xl border border-[var(--color-nav-dropdown-border)] p-4 sm:grid-cols-2">
@@ -105,7 +105,7 @@ export function ProjectSurfacesPanel({
           <input required value={newProject.en} onChange={(event) => setNewProject({ ...newProject, en: event.target.value })} className="min-h-10 w-full rounded-[10px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-3 text-[0.875rem] text-[var(--color-text)]" />
         </label>
         <div className="flex items-center justify-between gap-3 sm:col-span-2">
-          <span className="text-[0.78rem] text-[var(--color-nav-muted)]">{isZh ? '新项目默认启用路线图和图谱。' : 'New projects start with both surfaces enabled.'}</span>
+          <span className="text-[0.78rem] text-[var(--color-nav-muted)]">{isZh ? '新项目默认启用路线图和规划图。' : 'New projects start with both surfaces enabled.'}</span>
           <button type="submit" disabled={pending === 'new'} className="rounded-full border border-[var(--color-nav-dropdown-border)] px-4 py-2 text-[0.8125rem] font-medium text-[var(--color-text)] hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50">{isZh ? '创建项目' : 'Create project'}</button>
         </div>
       </form>
@@ -126,7 +126,7 @@ export function ProjectSurfacesPanel({
               {(['roadmapEnabled', 'atlasEnabled'] as const).map((field) => {
                 const enabled = project[field];
                 const wouldDisableLast = enabled && (field === 'roadmapEnabled' ? !project.atlasEnabled : !project.roadmapEnabled);
-                const label = field === 'roadmapEnabled' ? (isZh ? '路线图' : 'Roadmap') : (isZh ? '图谱' : 'Atlas');
+                const label = field === 'roadmapEnabled' ? (isZh ? '路线图' : 'Roadmap') : (isZh ? '规划图' : 'Planning Board');
                 return (
                   <label key={field} className="inline-flex items-center gap-2 text-[0.875rem] text-[var(--color-text)]">
                     <input type="checkbox" checked={enabled} disabled={wouldDisableLast} onChange={(event) => update(project.key, { [field]: event.target.checked })} className="size-4 accent-[var(--color-text)]" />

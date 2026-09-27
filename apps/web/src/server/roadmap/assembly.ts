@@ -13,6 +13,7 @@ import {
 import {
   createPrismaRoadmapRepository,
   createPrismaRoadmapWriter,
+  type RoadmapPrismaTx,
   type RoadmapPrismaWriteClient,
 } from '@incept/roadmap/adapters';
 import type {
@@ -81,7 +82,7 @@ export function createRoadmapWriter(): RoadmapWriter {
       create: (args) => prisma.roadmapEntryLink.create(args),
     },
     // Prisma transaction proxy exposes roadmap.count for the project deletion invariant.
-    $transaction: (fn) => prisma.$transaction((tx) => fn(tx)),
+    $transaction: (fn) => prisma.$transaction((tx) => fn(tx as unknown as RoadmapPrismaTx)),
   };
 
   return createPrismaRoadmapWriter(client);

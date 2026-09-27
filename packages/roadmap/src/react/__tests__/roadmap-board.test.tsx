@@ -371,7 +371,7 @@ describe('RoadmapSwitcher', () => {
 
     const roadmapLinks = screen.getAllByRole('link', { name: 'Roadmap' });
     expect(roadmapLinks[0].getAttribute('aria-current')).toBe('true');
-    const atlasLinks = screen.getAllByRole('link', { name: 'Atlas Board' });
+    const atlasLinks = screen.getAllByRole('link', { name: 'Planning Board' });
     expect(atlasLinks[0].getAttribute('href')).toBe('/en/atlas/roadmap?rd=sample-atlas');
     expect(atlasLinks[0].getAttribute('aria-current')).toBeNull();
   });
@@ -453,7 +453,7 @@ describe('RoadmapToolbar', () => {
 
     const [url, init] = spy.mock.calls[0];
 
-    expect(String(url)).toBe('/api/internal/roadmap/import');
+    expect(String(url)).toBe('/api/internal/roadmap/import?projectKey=project-one');
     expect(init?.method).toBe('POST');
     expect(await screen.findByText('导入完成。')).toBeTruthy();
   });

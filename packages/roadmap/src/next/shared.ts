@@ -167,11 +167,42 @@ export function parseEntryPatch(body: Record<string, unknown>): RoadmapEntryPatc
 
 // 导入清单解析（U5）：只接受上传 JSON 形状的请求体。反自动派生红线：本函数与导入路由
 // 绝不读取或解析 docs/NEXT.md、docs/BACKLOG.md、docs/finish-task/（决策第 1 条）。
-export function parseImportManifest(body: Record<string, unknown>): RoadmapImportManifest {
+export function parseImportManifest(
+  body: Record<string, unknown>,
+  context?: {
+    projectKey?: string;
+    surface?: 'roadmap' | 'atlas';
+    roadmapKey?: string;
+  },
+): RoadmapImportManifest {
   const entries = body.entries;
 
   if (!Array.isArray(entries)) {
     throw new Error('"entries" must be a list.');
+  }
+
+  if (context?.projectKey && body.projectKey !== undefined) {
+    if (typeof body.projectKey !== 'string' || body.projectKey.trim() !== context.projectKey) {
+      throw new Error(
+        `Manifest projectKey "${String(body.projectKey)}" does not match current project "${context.projectKey}".`,
+      );
+    }
+  }
+
+  if (context?.surface && body.surface !== undefined) {
+    if (typeof body.surface !== 'string' || body.surface.trim() !== context.surface) {
+      throw new Error(
+        `Manifest surface "${String(body.surface)}" does not match current surface "${context.surface}".`,
+      );
+    }
+  }
+
+  if (context?.roadmapKey && body.roadmapKey !== undefined) {
+    if (typeof body.roadmapKey !== 'string' || body.roadmapKey.trim() !== context.roadmapKey) {
+      throw new Error(
+        `Manifest roadmapKey "${String(body.roadmapKey)}" does not match current target roadmap "${context.roadmapKey}".`,
+      );
+    }
   }
 
   return {
@@ -181,11 +212,34 @@ export function parseImportManifest(body: Record<string, unknown>): RoadmapImpor
       }
 
       const item = raw as Record<string, unknown>;
-      const roadmapKey = typeof item.roadmapKey === 'string' ? item.roadmapKey.trim() : '';
+      let roadmapKey = typeof item.roadmapKey === 'string' ? item.roadmapKey.trim() : '';
       const key = typeof item.key === 'string' ? item.key.trim() : '';
 
-      if (roadmapKey === '') {
+      if (context?.roadmapKey) {
+        if (roadmapKey !== '' && roadmapKey !== context.roadmapKey) {
+          throw new Error(
+            `"entries[${index}].roadmapKey" ("${roadmapKey}") does not match current target roadmap "${context.roadmapKey}".`,
+          );
+        }
+        roadmapKey = context.roadmapKey;
+      } else if (roadmapKey === '') {
         throw new Error(`"entries[${index}].roadmapKey" must be a non-empty string.`);
+      }
+
+      if (context?.projectKey && item.projectKey !== undefined) {
+        if (typeof item.projectKey !== 'string' || item.projectKey.trim() !== context.projectKey) {
+          throw new Error(
+            `"entries[${index}].projectKey" ("${String(item.projectKey)}") does not match current project "${context.projectKey}".`,
+          );
+        }
+      }
+
+      if (context?.surface && item.surface !== undefined) {
+        if (typeof item.surface !== 'string' || item.surface.trim() !== context.surface) {
+          throw new Error(
+            `"entries[${index}].surface" ("${String(item.surface)}") does not match current surface "${context.surface}".`,
+          );
+        }
       }
 
       if (item.key !== undefined && key === '') {

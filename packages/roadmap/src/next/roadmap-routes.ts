@@ -380,7 +380,41 @@ export function createRoadmapImportRoute(deps: RoadmapRouteDeps) {
     if (!body) return badRequest('The request body must be a JSON object.');
 
     try {
-      const manifest = parseImportManifest(body);
+      const url = new URL(request.url);
+      const queryProjectKey = url.searchParams.get('projectKey')?.trim() || undefined;
+      const querySurface = (url.searchParams.get('surface')?.trim() as 'roadmap' | 'atlas' | undefined) || undefined;
+      const queryRoadmapKey = url.searchParams.get('roadmapKey')?.trim() || undefined;
+
+      if (queryProjectKey) {
+        const projects = await deps.reader.listProjects();
+        const project = projects.find((item) => item.key === queryProjectKey);
+        if (!project) {
+          return badRequest(`Project "${queryProjectKey}" does not exist.`);
+        }
+        if (querySurface === 'roadmap' && !project.roadmapEnabled) {
+          return badRequest(`Roadmap surface is disabled for project "${queryProjectKey}".`);
+        }
+        if (querySurface === 'atlas' && !project.atlasEnabled) {
+          return badRequest(`Planning board surface is disabled for project "${queryProjectKey}".`);
+        }
+      }
+
+      if (queryRoadmapKey) {
+        const roadmaps = await deps.reader.listRoadmaps();
+        const targetRoadmap = roadmaps.find((item) => item.key === queryRoadmapKey);
+        if (!targetRoadmap) {
+          return badRequest(`Roadmap "${queryRoadmapKey}" does not exist.`);
+        }
+        if (queryProjectKey && targetRoadmap.project.key !== queryProjectKey) {
+          return badRequest(`Roadmap "${queryRoadmapKey}" does not belong to project "${queryProjectKey}".`);
+        }
+      }
+
+      const manifest = parseImportManifest(body, {
+        projectKey: queryProjectKey,
+        surface: querySurface,
+        roadmapKey: queryRoadmapKey,
+      });
       const entries = await deps.writer.importEntries(manifest);
 
       return NextResponse.json({ entries });

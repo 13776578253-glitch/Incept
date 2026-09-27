@@ -109,6 +109,11 @@ export default async function RoadmapMapPage({
     saveFailed: t('modal.saveFailed'),
     importSucceeded: t('importSucceeded'),
     importFailed: t('importFailed'),
+    importSuccessEyebrow: t('importFeedback.successEyebrow'),
+    importSuccessTitle: t('importFeedback.successTitle'),
+    importSuccessDescription: t('importFeedback.successDescription'),
+    importErrorEyebrow: t('importFeedback.errorEyebrow'),
+    importErrorTitle: t('importFeedback.errorTitle'),
     lastUpdated: t('modal.lastUpdated'),
     createdLabel: t('modal.createdLabel'),
     pendingDetail: t('modal.pendingDetail'),
@@ -148,10 +153,10 @@ export default async function RoadmapMapPage({
         <header className="shrink-0 pb-6 md:pb-7">
           <div className="max-w-[46rem] space-y-2 md:space-y-2.5">
             <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
-              {activeSurface === 'atlas' ? (locale === 'zh' ? 'Atlas' : 'Atlas') : t('page.eyebrow')}
+              {activeSurface === 'atlas' ? 'PLANNING' : t('page.eyebrow')}
             </p>
             <h1 className="max-w-[44rem] text-[2rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[2.45rem] md:leading-[1.08]">
-              {activeSurface === 'atlas' ? (current?.name[locale] ?? (locale === 'zh' ? '图谱' : 'Atlas')) : t('page.title')}
+              {activeSurface === 'atlas' ? (current?.name[locale] ?? (locale === 'zh' ? '规划图' : 'Planning Board')) : t('page.title')}
             </h1>
           </div>
         </header>
@@ -168,6 +173,8 @@ export default async function RoadmapMapPage({
           <RoadmapToolbar
             projects={projects}
             currentProjectKey={currentProject.key}
+            activeSurface={activeSurface}
+            currentRoadmapKey={current.key}
             locale={locale}
             chrome={chrome}
             canEdit={canEdit}

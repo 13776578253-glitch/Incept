@@ -24,5 +24,10 @@ export type RoadmapChrome = {
   pendingDetail: string;
   importLabel?: string;
   projectSelectLabel?: string;
+  importSuccessEyebrow?: string;
+  importSuccessTitle?: string;
+  importSuccessDescription?: string;
+  importErrorEyebrow?: string;
+  importErrorTitle?: string;
 };
 

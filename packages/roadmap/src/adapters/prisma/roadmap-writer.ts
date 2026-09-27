@@ -80,7 +80,7 @@ export type RoadmapPrismaTx = {
     }): Promise<RoadmapColumnRow>;
   };
   roadmapEntry: {
-    count(args: { where: { roadmapId: string; status: RoadmapStatus } }): Promise<number>;
+    count(args: { where: { roadmapId: string; status?: RoadmapStatus } }): Promise<number>;
     findUnique(args: { where: { key: string } }): Promise<RoadmapEntryRow | null>;
     create(args: {
       data: {
@@ -271,7 +271,72 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
       return client.$transaction(async (tx) => {
         const rows = await tx.roadmapProject.findMany({ orderBy: { position: 'asc' } });
         const resolved = position ?? (rows.length === 0 ? 10 : Math.max(...rows.map((row) => row.position)) + 10);
-        const row = await tx.roadmapProject.create({ data: { key, nameEn: name.en, nameZh: name.zh, position: resolved, roadmapEnabled, atlasEnabled } });
+        const row = await tx.roadmapProject.create({
+          data: { key, nameEn: name.en, nameZh: name.zh, position: resolved, roadmapEnabled, atlasEnabled },
+        });
+
+        // 默认初始化路线图与规划图看板及列结构
+        const roadmapBoard = await tx.roadmap.create({
+          data: {
+            key: `${key}-roadmap`,
+            nameEn: 'Roadmap',
+            nameZh: '路线图',
+            position: 10,
+            project: { connect: { key } },
+          },
+          include: { project: true, columns: true },
+        });
+
+        const roadmapCols: { status: RoadmapStatus; labelEn: string; labelZh: string; position: number }[] = [
+          { status: 'reviewing', labelEn: 'Backlog', labelZh: 'Backlog', position: 10 },
+          { status: 'unstarted', labelEn: 'Next up', labelZh: 'Next up', position: 20 },
+          { status: 'active', labelEn: 'In Progress', labelZh: 'In Progress', position: 30 },
+          { status: 'completed', labelEn: 'Done', labelZh: 'Done', position: 40 },
+        ];
+        for (const col of roadmapCols) {
+          await tx.roadmapColumn.upsert({
+            where: { roadmapId_status: { roadmapId: roadmapBoard.id, status: col.status } },
+            create: {
+              roadmapId: roadmapBoard.id,
+              status: col.status,
+              labelEn: col.labelEn,
+              labelZh: col.labelZh,
+              position: col.position,
+            },
+            update: { labelEn: col.labelEn, labelZh: col.labelZh, position: col.position },
+          });
+        }
+
+        const atlasBoard = await tx.roadmap.create({
+          data: {
+            key: `${key}-atlas`,
+            nameEn: 'Planning Board',
+            nameZh: '规划图',
+            position: 20,
+            project: { connect: { key } },
+          },
+          include: { project: true, columns: true },
+        });
+
+        const atlasCols: { status: RoadmapStatus; labelEn: string; labelZh: string; position: number }[] = [
+          { status: 'unstarted', labelEn: 'Planned', labelZh: 'Planned', position: 10 },
+          { status: 'active', labelEn: 'Building', labelZh: 'Building', position: 20 },
+          { status: 'completed', labelEn: 'Shipped', labelZh: 'Shipped', position: 30 },
+        ];
+        for (const col of atlasCols) {
+          await tx.roadmapColumn.upsert({
+            where: { roadmapId_status: { roadmapId: atlasBoard.id, status: col.status } },
+            create: {
+              roadmapId: atlasBoard.id,
+              status: col.status,
+              labelEn: col.labelEn,
+              labelZh: col.labelZh,
+              position: col.position,
+            },
+            update: { labelEn: col.labelEn, labelZh: col.labelZh, position: col.position },
+          });
+        }
+
         return { key: row.key, name: { en: row.nameEn, zh: row.nameZh }, roadmapEnabled: row.roadmapEnabled, atlasEnabled: row.atlasEnabled };
       });
     },
@@ -298,8 +363,20 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
       await client.$transaction(async (tx) => {
         const project = await tx.roadmapProject.findUnique({ where: { key } });
         if (!project) fail(`the project "${key}" does not exist`);
-        const count = await tx.roadmap.count({ where: { projectId: project.id } });
-        if (count > 0) fail(`the project "${key}" still has roadmaps`);
+        const allRoadmaps = await tx.roadmap.findMany({
+          orderBy: { position: 'asc' },
+          include: { columns: true, project: true },
+        });
+        const projectRoadmaps = allRoadmaps.filter((r) => r.project?.key === key);
+        for (const r of projectRoadmaps) {
+          const entryCount = await tx.roadmapEntry.count({ where: { roadmapId: r.id } });
+          if (entryCount > 0) {
+            fail(`the project "${key}" still has entries on its roadmaps; delete entries before deleting the project`);
+          }
+        }
+        for (const r of projectRoadmaps) {
+          await tx.roadmap.delete({ where: { key: r.key } });
+        }
         await tx.roadmapProject.delete({ where: { key } });
       });
       return { key };
@@ -515,7 +592,6 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
           order: number;
           roadmapKey: string;
           roadmapId: string;
-          existing: RoadmapEntryRow | null;
         };
 
         const shapes = new Map<string, { roadmap: Roadmap; roadmapId: string }>();
@@ -538,11 +614,11 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
 
           const existing = await tx.roadmapEntry.findUnique({ where: { key } });
 
-          if (existing && existing.roadmapId !== shape.roadmapId) {
-            fail(`the entry "${key}" already lives on another roadmap`);
+          if (existing) {
+            fail(`the entry "${key}" already exists; import only appends new entries and does not overwrite`);
           }
 
-          const order = item.order ?? existing?.position ?? (await nextPosition(tx, item.roadmapKey));
+          const order = item.order ?? (await nextPosition(tx, item.roadmapKey));
           const entry: RoadmapEntry = {
             key,
             roadmap: item.roadmapKey,
@@ -564,7 +640,6 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
             order,
             roadmapKey: item.roadmapKey,
             roadmapId: shape.roadmapId,
-            existing,
           });
         }
 
@@ -583,9 +658,9 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
             detailZh: plan.item.detail?.zh ?? null,
             position: plan.order,
           };
-          const row = plan.existing
-            ? await tx.roadmapEntry.update({ where: { key: plan.key }, data })
-            : await tx.roadmapEntry.create({ data: { roadmapId: plan.roadmapId, key: plan.key, ...data } });
+          const row = await tx.roadmapEntry.create({
+            data: { roadmapId: plan.roadmapId, key: plan.key, ...data },
+          });
 
           await writeLinks(tx, row.id, plan.item.links ?? []);
           results.push({

@@ -61,7 +61,7 @@ export function SurfaceNavigation({
             aria-current={activeSurface === 'atlas' ? 'page' : undefined}
             className={`${tabClass} ${activeSurface === 'atlas' ? 'border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.06)]' : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'}`}
           >
-            {locale === 'zh' ? '图谱' : 'Atlas'}
+            {locale === 'zh' ? '规划图' : 'Planning'}
           </Link>
         ) : (
           <button
@@ -70,7 +70,7 @@ export function SurfaceNavigation({
             aria-disabled="true"
             className={`${tabClass} cursor-not-allowed border border-transparent text-[var(--color-text-muted)] opacity-65`}
           >
-            <span aria-hidden="true">🔒</span>{locale === 'zh' ? '图谱' : 'Atlas'}
+            <span aria-hidden="true">🔒</span>{locale === 'zh' ? '规划图' : 'Planning'}
           </button>
         )}
       </nav>
@@ -150,7 +150,7 @@ function ProjectSelector({
 }
 
 export function LockedSurface({ locale, surface }: { locale: AppLocale; surface: 'atlas' | 'roadmap' }) {
-  const label = surface === 'atlas' ? (locale === 'zh' ? '图谱' : 'Atlas') : (locale === 'zh' ? '路线图' : 'Roadmap');
+  const label = surface === 'atlas' ? (locale === 'zh' ? '规划图' : 'Planning') : (locale === 'zh' ? '路线图' : 'Roadmap');
   return (
     <div className="mx-auto w-full max-w-[1480px] px-6 py-12 lg:px-10">
       <section role="status" className="max-w-2xl rounded-2xl border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-6">

@@ -22,7 +22,7 @@ export const fixtureRoadmaps: readonly Roadmap[] = [
   },
   {
     key: 'sample-atlas',
-    name: { en: 'Atlas Board', zh: '图谱板' },
+    name: { en: 'Planning Board', zh: '规划图' },
     project: fixtureProjects[0],
     columns: [
       { status: 'unstarted', label: { en: 'Planned', zh: 'Planned' } },
@@ -43,7 +43,7 @@ export const fixtureRoadmaps: readonly Roadmap[] = [
   },
   {
     key: 'sample-two-atlas',
-    name: { en: 'Atlas Board', zh: '图谱板' },
+    name: { en: 'Planning Board', zh: '规划图' },
     project: fixtureProjects[1],
     columns: [
       { status: 'unstarted', label: { en: 'Planned', zh: 'Planned' } },

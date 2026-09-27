@@ -12,6 +12,8 @@ import { roadmapRequest } from './request';
 type RoadmapToolbarProps = {
   projects: readonly RoadmapProject[];
   currentProjectKey: string;
+  activeSurface?: 'roadmap' | 'atlas';
+  currentRoadmapKey?: string;
   locale: RoadmapLocale;
   chrome: RoadmapChrome;
   canEdit: boolean;
@@ -25,6 +27,8 @@ type RoadmapToolbarProps = {
 export function RoadmapToolbar({
   projects,
   currentProjectKey,
+  activeSurface,
+  currentRoadmapKey,
   locale,
   chrome,
   canEdit,
@@ -33,9 +37,25 @@ export function RoadmapToolbar({
   showProjectSelector = true,
 }: RoadmapToolbarProps) {
   const [open, setOpen] = useState(false);
-  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error';
+    eyebrow: string;
+    title: string;
+    description: string;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(
+      () => {
+        setToast(null);
+      },
+      toast.type === 'error' ? 6000 : 4200,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
 
   useEffect(() => {
     if (!open) return;
@@ -71,14 +91,45 @@ export function RoadmapToolbar({
     event.target.value = '';
     if (!file) return;
 
+    const query = new URLSearchParams();
+    if (currentProjectKey) query.set('projectKey', currentProjectKey);
+    if (activeSurface) query.set('surface', activeSurface);
+    if (currentRoadmapKey) query.set('roadmapKey', currentRoadmapKey);
+    const queryString = query.toString();
+    const endpoint = queryString ? `${roadmapEndpoints.import}?${queryString}` : roadmapEndpoints.import;
+
     try {
       const manifest: unknown = JSON.parse(await file.text());
 
-      await roadmapRequest(roadmapEndpoints.import, 'POST', manifest);
-      setImportStatus(chrome.importSucceeded ?? '');
+      const result = await roadmapRequest<{ entries: unknown[] }>(endpoint, 'POST', manifest);
+      const count = result?.entries?.length ?? 0;
+      setToast({
+        type: 'success',
+        eyebrow:
+          chrome.importSuccessEyebrow ??
+          chrome.importSucceeded ??
+          (locale === 'zh' ? '导入完成' : 'Import complete'),
+        title: chrome.importSuccessTitle ?? (locale === 'zh' ? '条目已追加' : 'Entries appended'),
+        description:
+          chrome.importSuccessDescription ??
+          (locale === 'zh'
+            ? `已成功向当前看板追加 ${count} 个条目。`
+            : `Successfully appended ${count} entries to the current board.`),
+      });
       onChanged?.();
-    } catch {
-      setImportStatus(chrome.importFailed ?? '');
+    } catch (error) {
+      setToast({
+        type: 'error',
+        eyebrow:
+          chrome.importErrorEyebrow ??
+          chrome.importFailed ??
+          (locale === 'zh' ? '导入未完成' : 'Import failed'),
+        title: chrome.importErrorTitle ?? (locale === 'zh' ? '未能导入条目' : 'Could not import entries'),
+        description:
+          error instanceof Error && error.message
+            ? error.message
+            : (chrome.importFailed ?? (locale === 'zh' ? '导入失败，请检查文件格式。' : 'Import failed.')),
+      });
     }
   }
 
@@ -103,10 +154,42 @@ export function RoadmapToolbar({
             </span>
             {chrome.importLabel}
           </button>
-          {importStatus && (
-            <span role="status" className="text-[0.75rem] text-[var(--color-text-muted)]">
-              {importStatus}
-            </span>
+          {toast && (
+            <div className="pointer-events-none fixed right-5 top-[calc(var(--navbar-height,64px)+1rem)] z-50 w-[min(28rem,calc(100vw-2.5rem))]">
+              <div
+                className={`pointer-events-auto rounded-[0.8rem] border px-4 py-3 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur ${
+                  toast.type === 'success'
+                    ? 'border-emerald-200/70 bg-white/96 dark:border-emerald-500/20 dark:bg-[#101713]/96 dark:shadow-none'
+                    : 'border-rose-200/70 bg-white/96 dark:border-rose-500/20 dark:bg-[#181012]/96 dark:shadow-none'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p
+                    className={`text-[0.74rem] font-medium uppercase tracking-[0.18em] ${
+                      toast.type === 'success'
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : 'text-rose-700 dark:text-rose-300'
+                    }`}
+                  >
+                    {toast.eyebrow}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setToast(null)}
+                    aria-label={locale === 'zh' ? '关闭提示' : 'Dismiss notification'}
+                    className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] -mr-1 -mt-1 p-1 text-[0.85rem] leading-none"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="mt-1.5 text-[0.96rem] font-medium text-[var(--color-text)]">
+                  {toast.title}
+                </p>
+                <p className="mt-1 text-[0.9rem] leading-6 text-[var(--color-text-soft)] break-words">
+                  {toast.description}
+                </p>
+              </div>
+            </div>
           )}
         </>
       )}
