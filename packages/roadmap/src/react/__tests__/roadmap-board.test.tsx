@@ -369,12 +369,11 @@ describe('RoadmapSwitcher', () => {
       />,
     );
 
-    expect(screen.getByRole('link', { name: 'Roadmap' }).getAttribute('aria-current')).toBe(
-      'true',
-    );
-    const second = screen.getByRole('link', { name: 'Atlas Board' });
-    expect(second.getAttribute('href')).toBe('/en/atlas/roadmap?rd=sample-atlas');
-    expect(second.getAttribute('aria-current')).toBeNull();
+    const roadmapLinks = screen.getAllByRole('link', { name: 'Roadmap' });
+    expect(roadmapLinks[0].getAttribute('aria-current')).toBe('true');
+    const atlasLinks = screen.getAllByRole('link', { name: 'Atlas Board' });
+    expect(atlasLinks[0].getAttribute('href')).toBe('/en/atlas/roadmap?rd=sample-atlas');
+    expect(atlasLinks[0].getAttribute('aria-current')).toBeNull();
   });
 });
 

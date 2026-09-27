@@ -53,7 +53,7 @@ export function createSiteNavigation(
     {
       id: 'atlas',
       label: t('primary.atlas'),
-      href: withLocale('/atlas'),
+      href: withLocale('/atlas/roadmap'),
       matchPrefix: withLocale('/atlas'),
       showChevron: true,
       groups: [
@@ -61,36 +61,10 @@ export function createSiteNavigation(
           id: 'atlas-group',
           items: [
             {
-              id: 'atlas-entry',
-              label: t('groups.atlas.entry.label'),
-              description: t('groups.atlas.entry.description'),
-              href: withLocale('/atlas'),
-            },
-            {
-              id: 'atlas-architecture',
-              label: t('groups.atlas.architecture.label'),
-              description: t('groups.atlas.architecture.description'),
-              href: withLocale('/atlas/architecture'),
-            },
-            {
               id: 'atlas-roadmap',
               label: t('groups.atlas.roadmap.label'),
               description: t('groups.atlas.roadmap.description'),
               href: withLocale('/atlas/roadmap'),
-            },
-            {
-              id: 'atlas-keywords',
-              label: t('groups.atlas.keywords.label'),
-              description: t('groups.atlas.keywords.description'),
-              href: withLocale('/atlas/keywords'),
-            },
-            // 回放不在图谱栏目内：它是听内容的方式，而不是阅读项目的方式。
-            // 这里只作为入口指向设置页，播放偏好与曲库都在那里。
-            {
-              id: 'atlas-playback',
-              label: t('groups.atlas.playback.label'),
-              description: t('groups.atlas.playback.description'),
-              href: withLocale('/settings'),
             },
           ],
         },

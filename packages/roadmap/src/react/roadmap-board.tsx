@@ -79,7 +79,7 @@ export function RoadmapBoard({
       <div
         role="group"
         aria-label={chrome.lanePickerLabel}
-        className="flex gap-2 overflow-x-auto pb-1 md:hidden"
+        className="flex gap-2 overflow-x-auto pb-1 md:hidden no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {columns.map((column) => {
           const StatusIcon = statusIcons[column.status];
@@ -112,7 +112,7 @@ export function RoadmapBoard({
           );
         })}
       </div>
-      <div className="flex flex-col gap-3.5 md:grid md:min-h-0 md:flex-1 md:grid-rows-[minmax(0,1fr)] md:auto-cols-[minmax(288px,1fr)] md:grid-flow-col md:items-start md:gap-4 md:snap-x md:overflow-x-auto">
+      <div className="flex flex-col gap-3.5 md:grid md:min-h-0 md:flex-1 md:grid-rows-[minmax(0,1fr)] md:auto-cols-[minmax(288px,1fr)] md:grid-flow-col md:items-start md:gap-4 md:snap-x md:overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {columns.map((column) => {
           const displayLabel = column.label.en || column.label[locale];
 
