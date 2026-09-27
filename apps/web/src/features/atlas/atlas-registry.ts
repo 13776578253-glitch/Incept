@@ -3,7 +3,7 @@
 // path 是无 locale 前缀的站内路由；labelKey / descriptionKey / noteKey 指向 atlas namespace。
 
 // 回放不在此列：它是听内容的方式，而不是阅读项目的方式，改由导航直通设置页。
-type AtlasItemKey = 'architecture' | 'roadmap' | 'keywords';
+type AtlasItemKey = 'architecture' | 'keywords';
 
 export type AtlasEntry = {
   key: AtlasItemKey;
@@ -20,13 +20,6 @@ export const atlasEntries: readonly AtlasEntry[] = [
     labelKey: 'items.architecture.label',
     descriptionKey: 'items.architecture.description',
     noteKey: 'items.architecture.note',
-  },
-  {
-    key: 'roadmap',
-    path: '/atlas/roadmap',
-    labelKey: 'items.roadmap.label',
-    descriptionKey: 'items.roadmap.description',
-    noteKey: 'items.roadmap.note',
   },
   {
     key: 'keywords',

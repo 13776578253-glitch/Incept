@@ -50,6 +50,8 @@ Accepted on 2026-09-23。暂缓的实施阶段登记在 `docs/BACKLOG.md`（B-28
 3. **内容模型字段：** 条目粒度、时间轴抽象、状态词汇、跨项目登记方式（项目注册表？）。参考界面 Featurebase Roadmap（`astrbot.featurebase.app/roadmap`）把稳定状态枚举（reviewing / unstarted / active / completed / canceled）映射为每板显示名；这种拆分值得借用，列结构与词汇可按项目不同。**2026-09-23 定案（T1）：**采用稳定状态枚举 + 每板显示名映射，已由 `@incept/roadmap` domain 类型实现。
 4. **`/atlas/roadmap` 归属：** 留在 atlas 还是升为顶级界面。以 "If a second non-map entry is ever wanted here, that is the point to reconsider whether the section is still coherent"（若还想再放一个非"图"的条目，那就是重新审视栏目是否仍然成立的时点）为框架：跨项目集成界面正是那个时点；在存储 gate 裁定。**2026-09-23 定案（T2）：**多 roadmap + 切换器，留在 `/atlas/roadmap`。**2026-09-26 扩展：**跨项目轴现在由 `RoadmapProject` 承载，`Roadmap` 收窄为项目内的一块板（`?project=<key>&rd=<key>`）。这是对 T2 多 roadmap 决策的扩展，不是推翻；T2 的每板列结构隔离项目状态词汇依然成立，所以列继续挂在每块 Roadmap 上。
 5. **界面术语保留与顶栏操作区（2026-09-25 定案；项目下拉语义于 2026-09-26 被 supersede）：** 页眉 eyebrow 固定为英文产品标识 `Roadmap`（与 `/docs` 的 `Docs` 对齐），标题精炼为 `开发路线` / `Milestones & Backlog`；阶段列名与类型/优先级标签保留英文工程标识；板切换胶囊去除「示例 / Sample」前缀；同一水平基线右侧配置「导入（Import）」按钮与「选择项目（Select project）」下拉。旧裁定中将下拉描述为「导入与跨项目筛选能力的入口」已被本轮语义取代：下拉切换 `RoadmapProject`（`?project=<key>`），左侧切换器仅显示所选项目内的板。
+
+**2026-09-27 语义修订：** 每个项目当前只有一个路线图工作面；路线图页面不再显示项目内的单板切换器。图谱是独立的项目阅读面，图谱总览不再列路线图卡片；路线图入口与图谱入口并列，但路线图不属于图谱目录。
 6. **详情弹窗交互与后端接线裁定（`U1`–`U6`，2026-09-25 定案）：**
    - **`U1`（`Detail` 双语存储与单框编辑拆解）**：`RoadmapEntry` 新增 `detailEn` / `detailZh`（`detail?: LocalizedText`）；弹窗 `Editor` 中 `Title` 按 ` / ` 拆分双语，`Summary` 与 `Detail` 更新当前语种并在另一语种为空时以当前文本兜底，兼顾单框便捷编辑与双语对等不变量。
    - **`U2`（未登录普通访客隐藏写控件）**：公开页 `/atlas/roadmap` 对非 Owner 访客隐藏 `Editor` 页签、`Backlog` `+` 按钮、`Board/Tags` 下拉箭头、`Revert or delete`（`Undo` / `Delete`）区域及顶栏「导入」按钮。

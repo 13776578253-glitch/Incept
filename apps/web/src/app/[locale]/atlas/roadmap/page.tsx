@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 
 import type { RoadmapChrome } from '@incept/roadmap/react';
-import { RoadmapBoard, RoadmapSwitcher, RoadmapToolbar } from '@incept/roadmap/react';
+import { RoadmapBoard, RoadmapToolbar } from '@incept/roadmap/react';
 
 import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell';
 import type { AppLocale } from '@/i18n/config/locales';
@@ -30,9 +30,6 @@ export default async function RoadmapMapPage({
   const selection = resolveRoadmapSelection(projects, roadmaps, projectKey, rd);
   const current = selection?.roadmap;
   const currentProject = selection?.project ?? projects.find((candidate) => candidate.key === projectKey) ?? projects[0];
-  const currentProjectRoadmaps = currentProject
-    ? roadmaps.filter((roadmap) => roadmap.project.key === currentProject.key)
-    : [];
   const board = current ? await repository.listBoard(current.key) : null;
 
   const canEdit = await isRoadmapOwner();
@@ -111,16 +108,7 @@ export default async function RoadmapMapPage({
           </div>
         </header>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 md:shrink-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <RoadmapSwitcher
-              roadmaps={currentProjectRoadmaps}
-              currentKey={current.key}
-              locale={locale}
-              hrefFor={(key) => withLocalePath(locale, `/atlas/roadmap?project=${encodeURIComponent(currentProject.key)}&rd=${encodeURIComponent(key)}`)}
-              label={chrome.switcherLabel}
-            />
-            <SurfaceNavigation projects={projects} currentProject={currentProject} locale={locale} activeSurface="roadmap" showProjectSelector={false} />
-          </div>
+          <SurfaceNavigation projects={projects} currentProject={currentProject} locale={locale} activeSurface="roadmap" showProjectSelector={false} />
           <RoadmapToolbar
             projects={projects}
             currentProjectKey={currentProject.key}
