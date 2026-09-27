@@ -1,8 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { RoadmapProject } from '@incept/roadmap/domain';
+import { IconChevronDown, IconProjectTag } from '@incept/roadmap/react';
 import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 
@@ -21,30 +22,92 @@ export function SurfaceNavigation({
   atlasPath?: string;
   showProjectSelector?: boolean;
 }) {
-  const router = useRouter();
   const roadmapEnabled = currentProject.roadmapEnabled;
   const atlasEnabled = currentProject.atlasEnabled;
   const projectQuery = `project=${encodeURIComponent(currentProject.key)}`;
   const atlasHref = `${withLocalePath(locale, atlasPath)}?${projectQuery}${atlasEnabled ? '' : '&locked=atlas'}`;
   const roadmapHref = `${withLocalePath(locale, '/atlas/roadmap')}?${projectQuery}${roadmapEnabled ? '' : '&locked=roadmap'}`;
-  const tabClass = 'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-[0.8125rem] font-medium transition-colors';
+  const tabClass = 'inline-flex items-center rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all';
 
   return (
-    <div className="mx-auto flex w-full max-w-[1480px] flex-wrap items-center justify-between gap-3 px-6 pt-6 lg:px-10">
-      {showProjectSelector && <label className="flex items-center gap-2 text-[0.78rem] text-[var(--color-nav-dropdown-description)]">
-        <span>{locale === 'zh' ? '项目' : 'Project'}</span>
-        <select value={currentProject.key} aria-label={locale === 'zh' ? '选择项目' : 'Select project'} onChange={(event) => router.push(`${withLocalePath(locale, activeSurface === 'roadmap' ? '/atlas/roadmap' : atlasPath)}?project=${encodeURIComponent(event.target.value)}`)} className="min-h-10 max-w-[min(62vw,260px)] rounded-full border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] px-3 text-[0.8125rem] font-medium text-[var(--color-text)]">
-          {projects.map((project) => <option key={project.key} value={project.key}>{project.name[locale]}</option>)}
-        </select>
-      </label>}
-      <nav aria-label={locale === 'zh' ? '项目功能' : 'Project surfaces'} className="flex flex-wrap items-center gap-2">
-        <Link href={roadmapHref} aria-current={activeSurface === 'roadmap' ? 'page' : undefined} aria-disabled={!roadmapEnabled} className={`${tabClass} ${activeSurface === 'roadmap' ? 'border-[var(--color-text)] bg-[var(--color-text)] text-[var(--color-bg)]' : 'border-[var(--color-nav-dropdown-border)] text-[var(--color-text)] hover:bg-[var(--color-nav-item-hover)]'} ${!roadmapEnabled ? 'opacity-65' : ''}`}>
+    <div className={showProjectSelector ? 'mx-auto flex w-full max-w-[1480px] flex-wrap items-center justify-between gap-4 px-6 pt-7 lg:px-10' : 'inline-flex items-center'}>
+      {showProjectSelector ? <ProjectSelector projects={projects} currentProject={currentProject} locale={locale} pathname={activeSurface === 'roadmap' ? '/atlas/roadmap' : atlasPath} label={locale === 'zh' ? '选择项目' : 'Select project'} /> : null}
+      <nav aria-label={locale === 'zh' ? '项目功能' : 'Project surfaces'} className="inline-flex flex-wrap items-center gap-1 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-lane-bg)] p-1">
+        <Link href={roadmapHref} aria-current={activeSurface === 'roadmap' ? 'page' : undefined} aria-disabled={!roadmapEnabled} className={`${tabClass} ${activeSurface === 'roadmap' ? 'border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.06)]' : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'} ${!roadmapEnabled ? 'opacity-65' : ''}`}>
           {!roadmapEnabled && <span aria-hidden="true">🔒</span>}{locale === 'zh' ? '路线图' : 'Roadmap'}
         </Link>
-        <Link href={atlasHref} aria-current={activeSurface === 'atlas' ? 'page' : undefined} aria-disabled={!atlasEnabled} className={`${tabClass} ${activeSurface === 'atlas' ? 'border-[var(--color-text)] bg-[var(--color-text)] text-[var(--color-bg)]' : 'border-[var(--color-nav-dropdown-border)] text-[var(--color-text)] hover:bg-[var(--color-nav-item-hover)]'} ${!atlasEnabled ? 'opacity-65' : ''}`}>
+        <Link href={atlasHref} aria-current={activeSurface === 'atlas' ? 'page' : undefined} aria-disabled={!atlasEnabled} className={`${tabClass} ${activeSurface === 'atlas' ? 'border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.06)]' : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'} ${!atlasEnabled ? 'opacity-65' : ''}`}>
           {!atlasEnabled && <span aria-hidden="true">🔒</span>}{locale === 'zh' ? '图谱' : 'Atlas'}
         </Link>
       </nav>
+    </div>
+  );
+}
+
+function ProjectSelector({
+  projects,
+  currentProject,
+  locale,
+  pathname,
+  label,
+}: {
+  projects: readonly RoadmapProject[];
+  currentProject: RoadmapProject;
+  locale: AppLocale;
+  pathname: string;
+  label: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeOnOutside(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', closeOnOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [open]);
+
+  const currentName = currentProject.name[locale];
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label}
+        onClick={() => setOpen((value) => !value)}
+        className="inline-flex items-center gap-1.5 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--roadmap-lane-bg))] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))]"
+      >
+        <span aria-hidden="true" className="inline-flex shrink-0 text-[var(--roadmap-status-active,#2563eb)]"><IconProjectTag /></span>
+        <span>{currentName}</span>
+        <span aria-hidden="true" className={`inline-flex shrink-0 text-[var(--color-text-soft)] transition-transform duration-150 ${open ? 'rotate-180' : ''}`}><IconChevronDown /></span>
+      </button>
+      {open ? (
+        <ul role="listbox" aria-label={label} className="absolute right-0 z-20 mt-1.5 min-w-[168px] rounded-[10px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-popover-bg,var(--color-bg))] p-1 shadow-[0_12px_32px_rgba(0,0,0,0.22)]">
+          {projects.map((project) => {
+            const selected = project.key === currentProject.key;
+            const href = `${withLocalePath(locale, pathname)}?project=${encodeURIComponent(project.key)}`;
+            return (
+              <li key={project.key} role="option" aria-selected={selected} className="list-none">
+                <Link href={href} onClick={() => setOpen(false)} className={`flex w-full items-center justify-between rounded-[6px] px-3 py-1.5 text-left text-[0.8rem] transition-colors ${selected ? 'bg-[var(--roadmap-chip-bg)] font-medium text-[var(--color-text)]' : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-chip-bg)] hover:text-[var(--color-text)]'}`}>
+                  <span>{project.name[locale]}</span>
+                  {selected ? <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--roadmap-status-active,#2563eb)]" /> : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
     </div>
   );
 }

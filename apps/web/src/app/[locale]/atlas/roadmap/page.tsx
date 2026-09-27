@@ -99,7 +99,6 @@ export default async function RoadmapMapPage({
 
   return (
     <WorkspaceShell>
-      <SurfaceNavigation projects={projects} currentProject={currentProject} locale={locale} activeSurface="roadmap" />
       <div className="mx-auto w-full max-w-[1480px] px-6 pt-8 pb-16 md:flex md:h-[calc(100dvh-var(--navbar-height,64px))] md:min-h-[560px] md:flex-col md:overflow-hidden md:pt-10 md:pb-6 lg:px-10">
         <header className="pb-8 md:shrink-0 md:pb-5">
           <div className="max-w-[46rem] space-y-2.5 md:space-y-3">
@@ -112,13 +111,16 @@ export default async function RoadmapMapPage({
           </div>
         </header>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 md:shrink-0">
-          <RoadmapSwitcher
-            roadmaps={currentProjectRoadmaps}
-            currentKey={current.key}
-            locale={locale}
-            hrefFor={(key) => withLocalePath(locale, `/atlas/roadmap?project=${encodeURIComponent(currentProject.key)}&rd=${encodeURIComponent(key)}`)}
-            label={chrome.switcherLabel}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <RoadmapSwitcher
+              roadmaps={currentProjectRoadmaps}
+              currentKey={current.key}
+              locale={locale}
+              hrefFor={(key) => withLocalePath(locale, `/atlas/roadmap?project=${encodeURIComponent(currentProject.key)}&rd=${encodeURIComponent(key)}`)}
+              label={chrome.switcherLabel}
+            />
+            <SurfaceNavigation projects={projects} currentProject={currentProject} locale={locale} activeSurface="roadmap" showProjectSelector={false} />
+          </div>
           <RoadmapToolbar
             projects={projects}
             currentProjectKey={currentProject.key}
@@ -126,7 +128,6 @@ export default async function RoadmapMapPage({
             chrome={chrome}
             canEdit={canEdit}
             hrefs={hrefs}
-            showProjectSelector={false}
           />
         </div>
         <RoadmapBoard

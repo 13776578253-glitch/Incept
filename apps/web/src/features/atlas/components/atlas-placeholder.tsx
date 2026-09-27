@@ -20,12 +20,12 @@ export function AtlasPlaceholder({
   children,
 }: AtlasPlaceholderProps) {
   return (
-    <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-8 px-6 pt-10 pb-16 lg:px-10">
+    <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-6 pt-10 pb-16 lg:px-10">
       <header className="max-w-[720px] space-y-4">
-        <p className="text-[0.76rem] uppercase tracking-[0.2em] text-[var(--color-text-soft)]">
+        <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
           {eyebrow}
         </p>
-        <h1 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-[var(--color-text)]">
+        <h1 className="text-[2rem] font-semibold leading-[1.08] tracking-[-0.05em] text-[var(--color-text)] md:text-[2.45rem]">
           {title}
         </h1>
         <p className="text-[1.02rem] leading-8 text-[var(--color-text-muted)]">{description}</p>
