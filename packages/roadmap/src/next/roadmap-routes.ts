@@ -7,6 +7,7 @@ import {
   badRequest,
   guardOwner,
   parseEntryPatch,
+  parseBoolean,
   parseEnum,
   parseLocalizedText,
   parseOrder,
@@ -140,7 +141,13 @@ export function createRoadmapProjectsRoute(deps: RoadmapRouteDeps) {
     try {
       const key = typeof body.key === 'string' ? body.key.trim() : '';
       if (!key) return badRequest('"key" must be a non-empty string.');
-      const project = await deps.writer.createProject({ key, name: parseLocalizedText(body.name, 'name'), position: parseOrder(body.position, 'position') });
+      const project = await deps.writer.createProject({
+        key,
+        name: parseLocalizedText(body.name, 'name'),
+        position: parseOrder(body.position, 'position'),
+        ...(body.roadmapEnabled !== undefined ? { roadmapEnabled: parseBoolean(body.roadmapEnabled, 'roadmapEnabled') } : {}),
+        ...(body.atlasEnabled !== undefined ? { atlasEnabled: parseBoolean(body.atlasEnabled, 'atlasEnabled') } : {}),
+      });
       return NextResponse.json({ project }, { status: 201 });
     } catch (error) {
       return badRequest(error instanceof Error ? error.message : 'The project was not created.');
@@ -157,11 +164,13 @@ export function createRoadmapProjectItemRoute(deps: RoadmapRouteDeps) {
     const body = await readJsonBody(request);
     if (!body) return badRequest('The request body must be a JSON object.');
     try {
-      const patch: { name?: ReturnType<typeof parseLocalizedText>; position?: number } = {};
+      const patch: { name?: ReturnType<typeof parseLocalizedText>; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean } = {};
       if (body.name !== undefined) patch.name = parseLocalizedText(body.name, 'name');
       const position = parseOrder(body.position, 'position');
       if (position !== undefined) patch.position = position;
-      if (!patch.name && patch.position === undefined) return badRequest('The project update has no fields.');
+      if (body.roadmapEnabled !== undefined) patch.roadmapEnabled = parseBoolean(body.roadmapEnabled, 'roadmapEnabled');
+      if (body.atlasEnabled !== undefined) patch.atlasEnabled = parseBoolean(body.atlasEnabled, 'atlasEnabled');
+      if (!patch.name && patch.position === undefined && patch.roadmapEnabled === undefined && patch.atlasEnabled === undefined) return badRequest('The project update has no fields.');
       return NextResponse.json({ project: await deps.writer.updateProject({ key, patch }) });
     } catch (error) {
       return badRequest(error instanceof Error ? error.message : 'The project was not updated.');
@@ -358,8 +367,8 @@ export function createRoadmapEntryItemRoute(deps: RoadmapRouteDeps) {
   return { PATCH, DELETE };
 }
 
-// 导入（U5）：POST 批量 upsert 人工维护的 JSON 清单（仅条目）。反自动派生红线：本路由只解析
-// 请求体，绝不读取或解析 docs/NEXT.md、docs/BACKLOG.md、docs/finish-task/（决策第 1 条原文）。
+// 批量导入条目路由：单事务批量追加人工维护的 JSON 清单。仅解析请求体，绝不自动派生本地文件。
+// history: 增加当前上下文（projectKey/surface/roadmapKey）校验与自动绑定，字段不匹配或表面禁用时直接阻断。
 export function createRoadmapImportRoute(deps: RoadmapRouteDeps) {
   async function POST(request: Request) {
     const denied = await guardOwner(request, deps.authorizeOwner);
@@ -371,7 +380,41 @@ export function createRoadmapImportRoute(deps: RoadmapRouteDeps) {
     if (!body) return badRequest('The request body must be a JSON object.');
 
     try {
-      const manifest = parseImportManifest(body);
+      const url = new URL(request.url);
+      const queryProjectKey = url.searchParams.get('projectKey')?.trim() || undefined;
+      const querySurface = (url.searchParams.get('surface')?.trim() as 'roadmap' | 'atlas' | undefined) || undefined;
+      const queryRoadmapKey = url.searchParams.get('roadmapKey')?.trim() || undefined;
+
+      if (queryProjectKey) {
+        const projects = await deps.reader.listProjects();
+        const project = projects.find((item) => item.key === queryProjectKey);
+        if (!project) {
+          return badRequest(`Project "${queryProjectKey}" does not exist.`);
+        }
+        if (querySurface === 'roadmap' && !project.roadmapEnabled) {
+          return badRequest(`Roadmap surface is disabled for project "${queryProjectKey}".`);
+        }
+        if (querySurface === 'atlas' && !project.atlasEnabled) {
+          return badRequest(`Planning board surface is disabled for project "${queryProjectKey}".`);
+        }
+      }
+
+      if (queryRoadmapKey) {
+        const roadmaps = await deps.reader.listRoadmaps();
+        const targetRoadmap = roadmaps.find((item) => item.key === queryRoadmapKey);
+        if (!targetRoadmap) {
+          return badRequest(`Roadmap "${queryRoadmapKey}" does not exist.`);
+        }
+        if (queryProjectKey && targetRoadmap.project.key !== queryProjectKey) {
+          return badRequest(`Roadmap "${queryRoadmapKey}" does not belong to project "${queryProjectKey}".`);
+        }
+      }
+
+      const manifest = parseImportManifest(body, {
+        projectKey: queryProjectKey,
+        surface: querySurface,
+        roadmapKey: queryRoadmapKey,
+      });
       const entries = await deps.writer.importEntries(manifest);
 
       return NextResponse.json({ entries });

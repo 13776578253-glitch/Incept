@@ -13,6 +13,7 @@ import {
 import {
   createPrismaRoadmapRepository,
   createPrismaRoadmapWriter,
+  type RoadmapPrismaTx,
   type RoadmapPrismaWriteClient,
 } from '@incept/roadmap/adapters';
 import type {
@@ -25,7 +26,7 @@ import type { RoadmapProject } from '@incept/roadmap/domain';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
 
-// 宿主装配（决策 5/6/7）：门禁、连接、读写端口的宿主实现；包只认 ports，不感知会话模型。
+// 宿主装配层：提供门禁、数据库连接与读写端口实现；业务包只依赖 ports 契约，解耦宿主会话模型。
 export function createRoadmapRepository(): RoadmapRepository {
   const client: Parameters<typeof createPrismaRoadmapRepository>[0] = {
     roadmapProject: {
@@ -41,7 +42,7 @@ export function createRoadmapRepository(): RoadmapRepository {
   return createPrismaRoadmapRepository(client);
 }
 
-// U2：RSC 用的无 Request 门禁（规格指名放装配层）；路由门禁仍是 authorizeOwner（同源 + 本判定）。
+// 服务端组件门禁：直接基于会话角色判定 Owner 权限；API 路由仍使用带同源校验的 authorizeOwner。
 export const isRoadmapOwner = async (): Promise<boolean> =>
   (await getCurrentViewer()).role === 'owner';
 
@@ -81,7 +82,7 @@ export function createRoadmapWriter(): RoadmapWriter {
       create: (args) => prisma.roadmapEntryLink.create(args),
     },
     // Prisma transaction proxy exposes roadmap.count for the project deletion invariant.
-    $transaction: (fn) => prisma.$transaction((tx) => fn(tx)),
+    $transaction: (fn) => prisma.$transaction((tx) => fn(tx as unknown as RoadmapPrismaTx)),
   };
 
   return createPrismaRoadmapWriter(client);
@@ -105,7 +106,7 @@ export async function loadRoadmapAdminProjects(): Promise<RoadmapProject[]> {
   return createRoadmapRepository().listProjects();
 }
 
-// 路由装配：6 个 route handler 工厂的宿主绑定；app/api 下的 stub 只 re-export 这些具名 handler。
+// API 路由装配：统一绑定内部路由处理函数，上层路由入口仅负责转发重导出。
 const roadmapRouteDeps = {
   authorizeOwner,
   reader: createRoadmapRepository(),

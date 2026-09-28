@@ -2,18 +2,13 @@
   "intro": {
     "eyebrow": "Atlas",
     "title": "The project as a set of maps",
-    "description": "Structure, sequence and subject. Each item here draws one map of the same project: how it is built, where it is going, and what it is about. Nothing here changes content; it only re-reads what already exists."
+    "description": "Structure and subject. Each item here draws one map of the same project: how it is built and what it is about. Nothing here changes content; it only re-reads what already exists."
   },
   "items": {
     "architecture": {
       "label": "Architecture",
       "description": "How the project and its data are structured.",
       "note": "Planned: the six-layer boundary and the database schema drawn from verified sources."
-    },
-    "roadmap": {
-      "label": "Roadmap",
-      "description": "What is done, in progress and planned.",
-      "note": "A human-curated integration roadmap across projects, in both languages."
     },
     "keywords": {
       "label": "Keywords",
@@ -22,7 +17,7 @@
     }
   },
   "note": {
-    "title": "Three maps, one subject",
+    "title": "Two maps, one subject",
     "description": "Playback is not listed here: it is a way of listening to content rather than a way of reading the project, so it lives with the music settings instead."
   },
   "placeholder": {

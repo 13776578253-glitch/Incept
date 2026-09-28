@@ -1,11 +1,11 @@
 // 用法: pnpm roadmap:seed
-// 初始 Seed（主控授权）：把 @incept/roadmap/testing 的 fixture 双语数据幂等写入 roadmap 四表。
-// 只写 roadmap_projects / roadmaps / roadmap_columns / roadmap_entries / roadmap_entry_links，不动其他表。
-// votes / comments 显式写 NULL：T4 硬化为不做投票/评论，此为休眠列的历史样本值清除通道。
-// 走 tsx + 动态 import 的脚本↔TS 共享通道（music 脚本同款）；写入前过 domain 全量校验。
+// 数据库种子脚本：将 @incept/roadmap/testing 的双语测试数据幂等写入 roadmap 表中。
+// 仅影响 roadmap 领域相关表，写入前执行 domain 全量校验。
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import type { Roadmap, RoadmapEntry } from '../packages/roadmap/src/domain';
 
 const projectRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 
@@ -15,7 +15,7 @@ function loadEnvironment() {
   try {
     process.loadEnvFile(envFilePath);
   } catch (error) {
-    if (error?.code !== 'ENOENT') throw error;
+    if ((error as { code?: string })?.code !== 'ENOENT') throw error;
   }
 }
 
@@ -33,11 +33,11 @@ async function main() {
   const { prisma } = db;
   const { fixtureProjects, fixtureRoadmaps, fixtureEntries } = fixtures;
 
-  for (const roadmap of fixtureRoadmaps) {
+  for (const roadmap of fixtureRoadmaps as Roadmap[]) {
     domain.validateRoadmap(roadmap);
     domain.validateBoard(
       roadmap,
-      fixtureEntries.filter((entry) => entry.roadmap === roadmap.key),
+      (fixtureEntries as RoadmapEntry[]).filter((entry: RoadmapEntry) => entry.roadmap === roadmap.key),
     );
   }
 
@@ -47,8 +47,8 @@ async function main() {
   for (const [projectIndex, project] of fixtureProjects.entries()) {
     const row = await prisma.roadmapProject.upsert({
       where: { key: project.key },
-      create: { key: project.key, nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10 },
-      update: { nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10 },
+      create: { key: project.key, nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10, roadmapEnabled: project.roadmapEnabled, atlasEnabled: project.atlasEnabled },
+      update: { nameEn: project.name.en, nameZh: project.name.zh, position: (projectIndex + 1) * 10, roadmapEnabled: project.roadmapEnabled, atlasEnabled: project.atlasEnabled },
     });
     projectRows.set(project.key, row);
   }
@@ -90,9 +90,9 @@ async function main() {
       counts.columns += 1;
     }
 
-    const entries = fixtureEntries
-      .filter((entry) => entry.roadmap === roadmap.key)
-      .sort((a, b) => a.order - b.order);
+    const entries: RoadmapEntry[] = (fixtureEntries as RoadmapEntry[])
+      .filter((entry: RoadmapEntry) => entry.roadmap === roadmap.key)
+      .sort((a: RoadmapEntry, b: RoadmapEntry) => a.order - b.order);
 
     for (const entry of entries) {
       const entryRow = await prisma.roadmapEntry.upsert({

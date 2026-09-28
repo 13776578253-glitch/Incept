@@ -6,3 +6,4 @@ export {
   type AtlasPlaceholderScreenProps,
 } from './atlas-placeholder-screen';
 export { atlasEntries, type AtlasEntry, type AtlasCardModel } from './atlas-registry';
+export { SurfaceNavigation, LockedSurface } from './components/surface-navigation';

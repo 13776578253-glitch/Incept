@@ -27,7 +27,7 @@ const roadmapRow: RoadmapRow = {
 };
 
 const projectRow: RoadmapProjectRow = {
-  id: 'project_1', key: 'project-one', nameEn: 'Project One', nameZh: '项目一', position: 10,
+  id: 'project_1', key: 'project-one', nameEn: 'Project One', nameZh: '项目一', position: 10, roadmapEnabled: true, atlasEnabled: true,
   createdAt: new Date('2026-09-24T00:00:00Z'), updatedAt: new Date('2026-09-24T00:00:00Z'),
 };
 
@@ -81,7 +81,7 @@ function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
     roadmapProject: {
       findMany: async () => [projectRow],
       findUnique: async () => projectRow,
-      create: async (args) => ({ ...projectRow, key: args.data.key, nameEn: args.data.nameEn, nameZh: args.data.nameZh, position: args.data.position }),
+      create: async (args) => ({ ...projectRow, key: args.data.key, nameEn: args.data.nameEn, nameZh: args.data.nameZh, position: args.data.position, roadmapEnabled: args.data.roadmapEnabled, atlasEnabled: args.data.atlasEnabled }),
       update: async () => projectRow,
       delete: async () => projectRow,
     },
@@ -270,7 +270,7 @@ describe('createPrismaRoadmapWriter', () => {
     expect(roadmap.columns).toEqual([]);
   });
 
-  it('persists, clears and preserves detail across the three patch states (M2 sentinel)', async () => {
+  it('persists, clears and preserves detail across the three patch states', async () => {
     const boards = [{ ...roadmapRow, project: projectRow, columns: [columnRow], entries: [{ ...entryRow, links: [] }] }];
 
     const setWrites: unknown[] = [];
@@ -357,14 +357,41 @@ describe('createPrismaRoadmapWriter', () => {
     expect(entry.updatedAt).toBe('2026-09-24T00:00:00.000Z');
   });
 
-  it('imports entries as an all-or-nothing batch with upsert and link rewrite', async () => {
+  it('auto-scaffolds default roadmap and planning boards with columns on project creation', async () => {
+    const createdRoadmaps: unknown[] = [];
+    const createdColumns: unknown[] = [];
+    const txClient = fakeWriteClient();
+    txClient.roadmap.create = async (args) => {
+      createdRoadmaps.push(args.data);
+      return { ...roadmapRow, project: projectRow, key: args.data.key, nameEn: args.data.nameEn, nameZh: args.data.nameZh, position: args.data.position, columns: [] };
+    };
+    txClient.roadmapColumn.upsert = async (args) => {
+      createdColumns.push(args.create);
+      return { ...columnRow, status: args.create.status };
+    };
+
+    const writer = createPrismaRoadmapWriter(txClient);
+    const project = await writer.createProject({
+      key: 'fresh-project',
+      name: { en: 'Fresh Project', zh: '新项目' },
+    });
+
+    expect(project.key).toBe('fresh-project');
+    expect(project.roadmapEnabled).toBe(true);
+    expect(project.atlasEnabled).toBe(true);
+    expect(createdRoadmaps).toHaveLength(2);
+    expect(createdRoadmaps[0]).toMatchObject({ key: 'fresh-project-roadmap', nameEn: 'Roadmap', nameZh: '路线图' });
+    expect(createdRoadmaps[1]).toMatchObject({ key: 'fresh-project-atlas', nameEn: 'Planning Board', nameZh: '规划图' });
+    expect(createdColumns).toHaveLength(7);
+  });
+
+  it('imports entries as an all-or-nothing append batch and rejects existing keys', async () => {
     const entryWrites: unknown[] = [];
     const calls: string[] = [];
     const writer = createPrismaRoadmapWriter(
       fakeWriteClient({
         entryWrites,
         calls,
-        entryRows: [{ ...entryRow, key: 'existing-key', links: [] }],
       }),
     );
 
@@ -372,11 +399,11 @@ describe('createPrismaRoadmapWriter', () => {
       entries: [
         {
           roadmapKey: 'sample-roadmap',
-          key: 'existing-key',
+          key: 'new-key-1',
           status: 'reviewing',
           type: 'feature',
           priority: 'middle',
-          title: { en: 'Updated', zh: '更新' },
+          title: { en: 'Appended One', zh: '追加一' },
           summary: { en: 'S', zh: '摘' },
           links: [{ label: { en: 'L', zh: '链接' }, href: 'https://example.com/i' }],
         },
@@ -391,10 +418,32 @@ describe('createPrismaRoadmapWriter', () => {
       ],
     });
 
-    expect(results.map((entry) => entry.key)).toEqual(['existing-key', 'brand-new']);
-    expect(calls).toContain('entry.update');
+    expect(results.map((entry) => entry.key)).toEqual(['new-key-1', 'brand-new']);
+    expect(calls).not.toContain('entry.update');
     expect(calls).toContain('entry.create');
     expect(calls).toContain('links.create');
+
+    const conflictWriter = createPrismaRoadmapWriter(
+      fakeWriteClient({
+        entryRows: [{ ...entryRow, key: 'existing-key', links: [] }],
+      }),
+    );
+
+    await expect(
+      conflictWriter.importEntries({
+        entries: [
+          {
+            roadmapKey: 'sample-roadmap',
+            key: 'existing-key',
+            status: 'reviewing',
+            type: 'feature',
+            priority: 'middle',
+            title: { en: 'Conflict', zh: '冲突' },
+            summary: { en: 'S', zh: '摘' },
+          },
+        ],
+      }),
+    ).rejects.toThrow(/already exists; import only appends new entries and does not overwrite/);
 
     const badWrites: unknown[] = [];
     const badCalls: string[] = [];
@@ -426,6 +475,31 @@ describe('createPrismaRoadmapWriter', () => {
     ).rejects.toThrow(/both languages/);
     expect(badWrites).toEqual([]);
     expect(badCalls).not.toContain('entry.create');
+  });
+
+  it('hands distinct incrementing positions to same-batch entries without explicit order', async () => {
+    const entryWrites: unknown[] = [];
+    const writer = createPrismaRoadmapWriter(fakeWriteClient({ entryWrites }));
+
+    const item = (key: string, order?: number) => ({
+      roadmapKey: 'sample-roadmap',
+      key,
+      status: 'reviewing' as const,
+      type: 'feature' as const,
+      priority: 'middle' as const,
+      title: { en: key, zh: key },
+      summary: { en: 'S', zh: '摘' },
+      ...(order !== undefined ? { order } : {}),
+    });
+
+    const results = await writer.importEntries({
+      entries: [item('auto-1'), item('auto-2'), item('explicit-3', 50), item('auto-4')],
+    });
+
+    expect(results.map((entry) => entry.order)).toEqual([10, 20, 50, 60]);
+    expect(entryWrites.map((write) => (write as { position: number }).position)).toEqual([
+      10, 20, 50, 60,
+    ]);
   });
 
   it('rejects an empty manifest and repeated keys', async () => {

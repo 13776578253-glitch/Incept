@@ -27,6 +27,13 @@
   },
   "importSucceeded": "Import complete.",
   "importFailed": "Import failed.",
+  "importFeedback": {
+    "successEyebrow": "Import complete",
+    "successTitle": "Entries successfully appended",
+    "successDescription": "The entries from the manifest have been written to the database and appended to this board.",
+    "errorEyebrow": "Import failed",
+    "errorTitle": "Could not import entries"
+  },
   "error": {
     "title": "This map could not be drawn",
     "description": "Something went wrong while loading the roadmap. Reload the page to try again."

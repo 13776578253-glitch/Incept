@@ -41,6 +41,12 @@ export function validateRoadmap(roadmap: Roadmap): void {
     fail('roadmap.project.key', 'expected a non-empty string');
   }
   assertLocalizedText(roadmap.project.name, 'roadmap.project.name');
+  if (typeof roadmap.project.roadmapEnabled !== 'boolean' || typeof roadmap.project.atlasEnabled !== 'boolean') {
+    fail('roadmap.project', 'surface availability must be boolean');
+  }
+  if (!roadmap.project.roadmapEnabled && !roadmap.project.atlasEnabled) {
+    fail('roadmap.project', 'at least one public surface must remain enabled');
+  }
 
   if (!Array.isArray(roadmap.columns) || roadmap.columns.length === 0) {
     fail('roadmap.columns', 'a roadmap declares at least one column');

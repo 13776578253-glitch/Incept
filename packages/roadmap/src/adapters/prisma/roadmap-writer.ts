@@ -59,8 +59,8 @@ export type RoadmapPrismaTx = {
   roadmapProject: {
     findMany(args: { orderBy: { position: 'asc' } }): Promise<RoadmapProjectRow[]>;
     findUnique(args: { where: { key: string } }): Promise<RoadmapProjectRow | null>;
-    create(args: { data: { key: string; nameEn: string; nameZh: string; position: number } }): Promise<RoadmapProjectRow>;
-    update(args: { where: { key: string }; data: { nameEn?: string; nameZh?: string; position?: number } }): Promise<RoadmapProjectRow>;
+    create(args: { data: { key: string; nameEn: string; nameZh: string; position: number; roadmapEnabled: boolean; atlasEnabled: boolean } }): Promise<RoadmapProjectRow>;
+    update(args: { where: { key: string }; data: { nameEn?: string; nameZh?: string; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean } }): Promise<RoadmapProjectRow>;
     delete(args: { where: { key: string } }): Promise<RoadmapProjectRow>;
   };
   roadmapColumn: {
@@ -80,7 +80,7 @@ export type RoadmapPrismaTx = {
     }): Promise<RoadmapColumnRow>;
   };
   roadmapEntry: {
-    count(args: { where: { roadmapId: string; status: RoadmapStatus } }): Promise<number>;
+    count(args: { where: { roadmapId: string; status?: RoadmapStatus } }): Promise<number>;
     findUnique(args: { where: { key: string } }): Promise<RoadmapEntryRow | null>;
     create(args: {
       data: {
@@ -137,7 +137,7 @@ function assertStatus(value: string): asserts value is RoadmapStatus {
   }
 }
 
-// 缺省 key 由英文标题生成（U3）：仅保留 a-z0-9 段，全空退化为 "entry"；碰撞后缀由写口负责。
+// 缺省标识生成：提取英文标题小写字母与数字生成 slug，全空退化为 "entry"；碰撞由写端口递增后缀。
 function slugifyTitle(title: string): string {
   const slug = title
     .toLowerCase()
@@ -160,7 +160,7 @@ function mergedEntry(
     priority: patch.priority ?? current.priority,
     title: patch.title ?? current.title,
     summary: patch.summary ?? current.summary,
-    // M2：=== null 判定必须在 ?? 之前，否则 null ?? current.detail 会吞掉清空。
+    // 显式 null 判定必须优先于空值合并，确保清除操作不被旧值覆盖。
     detail: patch.detail === null ? undefined : (patch.detail ?? current.detail),
     links: patch.links ?? current.links,
   };
@@ -175,6 +175,20 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
     const entries = board?.entries ?? [];
 
     return entries.length === 0 ? 10 : Math.max(...entries.map((entry) => entry.position)) + 10;
+  }
+
+  // 批量导入顺序递增：计划阶段未实际入库前按看板维护递增计数器，显式指定 order 时同步提升下限。
+  // history: 解决同批次未指定 order 的多条目批量导入时位置重叠的问题。
+  async function takeNextOrder(
+    tx: RoadmapPrismaTx,
+    roadmapKey: string,
+    runningNext: Map<string, number>,
+    explicit?: number,
+  ): Promise<number> {
+    const baseline = runningNext.get(roadmapKey) ?? (await nextPosition(tx, roadmapKey));
+    const order = explicit ?? baseline;
+    runningNext.set(roadmapKey, Math.max(baseline, order) + 10);
+    return order;
   }
 
   // key 全局唯一（schema @unique）：slug 逐候选查重，碰撞加 -2、-3 后缀；taken 为清单内已占用。
@@ -264,32 +278,122 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
   }
 
   return {
-    async createProject({ key, name, position }) {
+    async createProject({ key, name, position, roadmapEnabled = true, atlasEnabled = true }) {
       if (key.trim() === '') fail('project key must be a non-empty string');
+      if (!roadmapEnabled && !atlasEnabled) fail('at least one public surface must remain enabled');
       assertLocalizedText(name, 'name');
       return client.$transaction(async (tx) => {
         const rows = await tx.roadmapProject.findMany({ orderBy: { position: 'asc' } });
         const resolved = position ?? (rows.length === 0 ? 10 : Math.max(...rows.map((row) => row.position)) + 10);
-        const row = await tx.roadmapProject.create({ data: { key, nameEn: name.en, nameZh: name.zh, position: resolved } });
-        return { key: row.key, name: { en: row.nameEn, zh: row.nameZh } };
+        const row = await tx.roadmapProject.create({
+          data: { key, nameEn: name.en, nameZh: name.zh, position: resolved, roadmapEnabled, atlasEnabled },
+        });
+
+        // 默认初始化路线图与规划图看板及列结构。
+        // history: 解决新建空项目缺失默认看板的问题，默认开启路线图与规划图双板。
+        const roadmapBoard = await tx.roadmap.create({
+          data: {
+            key: `${key}-roadmap`,
+            nameEn: 'Roadmap',
+            nameZh: '路线图',
+            position: 10,
+            project: { connect: { key } },
+          },
+          include: { project: true, columns: true },
+        });
+
+        const roadmapCols: { status: RoadmapStatus; labelEn: string; labelZh: string; position: number }[] = [
+          { status: 'reviewing', labelEn: 'Backlog', labelZh: 'Backlog', position: 10 },
+          { status: 'unstarted', labelEn: 'Next up', labelZh: 'Next up', position: 20 },
+          { status: 'active', labelEn: 'In Progress', labelZh: 'In Progress', position: 30 },
+          { status: 'completed', labelEn: 'Done', labelZh: 'Done', position: 40 },
+        ];
+        for (const col of roadmapCols) {
+          await tx.roadmapColumn.upsert({
+            where: { roadmapId_status: { roadmapId: roadmapBoard.id, status: col.status } },
+            create: {
+              roadmapId: roadmapBoard.id,
+              status: col.status,
+              labelEn: col.labelEn,
+              labelZh: col.labelZh,
+              position: col.position,
+            },
+            update: { labelEn: col.labelEn, labelZh: col.labelZh, position: col.position },
+          });
+        }
+
+        const atlasBoard = await tx.roadmap.create({
+          data: {
+            key: `${key}-atlas`,
+            nameEn: 'Planning Board',
+            nameZh: '规划图',
+            position: 20,
+            project: { connect: { key } },
+          },
+          include: { project: true, columns: true },
+        });
+
+        const atlasCols: { status: RoadmapStatus; labelEn: string; labelZh: string; position: number }[] = [
+          { status: 'unstarted', labelEn: 'Planned', labelZh: 'Planned', position: 10 },
+          { status: 'active', labelEn: 'Building', labelZh: 'Building', position: 20 },
+          { status: 'completed', labelEn: 'Shipped', labelZh: 'Shipped', position: 30 },
+        ];
+        for (const col of atlasCols) {
+          await tx.roadmapColumn.upsert({
+            where: { roadmapId_status: { roadmapId: atlasBoard.id, status: col.status } },
+            create: {
+              roadmapId: atlasBoard.id,
+              status: col.status,
+              labelEn: col.labelEn,
+              labelZh: col.labelZh,
+              position: col.position,
+            },
+            update: { labelEn: col.labelEn, labelZh: col.labelZh, position: col.position },
+          });
+        }
+
+        return { key: row.key, name: { en: row.nameEn, zh: row.nameZh }, roadmapEnabled: row.roadmapEnabled, atlasEnabled: row.atlasEnabled };
       });
     },
 
     async updateProject({ key, patch }) {
       if (patch.name) assertLocalizedText(patch.name, 'patch.name');
+      if (patch.roadmapEnabled === false && patch.atlasEnabled === false) {
+        fail('at least one public surface must remain enabled');
+      }
       const row = await client.roadmapProject.update({
         where: { key },
-        data: { ...(patch.name ? { nameEn: patch.name.en, nameZh: patch.name.zh } : {}), ...(patch.position !== undefined ? { position: patch.position } : {}) },
+        data: {
+          ...(patch.name ? { nameEn: patch.name.en, nameZh: patch.name.zh } : {}),
+          ...(patch.position !== undefined ? { position: patch.position } : {}),
+          ...(patch.roadmapEnabled !== undefined ? { roadmapEnabled: patch.roadmapEnabled } : {}),
+          ...(patch.atlasEnabled !== undefined ? { atlasEnabled: patch.atlasEnabled } : {}),
+        },
       });
-      return { key: row.key, name: { en: row.nameEn, zh: row.nameZh } };
+      if (!row.roadmapEnabled && !row.atlasEnabled) fail('at least one public surface must remain enabled');
+      return { key: row.key, name: { en: row.nameEn, zh: row.nameZh }, roadmapEnabled: row.roadmapEnabled, atlasEnabled: row.atlasEnabled };
     },
 
+    // 删除项目：看板下仍有条目时阻断删除以保护数据；无条目时安全清理默认看板。
+    // history: 配合默认初始化看板，允许空项目连带清理默认看板，非空项目强制保护。
     async deleteProject({ key }) {
       await client.$transaction(async (tx) => {
         const project = await tx.roadmapProject.findUnique({ where: { key } });
         if (!project) fail(`the project "${key}" does not exist`);
-        const count = await tx.roadmap.count({ where: { projectId: project.id } });
-        if (count > 0) fail(`the project "${key}" still has roadmaps`);
+        const allRoadmaps = await tx.roadmap.findMany({
+          orderBy: { position: 'asc' },
+          include: { columns: true, project: true },
+        });
+        const projectRoadmaps = allRoadmaps.filter((r) => r.project?.key === key);
+        for (const r of projectRoadmaps) {
+          const entryCount = await tx.roadmapEntry.count({ where: { roadmapId: r.id } });
+          if (entryCount > 0) {
+            fail(`the project "${key}" still has entries on its roadmaps; delete entries before deleting the project`);
+          }
+        }
+        for (const r of projectRoadmaps) {
+          await tx.roadmap.delete({ where: { key: r.key } });
+        }
         await tx.roadmapProject.delete({ where: { key } });
       });
       return { key };
@@ -375,7 +479,7 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
       });
     },
 
-    // 事务不变式：仍有条目引用该列 status 时拒绝删除，不静默挪列。
+    // 列删除约束：仍有条目引用该状态列时拒绝删除，防止数据孤立。
     async deleteColumn({ roadmapKey, status }) {
       assertStatus(status);
 
@@ -491,8 +595,9 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
       return { key };
     },
 
-    // 导入（U5）：人工维护的 JSON 清单批量 upsert。计划阶段全量校验、提交阶段单事务写入，
-    // 任何一条失败整体拒绝；只消费传入的清单数据，绝不读取仓库文件（反自动派生红线）。
+    // 批量导入：人工 JSON 清单单事务全量写入，全校验通过后统一落库，任何单项失败全量回滚。
+    // 仅消费上传的数据体，不依赖或解析仓库任何文件。
+    // history: 彻底移除更新旧卡片分支，改为严格追加模式（append-only），遇到已有 key 直接抛错阻断。
     async importEntries({ entries }) {
       if (entries.length === 0) {
         fail('the import manifest carries no entries');
@@ -505,11 +610,11 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
           order: number;
           roadmapKey: string;
           roadmapId: string;
-          existing: RoadmapEntryRow | null;
         };
 
         const shapes = new Map<string, { roadmap: Roadmap; roadmapId: string }>();
         const takenKeys = new Set<string>();
+        const nextOrders = new Map<string, number>();
         const plans: ImportPlan[] = [];
 
         for (const item of entries) {
@@ -528,11 +633,11 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
 
           const existing = await tx.roadmapEntry.findUnique({ where: { key } });
 
-          if (existing && existing.roadmapId !== shape.roadmapId) {
-            fail(`the entry "${key}" already lives on another roadmap`);
+          if (existing) {
+            fail(`the entry "${key}" already exists; import only appends new entries and does not overwrite`);
           }
 
-          const order = item.order ?? existing?.position ?? (await nextPosition(tx, item.roadmapKey));
+          const order = await takeNextOrder(tx, item.roadmapKey, nextOrders, item.order);
           const entry: RoadmapEntry = {
             key,
             roadmap: item.roadmapKey,
@@ -554,7 +659,6 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
             order,
             roadmapKey: item.roadmapKey,
             roadmapId: shape.roadmapId,
-            existing,
           });
         }
 
@@ -573,9 +677,9 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
             detailZh: plan.item.detail?.zh ?? null,
             position: plan.order,
           };
-          const row = plan.existing
-            ? await tx.roadmapEntry.update({ where: { key: plan.key }, data })
-            : await tx.roadmapEntry.create({ data: { roadmapId: plan.roadmapId, key: plan.key, ...data } });
+          const row = await tx.roadmapEntry.create({
+            data: { roadmapId: plan.roadmapId, key: plan.key, ...data },
+          });
 
           await writeLinks(tx, row.id, plan.item.links ?? []);
           results.push({

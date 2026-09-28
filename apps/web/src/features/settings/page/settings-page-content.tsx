@@ -15,6 +15,7 @@ import { withLocalePath } from '@/i18n/utils/locale-path';
 import { AccountSettingsPanel } from '../account/account-settings-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
+import { ProjectSurfacesPanel } from '../projects/project-surfaces-panel';
 
 import type { SettingsSection } from '../shared/settings-types';
 
@@ -75,10 +76,12 @@ function ContributionSectionPanel({
 export function SettingsPageContent({
   viewerRole,
   settingsContributionData,
+  projects,
 }: {
   viewerRole: 'guest' | 'pro' | 'owner';
   // 注册表贡献分区的 loader 数据：owner 门控，非 owner 为 null
   settingsContributionData: Record<string, unknown>;
+  projects: Array<{ key: string; name: { en: string; zh: string }; roadmapEnabled: boolean; atlasEnabled: boolean }>;
 }) {
   const mounted = useMounted();
   const router = useRouter();
@@ -95,7 +98,7 @@ export function SettingsPageContent({
     setCodePalette,
     isCodePaletteReady,
   } = useDocsCodePaletteContext();
-  const page = getSettingsPageData(language);
+  const page = getSettingsPageData(language, viewerRole === 'owner');
   const requestedSection = searchParams.get('section');
   const returnTo = searchParams.get('returnTo');
   const selectedSection =
@@ -147,7 +150,9 @@ export function SettingsPageContent({
       </header>
 
       <div className="hidden lg:block">
-        {selectedSection.id === 'account' ? (
+        {selectedSection.id === 'projects' && viewerRole === 'owner' ? (
+          <ProjectSurfacesPanel initialProjects={projects} language={language} />
+        ) : selectedSection.id === 'account' ? (
           <AccountSettingsPanel language={language} viewerRole={viewerRole} />
         ) : findSettingsSectionContribution(mountManifest, selectedSection.id) ? (
           <ContributionSectionPanel section={selectedSection} data={settingsContributionData} />
@@ -160,7 +165,9 @@ export function SettingsPageContent({
 
       <div className="space-y-12 lg:hidden">
         {page.sections.map((section) => (
-          section.id === 'account' ? (
+          section.id === 'projects' && viewerRole === 'owner' ? (
+            <ProjectSurfacesPanel key={section.id} initialProjects={projects} language={language} />
+          ) : section.id === 'account' ? (
             <AccountSettingsPanel key={section.id} language={language} viewerRole={viewerRole} />
           ) : findSettingsSectionContribution(mountManifest, section.id) ? (
             <ContributionSectionPanel key={section.id} section={section} data={settingsContributionData} />

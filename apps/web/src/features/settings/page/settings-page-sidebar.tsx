@@ -47,6 +47,15 @@ function SectionIcon({ id, active }: { id: string; active: boolean }) {
     );
   }
 
+  if (id === 'projects') {
+    return (
+      <svg viewBox="0 0 16 16" aria-hidden="true" className={`size-3.5 shrink-0 transition-colors ${colorClass}`} fill="none">
+        <rect x="2.5" y="3" width="11" height="10" rx="2" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M2.5 6.5h11M6.5 6.5v6.5" stroke="currentColor" strokeWidth="1.4" />
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox="0 0 16 16" aria-hidden="true" className={`size-3.5 shrink-0 transition-colors ${colorClass}`} fill="none">
       <rect x="2.75" y="2.75" width="10.5" height="10.5" rx="2.5" stroke="currentColor" strokeWidth="1.4" />
@@ -55,11 +64,11 @@ function SectionIcon({ id, active }: { id: string; active: boolean }) {
   );
 }
 
-function SettingsSidebar() {
+function SettingsSidebar({ viewerRole }: { viewerRole: 'guest' | 'pro' | 'owner' }) {
   const { language } = useLanguage();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const page = getSettingsPageData(language);
+  const page = getSettingsPageData(language, viewerRole === 'owner');
   const requestedSection = searchParams.get('section');
   const activeSection = page.sections.some((section) => section.id === requestedSection)
     ? requestedSection
@@ -111,6 +120,6 @@ function SettingsSidebar() {
   );
 }
 
-export function SettingsPageSidebar() {
-  return <SettingsSidebar />;
+export function SettingsPageSidebar({ viewerRole }: { viewerRole: 'guest' | 'pro' | 'owner' }) {
+  return <SettingsSidebar viewerRole={viewerRole} />;
 }

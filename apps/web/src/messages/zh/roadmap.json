@@ -27,6 +27,13 @@
   },
   "importSucceeded": "导入完成。",
   "importFailed": "导入失败。",
+  "importFeedback": {
+    "successEyebrow": "导入完成",
+    "successTitle": "条目已成功追加",
+    "successDescription": "清单中的条目已成功写入数据库并追加至当前看板。",
+    "errorEyebrow": "导入未完成",
+    "errorTitle": "未能导入条目"
+  },
   "error": {
     "title": "路线图未能加载",
     "description": "加载路线图时出了问题，请刷新页面重试。"

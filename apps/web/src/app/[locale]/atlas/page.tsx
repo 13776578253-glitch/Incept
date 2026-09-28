@@ -1,11 +1,20 @@
-import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell';
-import { AtlasIndexFeature } from '@/features/atlas';
+import { redirect } from 'next/navigation';
+import type { AppLocale } from '@/i18n/config/locales';
 
-// 图谱总览：列出本栏目下的全部图谱
-export default function AtlasPage() {
-  return (
-    <WorkspaceShell>
-      <AtlasIndexFeature />
-    </WorkspaceShell>
-  );
+export default async function AtlasPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: AppLocale }>;
+  searchParams: Promise<{ project?: string; rd?: string }>;
+}) {
+  const { locale } = await params;
+  const { project, rd } = await searchParams;
+
+  const query = new URLSearchParams();
+  if (project) query.set('project', project);
+  if (rd) query.set('rd', rd);
+  const queryString = query.toString();
+
+  redirect(`/${locale}/atlas/roadmap${queryString ? `?${queryString}` : ''}`);
 }

@@ -2,7 +2,7 @@ import { validateBoard } from '../domain';
 import type { RoadmapBoard, RoadmapRepository } from '../ports';
 import { fixtureEntries, fixtureProjects, fixtureRoadmaps } from './fixtures';
 
-// 内存 fixture 仓储：Gate 前唯一数据源（决策条目 3），创建时全量校验，坏样本直接抛错。
+// 测试内存仓储：提供离线测试看板数据，初始化时执行全量域校验。
 export function createFixtureRoadmapRepository(): RoadmapRepository {
   const boards = new Map<string, RoadmapBoard>();
   const known = new Set<string>();

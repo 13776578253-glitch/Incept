@@ -11,8 +11,7 @@ type RoadmapCardProps = {
   onSelect?: (entry: RoadmapEntry) => void;
 };
 
-// 条目卡：主语言标题 + 次语言一行（双语对等可见）、chips。
-// T4 硬化：无投票/评论——卡片不渲染任何计数或投票/评论痕迹。
+// 看板卡片：展示主语言标题、次语言副标题及标签元数据；不展示任何交互计数。
 export function RoadmapCard({ entry, locale, chrome, onSelect }: RoadmapCardProps) {
   const secondary = locale === 'en' ? 'zh' : 'en';
   const links = entry.links ?? [];

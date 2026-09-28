@@ -23,7 +23,7 @@ Accepted on 2026-09-23。暂缓的实施阶段登记在 `docs/BACKLOG.md`（B-28
 4. **存储与著述留待二次讨论（deferred）。** 该延期是刻意的；见"开放问题"。
 5. **路线图以进程内 feature 包 `packages/roadmap`（`@incept/roadmap`）交付**，沿用 music 包模板：分层梯度（domain 与 ports 禁 React/Next/Node；application 是 Node 可用编排层；react 认 React；next 认 Next；cli 与 adapters 认 Node）、边界强制（package `exports`、分层 tsconfig、pnpm 隔离、包独立 typecheck）、路径与配置注入、最小宿主面。本文档只记录 roadmap 特有增量。
 6. **分层草案：** domain（纯类型与校验，含 LocalizedText 对）、ports（RoadmapRepository 读端口先行；写端口随著述决策落地）、adapters（存储适配——此前只有 fixture/内存适配）、application、react、next、cli（著述定案后）、testing。
-7. **宿主触点**包括 `/atlas/roadmap` 页面与装配、owner 门控的 studio 页面及内部 API stub。本轮项目扩展新增 `/api/internal/roadmap/projects` 与 `/api/internal/roadmap/projects/[key]` 两个明确的宿主触点。不新增 mount 贡献类型。著述面留在 studio/内部路径，绝不进入 atlas 子树，也不从 atlas 卡片链接。
+7. **宿主触点**包括 `/atlas/roadmap` 页面与装配、owner 门控的 studio 页面及内部 API stub。本轮项目扩展新增 `/api/internal/roadmap/projects` 与 `/api/internal/roadmap/projects/[key]` 两个明确的宿主触点。2026-09-26 项目表面扩展还具名登记 `apps/web/src/features/settings/projects/project-surfaces-panel.tsx`（owner 设置页 CRUD 与表面开关）、`apps/web/src/features/settings/shared/settings-schema.ts`、`apps/web/src/features/settings/page/settings-page-content.tsx`、`apps/web/src/features/settings/page/settings-page-sidebar.tsx`、`apps/web/src/app/[locale]/settings/page.tsx`、`apps/web/src/features/atlas/components/surface-navigation.tsx`；公开路由消费者为 `/atlas`、`/atlas/architecture`、`/atlas/keywords`、`/atlas/roadmap`。不新增 mount 贡献类型。`?locked=<surface>` 是禁用目标的可选导航提示，不是状态真源或访问控制；服务端渲染状态由项目持久化的 `atlasEnabled` / `roadmapEnabled` 字段决定。Atlas 目录/内容仍来自现有静态 `atlas-registry.ts`；尚未实现按项目持久化的 Atlas 内容模型，后续讨论已登记在 B-28。著述面留在 studio/内部路径，绝不进入 atlas 子树，也不从 atlas 卡片链接。
 
 ## 被否决的方案
 
@@ -50,6 +50,8 @@ Accepted on 2026-09-23。暂缓的实施阶段登记在 `docs/BACKLOG.md`（B-28
 3. **内容模型字段：** 条目粒度、时间轴抽象、状态词汇、跨项目登记方式（项目注册表？）。参考界面 Featurebase Roadmap（`astrbot.featurebase.app/roadmap`）把稳定状态枚举（reviewing / unstarted / active / completed / canceled）映射为每板显示名；这种拆分值得借用，列结构与词汇可按项目不同。**2026-09-23 定案（T1）：**采用稳定状态枚举 + 每板显示名映射，已由 `@incept/roadmap` domain 类型实现。
 4. **`/atlas/roadmap` 归属：** 留在 atlas 还是升为顶级界面。以 "If a second non-map entry is ever wanted here, that is the point to reconsider whether the section is still coherent"（若还想再放一个非"图"的条目，那就是重新审视栏目是否仍然成立的时点）为框架：跨项目集成界面正是那个时点；在存储 gate 裁定。**2026-09-23 定案（T2）：**多 roadmap + 切换器，留在 `/atlas/roadmap`。**2026-09-26 扩展：**跨项目轴现在由 `RoadmapProject` 承载，`Roadmap` 收窄为项目内的一块板（`?project=<key>&rd=<key>`）。这是对 T2 多 roadmap 决策的扩展，不是推翻；T2 的每板列结构隔离项目状态词汇依然成立，所以列继续挂在每块 Roadmap 上。
 5. **界面术语保留与顶栏操作区（2026-09-25 定案；项目下拉语义于 2026-09-26 被 supersede）：** 页眉 eyebrow 固定为英文产品标识 `Roadmap`（与 `/docs` 的 `Docs` 对齐），标题精炼为 `开发路线` / `Milestones & Backlog`；阶段列名与类型/优先级标签保留英文工程标识；板切换胶囊去除「示例 / Sample」前缀；同一水平基线右侧配置「导入（Import）」按钮与「选择项目（Select project）」下拉。旧裁定中将下拉描述为「导入与跨项目筛选能力的入口」已被本轮语义取代：下拉切换 `RoadmapProject`（`?project=<key>`），左侧切换器仅显示所选项目内的板。
+
+**2026-09-27 语义修订：** 每个项目当前只有一个路线图工作面；路线图页面不再显示项目内的单板切换器。图谱是独立的项目阅读面，图谱总览不再列路线图卡片；路线图入口与图谱入口并列，但路线图不属于图谱目录。
 6. **详情弹窗交互与后端接线裁定（`U1`–`U6`，2026-09-25 定案）：**
    - **`U1`（`Detail` 双语存储与单框编辑拆解）**：`RoadmapEntry` 新增 `detailEn` / `detailZh`（`detail?: LocalizedText`）；弹窗 `Editor` 中 `Title` 按 ` / ` 拆分双语，`Summary` 与 `Detail` 更新当前语种并在另一语种为空时以当前文本兜底，兼顾单框便捷编辑与双语对等不变量。
    - **`U2`（未登录普通访客隐藏写控件）**：公开页 `/atlas/roadmap` 对非 Owner 访客隐藏 `Editor` 页签、`Backlog` `+` 按钮、`Board/Tags` 下拉箭头、`Revert or delete`（`Undo` / `Delete`）区域及顶栏「导入」按钮。

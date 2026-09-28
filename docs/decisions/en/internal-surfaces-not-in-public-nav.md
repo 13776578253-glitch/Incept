@@ -27,6 +27,10 @@ During the rename **`playback` was moved out of the section entirely.** It was t
 
 The revision keeps the original boundary rather than relaxing it:
 
+### Update 2026-09-27: Roadmap and Atlas are separate surfaces
+
+Roadmap is the project's work-tracking surface; Atlas is the project's derived reading surface. They are sibling entries in project navigation, and Roadmap is no longer an Atlas catalog card. The Atlas catalog currently lists project maps such as Architecture and Keywords, while the Roadmap entry goes directly to `/atlas/roadmap?project=<key>`. The earlier wording about three Atlas pages and listing `/atlas/roadmap` in the Atlas catalog is superseded by this ruling.
+
 - The section does **not** carry docs back-office data. `/studio/docs/library` stays hidden, and no card links to it.
 - The section is a navigation surface, not a second content library. It lists `/atlas/architecture`, `/atlas/roadmap` and `/atlas/keywords`, and nothing outside its own subtree.
 - It adds no data access. The hub is a static entry list, reads no database, and needs no viewer.

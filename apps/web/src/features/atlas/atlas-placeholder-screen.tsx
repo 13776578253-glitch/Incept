@@ -7,6 +7,7 @@ export type AtlasPlaceholderScreenProps = {
   locale: AppLocale;
   t: (key: string) => string;
   title: string;
+  projectKey?: string;
   // 该图谱完成后要放的内容，目前不传
   children?: ReactNode;
 };
@@ -17,6 +18,7 @@ export function AtlasPlaceholderScreen({
   locale,
   t,
   title,
+  projectKey,
   children,
 }: AtlasPlaceholderScreenProps) {
   return (
@@ -25,7 +27,7 @@ export function AtlasPlaceholderScreen({
       title={title}
       description={t('placeholder.description')}
       backLabel={t('placeholder.back')}
-      backHref={withLocalePath(locale, '/atlas')}
+      backHref={`${withLocalePath(locale, '/atlas')}${projectKey ? `?project=${encodeURIComponent(projectKey)}` : ''}`}
     >
       {children}
     </AtlasPlaceholder>

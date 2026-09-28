@@ -15,7 +15,7 @@ import type {
   RoadmapWriter,
 } from '../ports';
 
-// 路由工厂的依赖注入（music 决策 6/10 同形）：门禁、读端口、写端口由宿主装配提供。
+// 路由工厂依赖注入契约：门禁验证器、读端口与写端口由宿主装配注入。
 export type RoadmapRouteDeps = {
   authorizeOwner: AuthorizeOwner<Request>;
   reader: Pick<RoadmapRepository, 'listProjects' | 'getProject' | 'listRoadmaps' | 'listBoard'>;
@@ -26,7 +26,7 @@ export type RoadmapRouteContext = {
   params: Promise<Record<string, string>>;
 };
 
-// 非 owner 一律 404，不暴露存在性（music 语义原样）。
+// 访问门禁：非 Owner 一律返回 404，不暴露资源存在性。
 export async function guardOwner(
   request: Request,
   authorizeOwner: AuthorizeOwner<Request>,
@@ -95,6 +95,14 @@ export function parseOrder(value: unknown, field: string): number | undefined {
   return value;
 }
 
+export function parseBoolean(value: unknown, field: string): boolean {
+  if (typeof value !== 'boolean') {
+    throw new Error(`"${field}" must be a boolean.`);
+  }
+
+  return value;
+}
+
 export function parseLinks(value: unknown): { label: LocalizedText; href: string }[] | undefined {
   if (value === undefined || value === null) {
     return undefined;
@@ -157,13 +165,44 @@ export function parseEntryPatch(body: Record<string, unknown>): RoadmapEntryPatc
   return patch;
 }
 
-// 导入清单解析（U5）：只接受上传 JSON 形状的请求体。反自动派生红线：本函数与导入路由
-// 绝不读取或解析 docs/NEXT.md、docs/BACKLOG.md、docs/finish-task/（决策第 1 条）。
-export function parseImportManifest(body: Record<string, unknown>): RoadmapImportManifest {
+// 导入清单结构校验：严格解析人工 JSON 请求体，不扫描或派生本地文件。
+// history: 支持当前页面上下文自动绑定与强校验，缺省时自动对齐目标看板，冲突时阻断。
+export function parseImportManifest(
+  body: Record<string, unknown>,
+  context?: {
+    projectKey?: string;
+    surface?: 'roadmap' | 'atlas';
+    roadmapKey?: string;
+  },
+): RoadmapImportManifest {
   const entries = body.entries;
 
   if (!Array.isArray(entries)) {
     throw new Error('"entries" must be a list.');
+  }
+
+  if (context?.projectKey && body.projectKey !== undefined) {
+    if (typeof body.projectKey !== 'string' || body.projectKey.trim() !== context.projectKey) {
+      throw new Error(
+        `Manifest projectKey "${String(body.projectKey)}" does not match current project "${context.projectKey}".`,
+      );
+    }
+  }
+
+  if (context?.surface && body.surface !== undefined) {
+    if (typeof body.surface !== 'string' || body.surface.trim() !== context.surface) {
+      throw new Error(
+        `Manifest surface "${String(body.surface)}" does not match current surface "${context.surface}".`,
+      );
+    }
+  }
+
+  if (context?.roadmapKey && body.roadmapKey !== undefined) {
+    if (typeof body.roadmapKey !== 'string' || body.roadmapKey.trim() !== context.roadmapKey) {
+      throw new Error(
+        `Manifest roadmapKey "${String(body.roadmapKey)}" does not match current target roadmap "${context.roadmapKey}".`,
+      );
+    }
   }
 
   return {
@@ -173,11 +212,34 @@ export function parseImportManifest(body: Record<string, unknown>): RoadmapImpor
       }
 
       const item = raw as Record<string, unknown>;
-      const roadmapKey = typeof item.roadmapKey === 'string' ? item.roadmapKey.trim() : '';
+      let roadmapKey = typeof item.roadmapKey === 'string' ? item.roadmapKey.trim() : '';
       const key = typeof item.key === 'string' ? item.key.trim() : '';
 
-      if (roadmapKey === '') {
+      if (context?.roadmapKey) {
+        if (roadmapKey !== '' && roadmapKey !== context.roadmapKey) {
+          throw new Error(
+            `"entries[${index}].roadmapKey" ("${roadmapKey}") does not match current target roadmap "${context.roadmapKey}".`,
+          );
+        }
+        roadmapKey = context.roadmapKey;
+      } else if (roadmapKey === '') {
         throw new Error(`"entries[${index}].roadmapKey" must be a non-empty string.`);
+      }
+
+      if (context?.projectKey && item.projectKey !== undefined) {
+        if (typeof item.projectKey !== 'string' || item.projectKey.trim() !== context.projectKey) {
+          throw new Error(
+            `"entries[${index}].projectKey" ("${String(item.projectKey)}") does not match current project "${context.projectKey}".`,
+          );
+        }
+      }
+
+      if (context?.surface && item.surface !== undefined) {
+        if (typeof item.surface !== 'string' || item.surface.trim() !== context.surface) {
+          throw new Error(
+            `"entries[${index}].surface" ("${String(item.surface)}") does not match current surface "${context.surface}".`,
+          );
+        }
       }
 
       if (item.key !== undefined && key === '') {

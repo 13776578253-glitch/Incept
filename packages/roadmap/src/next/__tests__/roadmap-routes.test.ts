@@ -19,7 +19,7 @@ const board: RoadmapBoard = {
   roadmap: {
     key: 'sample-roadmap',
     name: { en: 'Sample Roadmap', zh: '示例路线图' },
-    project: { key: 'project-one', name: { en: 'Project One', zh: '项目一' } },
+    project: { key: 'project-one', name: { en: 'Project One', zh: '项目一' }, roadmapEnabled: true, atlasEnabled: true },
     columns: [{ status: 'reviewing', label: { en: 'Backlog', zh: '储备' } }],
   },
   entries: [],
@@ -42,8 +42,8 @@ function fakeDeps(
   updates: RoadmapEntryPatch[] = [],
 ): RoadmapRouteDeps {
   const writer: RoadmapWriter = {
-    createProject: async (input) => ({ key: input.key, name: input.name }),
-    updateProject: async ({ key, patch }) => ({ key, name: patch.name ?? { en: 'Project', zh: '项目' } }),
+    createProject: async (input) => ({ key: input.key, name: input.name, roadmapEnabled: input.roadmapEnabled ?? true, atlasEnabled: input.atlasEnabled ?? true }),
+    updateProject: async ({ key, patch }) => ({ key, name: patch.name ?? { en: 'Project', zh: '项目' }, roadmapEnabled: patch.roadmapEnabled ?? true, atlasEnabled: patch.atlasEnabled ?? true }),
     deleteProject: async ({ key }) => ({ key }),
     createRoadmap: async (input) => ({ ...board.roadmap, key: input.key, columns: [] }),
     updateRoadmap: async () => board.roadmap,
@@ -299,6 +299,70 @@ describe('roadmap route handlers', () => {
     const error = (await brokenParity.json()) as { error: string };
 
     expect(error.error).toMatch(/both languages/);
+
+    // 上下文自动绑定测试：缺省 roadmapKey 时自动绑定到 query 参数中指定的 targetRoadmap
+    const boundReq = new Request(
+      'http://localhost/api/internal/roadmap/import?projectKey=project-one&surface=roadmap&roadmapKey=sample-roadmap',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          entries: [
+            {
+              status: 'reviewing',
+              type: 'feature',
+              priority: 'middle',
+              title: { en: 'Bound Entry', zh: '绑定条目' },
+              summary: { en: 'Bound summary', zh: '绑定摘要' },
+            },
+          ],
+        }),
+      },
+    );
+    const boundRes = await createRoadmapImportRoute(fakeDeps(true)).POST(boundReq);
+    expect(boundRes.status).toBe(200);
+    const boundPayload = (await boundRes.json()) as { entries: RoadmapEntry[] };
+    expect(boundPayload.entries[0].roadmap).toBe('sample-roadmap');
+
+    // 字段不匹配直接报错拒绝测试：条目 roadmapKey 与目标不符
+    const mismatchReq = new Request(
+      'http://localhost/api/internal/roadmap/import?projectKey=project-one&surface=roadmap&roadmapKey=sample-roadmap',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          entries: [
+            {
+              roadmapKey: 'sample-two-atlas',
+              status: 'reviewing',
+              type: 'feature',
+              priority: 'middle',
+              title: { en: 'Mismatched Entry', zh: '不匹配条目' },
+              summary: { en: 'S', zh: '摘' },
+            },
+          ],
+        }),
+      },
+    );
+    const mismatchRes = await createRoadmapImportRoute(fakeDeps(true)).POST(mismatchReq);
+    expect(mismatchRes.status).toBe(400);
+    expect(((await mismatchRes.json()) as { error: string }).error).toMatch(/does not match current target roadmap/);
+
+    // 顶层 projectKey 不匹配直接报错拒绝
+    const mismatchProjReq = new Request(
+      'http://localhost/api/internal/roadmap/import?projectKey=project-one&surface=roadmap&roadmapKey=sample-roadmap',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          projectKey: 'project-two',
+          entries: [],
+        }),
+      },
+    );
+    const mismatchProjRes = await createRoadmapImportRoute(fakeDeps(true)).POST(mismatchProjReq);
+    expect(mismatchProjRes.status).toBe(400);
+    expect(((await mismatchProjRes.json()) as { error: string }).error).toMatch(/does not match current project/);
   });
 
   it('lists boards for the owner and deletes through the writer', async () => {

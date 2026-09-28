@@ -1,7 +1,7 @@
 import type { RoadmapEntryPriority, RoadmapEntryType, RoadmapStatus } from '../domain';
 
-// UI 框架文案由宿主 messages 注入（决策条目 3：内容不进 messages，但 chrome 属于 messages）。
-// 只允许纯数据，客户端组件不得接收函数 props。
+// 界面文案契约：组件文案由宿主国际化词典注入，保持表现层纯数据无函数 props。
+// history: 扩充导入反馈卡片（Toast）中英文标题与描述字段。
 // 本包所需 CSS 变量清单（宿主 theme.css 提供，light / .dark / 暖色护眼三态）：
 //   --roadmap-lane-bg、--roadmap-chip-bg、
 //   --roadmap-priority-{high,middle,low}-{fg,bg}，以及 --color-text/-soft/-muted、--color-border、--radius-md、--duration-fast。
@@ -24,5 +24,10 @@ export type RoadmapChrome = {
   pendingDetail: string;
   importLabel?: string;
   projectSelectLabel?: string;
+  importSuccessEyebrow?: string;
+  importSuccessTitle?: string;
+  importSuccessDescription?: string;
+  importErrorEyebrow?: string;
+  importErrorTitle?: string;
 };
 
