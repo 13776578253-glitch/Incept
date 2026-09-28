@@ -270,7 +270,7 @@ describe('createPrismaRoadmapWriter', () => {
     expect(roadmap.columns).toEqual([]);
   });
 
-  it('persists, clears and preserves detail across the three patch states (M2 sentinel)', async () => {
+  it('persists, clears and preserves detail across the three patch states', async () => {
     const boards = [{ ...roadmapRow, project: projectRow, columns: [columnRow], entries: [{ ...entryRow, links: [] }] }];
 
     const setWrites: unknown[] = [];
@@ -475,6 +475,31 @@ describe('createPrismaRoadmapWriter', () => {
     ).rejects.toThrow(/both languages/);
     expect(badWrites).toEqual([]);
     expect(badCalls).not.toContain('entry.create');
+  });
+
+  it('hands distinct incrementing positions to same-batch entries without explicit order', async () => {
+    const entryWrites: unknown[] = [];
+    const writer = createPrismaRoadmapWriter(fakeWriteClient({ entryWrites }));
+
+    const item = (key: string, order?: number) => ({
+      roadmapKey: 'sample-roadmap',
+      key,
+      status: 'reviewing' as const,
+      type: 'feature' as const,
+      priority: 'middle' as const,
+      title: { en: key, zh: key },
+      summary: { en: 'S', zh: '摘' },
+      ...(order !== undefined ? { order } : {}),
+    });
+
+    const results = await writer.importEntries({
+      entries: [item('auto-1'), item('auto-2'), item('explicit-3', 50), item('auto-4')],
+    });
+
+    expect(results.map((entry) => entry.order)).toEqual([10, 20, 50, 60]);
+    expect(entryWrites.map((write) => (write as { position: number }).position)).toEqual([
+      10, 20, 50, 60,
+    ]);
   });
 
   it('rejects an empty manifest and repeated keys', async () => {

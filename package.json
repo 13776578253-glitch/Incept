@@ -6,8 +6,8 @@
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
     "lint": "pnpm --filter web lint",
-    "typecheck": "pnpm --filter web typecheck && pnpm --filter @incept/music-player-core typecheck && pnpm --filter @incept/music typecheck && pnpm --filter @incept/db typecheck && pnpm --filter @incept/roadmap typecheck",
-
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter @incept/music-player-core typecheck && pnpm --filter @incept/music typecheck && pnpm --filter @incept/db typecheck && pnpm --filter @incept/roadmap typecheck && tsc --noEmit -p scripts/tsconfig.json",
+    "typecheck:scripts": "tsc --noEmit -p scripts/tsconfig.json",
     "test": "pnpm -r --if-present test",
     "test:core": "pnpm --filter @incept/music-player-core test",
     "test:web": "pnpm --filter web test",
@@ -39,6 +39,8 @@
     "wt:adopt": "node scripts/worktree.mjs adopt",
     "wt:status": "node scripts/worktree.mjs status",
     "wt:remove": "node scripts/worktree.mjs remove"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }
-

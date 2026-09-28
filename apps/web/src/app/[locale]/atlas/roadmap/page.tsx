@@ -7,11 +7,12 @@ import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell'
 import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 import { createRoadmapRepository, isRoadmapOwner } from '@/server/roadmap/assembly';
+import { isAtlasBoardKey } from '@/server/roadmap/resolve-selection';
 import { SurfaceNavigation } from '@/features/atlas';
 
-// 路线图页面：项目由 ?project= 选择，表面由 ?surface= 选择（roadmap | atlas），兼容 ?rd= 参数。
-// T3 装配注入 Prisma 读链，列结构与显示名由每张 Roadmap 自带（T1 裁定）。
-// U2：canEdit 由 isRoadmapOwner() 计算并下传，非 Owner 全部写控件隐藏（Module G）。
+// 路线图与规划图页面：由 ?project= 选定项目，?surface= 选定表面（roadmap | atlas），兼容 ?rd= 参数。
+// 列结构与显示名称由看板自身持有。非 Owner 用户隐藏全部写操作控件。
+// history: 统一多项目表面路由与状态锁定，规划图表面固定使用 PLANNING eyebrow 与独立标题。
 export default async function RoadmapMapPage({
   params,
   searchParams,
@@ -32,8 +33,8 @@ export default async function RoadmapMapPage({
     ? roadmaps.filter((item) => item.project.key === currentProject.key)
     : [];
 
-  const roadmapBoard = projectRoadmaps.find((item) => !item.key.includes('atlas')) ?? projectRoadmaps[0];
-  const atlasBoard = projectRoadmaps.find((item) => item.key.includes('atlas'));
+  const roadmapBoard = projectRoadmaps.find((item) => !isAtlasBoardKey(item.key)) ?? projectRoadmaps[0];
+  const atlasBoard = projectRoadmaps.find((item) => isAtlasBoardKey(item.key));
 
   let activeSurface: 'roadmap' | 'atlas' = 'roadmap';
 
@@ -111,7 +112,6 @@ export default async function RoadmapMapPage({
     importFailed: t('importFailed'),
     importSuccessEyebrow: t('importFeedback.successEyebrow'),
     importSuccessTitle: t('importFeedback.successTitle'),
-    importSuccessDescription: t('importFeedback.successDescription'),
     importErrorEyebrow: t('importFeedback.errorEyebrow'),
     importErrorTitle: t('importFeedback.errorTitle'),
     lastUpdated: t('modal.lastUpdated'),

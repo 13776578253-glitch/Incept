@@ -12,7 +12,7 @@ import {
 } from '../../domain';
 import type { RoadmapBoard, RoadmapRepository } from '../../ports';
 
-// Prisma 模型句柄的结构子集（T3：@incept/db 持有 schema/migration/client，包持有仓储规则）。
+// 数据库行结构子集定义：业务包持有仓储与映射规则，底层连接与 Client 由宿主装配注入。
 // 宿主装配注入 prisma 单例；结构类型让测试用假 client，也不依赖生成 client 的具体类型。
 export type RoadmapRow = {
   id: string;
@@ -138,8 +138,7 @@ export function toRoadmap(
   };
 }
 
-// 行 → 域：position → order；entry.roadmap 记的是 roadmap key（校验口径），由父行带入。
-// 行上的 votes/comments 为休眠列（T4 硬化：不做投票/评论），刻意不映射进域模型。
+// 实体转换映射：position 映射为 order；votes/comments 为底层保留字段，不映射至领域模型。
 export function toEntry(
   row: RoadmapEntryRow & { links: readonly RoadmapEntryLinkRow[] },
   roadmapKey: string,
@@ -148,7 +147,7 @@ export function toEntry(
     .sort(byPosition)
     .map((link) => ({ label: { en: link.labelEn, zh: link.labelZh }, href: link.href }));
 
-  // detail 成对（U1）：双 NULL = 无；单边值 = 数据损坏，映射成空半边让 validateEntry 拒绝。
+  // 详情双语映射：双 NULL 表示缺省；单侧存在视为异常数据，映射为空字符串交由校验层阻断。
   const detail =
     row.detailEn !== null || row.detailZh !== null
       ? { en: row.detailEn ?? '', zh: row.detailZh ?? '' }

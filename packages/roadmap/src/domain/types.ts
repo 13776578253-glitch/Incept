@@ -1,4 +1,4 @@
-// 双语文本对：完整双语对等（roadmap-integration-surface 决策条目 2），缺半边由校验拒绝。
+// 双语文本对：必须提供完整中英文对等内容，单侧缺失直接抛错。
 export type LocalizedText = {
   en: string;
   zh: string;
@@ -6,7 +6,7 @@ export type LocalizedText = {
 
 export type RoadmapLocale = keyof LocalizedText;
 
-// 稳定状态枚举（Gate T1 裁定）：枚举稳定，显示名由每张 roadmap 映射为自己的列。
+// 阶段状态枚举：状态集合保持稳定，显示名称由各看板映射为独立列。
 export const ROADMAP_STATUSES = [
   'reviewing',
   'unstarted',
@@ -25,7 +25,7 @@ export const ROADMAP_ENTRY_PRIORITIES = ['high', 'middle', 'low', 'none'] as con
 
 export type RoadmapEntryPriority = (typeof ROADMAP_ENTRY_PRIORITIES)[number];
 
-// 列 = 稳定状态 + 每板显示名：列结构与词汇可按 roadmap 不同（T1）。
+// 列定义：关联稳定状态与各板自定义双语显示名称。
 export type RoadmapColumn = {
   status: RoadmapStatus;
   label: LocalizedText;
@@ -65,7 +65,8 @@ export type RoadmapEntry = {
   updatedAt?: string;
 };
 
-// 导入清单（U5，仅条目 upsert 裁定）：人工维护的 JSON，key 缺省时由写口按标题生成。
+// 导入条目：仅收录人工清单数据，key 缺省时由写入层根据英文标题自动生成防碰撞标识。
+// history: 导入模式由初期覆盖更新改为严格追加（append-only）。
 export type RoadmapEntryImportItem = {
   roadmapKey: string;
   key?: string;

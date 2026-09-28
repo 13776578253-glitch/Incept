@@ -317,12 +317,11 @@ model MusicLibraryItem {
   @@map("music_library_items")
 }
 
-/* 路线图 / 人写内容（roadmap-integration-surface 决策）：多 roadmap，各带自己的列映射。
-   nameEn / nameZh 成对存储，完整双语对等由 domain 校验兜底。
-   position 决定切换器、列与条目的人定顺序（同 music 先例）。
-   votes / comments 休眠列（T4 硬化：不做投票/评论）：域模型与界面零暴露，值恒 NULL；
-   删除列待主控单独授权的迁移。
-   detailEn / detailZh 人写详情（U1 裁定）：可空双语对，成对写入、成对清空。 */
+/* 路线图与规划图存储模型：支持多项目与多看板，各看板持有独立的阶段状态列映射。
+   - nameEn / nameZh 成对存储，由 domain 校验层保障双语对等完整性。
+   - position 字段控制看板切换器、列以及条目的展示顺序。
+   - detailEn / detailZh 支持富文本详情，必须成对写入或成对清空。
+   - votes / comments 为保留字段，当前业务模型与交互层零暴露。 */
 enum RoadmapStatus {
   reviewing
   unstarted

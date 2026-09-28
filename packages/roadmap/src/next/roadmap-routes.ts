@@ -367,8 +367,8 @@ export function createRoadmapEntryItemRoute(deps: RoadmapRouteDeps) {
   return { PATCH, DELETE };
 }
 
-// 导入（U5）：POST 批量 upsert 人工维护的 JSON 清单（仅条目）。反自动派生红线：本路由只解析
-// 请求体，绝不读取或解析 docs/NEXT.md、docs/BACKLOG.md、docs/finish-task/（决策第 1 条原文）。
+// 批量导入条目路由：单事务批量追加人工维护的 JSON 清单。仅解析请求体，绝不自动派生本地文件。
+// history: 增加当前上下文（projectKey/surface/roadmapKey）校验与自动绑定，字段不匹配或表面禁用时直接阻断。
 export function createRoadmapImportRoute(deps: RoadmapRouteDeps) {
   async function POST(request: Request) {
     const denied = await guardOwner(request, deps.authorizeOwner);

@@ -84,7 +84,7 @@ function stubFetchEcho(base: RoadmapEntry) {
     const payload =
       method === 'DELETE'
         ? { key: entry.key }
-        : String(input).endsWith('/import')
+        : String(input).includes('/import')
           ? { entries: [entry] }
           : { entry };
 
@@ -230,7 +230,7 @@ describe('RoadmapBoard', () => {
     expect(within(backlogDialog).queryByText('View all similar requests')).toBeNull();
   });
 
-  // M3 主证据：canEdit=false 时全部写控件不可见（非 Owner 门控 U2）。
+  // 权限门禁断言：canEdit=false 时隐藏全部编辑与操作控件。
   it('hides every write control for a non-owner visitor', async () => {
     const board = await sampleBoard('sample-roadmap');
 
@@ -249,7 +249,7 @@ describe('RoadmapBoard', () => {
     expect(within(dialog).getByRole('button', { name: 'Select Tags' }).hasAttribute('disabled')).toBe(true);
   });
 
-  // U1：Editor 保存按 ' / ' 拆双语，PATCH entry(key)。
+  // 编辑器保存：按 ' / ' 拆分双语标题并提交 PATCH 更新。
   it('saves the editor with a split bilingual title via PATCH', async () => {
     const board = await sampleBoard('sample-roadmap');
     const entry = board.entries.find(
@@ -298,7 +298,7 @@ describe('RoadmapBoard', () => {
     expect(body.status).toBe('active');
   });
 
-  // U3：+ 进新建草稿态，Save 才 POST entries。
+  // 新建草稿：点击添加仅切换草稿视图，点击保存后触发 POST。
   it('enters a draft with + and only POSTs on Save', async () => {
     const board = await sampleBoard('sample-roadmap');
     const spy = stubFetchEcho({ ...board.entries[0], key: 'fresh-entry' });
@@ -329,7 +329,7 @@ describe('RoadmapBoard', () => {
     expect(body.title).toEqual({ en: 'Fresh', zh: '新' });
   });
 
-  // Module D：Delete 确认后 DELETE entry(key)。
+  // 条目删除：弹窗确认后调用 DELETE 端点删除条目。
   it('deletes the proposal after confirm', async () => {
     const board = await sampleBoard('sample-roadmap');
     const entry = board.entries.find(
@@ -378,7 +378,7 @@ describe('RoadmapSwitcher', () => {
 });
 
 describe('RoadmapToolbar', () => {
-  // 右侧下拉切换项目；项目项是项目入口，与左侧的项目内板切换器分工。
+  // 项目切换下拉：选项跳转至对应项目的默认首板。
   it('renders the import button and project dropdown as anchor navigation', async () => {
     const repository = createFixtureRoadmapRepository();
     const projects = await repository.listProjects();
@@ -405,11 +405,11 @@ describe('RoadmapToolbar', () => {
     expect(screen.getByRole('link', { name: /项目二/ }).getAttribute('href')).toBe(
       '/zh/atlas/roadmap?project=project-two',
     );
-    // 主控裁定：「全部项目」只是占位、路由语义错误，已移除——下拉是纯项目切换器。
+    // 下拉菜单为严格项目切换，不提供跨项目聚合入口。
     expect(screen.queryByRole('link', { name: '全部项目' })).toBeNull();
   });
 
-  // U2：非 Owner 隐藏导入按钮；U5：选文件即 POST import。
+  // 导入门禁与交互：非 Owner 隐藏导入按钮；选择文件后自动绑定当前项目并发起 POST 导入。
   it('hides Import for non-owners and uploads a JSON manifest for the owner', async () => {
     const repository = createFixtureRoadmapRepository();
     const roadmaps = await repository.listRoadmaps();
@@ -456,5 +456,6 @@ describe('RoadmapToolbar', () => {
     expect(String(url)).toBe('/api/internal/roadmap/import?projectKey=project-one');
     expect(init?.method).toBe('POST');
     expect(await screen.findByText('导入完成。')).toBeTruthy();
+    expect(await screen.findByText('已成功向当前看板追加 1 个条目。')).toBeTruthy();
   });
 });

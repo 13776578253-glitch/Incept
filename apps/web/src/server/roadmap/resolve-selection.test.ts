@@ -33,4 +33,28 @@ describe('resolveRoadmapSelection', () => {
 
     expect(resolveRoadmapSelection([emptyProject, ...projects], await repository.listRoadmaps(), 'empty')).toBeNull();
   });
+
+  it('matches boards by the -atlas suffix even when the project key contains "atlas"', () => {
+    const project = { key: 'atlas-ops', name: { en: 'Atlas Ops', zh: 'Atlas Ops' }, roadmapEnabled: true, atlasEnabled: true };
+    const roadmaps = [
+      { key: 'atlas-ops-roadmap', name: { en: 'Roadmap', zh: '路线图' }, project, columns: [] },
+      { key: 'atlas-ops-atlas', name: { en: 'Planning Board', zh: '规划图' }, project, columns: [] },
+    ];
+
+    expect(resolveRoadmapSelection([project], roadmaps, 'atlas-ops', undefined, 'atlas')?.roadmap.key).toBe('atlas-ops-atlas');
+    expect(resolveRoadmapSelection([project], roadmaps, 'atlas-ops', undefined, 'roadmap')?.roadmap.key).toBe('atlas-ops-roadmap');
+    expect(resolveRoadmapSelection([project], roadmaps, 'atlas-ops')?.roadmap.key).toBe('atlas-ops-roadmap');
+    expect(resolveRoadmapSelection([project], roadmaps, 'atlas-ops', 'atlas-ops-atlas')?.roadmap.key).toBe('atlas-ops-atlas');
+  });
+
+  it('matches boards by suffix when the project key itself ends with -atlas', () => {
+    const project = { key: 'ops-atlas', name: { en: 'Ops Atlas', zh: 'Ops Atlas' }, roadmapEnabled: true, atlasEnabled: true };
+    const roadmaps = [
+      { key: 'ops-atlas-roadmap', name: { en: 'Roadmap', zh: '路线图' }, project, columns: [] },
+      { key: 'ops-atlas-atlas', name: { en: 'Planning Board', zh: '规划图' }, project, columns: [] },
+    ];
+
+    expect(resolveRoadmapSelection([project], roadmaps, 'ops-atlas', undefined, 'atlas')?.roadmap.key).toBe('ops-atlas-atlas');
+    expect(resolveRoadmapSelection([project], roadmaps, 'ops-atlas')?.roadmap.key).toBe('ops-atlas-roadmap');
+  });
 });

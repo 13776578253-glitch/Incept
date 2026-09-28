@@ -1,5 +1,11 @@
 import type { Roadmap, RoadmapProject } from '@incept/roadmap/domain';
 
+// 规划图看板标识判定：规划图看板 key 严格以 '-atlas' 结尾。
+// history: 早期以 includes('atlas') 判断导致包含 atlas 字符串的项目 key 产生误判，修正为严格后缀匹配。
+export function isAtlasBoardKey(key: string): boolean {
+  return key.endsWith('-atlas');
+}
+
 export function resolveRoadmapSelection(
   projects: readonly RoadmapProject[],
   roadmaps: readonly Roadmap[],
@@ -20,10 +26,10 @@ export function resolveRoadmapSelection(
   }
 
   if (surface === 'atlas') {
-    const atlasBoard = projectRoadmaps.find((roadmap) => roadmap.key.includes('atlas'));
+    const atlasBoard = projectRoadmaps.find((roadmap) => isAtlasBoardKey(roadmap.key));
     if (atlasBoard) return { project, roadmap: atlasBoard };
   }
 
-  const roadmapBoard = projectRoadmaps.find((roadmap) => !roadmap.key.includes('atlas')) ?? projectRoadmaps[0];
+  const roadmapBoard = projectRoadmaps.find((roadmap) => !isAtlasBoardKey(roadmap.key)) ?? projectRoadmaps[0];
   return { project, roadmap: roadmapBoard };
 }

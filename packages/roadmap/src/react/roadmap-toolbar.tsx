@@ -22,8 +22,8 @@ type RoadmapToolbarProps = {
   showProjectSelector?: boolean;
 };
 
-// 顶栏右侧操作区：导入（U5 纯 JSON 文件上传，红线：只收人工清单、绝不派生自 docs/*）
-// 与选择项目（项目链接落到对应项目的首板）。
+// 顶栏操作区：提供基于人工 JSON 清单的追加导入与项目切换功能。
+// history: 导入自动附带当前项目、表面与看板标识；反馈提示升级为右上方浮动 Toast。
 export function RoadmapToolbar({
   projects,
   currentProjectKey,

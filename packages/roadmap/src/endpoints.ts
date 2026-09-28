@@ -1,5 +1,5 @@
-// API URL 合同（music 决策 10 同款）：管理面板与脚本引用此常量，禁止散写端点路径。
-// 列以 (roadmapKey, status) 为身份寻址（与写端口一致；DB 行 id 是实现细节）。
+// 内部 API 端点路由契约：统一收拢路径常量，禁止散落硬编码。
+// 列以 (roadmapKey, status) 为唯一定位凭据。
 export const roadmapEndpoints = {
   projects: '/api/internal/roadmap/projects',
   project: (key: string) => `/api/internal/roadmap/projects/${encodeURIComponent(key)}`,

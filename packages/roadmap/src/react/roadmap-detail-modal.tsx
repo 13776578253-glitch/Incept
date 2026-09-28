@@ -125,7 +125,7 @@ const statusDefaultNames: Record<RoadmapStatus, string> = {
 const boardTypeOptions: readonly RoadmapEntryType[] = ['feature', 'improvement', 'maintenance'];
 const priorityTagOptions: readonly RoadmapEntryPriority[] = ['high', 'middle', 'low', 'none'];
 
-// U1：单框双语拆分——按首个 ' / ' 拆 en/zh；无分隔符则双语同文（满足成对不变量）。
+// 双语标题拆分：以首个 ' / ' 分隔中英文；未包含分隔符时双语同文以满足完整性约束。
 function splitBilingualTitle(value: string): LocalizedText {
   const index = value.indexOf(' / ');
 
@@ -136,7 +136,7 @@ function splitBilingualTitle(value: string): LocalizedText {
   return { en: value.slice(0, index).trim(), zh: value.slice(index + 3).trim() };
 }
 
-// U1：写当前语种半边，另一语种为空时同文兜底。
+// 本地化文本填充：输入单侧语言时，对侧自动同文兜底以确保成对写入。
 function withLocaleFallback(
   current: LocalizedText | undefined,
   value: string,
@@ -301,8 +301,7 @@ export function RoadmapDetailModal({
     setSaveError(message ? `${chrome.saveFailed} ${message}` : chrome.saveFailed);
   }
 
-  // U1/U3：保存——编辑态 PATCH；新建态在 Save 才 POST。Title 按 ' / ' 拆分，Summary/Detail
-  // 写当前语种并同文兜底；detail 留空时编辑态显式清空（null）、新建态不带字段。
+  // 保存操作：编辑模式执行 PATCH，新建模式在保存时执行 POST；标题执行双语拆分，详情清空显式传 null。
   async function handleSave() {
     const title = splitBilingualTitle(editedTitle);
     const summary = withLocaleFallback(isCreate ? undefined : entry.summary, editedSummary, locale);
@@ -415,7 +414,7 @@ export function RoadmapDetailModal({
     }
   }
 
-  // U3：点 + 不发请求，进新建草稿态并切到 Editor；Save 才 POST。
+  // 新建入口：初始化空白草稿并切至编辑面板，点击保存前不触发任何网络请求。
   function enterCreateMode() {
     setMode('create');
     setEditedTitle('');
@@ -1034,7 +1033,7 @@ export function RoadmapDetailModal({
             )}
           </div>
 
-          {/* 右下角回退/删除提议操作区（U2：非 Owner 整块隐藏；Undo 目标由 undoStatus 注入） */}
+          {/* 状态回退与删除操作区：非 Owner 隐藏；回退目标状态由看板配置指定 */}
           {canEdit && (
             <div className="border-t border-[var(--roadmap-divider,var(--color-border))] p-6">
               <h3 className="text-[0.86rem] font-semibold text-[var(--color-text)]">

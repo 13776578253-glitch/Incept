@@ -137,7 +137,7 @@ function assertStatus(value: string): asserts value is RoadmapStatus {
   }
 }
 
-// 缺省 key 由英文标题生成（U3）：仅保留 a-z0-9 段，全空退化为 "entry"；碰撞后缀由写口负责。
+// 缺省标识生成：提取英文标题小写字母与数字生成 slug，全空退化为 "entry"；碰撞由写端口递增后缀。
 function slugifyTitle(title: string): string {
   const slug = title
     .toLowerCase()
@@ -160,7 +160,7 @@ function mergedEntry(
     priority: patch.priority ?? current.priority,
     title: patch.title ?? current.title,
     summary: patch.summary ?? current.summary,
-    // M2：=== null 判定必须在 ?? 之前，否则 null ?? current.detail 会吞掉清空。
+    // 显式 null 判定必须优先于空值合并，确保清除操作不被旧值覆盖。
     detail: patch.detail === null ? undefined : (patch.detail ?? current.detail),
     links: patch.links ?? current.links,
   };
@@ -175,6 +175,20 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
     const entries = board?.entries ?? [];
 
     return entries.length === 0 ? 10 : Math.max(...entries.map((entry) => entry.position)) + 10;
+  }
+
+  // 批量导入顺序递增：计划阶段未实际入库前按看板维护递增计数器，显式指定 order 时同步提升下限。
+  // history: 解决同批次未指定 order 的多条目批量导入时位置重叠的问题。
+  async function takeNextOrder(
+    tx: RoadmapPrismaTx,
+    roadmapKey: string,
+    runningNext: Map<string, number>,
+    explicit?: number,
+  ): Promise<number> {
+    const baseline = runningNext.get(roadmapKey) ?? (await nextPosition(tx, roadmapKey));
+    const order = explicit ?? baseline;
+    runningNext.set(roadmapKey, Math.max(baseline, order) + 10);
+    return order;
   }
 
   // key 全局唯一（schema @unique）：slug 逐候选查重，碰撞加 -2、-3 后缀；taken 为清单内已占用。
@@ -275,7 +289,8 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
           data: { key, nameEn: name.en, nameZh: name.zh, position: resolved, roadmapEnabled, atlasEnabled },
         });
 
-        // 默认初始化路线图与规划图看板及列结构
+        // 默认初始化路线图与规划图看板及列结构。
+        // history: 解决新建空项目缺失默认看板的问题，默认开启路线图与规划图双板。
         const roadmapBoard = await tx.roadmap.create({
           data: {
             key: `${key}-roadmap`,
@@ -359,6 +374,8 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
       return { key: row.key, name: { en: row.nameEn, zh: row.nameZh }, roadmapEnabled: row.roadmapEnabled, atlasEnabled: row.atlasEnabled };
     },
 
+    // 删除项目：看板下仍有条目时阻断删除以保护数据；无条目时安全清理默认看板。
+    // history: 配合默认初始化看板，允许空项目连带清理默认看板，非空项目强制保护。
     async deleteProject({ key }) {
       await client.$transaction(async (tx) => {
         const project = await tx.roadmapProject.findUnique({ where: { key } });
@@ -462,7 +479,7 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
       });
     },
 
-    // 事务不变式：仍有条目引用该列 status 时拒绝删除，不静默挪列。
+    // 列删除约束：仍有条目引用该状态列时拒绝删除，防止数据孤立。
     async deleteColumn({ roadmapKey, status }) {
       assertStatus(status);
 
@@ -578,8 +595,9 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
       return { key };
     },
 
-    // 导入（U5）：人工维护的 JSON 清单批量 upsert。计划阶段全量校验、提交阶段单事务写入，
-    // 任何一条失败整体拒绝；只消费传入的清单数据，绝不读取仓库文件（反自动派生红线）。
+    // 批量导入：人工 JSON 清单单事务全量写入，全校验通过后统一落库，任何单项失败全量回滚。
+    // 仅消费上传的数据体，不依赖或解析仓库任何文件。
+    // history: 彻底移除更新旧卡片分支，改为严格追加模式（append-only），遇到已有 key 直接抛错阻断。
     async importEntries({ entries }) {
       if (entries.length === 0) {
         fail('the import manifest carries no entries');
@@ -596,6 +614,7 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
 
         const shapes = new Map<string, { roadmap: Roadmap; roadmapId: string }>();
         const takenKeys = new Set<string>();
+        const nextOrders = new Map<string, number>();
         const plans: ImportPlan[] = [];
 
         for (const item of entries) {
@@ -618,7 +637,7 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
             fail(`the entry "${key}" already exists; import only appends new entries and does not overwrite`);
           }
 
-          const order = item.order ?? (await nextPosition(tx, item.roadmapKey));
+          const order = await takeNextOrder(tx, item.roadmapKey, nextOrders, item.order);
           const entry: RoadmapEntry = {
             key,
             roadmap: item.roadmapKey,

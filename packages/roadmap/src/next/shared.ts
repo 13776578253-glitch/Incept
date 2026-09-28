@@ -15,7 +15,7 @@ import type {
   RoadmapWriter,
 } from '../ports';
 
-// 路由工厂的依赖注入（music 决策 6/10 同形）：门禁、读端口、写端口由宿主装配提供。
+// 路由工厂依赖注入契约：门禁验证器、读端口与写端口由宿主装配注入。
 export type RoadmapRouteDeps = {
   authorizeOwner: AuthorizeOwner<Request>;
   reader: Pick<RoadmapRepository, 'listProjects' | 'getProject' | 'listRoadmaps' | 'listBoard'>;
@@ -26,7 +26,7 @@ export type RoadmapRouteContext = {
   params: Promise<Record<string, string>>;
 };
 
-// 非 owner 一律 404，不暴露存在性（music 语义原样）。
+// 访问门禁：非 Owner 一律返回 404，不暴露资源存在性。
 export async function guardOwner(
   request: Request,
   authorizeOwner: AuthorizeOwner<Request>,
@@ -165,8 +165,8 @@ export function parseEntryPatch(body: Record<string, unknown>): RoadmapEntryPatc
   return patch;
 }
 
-// 导入清单解析（U5）：只接受上传 JSON 形状的请求体。反自动派生红线：本函数与导入路由
-// 绝不读取或解析 docs/NEXT.md、docs/BACKLOG.md、docs/finish-task/（决策第 1 条）。
+// 导入清单结构校验：严格解析人工 JSON 请求体，不扫描或派生本地文件。
+// history: 支持当前页面上下文自动绑定与强校验，缺省时自动对齐目标看板，冲突时阻断。
 export function parseImportManifest(
   body: Record<string, unknown>,
   context?: {

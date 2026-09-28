@@ -1,7 +1,7 @@
 import type { Roadmap, RoadmapEntry, RoadmapProject } from '../domain';
 
-// fixture 只允许存在于 testing/（决策条目 3）：这是 Gate 前唯一的数据源，全部是示例内容。
-// 样本刻意覆盖极端：超长标题（卡片两行截断）、空列、双语长文本。T4 硬化：无计数样本。
+// 测试固定样本：提供包含长文本截断、空泳道与全双语的测试数据，不包含计数元数据。
+// history: 第二表面名称统一修正为「规划图 / Planning Board」。
 
 export const fixtureProjects: readonly RoadmapProject[] = [
   { key: 'project-one', name: { en: 'Project One', zh: '项目一' }, roadmapEnabled: true, atlasEnabled: true },

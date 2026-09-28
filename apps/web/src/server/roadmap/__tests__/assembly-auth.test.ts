@@ -14,7 +14,7 @@ vi.mock('@incept/db', () => ({ prisma: {} }));
 
 import { authorizeOwner, isRoadmapOwner } from '../assembly';
 
-describe('roadmap owner gate (M3 server assertion)', () => {
+describe('roadmap owner gate', () => {
   beforeEach(() => {
     mocks.viewer.mockReset();
     mocks.origin.mockReset();

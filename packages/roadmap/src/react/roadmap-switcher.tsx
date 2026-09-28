@@ -8,7 +8,7 @@ type RoadmapSwitcherProps = {
   label: string;
 };
 
-// 多 roadmap 切换（T2 裁定）：服务端组件，链接即 ?rd= 切换，无客户端状态。
+// 看板切换导航：基于 URL 查询参数进行无状态导航，无客户端额外状态存储。
 export function RoadmapSwitcher({
   roadmaps,
   currentKey,

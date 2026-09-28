@@ -1,7 +1,6 @@
 import { roadmapEndpoints } from '../endpoints';
 
-// 客户端请求小助手（admin panel 的 api() 同款）：统一走 roadmapEndpoints 常量，失败抛错。
-// 反自动派生红线：请求只面向 /api/internal/roadmap/*，不读取任何仓库文件。
+// 客户端请求辅助函数：统一基于 roadmapEndpoints 发起内部 API 请求，非 2xx 响应抛出错误。
 export async function roadmapRequest<T>(
   path: string,
   method: string,

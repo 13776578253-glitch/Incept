@@ -11,8 +11,8 @@ import type {
   RoadmapProject,
 } from '../domain';
 
-// 写端口：RoadmapRepository 的对偶面（Phase 3 规格，主控已评审）。
-// links 随 entry 事务性整体重写；计数不做（T4 硬化：无投票/评论），域模型无计数字段。
+// 写端口契约：定义项目、看板、列与条目的写操作接口。
+// 链接随条目事务性整体重写；条目模型不含点赞与评论计数。
 export type RoadmapEntryDraft = {
   key?: string;
   status: RoadmapStatus;
@@ -25,8 +25,8 @@ export type RoadmapEntryDraft = {
   links?: RoadmapEntryLink[];
 };
 
-// Patch 的 detail 显式放行 null（M1）：null = 清空，未传（undefined）= 不动（M2 哨兵）。
-// Partial 基必须 Omit 掉 detail——同名属性在交集里取类型交集，会把 null 挤掉导致无法编译。
+// 更新补丁：detail 显式传入 null 表示清空，undefined 表示保持原值。
+// Partial 基类必须 Omit 掉 detail，防止类型交集挤掉 null 联合。
 export type RoadmapEntryPatch = Partial<Omit<RoadmapEntryDraft, 'key' | 'detail'>> & {
   detail?: LocalizedText | null;
 };
@@ -61,6 +61,7 @@ export type RoadmapWriter = {
   ) => Promise<RoadmapEntry>;
   updateEntry: (input: { key: string; patch: RoadmapEntryPatch }) => Promise<RoadmapEntry>;
   deleteEntry: (input: { key: string }) => Promise<{ key: string }>;
-  // 导入（U5）：仅条目 upsert，按 (roadmapKey, key) 幂等；条目间 key 冲突拒绝。
+  // 导入：纯追加（append-only），遇已存在 key 事务回滚报错。
+  // history: 由早期覆盖更新改为严格追加，杜绝静默覆盖现有看板数据。
   importEntries: (input: { entries: RoadmapEntryImportItem[] }) => Promise<RoadmapEntry[]>;
 };
