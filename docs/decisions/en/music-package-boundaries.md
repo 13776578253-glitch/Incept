@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted on 2026-09-22. These 16 decisions fix the boundaries of the `@incept/music` extraction; the migration phases are specified in `docs/current-task/2026-09-23-music-package-migration-plan-v2.md`. Implementation commit references are appended here per phase.
+Accepted on 2026-09-22. These 16 decisions fix the boundaries of the `@incept/music` extraction; the migration phases are specified in `docs/finish-task/2026-09-23-music-package-migration-plan-v2.md`. Implementation commit references are appended here per phase.
 
 ## Context
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted on 2026-09-22。本文件的 16 项决策锁定 `@incept/music` 提取的边界；迁移阶段规格见 `docs/current-task/2026-09-23-music-package-migration-plan-v2.md`。实现 commit 按 Phase 逐条补记于本文件。
+Accepted on 2026-09-22。本文件的 16 项决策锁定 `@incept/music` 提取的边界；迁移阶段规格见 `docs/finish-task/2026-09-23-music-package-migration-plan-v2.md`。实现 commit 按 Phase 逐条补记于本文件。
 
 ## Context
 
