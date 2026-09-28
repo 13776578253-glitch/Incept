@@ -378,9 +378,40 @@ Path: ${registry.path}
 Dev port: ${registry.port}
 Database schema: ${registry.dbSchema ?? 'public (shared with the main checkout)'}
 
-## 你的身份
+## 你的身份与共用规则
 
-你是分配到这个 worktree 的功能 AI。这个目录、这条分支只属于你，同一时间只有你一个 AI 在这里工作。
+这个 worktree 与这条分支由一个**名称**唯一标识（分支同刻只能被一个 worktree 签出）。
+
+**可以多个执行 AI 共用一个 worktree**，但仅在两者同时成立时：
+
+1. 各自负责的**区域互不重叠**（例如一个只改样式令牌与 CSS，一个只改某个组件；不是"都改前端"）
+2. 开工前已把**边界声明**贴出来（见下一节）
+
+不成立时就不要共用：默认仍是「一个 worktree 一个 AI，同一时间一个」。区域重叠、或边界说不清楚的，拆成两个 worktree。
+
+共用时最容易出问题的是**提交**：多人交替提交会让 \`git log\` 失去可读性，也无法归属。各自提交时在信息里带上自己的区域。
+
+## 开工前必须声明的边界
+
+必须先贴出这段，再动任何文件。凡是无法填写的项，就是还没想清楚，先别开工。
+
+\`\`\`text
+AI:              <你自称的名字>
+区域:            <你只改什么——具体到文件或目录>
+不碰:            <你明确不碰什么>
+共享资源:        <是否会用：pnpm dev / DB migration / docs:import / music:import>
+                  用到哪个，就必须写它的具体值（端口 / schema 名 / 目标目录）
+\`\`\`
+
+## 跨 worktree 共享的东西（这些不受隔离保护）
+
+隔离只覆盖**文件与分支**。以下资源在**所有 worktree 之间共享**，越界即互相破坏：
+
+- **本 worktree 的 dev 端口**：上面 Dev port 就是分给你的。Next 在端口被占用时会**静默换一个**，你会对着另一个实例调试。永远显式指定 \`--port <上面那个值>\`。
+- **数据库**：默认与主 checkout 共享 \`public\` schema，**同一时刻只能有一个 worktree 跑 \`db:deploy\` / \`db:migrate\`**。migration 属主控，未经明确授权不要跑。
+- **仓库外的媒体目录**：\`DOCS_CONTENT_ROOT\` / \`MUSIC_CONTENT_ROOT\` 指向仓库外绝对路径，所有 worktree 共用一份。同时跑 \`docs:import\` / \`music:import\` / \`music:manifest\` 会互相覆盖。
+- **git 的 refs / object store / hooks**：\`git push\`、\`git reset --hard\`、删分支会穿透隔离。这也是 push 与 merge 属于主控的原因。
+- **\`.env\` 里的凭据**：\`DATABASE_URL\`、\`OWNER_ACCESS_SECRET\`、\`GITHUB_ACTIVITY_TOKEN\` 是真凭据。不得提交、不得传给外部 AI、不得贴进日志或工单。
 
 ## 开工自检（先执行，并把结果贴出来）
 
