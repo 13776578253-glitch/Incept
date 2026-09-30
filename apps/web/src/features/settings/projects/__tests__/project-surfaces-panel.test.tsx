@@ -132,13 +132,11 @@ describe('ProjectSurfacesPanel', () => {
     const user = userEvent.setup();
     render(<ProjectSurfacesPanel initialProjects={mockProjects} language="zh" />);
 
-    const keyInput = screen.getByPlaceholderText('my-project');
-    const zhInput = screen.getByPlaceholderText('例如：新项目');
-    const enInput = screen.getByPlaceholderText('例如：New Project');
+    const nameInput = screen.getByPlaceholderText('例如：新项目');
+    await user.type(nameInput, '项目三');
 
-    await user.type(keyInput, 'project-three');
-    await user.type(zhInput, '项目三');
-    await user.type(enInput, 'Project Three');
+    // Single-field form: no separate key input
+    expect(screen.queryByPlaceholderText('my-project')).not.toBeInTheDocument();
 
     const createButton = screen.getByRole('button', { name: '创建项目' });
     await user.click(createButton);
@@ -147,6 +145,10 @@ describe('ProjectSurfacesPanel', () => {
       '/api/internal/roadmap/projects',
       expect.objectContaining({
         method: 'POST',
+        body: JSON.stringify({
+          key: 'project-three',
+          name: { en: 'Project Three', zh: '项目三' },
+        }),
       }),
     );
 
