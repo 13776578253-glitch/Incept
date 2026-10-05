@@ -149,7 +149,7 @@ export default async function RoadmapMapPage({
 
   return (
     <WorkspaceShell>
-      <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-16 md:flex md:h-[calc(100dvh-var(--navbar-height,64px))] md:min-h-[560px] md:flex-col md:overflow-hidden md:pt-8 md:pb-6 lg:px-10 lg:pt-9">
+      <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-16 md:flex md:h-[calc(100dvh-var(--navbar-height,64px))] md:min-h-[560px] md:flex-col md:overflow-hidden md:pt-8 md:pb-16 lg:px-10 lg:pt-9 lg:pb-20">
         <header className="shrink-0 pb-6 md:pb-7">
           <div className="max-w-[46rem] space-y-2 md:space-y-2.5">
             <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">

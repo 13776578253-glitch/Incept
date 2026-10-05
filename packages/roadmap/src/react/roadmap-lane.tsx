@@ -56,7 +56,7 @@ export function RoadmapLane({
           {chrome.emptyLane[status]}
         </p>
       ) : (
-        <ul className="flex flex-col gap-2.5 py-0.5 md:min-h-0 md:flex-1 md:overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex flex-col gap-2.5 pt-0.5 pb-2 md:min-h-0 md:flex-1 md:overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {shown.map((entry) => (
             <li key={entry.key} className="list-none">
               <RoadmapCard
