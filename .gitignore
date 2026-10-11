@@ -7,6 +7,10 @@ build
 coverage
 *.tsbuildinfo
 
+# Project-owned Git worktrees and their local registration
+/.worktrees/
+/.worktree-local/
+
 .env
 .env.local
 .env.docker

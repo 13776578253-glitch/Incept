@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const ENV_FILES = [path.join('apps', 'web', '.env.local'), path.join('packages', 'db', '.env')];
+const WORKTREES_DIRECTORY = '.worktrees';
 const MANAGED_DIRECTORY_PREFIX = 'Incept-';
 const MANAGED_BRANCH_PREFIX = 'feature/';
 const REGISTRY_DIRECTORY = '.agents';
@@ -190,7 +191,26 @@ function assertMainWorktree(command) {
 }
 
 function managedWorktreePath(name) {
-  return path.join(path.dirname(repositoryRoot()), `${MANAGED_DIRECTORY_PREFIX}${name}`);
+  return path.join(repositoryRoot(), WORKTREES_DIRECTORY, name);
+}
+
+function resolveExistingManagedWorktree(name) {
+  const primaryTarget = managedWorktreePath(name);
+  const worktrees = readWorktrees();
+  const directMatch = worktrees.find((candidate) => samePath(candidate.path, primaryTarget));
+
+  if (directMatch) {
+    return { path: directMatch.path, entry: directMatch };
+  }
+
+  const legacyTarget = path.join(path.dirname(repositoryRoot()), `${MANAGED_DIRECTORY_PREFIX}${name}`);
+  const legacyMatch = worktrees.find((candidate) => samePath(candidate.path, legacyTarget));
+
+  if (legacyMatch) {
+    return { path: legacyMatch.path, entry: legacyMatch };
+  }
+
+  return { path: primaryTarget, entry: null };
 }
 
 function managedBranch(name) {
@@ -198,8 +218,15 @@ function managedBranch(name) {
 }
 
 function isManagedWorktreePath(candidate) {
-  const parent = normalizePath(path.dirname(repositoryRoot()));
+  const root = normalizePath(repositoryRoot());
   const target = normalizePath(candidate);
+  const worktreesDir = `${root}/${WORKTREES_DIRECTORY}`;
+
+  if (path.dirname(target) === worktreesDir) {
+    return true;
+  }
+
+  const parent = normalizePath(path.dirname(repositoryRoot()));
   const base = path.basename(target).toLowerCase();
   return path.dirname(target) === parent && base.startsWith(MANAGED_DIRECTORY_PREFIX.toLowerCase());
 }
@@ -582,8 +609,7 @@ function commandAdopt(args) {
     throw new Error('--base <ref> is required: record the base this worktree continues from.');
   }
 
-  const targetPath = managedWorktreePath(args.name);
-  const entry = readWorktrees().find((candidate) => samePath(candidate.path, targetPath));
+  const { path: targetPath, entry } = resolveExistingManagedWorktree(args.name);
 
   if (!entry) {
     throw new Error(`No managed worktree at ${targetPath}. Create it first (pnpm wt:new or git worktree add).`);
@@ -690,8 +716,7 @@ function commandRemove(args) {
   assertManagedName(args.name);
   assertMainWorktree('wt:remove');
 
-  const targetPath = managedWorktreePath(args.name);
-  const entry = readWorktrees().find((candidate) => samePath(candidate.path, targetPath));
+  const { path: targetPath, entry } = resolveExistingManagedWorktree(args.name);
 
   if (!entry) {
     const stale = readWorktrees().some((candidate) => !existsSync(candidate.path));
