@@ -1,4 +1,4 @@
-export type GitHubActivityScope = 'account' | 'repository';
+export type GitHubActivityScope = 'account' | 'repository' | '1002bot';
 export type GitHubActivityPeriod = 'all' | number;
 
 export type ActivityDay = {

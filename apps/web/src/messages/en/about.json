@@ -15,7 +15,8 @@
       "eyebrow": "Git activity",
       "scopes": {
         "account": "All GitHub",
-        "repository": "Incept"
+        "repository": "Incept",
+        "1002bot": "1002bot"
       },
       "rollingRange": "Last 52 weeks through {end}",
       "calendarRange": "year{year}",

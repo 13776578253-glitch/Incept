@@ -161,6 +161,7 @@ export async function fetchRepositoryActivity(
   period: GitHubActivityPeriod,
   range: ActivityRange,
   fetchImplementation: FetchImplementation = fetch,
+  scope: GitHubActivityScope = 'repository',
 ) {
   const repositoryUrl = `https://api.github.com/repos/${encodeURIComponent(config.account)}/${encodeURIComponent(config.repository)}`;
   const repository = await readJson<GitHubRepositoryResponse>(
@@ -196,5 +197,5 @@ export async function fetchRepositoryActivity(
     }
   }
 
-  return toActivityData('repository', period, range, countedDays);
+  return toActivityData(scope, period, range, countedDays);
 }

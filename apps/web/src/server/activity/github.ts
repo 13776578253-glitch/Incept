@@ -16,10 +16,13 @@ import {
 // 缓存 GitHub 活动数据 / 6h
 const CACHE_REVALIDATE_SECONDS = 6 * 60 * 60;
 
-function getGitHubActivityConfig(): GitHubActivityConfig | null {
+function getGitHubActivityConfig(scope: GitHubActivityScope = 'repository'): GitHubActivityConfig | null {
   const token = process.env.GITHUB_ACTIVITY_TOKEN?.trim();
   const account = process.env.GITHUB_ACTIVITY_ACCOUNT?.trim();
-  const repository = process.env.GITHUB_ACTIVITY_REPOSITORY?.trim();
+  const repository =
+    scope === '1002bot'
+      ? (process.env.GITHUB_ACTIVITY_BOT_REPOSITORY?.trim() || '1002bot')
+      : process.env.GITHUB_ACTIVITY_REPOSITORY?.trim();
 
   if (!token || !account || !repository) {
     return null;
@@ -30,7 +33,7 @@ function getGitHubActivityConfig(): GitHubActivityConfig | null {
 
 const getCachedGitHubActivity = unstable_cache(
   async (scope: GitHubActivityScope, period: GitHubActivityPeriod) => {
-    const config = getGitHubActivityConfig();
+    const config = getGitHubActivityConfig(scope);
     if (!config) {
       throw new Error('GitHub activity is not configured.');
     }
@@ -41,9 +44,9 @@ const getCachedGitHubActivity = unstable_cache(
       : createActivityRange(period, new Date(), 'calendar');
     return scope === 'account'
       ? fetchAccountActivity(config, period, range)
-      : fetchRepositoryActivity(config, period, range);
+      : fetchRepositoryActivity(config, period, range, fetch, scope);
   },
-  ['github-activity-v1'],
+  ['github-activity-v2'],
   { revalidate: CACHE_REVALIDATE_SECONDS },
 );
 
@@ -62,7 +65,7 @@ export async function getGitHubActivity({
     return { status: 'unavailable' };
   }
 
-  if (!getGitHubActivityConfig()) {
+  if (!getGitHubActivityConfig(scope)) {
     return { status: 'unavailable' };
   }
 

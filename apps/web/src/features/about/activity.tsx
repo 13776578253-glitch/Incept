@@ -181,7 +181,7 @@ function ActivityScopePicker({
 }) {
   return (
     <div className="mt-3 inline-flex items-center gap-1 rounded-[10px] bg-[color:var(--color-row-bg)] p-1">
-      {(['account', 'repository'] as const).map((scope) => {
+      {(['account', 'repository', '1002bot'] as const).map((scope) => {
         const isSelected = scope === selectedScope;
 
         return (

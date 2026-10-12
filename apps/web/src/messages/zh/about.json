@@ -15,7 +15,8 @@
       "eyebrow": "Git activity",
       "scopes": {
         "account": "All GitHub",
-        "repository": "Incept"
+        "repository": "Incept",
+        "1002bot": "1002bot"
       },
       "rollingRange": "截至 {end} 的最近 52 周",
       "calendarRange": "{year}年",
