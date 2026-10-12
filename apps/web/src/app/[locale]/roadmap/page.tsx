@@ -8,7 +8,7 @@ import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 import { createRoadmapRepository, isRoadmapOwner } from '@/server/roadmap/assembly';
 import { isAtlasBoardKey } from '@/server/roadmap/resolve-selection';
-import { SurfaceNavigation } from '@/features/atlas';
+import { SurfaceNavigation } from '@/features/roadmap';
 
 // 路线图与规划图页面：由 ?project= 选定项目，?surface= 选定表面（roadmap | atlas），兼容 ?rd= 参数。
 // 列结构与显示名称由看板自身持有。非 Owner 用户隐藏全部写操作控件。
@@ -70,16 +70,16 @@ export default async function RoadmapMapPage({
   for (const project of projects) {
     hrefs[project.key] = withLocalePath(
       locale,
-      `/atlas/roadmap?project=${encodeURIComponent(project.key)}&surface=${activeSurface}`,
+      `/roadmap?project=${encodeURIComponent(project.key)}&surface=${activeSurface}`,
     );
   }
 
   const roadmapHref = currentProject
-    ? withLocalePath(locale, `/atlas/roadmap?project=${encodeURIComponent(currentProject.key)}&surface=roadmap`)
-    : withLocalePath(locale, `/atlas/roadmap?surface=roadmap`);
+    ? withLocalePath(locale, `/roadmap?project=${encodeURIComponent(currentProject.key)}&surface=roadmap`)
+    : withLocalePath(locale, `/roadmap?surface=roadmap`);
   const atlasHref = currentProject
-    ? withLocalePath(locale, `/atlas/roadmap?project=${encodeURIComponent(currentProject.key)}&surface=atlas`)
-    : withLocalePath(locale, `/atlas/roadmap?surface=atlas`);
+    ? withLocalePath(locale, `/roadmap?project=${encodeURIComponent(currentProject.key)}&surface=atlas`)
+    : withLocalePath(locale, `/roadmap?surface=atlas`);
 
   const chrome: RoadmapChrome = {
     switcherLabel: t('switcherLabel'),

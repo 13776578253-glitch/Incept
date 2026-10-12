@@ -364,7 +364,7 @@ describe('RoadmapSwitcher', () => {
         roadmaps={roadmaps}
         currentKey={roadmaps[0].key}
         locale="en"
-        hrefFor={(key) => `/en/atlas/roadmap?rd=${key}`}
+        hrefFor={(key) => `/en/roadmap?rd=${key}`}
         label="Roadmaps"
       />,
     );
@@ -372,7 +372,7 @@ describe('RoadmapSwitcher', () => {
     const roadmapLinks = screen.getAllByRole('link', { name: 'Roadmap' });
     expect(roadmapLinks[0].getAttribute('aria-current')).toBe('true');
     const atlasLinks = screen.getAllByRole('link', { name: 'Planning Board' });
-    expect(atlasLinks[0].getAttribute('href')).toBe('/en/atlas/roadmap?rd=sample-atlas');
+    expect(atlasLinks[0].getAttribute('href')).toBe('/en/roadmap?rd=sample-atlas');
     expect(atlasLinks[0].getAttribute('aria-current')).toBeNull();
   });
 });
@@ -391,8 +391,8 @@ describe('RoadmapToolbar', () => {
         chrome={zhChrome}
         canEdit
         hrefs={{
-          'project-one': '/zh/atlas/roadmap?project=project-one',
-          'project-two': '/zh/atlas/roadmap?project=project-two',
+          'project-one': '/zh/roadmap?project=project-one',
+          'project-two': '/zh/roadmap?project=project-two',
         }}
       />,
     );
@@ -403,7 +403,7 @@ describe('RoadmapToolbar', () => {
     fireEvent.click(trigger);
     expect(screen.getByRole('listbox', { name: '选择项目' })).toBeTruthy();
     expect(screen.getByRole('link', { name: /项目二/ }).getAttribute('href')).toBe(
-      '/zh/atlas/roadmap?project=project-two',
+      '/zh/roadmap?project=project-two',
     );
     // 下拉菜单为严格项目切换，不提供跨项目聚合入口。
     expect(screen.queryByRole('link', { name: '全部项目' })).toBeNull();
@@ -420,8 +420,8 @@ describe('RoadmapToolbar', () => {
       locale: 'zh' as const,
       chrome: zhChrome,
       hrefs: {
-        'project-one': '/zh/atlas/roadmap?project=project-one',
-        'project-two': '/zh/atlas/roadmap?project=project-two',
+        'project-one': '/zh/roadmap?project=project-one',
+        'project-two': '/zh/roadmap?project=project-two',
       },
     };
 

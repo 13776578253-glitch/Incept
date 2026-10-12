@@ -3,7 +3,8 @@
   "primary": {
     "home": "Home",
     "docs": "Docs",
-    "atlas": "Atlas",
+    "roadmap": "Roadmap",
+    "dashboard": "Dashboard",
     "workspace": "Workspace",
     "resources": "Resources",
     "about": "About",
@@ -22,28 +23,6 @@
       "archive": {
         "label": "Archive",
         "description": "Articles organised by publication time."
-      }
-    },
-    "atlas": {
-      "entry": {
-        "label": "Atlas",
-        "description": "Every map in one place."
-      },
-      "architecture": {
-        "label": "Architecture",
-        "description": "How the project and its data are structured."
-      },
-      "roadmap": {
-        "label": "Roadmap",
-        "description": "What is done, in progress and planned."
-      },
-      "keywords": {
-        "label": "Keywords",
-        "description": "The terms a document or collection is about."
-      },
-      "playback": {
-        "label": "Playback",
-        "description": "Playback preferences and the music library, under Settings."
       }
     }
   },

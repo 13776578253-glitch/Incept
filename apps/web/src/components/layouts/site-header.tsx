@@ -200,9 +200,10 @@ export function SiteHeader() {
                   href={item.href ?? '#'}
                   aria-haspopup={hasGroups ? 'menu' : undefined}
                   aria-expanded={hasGroups ? isDropdownOpen : undefined}
+                  aria-current={active ? 'page' : undefined}
                   className={`flex items-center gap-1 rounded-full px-4 py-1.5 text-[0.92rem] transition-colors ${
                     active
-                      ? 'font-medium text-[var(--color-text)] hover:bg-[var(--color-nav-item-hover)]'
+                      ? 'bg-[var(--color-nav-item-hover)] font-medium text-[var(--color-text)]'
                       : 'text-[var(--color-nav-item)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
                   }`}
                   onFocus={() => {
@@ -211,7 +212,7 @@ export function SiteHeader() {
                 >
                   <span>{item.label}</span>
                   {item.showChevron ? (
-                    <span className={isDropdownOpen ? 'text-[var(--color-text)]' : 'text-[var(--color-nav-muted)]'}>
+                    <span className={isDropdownOpen || active ? 'text-[var(--color-text)]' : 'text-[var(--color-nav-muted)]'}>
                       <ChevronDownIcon />
                     </span>
                   ) : null}
@@ -230,7 +231,9 @@ export function SiteHeader() {
                     <div className="space-y-0.5 overflow-hidden rounded-[16px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1.5 shadow-[var(--shadow-nav-dropdown)]">
                       {item.groups?.flatMap((group) =>
                         group.items.map((navItem) => {
-                          const subActive = pathname === navItem.href;
+                          const subActive =
+                            pathname === navItem.href ||
+                            (navItem.href !== '/' && pathname.startsWith(`${navItem.href}/`));
 
                           return (
                             <Link

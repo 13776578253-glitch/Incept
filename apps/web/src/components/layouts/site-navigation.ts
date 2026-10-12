@@ -4,7 +4,7 @@ import { withLocalePath } from '@/i18n/utils/locale-path';
 
 type Translate = (key: string) => string;
 
-// 导航栏目挂载 / atlas 为带下拉的图谱栏目；workspace / tools 为旧路径重定向，home / resources 仍先隐藏
+// 导航栏目挂载：文档（含下拉）、路线图、仪表盘、关于
 
 export function createSiteNavigation(
   locale: AppLocale,
@@ -51,24 +51,16 @@ export function createSiteNavigation(
       ],
     },
     {
-      id: 'atlas',
-      label: t('primary.atlas'),
-      href: withLocale('/atlas/roadmap'),
-      matchPrefix: withLocale('/atlas'),
-      showChevron: true,
-      groups: [
-        {
-          id: 'atlas-group',
-          items: [
-            {
-              id: 'atlas-roadmap',
-              label: t('groups.atlas.roadmap.label'),
-              description: t('groups.atlas.roadmap.description'),
-              href: withLocale('/atlas/roadmap'),
-            },
-          ],
-        },
-      ],
+      id: 'roadmap',
+      label: t('primary.roadmap'),
+      href: withLocale('/roadmap'),
+      matchPrefix: withLocale('/roadmap'),
+    },
+    {
+      id: 'dashboard',
+      label: t('primary.dashboard'),
+      href: withLocale('/dashboard'),
+      matchPrefix: withLocale('/dashboard'),
     },
     // {
     //   id: 'resources',

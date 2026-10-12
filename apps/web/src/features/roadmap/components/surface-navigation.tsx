@@ -14,7 +14,6 @@ export function SurfaceNavigation({
   activeSurface,
   roadmapHref: customRoadmapHref,
   atlasHref: customAtlasHref,
-  atlasPath = '/atlas',
   showProjectSelector = true,
 }: {
   projects: readonly RoadmapProject[];
@@ -23,19 +22,18 @@ export function SurfaceNavigation({
   activeSurface: 'atlas' | 'roadmap';
   roadmapHref?: string;
   atlasHref?: string;
-  atlasPath?: string;
   showProjectSelector?: boolean;
 }) {
   const roadmapEnabled = currentProject.roadmapEnabled;
   const atlasEnabled = currentProject.atlasEnabled;
   const projectQuery = `project=${encodeURIComponent(currentProject.key)}`;
-  const roadmapHref = customRoadmapHref ?? `${withLocalePath(locale, '/atlas/roadmap')}?${projectQuery}&surface=roadmap`;
-  const atlasHref = customAtlasHref ?? `${withLocalePath(locale, '/atlas/roadmap')}?${projectQuery}&surface=atlas`;
+  const roadmapHref = customRoadmapHref ?? `${withLocalePath(locale, '/roadmap')}?${projectQuery}&surface=roadmap`;
+  const atlasHref = customAtlasHref ?? `${withLocalePath(locale, '/roadmap')}?${projectQuery}&surface=atlas`;
   const tabClass = 'inline-flex items-center rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all';
 
   return (
     <div className={showProjectSelector ? 'mx-auto flex w-full max-w-[1480px] flex-wrap items-center justify-between gap-4 px-6 pt-7 lg:px-10' : 'inline-flex items-center'}>
-      {showProjectSelector ? <ProjectSelector projects={projects} currentProject={currentProject} locale={locale} pathname="/atlas/roadmap" activeSurface={activeSurface} label={locale === 'zh' ? '选择项目' : 'Select project'} /> : null}
+      {showProjectSelector ? <ProjectSelector projects={projects} currentProject={currentProject} locale={locale} pathname="/roadmap" activeSurface={activeSurface} label={locale === 'zh' ? '选择项目' : 'Select project'} /> : null}
       <nav aria-label={locale === 'zh' ? '项目功能' : 'Project surfaces'} className="inline-flex flex-wrap items-center gap-1 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-lane-bg)] p-1">
         {roadmapEnabled ? (
           <Link
