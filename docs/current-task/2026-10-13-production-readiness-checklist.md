@@ -377,3 +377,13 @@ Task 02 按用户指定改为公开脱敏汇总、原始详情仅 Owner；匿名
 全组461 tests通过（含2个新增ops），typecheck/lint/build成功。详细证据见整改记录；18/18工程完成不等于GO。真实域名/TLS评级、云防火墙、主机开机重启、实际告警接收、另一故障域恢复、真实数据RTO/RPO与4G/5G仍待环境具备后验收。
 
 最终运行镜像只安装生产依赖（实际187包、生产审计0），保留Next生成别名/Prisma引擎/Worker；精简候选的Shiki 500已修复并真实浏览器复验。有效摘要为8c84cca92c2bcc7dde0c1d49721217d4079294f8399939be538abe4636f5f31c。开发全量审计仍17 high/5 moderate，未安装进生产镜像，已登记BACKLOG，未宣称全依赖零告警。
+
+## 2026-10-13 23:23 服务器具备后的加固状态（追加）
+
+- [x] 云主机SSH：纯公钥新连接通过，禁用password/keyboard-interactive，root公钥保留；reload后另一新连接确认，自动回滚取消。
+- [x] 2GB配置：容器与Node/Worker堆限制、tmpfs与Swap预算、PG内存/连接/并行裁剪完成；实际Linux容器迁移/HTTP/128MiB上传/Worker/SSR/HTTPS及cgroup证据通过。
+- [ ] 云端运行资源复验：应用/PG尚未部署，真实内容与长时间峰值待验。
+- [ ] Caddy + sslip.io：配置/持久证书/备份与systemd接入、云防火墙、实际自动HTTPS及续期待部署。
+- [ ] 真实离机备份恢复、外网设备与正式发布门禁仍待验。
+
+详细边界及证据见 [加固记录](./2026-10-13-lighthouse-security-memory-hardening.md)。

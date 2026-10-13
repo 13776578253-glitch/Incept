@@ -23,3 +23,9 @@ Caddy+sslip.io尚待接入与真实TLS验收；当前配置为已验收Nginx，�
 ## 提交结果
 
 完成后追加提交ID与检查结果。
+
+第一轮提交：`45ce2079396004bd8f5e413780662a72dc526b87`，`fix(deploy): prepare audited production release and recovery`，121个文件。未包含SSH事务脚本、内存验证脚本或Lighthouse加固记录；共享文档只暂存原部署及本机构建发布内容。
+
+第二轮提交范围：Compose内存/Swap/PG参数、SSH事务脚本、内存验证程序、Lighthouse加固证据、共享手册/检查清单的加固段落，以及本记录的提交核对结果。提交主题为 `fix(security): harden SSH and bound production memory`；最终ID以该分支Git记录为准，不在文档中自引用。
+
+提交前核对：两轮Compose配置均解析通过，暂存区密钥模式扫描只读通过、实际env仅含example；旧审查报告硬换行改用等效Markdown反斜线，清理EOF/空行尾空白而不改历史结论。运维测试在Windows沙箱第一次遭EPERM rename，非沙箱重跑2/2通过；既有461项独立审查和上一轮真实Linux内存/SSH验收作为历史证据，本轮没有重跑全量构建或宣称已部署公网。

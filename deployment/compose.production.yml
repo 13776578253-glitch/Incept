@@ -8,7 +8,36 @@ services:
       POSTGRES_USER: incept_migrator
       POSTGRES_PASSWORD: ${MIGRATION_DB_PASSWORD:?Configure migration password}
       APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Configure application password}
-    command: ["postgres", "-c", "max_connections=30"]
+    command:
+      - postgres
+      - -c
+      - max_connections=20
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - hash_mem_multiplier=1
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - autovacuum_work_mem=16MB
+      - -c
+      - autovacuum_max_workers=1
+      - -c
+      - max_parallel_workers_per_gather=0
+      - -c
+      - max_parallel_maintenance_workers=0
+      - -c
+      - max_parallel_workers=0
+      - -c
+      - effective_cache_size=128MB
+      - -c
+      - jit=off
+      - -c
+      - min_wal_size=64MB
+      - -c
+      - max_wal_size=256MB
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init.sh:/docker-entrypoint-initdb.d/10-incept.sh:ro
@@ -17,7 +46,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-    mem_limit: 512m
+    mem_limit: 384m
+    memswap_limit: 384m
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
@@ -27,6 +57,9 @@ services:
     entrypoint: ["pnpm", "db:deploy"]
     environment:
       DATABASE_URL: postgresql://incept_migrator:${MIGRATION_DB_PASSWORD:?Configure migration password}@postgres:5432/${INCEPT_DATABASE_NAME:-incept}
+      NODE_OPTIONS: "--max-old-space-size=128 --max-semi-space-size=8"
+    mem_limit: 320m
+    memswap_limit: 320m
     depends_on:
       postgres: { condition: service_healthy }
   app:
@@ -40,6 +73,7 @@ services:
     environment:
       DATABASE_URL: postgresql://incept_app:${APP_DB_PASSWORD:?Configure application password}@postgres:5432/${INCEPT_DATABASE_NAME:-incept}?connection_limit=5&pool_timeout=10&connect_timeout=5
       OWNER_ACCESS_SECRET: ${OWNER_ACCESS_SECRET:?Configure Owner secret}
+      NODE_OPTIONS: "--max-old-space-size=256 --max-semi-space-size=8"
       INCEPT_TRUST_PROXY: "1"
       INCEPT_DOCS_MEDIA_DIR: /data/docs-media
       INCEPT_DOCS_DRAFTS_DIR: /data/docs-drafts
@@ -51,8 +85,8 @@ services:
     volumes:
       - ${INCEPT_DATA_DIR:?Configure persistent data directory}:/data
     tmpfs:
-      - /tmp:uid=1000,gid=1000,mode=1777
-      - /app/apps/web/.next/cache:uid=1000,gid=1000,mode=0700
+      - /tmp:uid=1000,gid=1000,mode=1777,size=64m
+      - /app/apps/web/.next/cache:uid=1000,gid=1000,mode=0700,size=64m
     depends_on:
       postgres: { condition: service_healthy }
     healthcheck:
@@ -62,7 +96,8 @@ services:
       retries: 3
       start_period: 30s
     cpus: 2
-    mem_limit: 2g
+    mem_limit: 768m
+    memswap_limit: 1024m
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
@@ -80,7 +115,8 @@ services:
       - ${INCEPT_ACME_DIR:-/srv/incept/acme}:/var/www/acme:ro
     depends_on:
       app: { condition: service_healthy }
-    mem_limit: 128m
+    mem_limit: 96m
+    memswap_limit: 96m
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }

@@ -151,3 +151,9 @@ deployment/validation 提供可复现systemd和代理/SSR回归、回环合成�
 `linux-build-runtime-alias-final.log` 再次通过461 tests、typecheck/lint/build与.next断链检查；实际镜像摘要 `sha256:8c84cca92c2bcc7dde0c1d49721217d4079294f8399939be538abe4636f5f31c` 覆盖所有前述候选。`runtime-alias-artifact-proof.log` 确认187包、无开发测试工具/braces、Next别名可解析、迁移引擎/Worker保留；`runtime-alias-proxy-proof.log` 增加双语真实文档SSR检查，防止只用ready/API误判健康。`runtime-alias-http.log` 和 `runtime-alias-worker-proof.log` 再次通过核心HTTP及Owner真实采集。
 
 最终浏览器重新建立空会话：英文/中文文档均HTTP200，标题、已加载图片与高亮span正常，390px无溢出；`runtime-browser-console.log` 0errors/0warnings，截图 `output/playwright/runtime-final-zh-code.png` 已目视检查。并非以失败候选的历史测试替代页面验证。原始代码注释diff检查和git diff --check通过；专用浏览器及Docker测试服务最后按标签核对后停止，保留合成数据、备份和镜像，不删除原服务或用户改动。
+
+## 2026-10-13 23:23 Lighthouse SSH 与内存加固（追加）
+
+服务器已具备，用户授权新的执行阶段。实际 root 公钥登录验证后关闭 password / keyboard-interactive，root保留公钥；配置校验、自动回滚定时器、reload、独立新连接确认完成。资源配置改为 app768MiB / PG384MiB / proxy96MiB / migrate320MiB，Node及Worker old-space256MiB、迁移128MiB；裁剪PG缓存/操作内存/连接和并行，保留持久性。
+
+新独立Linux容器夹具通过真实迁移/事务/角色、核心三身份HTTP、双语SSR、Owner Worker刷新、128MiB上传/Range、10并发读及HTTPS代理；cgroup峰值与OOM计数有实际证据。云主机还未部署应用，Caddy/sslip.io和真实公网门禁待下一阶段，历史隔离验收不被改写。详见 [加固与证据](./2026-10-13-lighthouse-security-memory-hardening.md)。

@@ -132,3 +132,17 @@ Nginx 各 server 覆盖镜像默认日志，邀请 URL（含无语言前缀）�
 灾备需要每日及发布前一致备份、加密离机保存、至少14天/两个离机快照、独立恢复密码和真实恢复演练。Git/旧镜像不能恢复业务数据，本机备份不能防磁盘或主机丢失。回到发布前数据可能丢失备份后的写入，需保留故障数据，不承诺零损失。
 
 备份/恢复、Restic和监测工具已完成隔离验收；真实另一故障域存储、告警接收及Caddy适配仍待落地。当前没有GitHub Actions自动发布工作流，后续可接入Actions构建与私有GHCR，在发布批准后按digest拉取，仍不在服务器构建。Caddy+sslip.io需先补齐证书持久卷、Go内存目标与运维适配。
+
+## 2GB Lighthouse 的资源预算与 SSH 加固
+
+当前 Compose 针对 2 vCPU / 2GB RAM / 4GB Swap 裁剪：应用 768MiB、PostgreSQL 384MiB、Nginx 96MiB，常驻容器上限共 1248MiB；迁移容器 320MiB。上限不是预留内存，不能保证各种峰值同时发生时主机仍有余量。迁移和内容 CLI 顺序执行，发布迁移时先停应用写入；生产镜像在本机或 CI 构建。不要在该主机运行完整 Next 构建或开发服务器。
+
+应用 `NODE_OPTIONS` 限制每个 isolate 的 old-space 256MiB、semi-space 8MiB，Worker 继承相同选项；实际 V8 总堆上限为 280MiB，Buffer、原生库与线程栈另占内存，由容器总限制兜底。迁移 old-space 128MiB。应用额外 Swap 上限 256MiB，其他容器为零；4GB 主机 Swap 是应急缓冲。两个应用 tmpfs 各 64MiB，媒体写入持久化 `/data`。
+
+PostgreSQL：20 连接、shared_buffers=64MB、work_mem=2MB、hash_mem_multiplier=1、maintenance_work_mem=32MB、autovacuum_work_mem=16MB、单 autovacuum worker、查询/维护并行关闭、JIT 关闭。`effective_cache_size=128MB` 是规划器估计；`max_wal_size=256MB` 是软目标，均不是硬内存/磁盘配额。work_mem 按每个排序或哈希操作计算，不能简单以连接数相乘当作总内存。fsync、full_page_writes、synchronous_commit 和 autovacuum 保持开启。见 [PG16 资源说明](https://www.postgresql.org/docs/16/runtime-config-resource.html) 和 [Docker 内存/Swap 说明](https://docs.docker.com/engine/containers/resource_constraints/)。
+
+SSH 使用 `deployment/ssh-hardening.sh` 的两步事务。先从独立终端以 `BatchMode=yes`、`PreferredAuthentications=publickey` 验证 root 公钥登录；保留现有已连接终端与云控制台恢复入口，再通过该连接运行 `bash deployment/ssh-hardening.sh prepare`。脚本安装 `000-incept-hardening.conf`、验证语法与当前 root 连接上下文、安排五分钟自动回滚后 reload；备份保留在输出的 STATE 目录。必须在五分钟内通过另一个新公钥连接运行 `bash deployment/ssh-hardening.sh confirm <STATE>`，验证后取消回滚。失败时不要取消回滚或关闭原终端。
+
+生效值应为 PasswordAuthentication=no、KbdInteractiveAuthentication=no、PermitRootLogin=prohibit-password（`sshd -T` 可能显示等价值 without-password）、PubkeyAuthentication=yes。以 `sshd -T -C ...` 和新连接为准；OpenSSH 优先采用先读到的值，不能只在配置末尾追加。现有 authorized_keys 已可登录时不重复写入。见 [OpenSSH 配置手册](https://man.openbsd.org/sshd_config)。
+
+这套 Compose 当前仍是已验收的 Nginx 路径。Caddy 自动 HTTPS 的配置、证书持久卷、运维脚本接入与真实 sslip.io 域名验证在部署阶段完成；不要同时运行两个占用 80/443 的代理或将 Next 3000、PG 5432 暴露公网。SSH/小内存实测结果见 [加固记录](../../current-task/2026-10-13-lighthouse-security-memory-hardening.md)。
