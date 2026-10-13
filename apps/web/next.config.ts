@@ -4,7 +4,8 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@incept/db', '@incept/music', '@incept/roadmap'],
+  serverExternalPackages: ['ccusage'],
+  transpilePackages: ['@incept/db', '@incept/music', '@incept/roadmap', '@incept/dashboard'],
 };
 
 export default withNextIntl(nextConfig);

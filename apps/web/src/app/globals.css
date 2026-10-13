@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @source '../../../../packages/roadmap/src';
+@source '../../../../packages/dashboard/src';
 @import '../styles/tokens.css';
 @import '../styles/theme.css';
 @import '../styles/motion.css';

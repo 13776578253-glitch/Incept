@@ -53,3 +53,10 @@ apps/web/src/features/docs/importer/docs-push/example-second-mapping/
 
 .agents
 .commandcode
+
+# Server-local dashboard identity / pricing overrides.
+packages/dashboard/dashboard.local.json
+
+# Private cross-device usage snapshots and import storage.
+token-export-*.json
+dashboard-imports.db*

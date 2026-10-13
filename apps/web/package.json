@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@incept/dashboard": "workspace:*",
     "@incept/db": "workspace:*",
     "@incept/music": "workspace:*",
     "@incept/roadmap": "workspace:*",
