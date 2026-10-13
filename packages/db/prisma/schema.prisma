@@ -159,6 +159,15 @@ model DocsPublicationEvent {
   @@map("docs_publication_events")
 }
 
+model DocsImportConfirmation {
+  draftId      String   @id
+  documentId   Int
+  redirectPath String
+  committedAt  DateTime @default(now())
+
+  @@map("docs_import_confirmations")
+}
+
 model DocsDocumentLocale {
   id             Int          @id @default(autoincrement())
   documentId     Int

@@ -16,6 +16,7 @@ export type PlayerCopy = {
   closePlaylist: string;
   dragHandle: string;
   playbackRate: string;
+  seek: string;
   repeatMode: string;
   repeatModes: Record<RepeatMode, string>;
   playRejected: string;
@@ -42,6 +43,7 @@ const zhCopy: PlayerCopy = {
   closePlaylist: '关闭播放列表',
   dragHandle: '拖动播放器',
   playbackRate: '播放速度',
+  seek: '播放进度',
   repeatMode: '播放模式',
   repeatModes: {
     off: '顺序播放',
@@ -73,6 +75,7 @@ const enCopy: PlayerCopy = {
   closePlaylist: 'Close playlist',
   dragHandle: 'Drag player',
   playbackRate: 'Playback speed',
+  seek: 'Playback position',
   repeatMode: 'Playback mode',
   repeatModes: {
     off: 'Play in order',

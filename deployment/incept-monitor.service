@@ -1,0 +1,11 @@
+[Unit]
+Description=Incept readiness, disk and backup probe
+
+[Service]
+Type=oneshot
+User=incept
+WorkingDirectory=/srv/incept/current
+EnvironmentFile=/srv/incept/.env.monitor
+ExecStart=/usr/bin/node scripts/production-monitor.mjs
+StandardOutput=journal
+StandardError=journal

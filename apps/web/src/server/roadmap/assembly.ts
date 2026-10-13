@@ -47,7 +47,8 @@ export const isRoadmapOwner = async (): Promise<boolean> =>
   (await getCurrentViewer()).role === 'owner';
 
 export const authorizeOwner: AuthorizeOwner<Request> = async (request) =>
-  hasSameOrigin(request) && (await isRoadmapOwner());
+  (request.method === 'GET' || request.method === 'HEAD' || hasSameOrigin(request)) &&
+  (await isRoadmapOwner());
 
 export function createRoadmapWriter(): RoadmapWriter {
   const client: RoadmapPrismaWriteClient = {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMounted } from '@/hooks/use-mounted';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -18,16 +18,6 @@ import { getSettingsPageData } from '../shared/settings-schema';
 import { ProjectSurfacesPanel } from '../projects/project-surfaces-panel';
 
 import type { SettingsSection } from '../shared/settings-types';
-
-function useMounted() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  return mounted;
-}
 
 function getLocalizedReturnPath(returnTo: string | null, locale: AppLocale) {
   if (!returnTo?.startsWith('/') || returnTo.startsWith('//')) {

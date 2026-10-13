@@ -121,14 +121,14 @@ describe('standalone roadmap page', () => {
 });
 
 describe('primary navigation baseline', () => {
-  it.each(['en', 'zh'] as const)('keeps the four current columns for %s', (locale: AppLocale) => {
+  it.each(['en', 'zh'] as const)('keeps public navigation free of owner-only pages for %s', (locale: AppLocale) => {
     const messages = locale === 'zh' ? zhNavigation : enNavigation;
     const translate = (key: string) => key.split('.').reduce<unknown>(
       (value, segment) => (value as Record<string, unknown>)[segment], messages,
     ) as string;
     const navigation = createSiteNavigation(locale, translate);
     expect(navigation.map(({ id, href, label }) => ({ id, href, label }))).toEqual(
-      ['docs', 'roadmap', 'dashboard', 'about'].map((id) => ({
+      ['docs', 'roadmap', 'dashboard'].map((id) => ({
         id,
         href: `/${locale}/${id}`,
         label: messages.primary[id as keyof typeof messages.primary],

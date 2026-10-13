@@ -136,6 +136,9 @@ export async function previewDocsTestDataCleanup(): Promise<DocsTestDataCleanupP
 }
 
 export async function cleanupDocsTestData() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Test-data cleanup is disabled in production.');
+  }
   const preview = await previewDocsTestDataCleanup();
   const testDocumentIds = preview.testDocuments.map((document) => document.documentId);
   const testCollectionIds = preview.testCollections.map((collection) => collection.collectionId);

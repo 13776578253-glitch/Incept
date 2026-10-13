@@ -14,6 +14,9 @@ type PlayerExpandedProps = {
   title: string;
   clock: string;
   totalClock: string;
+  currentTime: number;
+  duration: number;
+  onSeek: (seconds: number) => void;
   rateLabel: string;
   rateCycleLabel: string;
   isPlaying: boolean;
@@ -36,6 +39,9 @@ export function PlayerExpanded({
   title,
   clock,
   totalClock,
+  currentTime,
+  duration,
+  onSeek,
   rateLabel,
   rateCycleLabel,
   isPlaying,
@@ -89,6 +95,17 @@ export function PlayerExpanded({
       ) : null}
 
       <PlayerPlaylist items={items} emptyLabel={copy.emptyQueue} playLabel={copy.play} onSelect={onSelect} />
+
+      {/* Native range supports pointer seeking and keyboard controls without dragging the floating surface. */}
+      <div className="px-4 pt-2">
+        <input type="range" data-player-interactive aria-label={copy.seek}
+          aria-valuetext={`${clock} / ${totalClock}`} min={0} step={0.1}
+          max={Number.isFinite(duration) && duration > 0 ? duration : 1}
+          value={Number.isFinite(duration) && duration > 0 ? Math.max(0, Math.min(currentTime, duration)) : 0}
+          disabled={!Number.isFinite(duration) || duration <= 0}
+          onChange={event => onSeek(Number(event.currentTarget.value))}
+          className="w-full cursor-pointer accent-[var(--badge-sky-dot)] disabled:cursor-default disabled:opacity-40" />
+      </div>
 
       <div className="mt-1 border-t border-[var(--color-border)]">
         <PlayerCompact

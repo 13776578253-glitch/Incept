@@ -1,0 +1,12 @@
+[Unit]
+Description=Quiescent Incept database and persistent data backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/incept/current
+ExecStart=/bin/sh deployment/backup.sh
+TimeoutStartSec=30min
+StandardOutput=journal
+StandardError=journal

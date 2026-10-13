@@ -61,3 +61,12 @@ packages/dashboard/dashboard.local.json
 token-export-*.json
 dashboard-imports.db*
 dashboard-snapshots.json*
+
+# Local generated outputs and audit artifacts
+/output/
+
+# Non-public document media
+/.docs-media/
+
+# Temporary browser acceptance evidence
+/.playwright-cli/

@@ -96,6 +96,7 @@ export async function fetchAccountActivity(
   fetchImplementation: FetchImplementation = fetch,
 ) {
   const response = await fetchImplementation('https://api.github.com/graphql', {
+    signal: AbortSignal.timeout(5_000),
     method: 'POST',
     headers: {
       ...getHeaders(config.token),
@@ -165,7 +166,7 @@ export async function fetchRepositoryActivity(
 ) {
   const repositoryUrl = `https://api.github.com/repos/${encodeURIComponent(config.account)}/${encodeURIComponent(config.repository)}`;
   const repository = await readJson<GitHubRepositoryResponse>(
-    await fetchImplementation(repositoryUrl, { headers: getHeaders(config.token) }),
+    await fetchImplementation(repositoryUrl, { headers: getHeaders(config.token), signal: AbortSignal.timeout(5_000) }),
   );
 
   if (!repository.default_branch) {
@@ -174,6 +175,7 @@ export async function fetchRepositoryActivity(
 
   const countedDays: Array<{ date: string; count: number }> = [];
   for (let page = 1; ; page += 1) {
+    if (page > 100) throw new Error('GitHub activity exceeded the pagination budget.');
     const commitsUrl = new URL(`${repositoryUrl}/commits`);
     commitsUrl.searchParams.set('sha', repository.default_branch);
     commitsUrl.searchParams.set('since', toShanghaiDateTime(range.from));
@@ -182,7 +184,7 @@ export async function fetchRepositoryActivity(
     commitsUrl.searchParams.set('page', String(page));
 
     const commits = await readJson<GitHubCommitResponse>(
-      await fetchImplementation(commitsUrl, { headers: getHeaders(config.token) }),
+      await fetchImplementation(commitsUrl, { headers: getHeaders(config.token), signal: AbortSignal.timeout(5_000) }),
     );
 
     for (const commit of commits) {

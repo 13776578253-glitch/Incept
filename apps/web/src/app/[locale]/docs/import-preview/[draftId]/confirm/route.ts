@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { importDocsArticleDraft, importDocsCollectionDirectory } from '@incept/db/docs';
+import { confirmDocsImportDraft, findDocsImportConfirmation, importDocsArticleDraft, importDocsCollectionDirectory } from '@incept/db/docs';
 import { deleteDocsImportDraft, readDocsImportDraft } from '@/features/docs/importer/draft-store';
-import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
+import { getCurrentViewer, getRequestOrigin, hasSameOrigin } from '@/server/auth';
 
 // 处理导入预览的确认请求，将草稿文章正式导入文档数据库
 export async function POST(
@@ -26,6 +26,11 @@ export async function POST(
   }
 
   const { draftId } = await context.params;
+  if (!/^[a-f0-9-]{36}$/i.test(draftId)) return NextResponse.json({ error: 'Draft not found.' }, { status: 404 });
+  const previous = await findDocsImportConfirmation(draftId);
+  if (previous) return NextResponse.redirect(new URL(previous.redirectPath, getRequestOrigin(_request)), {
+    status: 303, headers: { 'x-docs-import-document-id': String(previous.documentId) },
+  });
   const draft = readDocsImportDraft(draftId);
 
   if (!draft) {
@@ -49,19 +54,6 @@ export async function POST(
   }
 
   // 根据草稿类型执行不同的导入操作
-  const result = draft.draftType === 'collectionDirectory'
-    ? await importDocsCollectionDirectory({
-        sources: draft.collectionSources ?? [draft.source],
-        nodes: draft.collectionNodes ?? [],
-        replace: draft.replace,
-      })
-    : await importDocsArticleDraft({
-        source: draft.source,
-        replace: draft.replace,
-      });
-
-  deleteDocsImportDraft(draftId);
-
   const targetLocale = draft.source.meta.locale;
   const isNote = draft.source.meta.kind === 'note';
   const redirectPath = isNote
@@ -70,11 +62,21 @@ export async function POST(
       ? `/${targetLocale}/docs/series/${draft.source.meta.collectionSlug}/${draft.source.meta.slug}?imported=1`
       : `/${targetLocale}/docs/${draft.source.meta.slug}?imported=1`;
 
-  return NextResponse.redirect(new URL(redirectPath, _request.url), {
+  const confirmation = await confirmDocsImportDraft(draftId, async db => {
+    const result = draft.draftType === 'collectionDirectory'
+      ? await importDocsCollectionDirectory({ sources: draft.collectionSources ?? [draft.source],
+          nodes: draft.collectionNodes ?? [], replace: draft.replace, db })
+      : await importDocsArticleDraft({ source: draft.source, replace: draft.replace, db });
+    return { documentId: 'documentId' in result ? result.documentId : result.documentIds[0], redirectPath };
+  });
+  try { deleteDocsImportDraft(draftId); }
+  catch { console.warn(JSON.stringify({ event: 'docs_draft_cleanup_failed', draftId })); }
+
+  return NextResponse.redirect(new URL(redirectPath, getRequestOrigin(_request)), {
       status: 303,
     headers: {
       'x-docs-import-document-id': String(
-        'documentId' in result ? result.documentId : result.documentIds[0],
+        confirmation.documentId,
       ),
     },
   });

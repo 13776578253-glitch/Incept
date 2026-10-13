@@ -9,6 +9,7 @@ import type { DashboardWindow } from '../hooks/use-dashboard-window';
 import { ImportIcon } from '../imports/import-icons';
 
 type DashboardToolbarProps = {
+  canViewDetails?: boolean;
   rangePreset: DashboardWindow['rangePreset'];
   setRangePreset: DashboardWindow['setRangePreset'];
   setSelectedTrendIndex: DashboardWindow['setSelectedTrendIndex'];
@@ -24,7 +25,7 @@ type DashboardToolbarProps = {
 };
 
 export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrendIndex,
-  data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport, hasSnapshot = true, showingHistory = false }: DashboardToolbarProps) {
+  data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport, hasSnapshot = true, showingHistory = false, canViewDetails = true }: DashboardToolbarProps) {
   const t = useTranslations('dashboard');
   const [activeSection, setActiveSection] = useState('#overview');
   useEffect(() => {
@@ -50,7 +51,7 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
       <div className="space-y-2.5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <nav aria-label="Dashboard sections" className="dashboard-segmented">
-            {(['overview', 'models', 'costs', 'projects'] as const).map(section => (
+            {(['overview', 'models', 'costs', 'projects'] as const).filter(section => canViewDetails || section === 'overview' || section === 'costs').map(section => (
               <a key={section} href={'#' + section} aria-current={activeSection === '#' + section ? 'location' : undefined}
                 data-active={activeSection === '#' + section} onClick={() => setActiveSection('#' + section)}>{t(`nav.${section}`)}</a>
             ))}

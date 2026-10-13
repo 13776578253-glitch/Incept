@@ -8,6 +8,7 @@ import { createSiteNavigation } from '@/components/layouts/site-navigation';
 import type { PrimaryNavItem } from '@/components/layouts/navigation.types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLanguage } from '@/hooks/use-language';
+import { useMounted } from '@/hooks/use-mounted';
 import { MobileSiteHeader } from '@/components/layouts/site-header-mo';
 
 function isItemActive(
@@ -111,19 +112,17 @@ export function SiteHeader() {
   const searchParams = useSearchParams();
   const { language } = useLanguage();
   const { colorScheme, setColorScheme } = useColorScheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
+  const [previousPathname, setPreviousPathname] = useState(pathname);
+  if (previousPathname !== pathname) {
+    setPreviousPathname(pathname);
     setOpenDropdown(null);
     setMobileOpen(false);
-  }, [pathname]);
+  }
 
   useEffect(() => {
     return () => {

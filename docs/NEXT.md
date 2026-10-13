@@ -14,3 +14,9 @@ This is the short entry point for active product work. Detailed source-code acce
 - `docs/BACKLOG.md` is the only source-code TODO inventory.
 - Deferred work and completed milestones do not belong in this file.
 - Historical implementation records are in `docs/finish-task/`; old plans, schema snapshots and superseded decisions are in `docs/history/`.
+
+## 2026-10-13 Production readiness
+
+Local security, persistence and Linux validation are recorded in [the remediation log](./current-task/2026-10-13-production-readiness-remediation.md). The remaining release work requires a real host/domain, certificate renewal, alerts, off-host backup and external-network acceptance; use [the operating procedure](./runbooks/en/production-deployment.md) before declaring GO.
+
+2026-10-13 continuation: all 18 code/isolated acceptance items are complete, including local ACME renewal, real systemd synthetic HTTPS alerts and encrypted SFTP restore/retention. Actual host/domain, off-host failure isolation and external mobile acceptance remain the release work; no public deployment occurred.

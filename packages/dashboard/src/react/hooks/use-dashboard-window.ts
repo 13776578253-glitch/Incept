@@ -6,12 +6,13 @@ import { clientSnapshot, rememberSnapshot } from './client-snapshots';
 
 export const DASHBOARD_REFRESH_INTERVAL = 60_000;
 
-export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean } = {}) {
+export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean; owner?: boolean } = {}) {
+  const scope = options.owner ? 'owner' : 'public';
   const [data, setData] = useState(() => {
-    const cached = clientSnapshot(initialData.range ?? '30d');
+    const cached = clientSnapshot(initialData.range ?? '30d', scope);
     return cached && (Date.parse(cached.checkedAt ?? '') || 0) > (Date.parse(initialData.checkedAt ?? '') || 0) ? cached : initialData;
   });
-  const [hasSnapshot, setHasSnapshot] = useState(options.initialHasSnapshot !== false || !!clientSnapshot(initialData.range ?? '30d'));
+  const [hasSnapshot, setHasSnapshot] = useState(options.initialHasSnapshot !== false || !!clientSnapshot(initialData.range ?? '30d', scope));
   const [showingHistory, setShowingHistory] = useState(!!options.refreshOnMount && hasSnapshot);
   const [rangePreset, setRangePreset] = useState<UsageRange>(initialData.range ?? '30d');
   const [selectedTrendIndex, setSelectedTrendIndex] = useState(999);
@@ -22,7 +23,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
   const refreshRef = useRef<() => void>(() => {});
   const activeRange = useRef(rangePreset);
   const refreshOnMount = useRef(!!options.refreshOnMount);
-  useEffect(() => { rememberSnapshot(initialData); }, [initialData]);
+  useEffect(() => { rememberSnapshot(initialData, scope); }, [initialData, scope]);
 
   useEffect(() => {
     let disposed = false;
@@ -55,14 +56,14 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
       setIsRefreshing(true);
       try {
         const query = new URLSearchParams({ range: rangePreset });
-        if (force) query.set('refresh', '1');
+        if (force && options.owner) query.set('refresh', '1');
         const response = await fetch(dashboardEndpoints.usage + '?' + query, { cache: 'no-store', signal: current.signal });
         if (!response.ok) throw new Error('Usage refresh failed');
         const next = await response.json() as TokenDashboardData;
         if (next.range !== rangePreset) throw new Error('Usage window mismatch');
         if (!disposed && !current.signal.aborted) {
           setData(next);
-          rememberSnapshot(next);
+          rememberSnapshot(next, scope);
           setHasSnapshot(true);
           setShowingHistory(false);
           setRefreshError(false);
@@ -81,7 +82,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
     setIsRefreshing(false);
     if (activeRange.current !== rangePreset) {
       activeRange.current = rangePreset;
-      const previous = clientSnapshot(rangePreset);
+      const previous = clientSnapshot(rangePreset, scope);
       if (previous) { setData(previous); setHasSnapshot(true); setShowingHistory(true); }
       else { setData(emptyDashboard(rangePreset)); setHasSnapshot(false); setShowingHistory(false); }
       void request();
@@ -104,7 +105,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
       clearTimer();
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [rangePreset]);
+  }, [rangePreset, scope, options.owner]);
 
   const refresh = useCallback(() => refreshRef.current(), []);
   return { data, rangePreset, setRangePreset, selectedTrendIndex, setSelectedTrendIndex,

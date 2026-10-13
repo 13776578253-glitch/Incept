@@ -68,11 +68,5 @@ export function createSiteNavigation(
     //   href: withLocale('/resources'),
     //   matchPrefix: withLocale('/resources'),
     // },
-    {
-      id: 'about',
-      label: t('primary.about'),
-      href: withLocale('/about'),
-      matchPrefix: withLocale('/about'),
-    },
   ];
 }

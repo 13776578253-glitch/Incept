@@ -26,7 +26,7 @@ describe('roadmap owner gate', () => {
 
     expect(await isRoadmapOwner()).toBe(false);
     expect(
-      await authorizeOwner(new Request('http://localhost/api/internal/roadmap/entries')),
+      await authorizeOwner(new Request('http://localhost/api/internal/roadmap/entries', { method: 'POST' })),
     ).toBe(false);
   });
 
@@ -35,12 +35,20 @@ describe('roadmap owner gate', () => {
 
     expect(await isRoadmapOwner()).toBe(true);
     expect(
-      await authorizeOwner(new Request('http://localhost/api/internal/roadmap/entries')),
+      await authorizeOwner(new Request('http://localhost/api/internal/roadmap/entries', { method: 'POST' })),
     ).toBe(true);
 
     mocks.origin.mockReturnValue(false);
     expect(
-      await authorizeOwner(new Request('http://localhost/api/internal/roadmap/entries')),
+      await authorizeOwner(new Request('http://localhost/api/internal/roadmap/entries', { method: 'POST' })),
     ).toBe(false);
+  });
+
+  it('permits owner reads without Origin but never anonymous reads', async () => {
+    mocks.origin.mockReturnValue(false);
+    mocks.viewer.mockResolvedValue({ role: 'owner', sessionId: 's' });
+    expect(await authorizeOwner(new Request('http://localhost/api/internal/roadmap/roadmaps'))).toBe(true);
+    mocks.viewer.mockResolvedValue({ role: 'guest' });
+    expect(await authorizeOwner(new Request('http://localhost/api/internal/roadmap/roadmaps'))).toBe(false);
   });
 });

@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 export default function CreatePage() {
-  return null;
+  notFound();
 }

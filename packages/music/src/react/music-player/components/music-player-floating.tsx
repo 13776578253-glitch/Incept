@@ -174,6 +174,9 @@ export function MusicPlayerFloating({
     ) : (
       <PlayerExpanded
         copy={copy}
+        currentTime={state.currentTime}
+        duration={state.duration}
+        onSeek={seconds => sendIntent({ type: 'seekRequested', seconds })}
         heading={heading}
         items={items}
         title={title}

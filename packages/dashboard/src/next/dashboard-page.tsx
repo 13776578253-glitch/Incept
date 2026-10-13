@@ -1,11 +1,12 @@
 import 'server-only';
 
 import { readDashboardSnapshot } from '../adapters';
-import { emptyDashboard } from '../domain';
+import { emptyDashboard, publicDashboardSummary } from '../domain';
 import { TokenDashboardFeature } from '../react';
 
 export async function TokenDashboardPage({ canImport = false }: { canImport?: boolean } = {}) {
   const history = await readDashboardSnapshot('30d');
 
-  return <TokenDashboardFeature data={history ?? emptyDashboard()} canImport={canImport} initialStatus={history ? 'history' : 'empty'} />;
+  const data = history ?? emptyDashboard();
+  return <TokenDashboardFeature key={canImport ? 'owner' : 'public'} data={canImport ? data : publicDashboardSummary(data)} canImport={canImport} initialStatus={history ? 'history' : 'empty'} />;
 }

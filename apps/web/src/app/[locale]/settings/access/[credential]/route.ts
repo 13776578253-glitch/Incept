@@ -9,6 +9,7 @@ import {
 } from '@/server/auth/crypto';
 import {
   getCurrentViewer,
+  getRequestOrigin,
   writeProSessionCookie,
 } from '@/server/auth';
 
@@ -25,7 +26,7 @@ function notFoundResponse() {
 }
 
 function redirectToDocs(request: Request, locale: string) {
-  const response = NextResponse.redirect(new URL(`/${locale}/docs`, request.url), 303);
+  const response = NextResponse.redirect(new URL(`/${locale}/docs`, getRequestOrigin(request)), 303);
   response.headers.set('Cache-Control', 'no-store');
   response.headers.set('Referrer-Policy', 'no-referrer');
   return response;

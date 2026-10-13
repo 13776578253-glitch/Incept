@@ -330,10 +330,12 @@ export function RoadmapAdminPanel({ boards: initialBoards, projects: initialProj
 
   async function refresh(): Promise<void> {
     const response = await fetch(roadmapEndpoints.roadmaps);
+    if (!response.ok) throw new Error(`The roadmap refresh failed (${response.status}).`);
     const payload = (await response.json()) as { boards: RoadmapBoard[] };
 
     setBoards(payload.boards);
     const projectsResponse = await fetch(roadmapEndpoints.projects);
+    if (!projectsResponse.ok) throw new Error(`The project refresh failed (${projectsResponse.status}).`);
     const projectsPayload = (await projectsResponse.json()) as { projects: RoadmapProject[] };
     setProjects(projectsPayload.projects);
   }

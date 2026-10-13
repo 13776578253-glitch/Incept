@@ -8,6 +8,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const projectRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'incept-docs-media-'));
 const previousContentRoot = process.env.DOCS_CONTENT_ROOT;
+const previousMediaDirectory = process.env.INCEPT_DOCS_MEDIA_DIR;
+process.env.INCEPT_DOCS_MEDIA_DIR = path.join(tempRoot, 'published');
 const generatedMediaPaths = [];
 
 function sourceFor(imageSrc) {
@@ -71,9 +73,8 @@ try {
   assert.deepEqual(published.issues, []);
   assert.equal(published.media.operations[0]?.status, 'publish');
   const generatedPath = path.join(
-    projectRoot,
-    'apps/web/public',
-    published.media.operations[0]?.targetUrl.slice(1) ?? '',
+    process.env.INCEPT_DOCS_MEDIA_DIR,
+    path.basename(published.media.operations[0]?.targetUrl ?? ''),
   );
   generatedMediaPaths.push(generatedPath);
   await fs.access(generatedPath);
@@ -121,4 +122,6 @@ try {
   } else {
     process.env.DOCS_CONTENT_ROOT = previousContentRoot;
   }
+  if (previousMediaDirectory === undefined) delete process.env.INCEPT_DOCS_MEDIA_DIR;
+  else process.env.INCEPT_DOCS_MEDIA_DIR = previousMediaDirectory;
 }

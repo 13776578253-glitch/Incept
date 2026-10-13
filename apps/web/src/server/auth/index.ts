@@ -5,7 +5,7 @@ export {
   verifyOwnerAccessSecret,
 } from './owner-secret';
 
-export { hasSameOrigin } from './request-origin';
+export { hasSameOrigin, getRequestOrigin } from './request-origin';
 
 export {
   clearAccessSessionCookie,

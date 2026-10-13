@@ -1,0 +1,12 @@
+[Unit]
+Description=Encrypt and verify the latest Incept backup in off-host storage
+Requires=incept-backup.service
+After=incept-backup.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/incept/current
+ExecStart=/bin/sh deployment/offsite.sh
+TimeoutStartSec=2h
+StandardOutput=journal
+StandardError=journal

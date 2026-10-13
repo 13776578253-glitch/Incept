@@ -50,7 +50,7 @@ describe('package server/client composition', () => {
     mocks.load.mockResolvedValue(emptyData);
     render(
       <NextIntlClientProvider locale={locale} messages={{ dashboard: messages }} timeZone="Asia/Shanghai">
-        {await TokenDashboardPage()}
+        {await TokenDashboardPage({ canImport: true })}
       </NextIntlClientProvider>,
     );
 

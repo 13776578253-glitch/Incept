@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createOwnerAccessSession } from '@incept/db/access';
 
 import { createAccessSessionToken, hashAccessCredential } from '@/server/auth/crypto';
+import { limitAuthRequest, readSmallJson } from '@/server/auth/request-limits';
 import {
   hasSameOrigin,
   isOwnerAccessConfigured,
@@ -17,7 +18,7 @@ type OwnerLoginBody = {
 
 async function readOwnerLoginBody(request: Request) {
   try {
-    return (await request.json()) as OwnerLoginBody;
+    return await readSmallJson(request) as OwnerLoginBody | null;
   } catch {
     return null;
   }
@@ -27,6 +28,8 @@ export async function POST(request: Request) {
   if (!hasSameOrigin(request)) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
   }
+  const limited = limitAuthRequest(request, 'owner');
+  if (limited) return limited;
 
   if (!isOwnerAccessConfigured()) {
     return NextResponse.json(

@@ -294,3 +294,15 @@ Not touched: the `history:` notes the backlog's two tables above declare as inte
 2. Process one backlog item or one review surface at a time.
 3. For approved history candidates, update the TODO at its original source location; do not create a second history list elsewhere.
 4. Only after source TODO cleanup is stable, move on to dead-code removal, directory simplification, and current-task archival.
+
+### 2026-10-13 B-16 上线验收补充
+
+展开播放列表新增原生进度滑杆，已接入 seekRequested；对应 Task 10/14。原有历史 TODO 注释保留，seek 部分由本条补充更新状态。nextRequested / previousRequested 的播放器按钮仍未接入，保留该待办。
+
+### 2026-10-13 生产上线前待验收
+
+本地修复与 Linux 夹具验证见 `docs/current-task/2026-10-13-production-readiness-remediation.md`。正式域名签发/续期、云安全组、主机 systemd 重启、告警送达、离机备份及真实内容/手机外网走查未执行；这些是上线门禁，不能从本地 15/18 工程计数推导 GO。B-01 首页真实内容与 B-16 上一首/下一首仍未扩展。
+
+2026-10-13 续执行：18/18代码与隔离验收完成，补齐真实本地ACME续期/回滚、systemd临时单元HTTPS告警、Restic/SFTP加密恢复与保留策略。正式主机/DNS/证书评级/开机重启、真实接收者和存储故障域、真实数据RTO/RPO、手机外网仍是剩余门禁，产品待办B-01/B-16保持原范围。
+
+开发工具依赖安全后续：全量开发审计仍17 high/5 moderate（brace-expansion、js-yaml、nanoid、postcss、braces等，部分braces暂无修补版）。生产镜像已离线重装仅生产依赖，实际无Vitest/ESLint/jsdom/braces，生产审计0；不要把开发审计结果误记为已清零。升级这些开发工具时需验证ESLint/Vite/Vitest和各包构建兼容，未用跨主版本强制覆盖掩盖风险。

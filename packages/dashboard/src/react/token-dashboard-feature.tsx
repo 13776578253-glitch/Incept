@@ -39,7 +39,7 @@ export function TokenDashboardFeature({
     isPollingPaused,
     hasSnapshot,
     showingHistory,
-  } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty' });
+  } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport });
 
   return (
     <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-24 md:pt-8 lg:px-10 lg:pt-9 lg:pb-28">
@@ -47,6 +47,7 @@ export function TokenDashboardFeature({
           TOKLENS v0.1.2 UNIFIED TOP TOOLBAR (统一顶部工具栏)
       ===================================================================== */}
       <DashboardToolbar
+        canViewDetails={canImport}
         rangePreset={rangePreset}
         setRangePreset={setRangePreset}
         setSelectedTrendIndex={setSelectedTrendIndex}
@@ -76,7 +77,7 @@ export function TokenDashboardFeature({
         {/* =====================================================================
             SECTION 02: MODELS & SOURCES (按模型、客户端来源、Token 类型拆解)
         ===================================================================== */}
-        <DeferredSection section="models" enabled={hasSnapshot}><ModelsSection data={data} /></DeferredSection>
+        {canImport ? <DeferredSection section="models" enabled={hasSnapshot}><ModelsSection data={data} /></DeferredSection> : null}
 
         {/* =====================================================================
             SECTION 03: COSTS & COVERAGE (API 等效费用、价格覆盖率)
@@ -86,7 +87,7 @@ export function TokenDashboardFeature({
         {/* =====================================================================
             SECTION 04: PROJECTS & SESSIONS (项目排行表格 + 会话主从检查器)
         ===================================================================== */}
-        <DeferredSection section="projects" enabled={hasSnapshot}><ProjectsSection data={data} /></DeferredSection>
+        {canImport ? <DeferredSection section="projects" enabled={hasSnapshot}><ProjectsSection data={data} /></DeferredSection> : null}
       </div>
     </div>
   );

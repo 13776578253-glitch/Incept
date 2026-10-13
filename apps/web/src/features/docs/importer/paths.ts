@@ -35,7 +35,15 @@ export function findRepoRoot(startDir = process.cwd()) {
 
 // 获取文档导入草稿的存储目录路径，默认在仓库根目录下的 .docs-import-drafts 目录，确保所有草稿文件集中存放，便于管理和清理
 export function getDocsImportDraftsDir(startDir = process.cwd()) {
-  return path.join(findRepoRoot(startDir), '.docs-import-drafts');
+  return process.env.INCEPT_DOCS_DRAFTS_DIR
+    ? path.resolve(process.env.INCEPT_DOCS_DRAFTS_DIR)
+    : path.join(findRepoRoot(startDir), '.docs-import-drafts');
+}
+
+export function getDocsMediaDirectory() {
+  return process.env.INCEPT_DOCS_MEDIA_DIR
+    ? path.resolve(process.env.INCEPT_DOCS_MEDIA_DIR)
+    : path.join(findRepoRoot(), '.docs-media');
 }
 
 // 确保文档导入草稿的存储目录存在，如果不存在则创建，返回该目录的路径，以便在后续的草稿读写操作中使用

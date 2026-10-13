@@ -2,6 +2,12 @@
   "name": "incept",
   "private": true,
   "packageManager": "pnpm@10.30.3",
+  "engines": { "node": ">=24.15.0 <25", "pnpm": "10.30.3" },
+  "pnpm": { "overrides": {
+    "@babel/core": "^7.29.6", "browserslist": "^4.28.7", "baseline-browser-mapping": "^2.11.0",
+    "source-map-js": "^1.2.2", "@prisma/config>deepmerge-ts": "8.0.0",
+    "esbuild@<0.28.1": "0.28.1"
+  } },
   "scripts": {
     "dashboard:build-tools": "pnpm --filter @incept/dashboard build:tools",
     "dashboard:imports": "node packages/dashboard/dist/dashboard-data.mjs",
@@ -11,6 +17,7 @@
     "typecheck": "pnpm --filter web typecheck && pnpm --filter @incept/music typecheck && pnpm --filter @incept/db typecheck && pnpm --filter @incept/roadmap typecheck && pnpm --filter @incept/dashboard typecheck && tsc --noEmit -p scripts/tsconfig.json",
     "typecheck:scripts": "tsc --noEmit -p scripts/tsconfig.json",
     "test": "pnpm -r --if-present test",
+    "test:ops": "node --test scripts/production-*.test.mjs",
     "test:core": "pnpm --filter @incept/music run test:core",
     "test:web": "pnpm --filter web test",
     "test:watch:web": "pnpm --filter web test:watch",

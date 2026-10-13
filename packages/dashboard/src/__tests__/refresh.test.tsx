@@ -67,7 +67,7 @@ describe('dashboard refresh', () => {
   it('polls at 60 seconds, manually bypasses the cache and clears its timer', async () => {
     const fetch = vi.fn().mockResolvedValue(response('14d'));
     vi.stubGlobal('fetch', fetch);
-    const { result, unmount } = renderHook(() => useDashboardWindow(snapshot('14d')));
+    const { result, unmount } = renderHook(() => useDashboardWindow(snapshot('14d'), { owner: true }));
     expect(fetch).not.toHaveBeenCalled();
     await act(async () => { vi.advanceTimersByTime(30_000); });
     expect(fetch).not.toHaveBeenCalled();
