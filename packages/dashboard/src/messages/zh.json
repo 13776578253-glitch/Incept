@@ -14,6 +14,9 @@
     "batchSummary": "新增 {records} 条 · {tokens} Token · 重复 {duplicates} 条", "device": "导入设备：{name}", "batch": "导入批次："
   },
   "page": {
+    "showingHistory": "先展示上次数据，正在后台更新",
+    "loadingFirst": "正在读取用量数据…",
+    "firstLoadFailed": "暂时无法读取用量数据，请重试",
     "eyebrow": "DASHBOARD",
     "title": "Token 使用仪表盘",
     "description": "汇总本机会话记录的 Token 用量、来源、已知费用与项目归属；所有区块使用同一自然日范围",

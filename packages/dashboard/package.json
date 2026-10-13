@@ -27,6 +27,8 @@
     "./messages/zh": "./src/messages/zh.json"
   },
   "scripts": {
+    "build:runtime": "node tools/build-runtime.mjs",
+    "pretest": "node tools/build-runtime.mjs",
     "build:tools": "node tools/build-transfer.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.src.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",
     "test": "vitest run"

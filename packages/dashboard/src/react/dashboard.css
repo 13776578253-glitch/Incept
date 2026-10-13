@@ -211,3 +211,9 @@
 .dashboard-project-picker-option { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; border-radius: 6px; padding: 8px; text-align: left; color: var(--color-text-muted); font-size: 12px; }
 .dashboard-project-picker-option:hover, .dashboard-project-picker-option:focus-visible { background: var(--color-row-bg); color: var(--color-text); }
 .dashboard-project-picker-option[aria-selected="true"] { background: var(--color-pill-active-bg); color: var(--badge-sky-fg); }
+.dashboard-section-skeleton { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; min-height: 560px; align-content: start; border: 1px solid var(--color-border); border-radius: 14px; padding: 20px; }
+.dashboard-section-skeleton > div { height: 100px; border-radius: 12px; background: var(--color-row-bg); animation: dashboard-skeleton 1.5s ease-in-out infinite alternate; }
+.dashboard-deferred-section { min-width: 0; }
+@keyframes dashboard-skeleton { to { opacity: .45; } }
+@media (max-width: 767px) { .dashboard-section-skeleton { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .dashboard-section-skeleton > div { animation: none; } }

@@ -25,8 +25,9 @@ export default async function RoadmapMapPage({
   const t = await getTranslations({ locale, namespace: 'roadmap' });
 
   const repository = createRoadmapRepository();
-  const roadmaps = await repository.listRoadmaps();
-  const projects = await repository.listProjects();
+  const [roadmaps, projects, canEdit] = await Promise.all([
+    repository.listRoadmaps(), repository.listProjects(), isRoadmapOwner(),
+  ]);
   const currentProject = projects.find((candidate) => candidate.key === projectKey) ?? projects[0];
 
   const projectRoadmaps = currentProject
@@ -64,7 +65,6 @@ export default async function RoadmapMapPage({
 
   const board = current ? await repository.listBoard(current.key) : null;
 
-  const canEdit = await isRoadmapOwner();
   const hrefs: Record<string, string> = {};
 
   for (const project of projects) {

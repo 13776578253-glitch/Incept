@@ -13,15 +13,16 @@ import { collectCcusageFallback } from './collectors/ccusage';
 import type { SourceDescriptionKey } from '../../domain';
 import { normalizeFile } from './collectors/common';
 import { loadImportedEvents } from './imports/layer';
+import { importStorePath } from './imports/store';
 
 type Snapshot = { home: string; expiresAt: number; events: RawUsageEvent[]; pricing: Map<string, UnitPricing>; updatedAt: number;
   fallbackEvents: Set<RawUsageEvent>; fallbackSources: SourceDescriptionKey[]; coveredSessions: Set<string>; errors: string[];
   aliases: Record<string, string>; fallbackDateHints: Partial<Record<SourceDescriptionKey, string[]>>; coveredFiles: Set<string> };
 let cachedSnapshot: Snapshot | null = null;
 
-export async function loadTokenDashboardData(options: { range?: UsageRange; force?: boolean } = {}): Promise<TokenDashboardData> {
+export async function loadTokenDashboardData(options: { range?: UsageRange; force?: boolean; home?: string } = {}): Promise<TokenDashboardData> {
   const now = Date.now();
-  const home = homedir();
+  const home = options.home ?? homedir();
   if (!cachedSnapshot || cachedSnapshot.home !== home || options.force || cachedSnapshot.expiresAt <= now) {
     const overrides = readLocalOverrides();
     const pricing = loadLocalPricingMap(home, overrides);
@@ -55,7 +56,7 @@ export async function loadTokenDashboardData(options: { range?: UsageRange; forc
   }
   const snapshot = cachedSnapshot;
   const range = options.range ?? 'all';
-  const imported = loadImportedEvents(snapshot.events, snapshot.pricing, snapshot.aliases);
+  const imported = loadImportedEvents(snapshot.events, snapshot.pricing, snapshot.aliases, importStorePath(home));
   const eligible = [...snapshot.events.filter(event => !imported.replacedIndexed.has(event)), ...imported.events].filter(event => event.timestampMs <= now);
   const firstDate = eligible.reduce<string | undefined>((first, event) => !first || event.dateKey < first ? event.dateKey : first, undefined);
   const window = dateWindow(range, now, firstDate);

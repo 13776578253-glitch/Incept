@@ -3,6 +3,7 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDashboardWindow } from '../react/hooks/use-dashboard-window';
 import type { TokenDashboardData, UsageRange } from '../domain';
+import { emptyDashboard } from '../domain';
 
 const snapshot = (range: UsageRange) => ({ range, daily: [], dateRange: { from: '2026-10-01', to: '2026-10-12', activeDays: 0 } }) as unknown as TokenDashboardData;
 const response = (range: UsageRange) => ({ ok: true, json: async () => snapshot(range) });
@@ -19,6 +20,17 @@ afterEach(() => {
 });
 
 describe('dashboard refresh', () => {
+  it('shows history immediately, requests fresh data on entry and retains history if the request fails', async () => {
+    const history = { ...emptyDashboard('30d'), checkedAt: '2026-10-10T00:00:00Z' };
+    history.totals.totalTokens = 123;
+    let fail!: (error: Error) => void;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise((_resolve, reject) => { fail = reject; })));
+    const { result } = renderHook(() => useDashboardWindow(history, { refreshOnMount: true, initialHasSnapshot: true }));
+    expect(result.current.data.totals.totalTokens).toBe(123); expect(result.current.isRefreshing).toBe(true);
+    expect(result.current.showingHistory).toBe(true);
+    await act(async () => { fail(new Error('offline')); });
+    expect(result.current.data.totals.totalTokens).toBe(123); expect(result.current.refreshError).toBe(true);
+  });
   it('resets the countdown after manual refresh and waits for an in-flight request to finish', async () => {
     let resolveRefresh!: (value: ReturnType<typeof response>) => void;
     const fetch = vi.fn().mockImplementationOnce(() => new Promise(resolve => { resolveRefresh = resolve; }))

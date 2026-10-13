@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TokenDashboardData, UsageRange } from '../../domain';
 import { dashboardEndpoints } from '../../endpoints';
+import { emptyDashboard } from '../../domain';
+import { clientSnapshot, rememberSnapshot } from './client-snapshots';
 
 export const DASHBOARD_REFRESH_INTERVAL = 60_000;
 
-export function useDashboardWindow(initialData: TokenDashboardData) {
-  const [data, setData] = useState(initialData);
+export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean } = {}) {
+  const [data, setData] = useState(() => {
+    const cached = clientSnapshot(initialData.range ?? '30d');
+    return cached && (Date.parse(cached.checkedAt ?? '') || 0) > (Date.parse(initialData.checkedAt ?? '') || 0) ? cached : initialData;
+  });
+  const [hasSnapshot, setHasSnapshot] = useState(options.initialHasSnapshot !== false || !!clientSnapshot(initialData.range ?? '30d'));
+  const [showingHistory, setShowingHistory] = useState(!!options.refreshOnMount && hasSnapshot);
   const [rangePreset, setRangePreset] = useState<UsageRange>(initialData.range ?? '30d');
   const [selectedTrendIndex, setSelectedTrendIndex] = useState(999);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -14,6 +21,8 @@ export function useDashboardWindow(initialData: TokenDashboardData) {
   const [isPollingPaused, setIsPollingPaused] = useState(false);
   const refreshRef = useRef<() => void>(() => {});
   const activeRange = useRef(rangePreset);
+  const refreshOnMount = useRef(!!options.refreshOnMount);
+  useEffect(() => { rememberSnapshot(initialData); }, [initialData]);
 
   useEffect(() => {
     let disposed = false;
@@ -53,6 +62,9 @@ export function useDashboardWindow(initialData: TokenDashboardData) {
         if (next.range !== rangePreset) throw new Error('Usage window mismatch');
         if (!disposed && !current.signal.aborted) {
           setData(next);
+          rememberSnapshot(next);
+          setHasSnapshot(true);
+          setShowingHistory(false);
           setRefreshError(false);
         }
       } catch {
@@ -69,6 +81,12 @@ export function useDashboardWindow(initialData: TokenDashboardData) {
     setIsRefreshing(false);
     if (activeRange.current !== rangePreset) {
       activeRange.current = rangePreset;
+      const previous = clientSnapshot(rangePreset);
+      if (previous) { setData(previous); setHasSnapshot(true); setShowingHistory(true); }
+      else { setData(emptyDashboard(rangePreset)); setHasSnapshot(false); setShowingHistory(false); }
+      void request();
+    } else if (refreshOnMount.current) {
+      refreshOnMount.current = false;
       void request();
     } else {
       scheduleNext();
@@ -90,7 +108,7 @@ export function useDashboardWindow(initialData: TokenDashboardData) {
 
   const refresh = useCallback(() => refreshRef.current(), []);
   return { data, rangePreset, setRangePreset, selectedTrendIndex, setSelectedTrendIndex,
-    filteredDaily: data.daily, isRefreshing, refreshError, refresh, refreshCycle, isPollingPaused };
+    filteredDaily: data.daily, hasSnapshot, showingHistory, isRefreshing, refreshError, refresh, refreshCycle, isPollingPaused };
 }
 
 export type DashboardWindow = ReturnType<typeof useDashboardWindow>;

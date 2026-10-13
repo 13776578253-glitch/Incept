@@ -1,5 +1,5 @@
 import 'server-only';
-import { loadTokenDashboardData } from '../adapters';
+import { refreshDashboardSnapshot } from '../adapters';
 import { usageRanges, type UsageRange } from '../domain';
 
 export async function dashboardUsageGet(request: Request): Promise<Response> {
@@ -9,7 +9,7 @@ export async function dashboardUsageGet(request: Request): Promise<Response> {
     return Response.json({ error: 'Invalid usage range.' }, { status: 400 });
   }
   try {
-    return Response.json(await loadTokenDashboardData({ range: range as UsageRange, force: query.get('refresh') === '1' }), {
+    return Response.json(await refreshDashboardSnapshot({ range: range as UsageRange, force: query.get('refresh') === '1' }), {
       headers: { 'Cache-Control': 'no-store' },
     });
   } catch {

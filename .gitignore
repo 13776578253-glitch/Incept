@@ -60,3 +60,4 @@ packages/dashboard/dashboard.local.json
 # Private cross-device usage snapshots and import storage.
 token-export-*.json
 dashboard-imports.db*
+dashboard-snapshots.json*

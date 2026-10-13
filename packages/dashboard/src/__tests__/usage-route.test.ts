@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ load: vi.fn() }));
-vi.mock('@incept/dashboard/adapters', () => ({ loadTokenDashboardData: mocks.load }));
+vi.mock('@incept/dashboard/adapters', () => ({ refreshDashboardSnapshot: mocks.load }));
 import { dashboardUsageGet } from '@incept/dashboard/next';
 
 beforeEach(() => { mocks.load.mockReset(); });

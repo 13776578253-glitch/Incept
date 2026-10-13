@@ -14,6 +14,9 @@
     "batchSummary": "{records} new records · {tokens} tokens · {duplicates} duplicates", "device": "Imported device: {name}", "batch": "Import batch:"
   },
   "page": {
+    "showingHistory": "Showing the last snapshot while updating",
+    "loadingFirst": "Loading usage data…",
+    "firstLoadFailed": "Unable to load usage data. Please retry.",
     "eyebrow": "DASHBOARD",
     "title": "Token Usage Dashboard",
     "description": "Local session token usage, sources, known costs and project attribution; every section uses the same calendar window.",

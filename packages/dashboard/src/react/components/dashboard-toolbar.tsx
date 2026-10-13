@@ -19,10 +19,12 @@ type DashboardToolbarProps = {
   refreshCycle: number;
   isPollingPaused: boolean;
   onOpenImport?: () => void;
+  hasSnapshot?: boolean;
+  showingHistory?: boolean;
 };
 
 export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrendIndex,
-  data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport }: DashboardToolbarProps) {
+  data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport, hasSnapshot = true, showingHistory = false }: DashboardToolbarProps) {
   const t = useTranslations('dashboard');
   const [activeSection, setActiveSection] = useState('#overview');
   useEffect(() => {
@@ -41,6 +43,9 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
         <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">{t('page.eyebrow')}</p>
         <h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[2.45rem] md:leading-[1.08]">{t('page.title')}</h1>
         <p className="text-[0.78rem] tabular-nums text-[var(--color-nav-muted)]">{t('page.updatedAt', { time: data.updatedAt ? formatDateTimeShort(data.updatedAt) : '—' })}</p>
+        <p role="status" aria-atomic="true" className="h-5 truncate text-[0.72rem] leading-5 text-[var(--color-nav-muted)]">
+          {!hasSnapshot || showingHistory ? t(hasSnapshot ? 'page.showingHistory' : 'page.loadingFirst') : ''}
+        </p>
       </div>
       <div className="space-y-2.5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -75,7 +80,7 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
             <span key={refreshCycle} />
           </div>
           <span role="status" className={refreshError ? 'dashboard-refresh-error' : 'sr-only'}>
-            {refreshError ? t('page.refreshFailed') : ''}
+            {refreshError ? t(hasSnapshot ? 'page.refreshFailed' : 'page.firstLoadFailed') : ''}
           </span>
         </div>
       </div>

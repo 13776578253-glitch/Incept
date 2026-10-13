@@ -3,6 +3,8 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
+    "predev": "pnpm --filter @incept/dashboard build:runtime",
+    "prebuild": "pnpm --filter @incept/dashboard build:runtime",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
