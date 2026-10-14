@@ -94,9 +94,17 @@ export async function ownerPostAction(request: Request, action: string) {
         ? json({ authenticated: true }) : json({ error: 'invalid_credentials' }, 401);
     }
     if (action === 'approval') return json(await issueLoginApproval(text(body, 'challengeId'), viewer.sessionId));
-    if (action === 'grant') return json(await createTemporaryProGrant(viewer.sessionId, {
-      kind: text(body, 'kind'), label: text(body, 'label'), deadline: Number(body.deadline), duration: Number(body.duration), limit: Number(body.limit),
-    }));
+    if (action === 'grant') {
+      const kind = text(body, 'kind'), label = text(body, 'label');
+      if (kind === 'single') return json(await createTemporaryProGrant(viewer.sessionId, {
+        kind, label, lifetimeDays: body.lifetimeDays === null ? null : typeof body.lifetimeDays === 'number' ? body.lifetimeDays : NaN,
+      }));
+      if (kind === 'shared') return json(await createTemporaryProGrant(viewer.sessionId, {
+        kind, label, lifetimeHours: typeof body.lifetimeHours === 'number' ? body.lifetimeHours : NaN,
+        limit: typeof body.limit === 'number' ? body.limit : NaN,
+      }));
+      return json({ error: 'invalid_request' }, 400);
+    }
     if (action === 'revoke-grant') {
       await revokeTemporaryProGrant(viewer.sessionId, text(body, 'grantId'));
       return json({ revoked: true });

@@ -5,7 +5,7 @@ import {
 } from '../../generated/client/index.js';
 import { prisma } from '../client';
 import { redeemTemporaryProGrant, writeSecurityAudit } from '../owner';
-import { OWNER_IDLE_MS, OWNER_TTL_MS } from '../owner/security';
+import { OWNER_TTL_MS } from '../owner/security';
 
 export const OWNER_SESSION_TTL_MS = OWNER_TTL_MS;
 
@@ -308,14 +308,9 @@ export async function findActiveAccessSessionByTokenHash(
 
   if (session.role === AccessSessionRole.owner) {
     if (session.grantId || session.principalId || !session.ownerAccount?.totpCiphertext
-      || session.credentialVersion !== session.ownerAccount.credentialVersion || !session.expiresAt
-      || now.getTime() >= session.createdAt.getTime() + OWNER_TTL_MS
-      || (session.lastUsedAt ?? session.createdAt).getTime() <= now.getTime() - OWNER_IDLE_MS) return null;
+      || session.credentialVersion !== session.ownerAccount.credentialVersion || !session.expiresAt) return null;
     const touched = await prisma.accessSession.updateMany({ where: { id: session.id, revokedAt: null,
-      credentialVersion: session.credentialVersion, expiresAt: { gt: now }, OR: [
-        { lastUsedAt: { gt: new Date(now.getTime() - OWNER_IDLE_MS) } },
-        { lastUsedAt: null, createdAt: { gt: new Date(now.getTime() - OWNER_IDLE_MS) } },
-      ] }, data: { lastUsedAt: now } });
+      credentialVersion: session.credentialVersion, expiresAt: { gt: now } }, data: { lastUsedAt: now } });
     return touched.count ? session : null;
   }
 

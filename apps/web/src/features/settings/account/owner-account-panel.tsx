@@ -54,8 +54,8 @@ export function OwnerAccountPanel({
   const [riskCode, setRiskCode] = useState('');
   const [kind, setKind] = useState<'single' | 'shared'>('single');
   const [label, setLabel] = useState('');
-  const [deadline, setDeadline] = useState('30');
-  const [duration, setDuration] = useState('24');
+  const [lifetimeDays, setLifetimeDays] = useState('7');
+  const [lifetimeHours, setLifetimeHours] = useState('6');
   const [limit, setLimit] = useState('10');
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
   const [issuedApproval, setIssuedApproval] = useState<string | null>(null);
@@ -69,13 +69,12 @@ export function OwnerAccountPanel({
   const steps = enrolling ? [t('账号密码', 'Credentials'), t('初始化授权', 'Setup approval'), t('绑定验证器', 'Enroll authenticator')] : [t('账号密码', 'Credentials'), 'TOTP', t('授权确认', 'Approval')];
   const summary =
     kind === 'single'
-      ? t(
-          `生成后 ${deadline} 分钟内可兑换一次；兑换成功后拥有 ${duration} 小时 Pro 阅读权限。`,
-          `Redeem once within ${deadline} minutes; Pro reading lasts ${duration} hours after redemption.`,
-        )
+      ? lifetimeDays === 'permanent'
+        ? t('点对点邀请，仅可兑换一次；邀请码与阅读权限永久有效，直到手动撤销', 'A point-to-point invitation, redeemable once; the invitation and reading access remain valid until manually revoked')
+        : t(`签发后 ${lifetimeDays} 天统一到期，仅可兑换一次；邀请码与已兑换阅读权限在同一时间结束`, `Expires ${lifetimeDays} days after issuance, redeemable once; the invitation and redeemed reading access share the same deadline`)
       : t(
-          `生成后 ${deadline} 天统一到期，最多 ${limit} 个浏览器凭据；所有已兑换权限也在同一时间结束。`,
-          `Expires ${deadline} days after creation, for up to ${limit} browser credentials; all redeemed access ends at that deadline.`,
+          `签发后 ${lifetimeHours} 小时统一到期，最多 ${limit} 个浏览器凭据；适合团队或公开分享，所有已兑换权限同时结束`,
+          `Expires ${lifetimeHours} hours after issuance, for up to ${limit} browser credentials; suited to team or public sharing, with all redeemed access ending together`,
         );
 
   useEffect(() => {
@@ -177,13 +176,14 @@ export function OwnerAccountPanel({
 
   function selectKind(next: 'single' | 'shared') {
     setKind(next);
-    setDeadline(next === 'single' ? '30' : '7');
     setIssuedCode(null);
   }
 
   async function generate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = await action('grant', { kind, label, deadline: Number(deadline), duration: Number(duration), limit: Number(limit) });
+    const result = await action('grant', kind === 'single'
+      ? { kind, label, lifetimeDays: lifetimeDays === 'permanent' ? null : Number(lifetimeDays) }
+      : { kind, label, lifetimeHours: Number(lifetimeHours), limit: Number(limit) });
     if (result?.code) { setIssuedCode(result.code as string); setLabel(''); }
   }
 
@@ -418,8 +418,8 @@ export function OwnerAccountPanel({
 
           <p className="text-xs leading-5 text-[var(--color-nav-muted)]">
             {t(
-              '会话最长12小时，空闲30分钟失效。',
-              'Sessions last up to 12 hours and expire after 30 minutes idle.',
+              '登录有效期7天，敏感操作需验证身份。',
+              'Sessions last 7 days; sensitive actions require identity verification.',
             )}
           </p>
         </form>
@@ -477,7 +477,7 @@ export function OwnerAccountPanel({
           {[
             [t('账户', 'Account'), state.management.username],
             [t('双重验证', 'Two-factor verification'), t('密码 + TOTP', 'Password + TOTP')],
-            [t('会话期限', 'Session lifetime'), t('12 小时 / 空闲 30 分钟', '12h / 30m idle')],
+            [t('会话期限', 'Session lifetime'), t('7 天 / 敏感操作再认证', '7 days / sensitive action step-up')],
           ].map(([name, value]) => (
             <div key={name} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-3">
               <dt className="text-[var(--color-nav-dropdown-description)]">{name}</dt>
@@ -542,7 +542,7 @@ export function OwnerAccountPanel({
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[0.8125rem] font-medium text-[var(--color-text)]">
-                      {mode === 'single' ? t('单次兑换', 'Single use') : t('限时共享', 'Timed sharing')}
+                      {mode === 'single' ? t('单次邀请', 'Single invitation') : t('范围分享', 'Group sharing')}
                     </span>
                     <span className="mt-0.5 block text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
                       {mode === 'single' ? t('一个浏览器', 'One browser') : t('多个浏览器，统一到期', 'Multiple browsers, one expiry')}
@@ -567,42 +567,19 @@ export function OwnerAccountPanel({
           </Field>
 
           <div className="space-y-4">
-            <Field
-              id={inputId('deadline')}
-              label={kind === 'single' ? t('可兑换窗口', 'Redemption window') : t('统一有效期', 'Shared lifetime')}
-            >
-              <select
-                id={inputId('deadline')}
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                className={fieldStyle}
-              >
-                {(kind === 'single' ? ['10', '30', '60'] : ['1', '3', '7']).map((value) => (
+            <Field id={inputId('lifetime')} label={t('有效时间', 'Lifetime')}>
+              <select id={inputId('lifetime')} value={kind === 'single' ? lifetimeDays : lifetimeHours}
+                onChange={e => kind === 'single' ? setLifetimeDays(e.target.value) : setLifetimeHours(e.target.value)} className={fieldStyle}>
+                {(kind === 'single' ? ['1', '7', '30', 'permanent'] : ['1', '6', '24']).map(value => (
                   <option key={value} value={value}>
-                    {value} {kind === 'single' ? t('分钟', 'minutes') : t('天', 'days')}
-                    {value === (kind === 'single' ? '30' : '7') ? t('（默认）', ' (default)') : ''}
+                    {value === 'permanent' ? t('永久（手动撤销）', 'Permanent (manual revocation)')
+                      : value + ' ' + (kind === 'single' ? t('天', 'days') : t('小时', 'hours'))}
+                    {value === (kind === 'single' ? '7' : '6') ? t('（默认）', ' (default)') : ''}
                   </option>
                 ))}
               </select>
             </Field>
-
-            {kind === 'single' ? (
-              <Field id={inputId('duration')} label={t('兑换后的阅读期限', 'Reading after redemption')}>
-                <select
-                  id={inputId('duration')}
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  className={fieldStyle}
-                >
-                  {['1', '24', '72'].map((value) => (
-                    <option key={value} value={value}>
-                      {value} {t('小时', 'hours')}
-                      {value === '24' ? t('（默认）', ' (default)') : ''}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            ) : (
+            {kind === 'shared' ? (
               <Field id={inputId('limit')} label={t('浏览器凭据上限', 'Browser credential limit')}>
                 <select
                   id={inputId('limit')}
@@ -618,7 +595,7 @@ export function OwnerAccountPanel({
                   ))}
                 </select>
               </Field>
-            )}
+            ) : null}
           </div>
 
           <div className="flex items-start gap-2.5 rounded-xl bg-[var(--color-bg)] p-3 text-xs leading-5 text-[var(--color-nav-dropdown-description)] shadow-[var(--shadow-card-sm)]">

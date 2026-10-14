@@ -8,6 +8,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh, replace }), use
 afterEach(() => { vi.restoreAllMocks(); refresh.mockClear(); replace.mockClear(); });
 const response = (body: unknown, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body }) as Response;
 const guest = { role: 'guest', configured: true, challenge: null };
+const ownerState = { ...guest, role: 'owner', management: { username: 'owner', sessionId: 'owner-session', recentUntil: new Date(Date.now() + 300000).toISOString(), sessions: [], devices: [], challenges: [], permits: [], grants: [], audits: [] } };
 
 it('submits credentials and advances only after the server establishes a TOTP challenge', async () => {
   const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response(guest)).mockResolvedValueOnce(response({ stage: 'totp', expiresAt: new Date(Date.now() + 300000).toISOString() }));
@@ -44,4 +45,31 @@ it('does not report logout success when the server rejects it', async () => {
   await user.click(screen.getByRole('button', { name: '退出登录' }));
   expect(await screen.findByText('退出未完成，请重试。')).toBeInTheDocument();
   expect(refresh).not.toHaveBeenCalled();
+});
+
+it('sends an explicit permanent invitation lifetime without a separate redemption window', async () => {
+  const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async url => response(url === '/api/auth/owner/grant' ? { code: 'PRO-test-invitation' } : ownerState));
+  const user = userEvent.setup();
+  render(<AccountSettingsPanel language="zh" viewerRole="owner" />);
+  const lifetime = await screen.findByLabelText('有效时间');
+  expect(lifetime).toHaveValue('7');
+  expect(screen.queryByLabelText('可兑换窗口')).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('兑换后的阅读期限')).not.toBeInTheDocument();
+  await user.selectOptions(lifetime, 'permanent');
+  await user.click(screen.getByRole('button', { name: '生成授权码' }));
+  expect(fetch).toHaveBeenCalledWith('/api/auth/owner/grant', expect.objectContaining({ body: JSON.stringify({ kind: 'single', label: '', lifetimeDays: null }) }));
+  expect(await screen.findByText('PRO-test-invitation')).toBeInTheDocument();
+});
+
+it('uses six-hour group sharing by default and sends explicit hours', async () => {
+  const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async url => response(url === '/api/auth/owner/grant' ? { code: 'PRO-test-sharing' } : ownerState));
+  const user = userEvent.setup();
+  render(<AccountSettingsPanel language="en" viewerRole="owner" />);
+  await screen.findByLabelText('Lifetime');
+  await user.click(screen.getByRole('button', { name: /Group sharing/ }));
+  expect(screen.getByLabelText('Lifetime')).toHaveValue('6');
+  expect(screen.getByRole('option', { name: '24 hours' })).toBeInTheDocument();
+  expect(screen.queryByRole('option', { name: /Permanent/ })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Generate access code' }));
+  expect(fetch).toHaveBeenCalledWith('/api/auth/owner/grant', expect.objectContaining({ body: JSON.stringify({ kind: 'shared', label: '', lifetimeHours: 6, limit: 10 }) }));
 });

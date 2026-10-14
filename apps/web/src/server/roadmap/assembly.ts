@@ -138,4 +138,4 @@ export const columnDelete = withSensitiveOwnerAction('roadmap.column.delete', co
 export const entryCreate = entriesRoute.POST;
 export const entryUpdate = entryItemRoute.PATCH;
 export const entryDelete = withSensitiveOwnerAction('roadmap.entry.delete', entryItemRoute.DELETE);
-export const roadmapImport = createRoadmapImportRoute(roadmapRouteDeps).POST;
+export const roadmapImport = withSensitiveOwnerAction('roadmap.import', createRoadmapImportRoute(roadmapRouteDeps).POST);

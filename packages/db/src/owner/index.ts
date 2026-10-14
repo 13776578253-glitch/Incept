@@ -1,7 +1,7 @@
 import { prisma } from '../client';
 import type { Prisma } from '../../generated/client/index.js';
 import {
-  APPROVAL_TTL_MS, CHALLENGE_TTL_MS, DEVICE_TTL_MS, OWNER_IDLE_MS, OWNER_TTL_MS, RECENT_AUTH_MS,
+  APPROVAL_TTL_MS, CHALLENGE_TTL_MS, DEVICE_TTL_MS, OWNER_TTL_MS, RECENT_AUTH_MS,
   authEncryptionKey, createTotpSecret, decryptTotp, encryptTotp, hashCredential, hashPassword,
   randomCredential, verifyPassword, verifyTotp,
 } from './security';
@@ -12,9 +12,8 @@ export class OwnerAuthError extends Error {
 }
 const future = (now: Date, ttl: number) => new Date(now.getTime() + ttl);
 const expired = (date: Date | null, now: Date) => !!date && date <= now;
-const activeSession = (s: { expiresAt: Date | null; revokedAt: Date | null; lastUsedAt: Date | null; createdAt: Date }, now: Date) =>
-  !s.revokedAt && !!s.expiresAt && !expired(s.expiresAt, now) && now.getTime() < s.createdAt.getTime() + OWNER_TTL_MS
-    && (s.lastUsedAt ?? s.createdAt).getTime() > now.getTime() - OWNER_IDLE_MS;
+const activeSession = (s: { expiresAt: Date | null; revokedAt: Date | null }, now: Date) =>
+  !s.revokedAt && !!s.expiresAt && !expired(s.expiresAt, now);
 
 async function lockAccount(tx: Tx) {
   await tx.$queryRaw`SELECT id FROM owner_accounts WHERE id = 'owner' FOR UPDATE`;
@@ -288,8 +287,7 @@ export async function manageOwner(sessionId: string, action: string, value: stri
 export async function getOwnerManagementState(sessionId: string, now = new Date()) {
   const session = await requireSession(prisma, sessionId, false, now);
   const [sessions, devices, challenges, permits, grants, audits] = await Promise.all([
-    prisma.accessSession.findMany({ where: { ownerAccountId: 'owner', revokedAt: null, expiresAt: { gt: now }, OR: [
-      { lastUsedAt: { gt: new Date(now.getTime() - OWNER_IDLE_MS) } }, { lastUsedAt: null, createdAt: { gt: new Date(now.getTime() - OWNER_IDLE_MS) } } ] },
+    prisma.accessSession.findMany({ where: { ownerAccountId: 'owner', revokedAt: null, expiresAt: { gt: now }, credentialVersion: session.credentialVersion },
       select: { id: true, deviceLabel: true, createdAt: true, lastUsedAt: true, expiresAt: true }, orderBy: { createdAt: 'desc' } }),
     prisma.ownerDevice.findMany({ where: { revokedAt: null, expiresAt: { gt: now } }, select: { id: true, label: true, expiresAt: true }, orderBy: { createdAt: 'desc' } }),
     prisma.ownerChallenge.findMany({ where: { stage: 'approval', consumedAt: null, expiresAt: { gt: now }, credentialVersion: session.credentialVersion ?? -1 },
@@ -298,25 +296,30 @@ export async function getOwnerManagementState(sessionId: string, now = new Date(
       select: { id: true, challengeId: true, codeHint: true, expiresAt: true } }),
     prisma.accessGrant.findMany({ where: { type: 'sharedCode' }, select: { id: true, label: true, mode: true, codeHint: true,
       redeemExpiresAt: true, expiresAt: true, entitlementSeconds: true, maxRedemptions: true, redeemedCount: true, revokedAt: true }, orderBy: { createdAt: 'desc' }, take: 100 }),
-    prisma.securityAudit.findMany({ orderBy: { createdAt: 'desc' }, take: 30, select: { id: true, action: true, result: true, targetId: true, createdAt: true } }),
+    prisma.securityAudit.findMany({ orderBy: { createdAt: 'desc' }, take: 50, select: { id: true, action: true, result: true, targetId: true, createdAt: true } }),
   ]);
   return { username: session.ownerAccount!.username, sessionId, recentAuthUntil: future(session.authenticatedAt ?? session.createdAt, RECENT_AUTH_MS),
     sessions, devices, challenges, permits, grants, audits };
 }
 
-export async function createTemporaryProGrant(sessionId: string, input: { kind: string; label: string; deadline: number; duration: number; limit: number }, now = new Date()) {
-  const { kind, label, deadline, duration, limit } = input;
-  if (!['single', 'shared'].includes(kind) || label.length > 60 || (kind === 'single'
-    ? ![10, 30, 60].includes(deadline) || ![1, 24, 72].includes(duration)
-    : ![1, 3, 7].includes(deadline) || ![2, 5, 10, 20].includes(limit))) throw new OwnerAuthError(400, 'invalid_request');
+export type ProGrantInput = { kind: 'single'; label: string; lifetimeDays: number | null }
+  | { kind: 'shared'; label: string; lifetimeHours: number; limit: number };
+
+export async function createTemporaryProGrant(sessionId: string, input: ProGrantInput, now = new Date()) {
+  const { kind, label } = input;
+  if (!['single', 'shared'].includes(kind) || label.length > 60 || (input.kind === 'single'
+    ? input.lifetimeDays !== null && ![1, 7, 30].includes(input.lifetimeDays)
+    : ![1, 6, 24].includes(input.lifetimeHours) || ![2, 5, 10, 20].includes(input.limit))) throw new OwnerAuthError(400, 'invalid_request');
   return prisma.$transaction(async tx => {
     await lockAccount(tx); await requireSession(tx, sessionId, true, now);
     const code = randomCredential('PRO-');
-    const redeemExpiresAt = future(now, deadline * (kind === 'single' ? 60000 : 86400000));
+    const redeemExpiresAt = input.kind === 'single'
+      ? input.lifetimeDays === null ? null : future(now, input.lifetimeDays * 86400000)
+      : future(now, input.lifetimeHours * 3600000);
     const grant = await tx.accessGrant.create({ data: { type: 'sharedCode', mode: kind, label: label.trim() || 'Temporary reading',
       credentialHash: hashCredential(code), codeHint: code.slice(-6), redeemExpiresAt,
-      expiresAt: kind === 'shared' ? redeemExpiresAt : null, entitlementSeconds: kind === 'single' ? duration * 3600 : null,
-      maxRedemptions: kind === 'single' ? 1 : limit } });
+      expiresAt: redeemExpiresAt, entitlementSeconds: null,
+      maxRedemptions: input.kind === 'single' ? 1 : input.limit } });
     await writeSecurityAudit('pro.grant.create', 'success', grant.id, sessionId, tx);
     return { code, grantId: grant.id };
   });
@@ -343,7 +346,8 @@ export async function redeemTemporaryProGrant(credentialHash: string, tokenHash:
     if (grant.mode === 'single' && grant.redeemedCount >= 1) return null;
     if (!previous && grant.maxRedemptions !== null && grant.redeemedCount >= grant.maxRedemptions) return null;
     if (previous?.principal.revokedAt || (previous && expired(previous.principal.expiresAt, now))) return null;
-    const expiresAt = grant.mode === 'single' ? future(now, (grant.entitlementSeconds ?? 86400) * 1000) : grant.expiresAt;
+    const expiresAt = grant.mode === 'single' && grant.entitlementSeconds !== null
+      ? future(now, grant.entitlementSeconds * 1000) : grant.expiresAt;
     const principal = previous?.principal ?? await tx.accessPrincipal.create({ data: { type: 'anonymous', label: grant.label, expiresAt } });
     if (!previous) {
       await tx.proRedemption.create({ data: { grantId: grant.id, deviceHash, principalId: principal.id } });

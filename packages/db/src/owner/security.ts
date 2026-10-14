@@ -1,7 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 
-export const OWNER_TTL_MS = 12 * 60 * 60 * 1000;
-export const OWNER_IDLE_MS = 30 * 60 * 1000;
+export const OWNER_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const RECENT_AUTH_MS = 5 * 60 * 1000;
 export const DEVICE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const CHALLENGE_TTL_MS = 5 * 60 * 1000;

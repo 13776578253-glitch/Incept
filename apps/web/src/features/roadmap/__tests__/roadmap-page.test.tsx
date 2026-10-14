@@ -128,12 +128,15 @@ describe('primary navigation baseline', () => {
     ) as string;
     const navigation = createSiteNavigation(locale, translate);
     expect(navigation.map(({ id, href, label }) => ({ id, href, label }))).toEqual(
-      ['docs', 'roadmap', 'dashboard'].map((id) => ({
+      ['docs', 'roadmap', 'dashboard', 'about'].map((id) => ({
         id,
         href: `/${locale}/${id}`,
         label: messages.primary[id as keyof typeof messages.primary],
       })),
     );
     expect(navigation.find((item) => item.id === 'roadmap')?.groups).toBeUndefined();
+    expect(navigation.find((item) => item.id === 'about')).toMatchObject({
+      href: `/${locale}/about`, matchPrefix: `/${locale}/about`, label: messages.primary.about,
+    });
   });
 });

@@ -86,7 +86,7 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
     const initial = await initialized();
     const login = await unknownLogin(initial.secret);
     expect(await prisma.accessSession.count({ where: { role: 'owner' } })).toBe(1);
-    const grant = await owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: 'Pro', deadline: 30, duration: 24, limit: 10 }, now);
+    const grant = await owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: 'Pro', lifetimeDays: 7 }, now);
     expect(await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: grant.code, now: login.time })).toHaveProperty('error');
     const permit = await owner.issueLoginApproval(login.challengeId, undefined, login.time);
     const other = await unknownLogin(initial.secret, later(62000));
@@ -108,18 +108,50 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
     expect(pending.stage).toBe('approval');
   });
 
-  it('enforces idle expiry, absolute expiry and refuses historical secret sessions', async () => {
+  it('keeps Owner signed in while idle, expires exactly at seven days and refuses historical secret sessions', async () => {
     const initial = await initialized();
-    expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(1800001) })).toBeNull();
-    await prisma.accessSession.update({ where: { id: initial.session.id }, data: { lastUsedAt: later(OWNER_TTL_MS - 100), expiresAt: later(OWNER_TTL_MS * 2) } });
-    expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(OWNER_TTL_MS + 1) })).toBeNull();
+    expect(OWNER_TTL_MS).toBe(7 * 86400000);
+    expect(initial.session.expiresAt!.getTime()).toBe(later(OWNER_TTL_MS).getTime());
+    expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(6 * 86400000) })).not.toBeNull();
+    const state = await owner.getOwnerManagementState(initial.session.id, later(6 * 86400000));
+    expect(state.sessions.map(session => session.id)).toContain(initial.session.id);
+    expect((await prisma.accessSession.findUniqueOrThrow({ where: { id: initial.session.id } })).expiresAt!.getTime()).toBe(later(OWNER_TTL_MS).getTime());
+    expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(OWNER_TTL_MS - 1) })).not.toBeNull();
+    expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(OWNER_TTL_MS) })).toBeNull();
+    await expect(owner.getOwnerManagementState(initial.session.id, later(OWNER_TTL_MS))).rejects.toMatchObject({ code: 'session_expired' });
     const legacy = await access.createOwnerAccessSession({ tokenHash: token('legacy'), now });
     expect(await access.findActiveAccessSessionByTokenHash(legacy.tokenHash, { now })).toBeNull();
   });
 
+  it('uses the issued expiry without a hidden creation or idle cutoff and respects shorter existing sessions', async () => {
+    const initial = await initialized();
+    await prisma.accessSession.update({ where: { id: initial.session.id }, data: { createdAt: later(-30 * 86400000), lastUsedAt: null, expiresAt: later(12 * 3600000) } });
+    expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(3600000) })).not.toBeNull();
+    expect(await owner.getOwnerManagementState(initial.session.id, later(3600000))).toHaveProperty('sessionId', initial.session.id);
+    expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(12 * 3600000) })).toBeNull();
+  });
+
+  it('requires step-up for every security action after inactivity without ending the seven-day session', async () => {
+    const initial = await initialized();
+    const time = later(2 * 86400000);
+    for (const action of ['password', 'recovery-codes', 'totp', 'sessions-all', 'session', 'device', 'permit']) {
+      await expect(owner.manageOwner(initial.session.id, action, action === 'password' ? 'another-owner-password-2026' : 'unused-id', time)).rejects.toMatchObject({ status: 428 });
+    }
+    await expect(owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: '', lifetimeDays: 7 }, time)).rejects.toMatchObject({ status: 428 });
+    await expect(owner.revokeTemporaryProGrant(initial.session.id, 'unused-id', time)).rejects.toMatchObject({ status: 428 });
+    await expect(owner.issueLoginApproval('unused-id', initial.session.id, time)).rejects.toMatchObject({ status: 428 });
+    expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: time })).not.toBeNull();
+    expect(await owner.reauthenticateOwner(initial.session.id, password, totpAt(initial.secret, Math.floor(time.getTime() / 30000)), time)).toBe(true);
+    await owner.requireRecentOwnerSession(initial.session.id, time);
+    expect(await owner.createTemporaryProGrant(initial.session.id, { kind: 'shared', label: 'after step-up', lifetimeHours: 6, limit: 2 }, time)).toHaveProperty('grantId');
+    expect((await prisma.accessSession.findUniqueOrThrow({ where: { id: initial.session.id } })).expiresAt!.getTime()).toBe(later(OWNER_TTL_MS).getTime());
+    await expect(owner.requireRecentOwnerSession(initial.session.id, new Date(time.getTime() + 300000))).rejects.toMatchObject({ status: 428 });
+    expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: new Date(time.getTime() + 300000) })).not.toBeNull();
+  });
+
   it('requires recent authentication and revokes sessions and trusted devices on password change', async () => {
     const initial = await initialized();
-    await expect(owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: '', deadline: 30, duration: 24, limit: 10 }, later(300001))).rejects.toMatchObject({ status: 428 });
+    await expect(owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: '', lifetimeDays: 7 }, later(300001))).rejects.toMatchObject({ status: 428 });
     expect(await owner.reauthenticateOwner(initial.session.id, password, totpAt(initial.secret, Math.floor(later(310000).getTime() / 30000)), later(310000))).toBe(true);
     await owner.manageOwner(initial.session.id, 'password', 'changed-owner-password-2026', later(311000));
     expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(312000) })).toBeNull();
@@ -153,23 +185,23 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
     expect(await prisma.ownerRecoveryCode.findUnique({ where: { codeHash: hashCredential(initial.recoveryCodes![0]) } })).toBeNull();
   });
 
-  it('permits exactly one concurrent single-use redemption and preserves its entitlement after the window closes', async () => {
+  it('permits exactly one concurrent invitation redemption and preserves its issuance deadline', async () => {
     const initial = await initialized();
-    const grant = await owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: 'single', deadline: 30, duration: 24, limit: 10 }, now);
+    const grant = await owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: 'single', lifetimeDays: 7 }, now);
     const results = await Promise.all(Array.from({ length: 6 }, (_, index) => owner.redeemTemporaryProGrant(hashCredential(grant.code), token(`pro-${index}`), token(`device-${index}`), now)));
     const successes = results.filter(result => result !== null);
     expect(successes).toHaveLength(1);
     expect((await prisma.accessGrant.findUniqueOrThrow({ where: { id: grant.grantId } })).redeemedCount).toBe(1);
     const session = successes[0]!.session;
     expect(await access.findActiveAccessSessionByTokenHash(session.tokenHash, { now: later(1800001) })).not.toBeNull();
-    expect(await access.findActiveAccessSessionByTokenHash(session.tokenHash, { now: later(86400001) })).toBeNull();
+    expect(await access.findActiveAccessSessionByTokenHash(session.tokenHash, { now: later(7 * 86400000) })).toBeNull();
     await owner.revokeTemporaryProGrant(initial.session.id, grant.grantId, later(1000));
     expect(await access.findActiveAccessSessionByTokenHash(session.tokenHash, { now: later(1001) })).toBeNull();
   });
 
   it('caps shared redemptions atomically, counts repeated browser credentials once and uses one absolute expiry', async () => {
     const initial = await initialized();
-    const grant = await owner.createTemporaryProGrant(initial.session.id, { kind: 'shared', label: 'shared', deadline: 1, duration: 24, limit: 2 }, now);
+    const grant = await owner.createTemporaryProGrant(initial.session.id, { kind: 'shared', label: 'shared', lifetimeHours: 24, limit: 2 }, now);
     const devices = Array.from({ length: 5 }, (_, index) => token(`browser-${index}`));
     const results = await Promise.all(devices.map((device, index) => owner.redeemTemporaryProGrant(hashCredential(grant.code), token(`shared-${index}`), device, now)));
     expect(results.filter(Boolean)).toHaveLength(2);
@@ -206,9 +238,60 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
 
   it('refuses legacy CLI rotation that would remove temporary Pro expiry and redemption caps', async () => {
     const initial = await initialized();
-    const grant = await owner.createTemporaryProGrant(initial.session.id, { kind: 'shared', label: 'bounded', deadline: 1, duration: 24, limit: 2 }, now);
+    const grant = await owner.createTemporaryProGrant(initial.session.id, { kind: 'shared', label: 'bounded', lifetimeHours: 24, limit: 2 }, now);
     await expect(access.rotateSharedAccessGrant({ grantId: grant.grantId, credentialHash: token('rotated'), now })).rejects.toThrow('Temporary Pro grants');
     expect((await prisma.accessGrant.findUniqueOrThrow({ where: { id: grant.grantId } })).revokedAt).toBeNull();
+  });
+
+  it('does not extend invitations or sharing when redeemed shortly before their issuance deadline', async () => {
+    const initial = await initialized();
+    for (const input of [{ kind: 'single' as const, label: 'late invitation', lifetimeDays: 7 }, { kind: 'shared' as const, label: 'late sharing', lifetimeHours: 6, limit: 2 }]) {
+      const grant = await owner.createTemporaryProGrant(initial.session.id, input, now);
+      const stored = await prisma.accessGrant.findUniqueOrThrow({ where: { id: grant.grantId } });
+      const cutoff = stored.expiresAt!;
+      const result = await owner.redeemTemporaryProGrant(hashCredential(grant.code), token('late'), token('late-browser'), new Date(cutoff.getTime() - 1000));
+      expect(result!.principal.expiresAt!.getTime()).toBe(cutoff.getTime());
+      expect(await access.findActiveAccessSessionByTokenHash(result!.session.tokenHash, { now: cutoff })).toBeNull();
+      expect(await owner.redeemTemporaryProGrant(hashCredential(grant.code), token('too-late'), token('other'), cutoff)).toBeNull();
+    }
+  });
+
+  it('keeps permanent invitations redeemable and readable until explicit revocation', async () => {
+    const initial = await initialized();
+    const grant = await owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: 'permanent', lifetimeDays: null }, now);
+    const stored = await prisma.accessGrant.findUniqueOrThrow({ where: { id: grant.grantId } });
+    expect(stored.expiresAt).toBeNull(); expect(stored.redeemExpiresAt).toBeNull(); expect(stored.entitlementSeconds).toBeNull();
+    const distant = later(3650 * 86400000);
+    const result = await owner.redeemTemporaryProGrant(hashCredential(grant.code), token('permanent'), token('permanent-browser'), distant);
+    expect(result!.principal.expiresAt).toBeNull();
+    expect(await access.findActiveAccessSessionByTokenHash(result!.session.tokenHash, { now: distant })).not.toBeNull();
+    expect(await owner.redeemTemporaryProGrant(hashCredential(grant.code), token('repeat'), token('other'), distant)).toBeNull();
+    await owner.revokeTemporaryProGrant(initial.session.id, grant.grantId, later(1000));
+    expect(await access.findActiveAccessSessionByTokenHash(result!.session.tokenHash, { now: distant })).toBeNull();
+  });
+
+  it('accepts explicit day/hour lifetimes and rejects implicit, mismatched or unbounded sharing', async () => {
+    const initial = await initialized();
+    for (const lifetimeDays of [1, 30]) {
+      const invitation = await owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: 'days', lifetimeDays }, now);
+      expect((await prisma.accessGrant.findUniqueOrThrow({ where: { id: invitation.grantId } })).expiresAt!.getTime()).toBe(now.getTime() + lifetimeDays * 86400000);
+    }
+    const shared = await owner.createTemporaryProGrant(initial.session.id, { kind: 'shared', label: 'hour', lifetimeHours: 1, limit: 10 }, now);
+    expect((await prisma.accessGrant.findUniqueOrThrow({ where: { id: shared.grantId } })).expiresAt!.getTime()).toBe(now.getTime() + 3600000);
+    for (const lifetimeDays of [0, 6, 24, NaN, undefined]) await expect(owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: '', lifetimeDays: lifetimeDays as number }, now)).rejects.toMatchObject({ code: 'invalid_request' });
+    for (const lifetimeHours of [0, 3, 7, 168, NaN, null]) await expect(owner.createTemporaryProGrant(initial.session.id, { kind: 'shared', label: '', lifetimeHours: lifetimeHours as number, limit: 10 }, now)).rejects.toMatchObject({ code: 'invalid_request' });
+    await expect(prisma.accessGrant.create({ data: { type: 'sharedCode', mode: 'single', label: 'invalid shape', credentialHash: token('invalid-shape'), maxRedemptions: 1, expiresAt: later(86400000) } })).rejects.toThrow();
+  });
+
+  it('preserves previously issued relative invitations without silently granting permanence', async () => {
+    await initialized();
+    const credentialHash = token('old-relative');
+    await prisma.accessGrant.create({ data: { type: 'sharedCode', mode: 'single', label: 'Previously issued', credentialHash,
+      redeemExpiresAt: later(1800000), entitlementSeconds: 86400, maxRedemptions: 1 } });
+    const result = await owner.redeemTemporaryProGrant(credentialHash, token('legacy-session'), token('legacy-browser'), now);
+    expect(result!.principal.expiresAt!.getTime()).toBe(now.getTime() + 86400000);
+    expect(await access.findActiveAccessSessionByTokenHash(result!.session.tokenHash, { now: later(1800001) })).not.toBeNull();
+    expect(await access.findActiveAccessSessionByTokenHash(result!.session.tokenHash, { now: later(86400001) })).toBeNull();
   });
 
   it('keeps rate counters in PostgreSQL, expires their window and records redacted audit outcomes', async () => {
