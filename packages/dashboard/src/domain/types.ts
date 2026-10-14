@@ -129,6 +129,7 @@ export type SessionUsageItem = TokenBreakdown & {
   deviceLabel?: string;
   importBatchId?: string;
   timestampPrecision?: 'event' | 'day';
+  historyIncomplete?: boolean;
   sessionKey?: string;
   sessionId: string;
   projectKey: string;

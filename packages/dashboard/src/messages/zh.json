@@ -269,6 +269,7 @@
         "coverageStatus": "计价覆盖状态",
         "coverageFull": "全部已知计价 (Measured & Priced)",
         "coveragePartial": "含未定价模型子集 (Partial Pricing)",
+        "incompleteHistory": "历史不完整，早期用量的日期归属不确定。",
         "tokenBreakdown": "会话 Token 构成明细",
         "modelBreakdown": "会话内模型调用拆解",
         "close": "收起详情"

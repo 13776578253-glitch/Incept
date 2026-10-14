@@ -21,15 +21,15 @@ export function collectAiusageAndRawAgentEvents(home: string, pricingMap: Map<st
   const codexFilenames = new Set([...codex.parsedFiles].map(file => normalizeFile(file).split('/').pop()));
   for (const result of native) for (const path of result.parsedFiles) parsedFiles.add(path);
   const fallbackEvents = indexed.events.filter(event => !coveredSessions.has(event.sourceId + ':' + event.sessionId)
-    && (!event.sourceFile || !parsedFiles.has(normalizeFile(event.sourceFile)))
-    && !(event.sourceId === 'codex' && event.sourceFile && codexFilenames.has(normalizeFile(event.sourceFile).split('/').pop())));
+    && !(event.sourceFiles ?? (event.sourceFile ? [event.sourceFile] : [])).some(file => parsedFiles.has(normalizeFile(file))
+      || event.sourceId === 'codex' && codexFilenames.has(normalizeFile(file).replace(/\.zst$/, '').split('/').pop())));
 
   return {
     events: [...fallbackEvents, ...codex.events, ...gemini.events, ...native.flatMap(result => result.events)],
     fallbackEvents,
     coveredSessions,
     parsedFiles,
-    errors: [...codex.errors, ...native.flatMap(result => result.errors)],
+    errors: [...indexed.errors, ...codex.errors, ...native.flatMap(result => result.errors)],
     fallbackSources: [...new Set([...fallbackEvents.map(event => event.sourceId),
       ...native.flatMap((result, index) => result.errors.length ? [(['antigravity', 'claudeCode', 'opencode', 'zcode'] as const)[index]] : [])])],
     fallbackDateHints: Object.fromEntries([...new Set(fallbackEvents.map(event => event.sourceId))].map(source => [source,

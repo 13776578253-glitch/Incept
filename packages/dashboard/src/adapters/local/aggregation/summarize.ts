@@ -165,6 +165,7 @@ export function summarizeUsageEvents(allEvents: RawUsageEvent[], home: string, p
       deviceLabel: s.deviceLabel,
       importBatchId: s.importBatchId,
       timestampPrecision: s.timestampPrecision,
+      historyIncomplete: s.historyIncomplete,
       sessionKey: (s.deviceId ?? 'local') + ':' + s.source + ':' + s.sessionId,
       projectKey: s.projectKey,
       projectName: s.projectName,

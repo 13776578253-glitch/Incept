@@ -20,6 +20,8 @@ export type RawUsageEvent = {
   sessionId: string;
   sessionTitle?: string;
   sourceFile?: string;
+  sourceFiles?: string[];
+  historyIncomplete?: boolean;
   projectKey: string;
   projectName: string;
   workspacePath?: string;

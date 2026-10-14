@@ -99,6 +99,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
       firstTs: number;
       lastTs: number;
       timestampPrecision?: 'event' | 'day';
+      historyIncomplete?: boolean;
       inputTokens: number;
       outputTokens: number;
       cacheCreationTokens: number;
@@ -327,6 +328,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     if(ev.timestampMs < sessEntry.firstTs) sessEntry.firstTs = ev.timestampMs;
     if(ev.timestampMs > sessEntry.lastTs) sessEntry.lastTs = ev.timestampMs;
     if (ev.timestampPrecision === 'day') sessEntry.timestampPrecision = 'day';
+    sessEntry.historyIncomplete ||= ev.historyIncomplete;
     if(!sessEntry.title && ev.sessionTitle) sessEntry.title = ev.sessionTitle;
     sessEntry.inputTokens += ev.inputTokens;
     sessEntry.outputTokens += ev.outputTokens;

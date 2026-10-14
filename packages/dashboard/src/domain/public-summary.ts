@@ -54,7 +54,7 @@ export function publicDashboardSummary(data: TokenDashboardData, canViewDetails 
       shareOfCost: project.shareOfCost, lastActivity: project.lastActivity, modelsUsed: [...project.modelsUsed] })) : [],
     sessions: canViewDetails ? data.sessions.map(session => ({ ...tokens(session), sessionKey: session.sessionKey,
       sessionId: session.sessionId, projectKey: session.projectKey, projectName: session.projectName, title: session.title,
-      source: session.source, timestampPrecision: session.timestampPrecision, firstActivity: session.firstActivity,
+      source: session.source, timestampPrecision: session.timestampPrecision, historyIncomplete: session.historyIncomplete, firstActivity: session.firstActivity,
       lastActivity: session.lastActivity, durationMinutes: session.durationMinutes, modelsUsed: [...session.modelsUsed],
       modelBreakdowns: modelBreakdowns(session.modelBreakdowns) })) : [],
   };

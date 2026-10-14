@@ -269,6 +269,7 @@
         "coverageStatus": "Pricing Coverage",
         "coverageFull": "Fully Priced (Measured & Priced)",
         "coveragePartial": "Contains Unpriced Model Subset",
+        "incompleteHistory": "History is incomplete; dates for earlier usage are uncertain.",
         "tokenBreakdown": "Session Token Split",
         "modelBreakdown": "Per-Model Breakdown in Session",
         "close": "Close Inspector"
