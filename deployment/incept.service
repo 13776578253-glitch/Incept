@@ -8,8 +8,8 @@ Wants=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/srv/incept/current
-ExecStart=/usr/bin/docker compose --project-name incept --env-file /srv/incept/.env.production -f deployment/compose.production.yml up -d --wait --wait-timeout 120
-ExecStop=/usr/bin/docker compose --project-name incept --env-file /srv/incept/.env.production -f deployment/compose.production.yml stop
+ExecStart=/bin/sh deployment/compose.sh up -d --wait --wait-timeout 120
+ExecStop=/bin/sh deployment/compose.sh stop
 TimeoutStartSec=180
 TimeoutStopSec=90
 

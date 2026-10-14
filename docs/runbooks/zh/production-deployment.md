@@ -146,3 +146,32 @@ SSH 使用 `deployment/ssh-hardening.sh` 的两步事务。先从独立终端以
 生效值应为 PasswordAuthentication=no、KbdInteractiveAuthentication=no、PermitRootLogin=prohibit-password（`sshd -T` 可能显示等价值 without-password）、PubkeyAuthentication=yes。以 `sshd -T -C ...` 和新连接为准；OpenSSH 优先采用先读到的值，不能只在配置末尾追加。现有 authorized_keys 已可登录时不重复写入。见 [OpenSSH 配置手册](https://man.openbsd.org/sshd_config)。
 
 这套 Compose 当前仍是已验收的 Nginx 路径。Caddy 自动 HTTPS 的配置、证书持久卷、运维脚本接入与真实 sslip.io 域名验证在部署阶段完成；不要同时运行两个占用 80/443 的代理或将 Next 3000、PG 5432 暴露公网。SSH/小内存实测结果见 [加固记录](../../current-task/2026-10-13-lighthouse-security-memory-hardening.md)。
+
+## 2026-10-14 最终 Caddy 交付（取代上文 Nginx 首发步骤）
+
+本轮完成Caddy适配。首发在 `.env.production` 设置 `INCEPT_PROXY=caddy`、`INCEPT_CADDY_STATE_DIR=/srv/incept/caddy`，使用统一入口 `sh deployment/compose.sh`；systemd和备份均选择同一覆盖文件。保留Nginx模板作历史兼容，生产只启动Caddy。代理固定官方2.11.7及digest，非root UID1000、只读根目录、仅NET_BIND_SERVICE能力，内存96MiB/无Swap，Go软目标64MiB/GOMAXPROCS=1。
+
+服务器只导入离线镜像包，不构建。交付目录含images-linux-amd64.tar、SHA256、运维包及manifest；manifest记录确切应用ID与Caddy/PG镜像。核验SHA256后docker image load，应用env使用完整image ID。部署脚本和镜像以交付manifest为准，不能使用历史8c84镜像或失败候选。
+
+```sh
+sudo install -d -m 0700 -o 1000 -g 1000 /srv/incept/shared /srv/incept/caddy/data /srv/incept/caddy/config
+cd /srv/incept/current
+sh deployment/compose.sh config --quiet
+sh deployment/compose.sh up -d --wait postgres
+sh deployment/compose.sh --profile ops run --rm migrate
+sh deployment/compose.sh up -d --wait --wait-timeout 120
+```
+
+以上启动仅在正式部署获准后运行。Caddy自动申请/续期，/data和/config持久化；不要执行旧Nginx/Certbot签证/复制hook步骤，避免两套证书管理占80端口。正式部署前检查原Certbot timer用途，确认无其他证书任务后停用。主机只监听80/443与受控SSH，3000/5432/2019不发布；确认云安全组，宿主INPUT ACCEPT及云厂商IP黑名单不等于端口白名单。
+
+普通响应Referrer-Policy=same-origin，邀请含无locale/大小写路径为no-referrer；访问和运行错误日志删原URI、请求/响应头，记录安全路径并隐藏查询。所有媒体走应用鉴权。认证4KiB、音频128MiB、Dashboard预览64MiB、其他请求1MiB；重音频/预览共用一个已认证上传槽，忙时429/Retry-After=5。Caddy不引入限流插件，认证/采集沿用应用限流，不能声称与旧Nginx所有连接限流完全等价。实际HTTPS修复了Dashboard导入Origin使用内部URL的问题，并保留跨域拒绝。
+
+备份入口会短暂停app和Caddy，以锁避免并发执行，生成database.dump、data.tar.gz和caddy.tar.gz及完整SHA256，然后自动恢复服务。shared归档包括SQLite/WAL/SHM、媒体、草稿和快照；外部导入CLI也须停写。备份/恢复工具发现Caddy仍运行会拒绝，恢复同时要求独立空PG、shared与Caddy目录。人工恢复使用统一入口起PG（不要先migrate），然后 `node scripts/production-backup.mjs --env-file <recovery-env> --project <new-project> --restore <backup> --confirm-empty-target`，核验后再起app/proxy。
+
+定时器每日03:00触发offsite，依赖一致备份，启用前先手工验收。Node备份/监测/离机old-space分别128/64/64MiB，Docker CLI/Restic Go软目标64/128MiB。Debian当前 `/usr/bin/restic` 0.18.0-1+b4的同哈希副本已验证本轮init/backup/check/forget/restore --verify；可使用系统版本，无需为版本号升级。Linux密码文件必须0600且独立托管；Windows共享目录的777权限在隔离Linux中被正确拒绝，测试改用容器私有文件，未绕过权限校验。
+
+真实离机目标仍需另一个故障域，SFTP固定known_hosts与专用账户/密钥，或配置可信TLS的S3兼容存储。不要把同机SFTP测试当作灾备已经落地；没有实际存储、告警接收与恢复验证时不启用名义上的生产timer或宣称GO。
+
+只读主机核查发现security来源待升级包含内核6.12.111；今晚未更新系统。明天先审阅/安装适用更新、必要重启后复验Docker/SSH/Swap，再确认云防火墙、公网ACME/续期及外网设备。详细事实/边界和最终镜像见 [最终交付记录](../../current-task/2026-10-14-final-caddy-release-readiness.md)。
+
+更新迁移必须在停app的维护窗口执行：新版本的挂载路径/PG配置可能触发数据库容器重建，旧应用连接会中断。备份完成后明确 `sh deployment/compose.sh stop app`，停止其他写入者，再切换部署目录/执行migrate，最后启动新app并等待ready、检查HTTPS和业务后恢复写入。隔离夹具已观察并恢复这一连接中断，不能拿迁移命令成功替代应用恢复验收。

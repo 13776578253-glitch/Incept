@@ -12,6 +12,7 @@
 **/.env
 **/.env.*
 output
+.scratch
 .playwright-cli
 .docs-import-drafts
 .docs-media

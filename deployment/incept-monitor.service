@@ -6,6 +6,7 @@ Type=oneshot
 User=incept
 WorkingDirectory=/srv/incept/current
 EnvironmentFile=/srv/incept/.env.monitor
+Environment="NODE_OPTIONS=--max-old-space-size=64 --max-semi-space-size=4"
 ExecStart=/usr/bin/node scripts/production-monitor.mjs
 StandardOutput=journal
 StandardError=journal

@@ -387,3 +387,14 @@ Task 02 按用户指定改为公开脱敏汇总、原始详情仅 Owner；匿名
 - [ ] 真实离机备份恢复、外网设备与正式发布门禁仍待验。
 
 详细边界及证据见 [加固记录](./2026-10-13-lighthouse-security-memory-hardening.md)。
+
+## 2026-10-14 最终 Caddy 制品（追加）
+
+- [x] 只读主机核查、GitHub/npm/GHCR公共镜像路径及SCP验证；已识别待安装安全更新，未升级。
+- [x] Caddy Compose、低内存/转发/请求体/邀请日志/媒体门禁及统一运维入口，真实Linux/HTTPS通过。
+- [x] PG/shared含SQLite已提交WAL/Caddy三份一致备份、空目标恢复、非空拒绝和隔离加密SFTP恢复。
+- [x] 最终Linux/amd64镜像、本地save/load校验、464tests及运行生产依赖audit0、浏览器SSR和128MiB真实TLS上传。
+- [ ] 系统安全更新/必要重启、云防火墙、真实公网ACME/续期与主机启动。
+- [ ] 用户确认暂无的真实另一故障域存储/告警、实际内容与外网设备验收。
+
+制品/边界详见 [最终交付记录](./2026-10-14-final-caddy-release-readiness.md)，今晚未上线。

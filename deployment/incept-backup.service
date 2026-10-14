@@ -6,6 +6,8 @@ After=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=/srv/incept/current
+Environment="NODE_OPTIONS=--max-old-space-size=128 --max-semi-space-size=8"
+Environment=GOMEMLIMIT=64MiB
 ExecStart=/bin/sh deployment/backup.sh
 TimeoutStartSec=30min
 StandardOutput=journal

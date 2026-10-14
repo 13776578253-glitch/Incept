@@ -111,7 +111,7 @@ services:
       - "${INCEPT_HTTP_BIND:-0.0.0.0}:443:443"
     volumes:
       - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
-      - ${INCEPT_CERT_DIR:?Configure certificate directory}:/etc/incept/tls:ro
+      - ${INCEPT_CERT_DIR:-/srv/incept/certificates}:/etc/incept/tls:ro
       - ${INCEPT_ACME_DIR:-/srv/incept/acme}:/var/www/acme:ro
     depends_on:
       app: { condition: service_healthy }

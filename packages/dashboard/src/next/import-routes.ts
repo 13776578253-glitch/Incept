@@ -19,8 +19,8 @@ async function readJson(request: Request) {
     catch { throw new ImportError('INVALID_JSON', 'Invalid JSON file'); }
   } finally { reader.releaseLock(); }
 }
-function checkOrigin(request: Request) {
-  if (request.headers.get('origin') !== new URL(request.url).origin) throw new ImportError('INVALID_ORIGIN', 'Same-origin request required', 403);
+function checkOrigin(request: Request, expectedOrigin = new URL(request.url).origin) {
+  if (request.headers.get('origin') !== expectedOrigin) throw new ImportError('INVALID_ORIGIN', 'Same-origin request required', 403);
 }
 function errorResponse(error: unknown) {
   return Response.json({ error: error instanceof ImportError ? error.message : 'Unable to access import storage',
@@ -29,9 +29,9 @@ function errorResponse(error: unknown) {
 export async function dashboardImportsGet() {
   try { return Response.json({ history: importHistory() }, { headers }); } catch (error) { return errorResponse(error); }
 }
-export async function dashboardImportPreviewPost(request: Request) {
+export async function dashboardImportPreviewPost(request: Request, expectedOrigin?: string) {
   try {
-    checkOrigin(request);
+    checkOrigin(request, expectedOrigin);
     const body = await readJson(request);
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new ImportError('INVALID_REQUEST', 'Expected import request');
     const mappings = body.mappings ?? {};
@@ -42,9 +42,9 @@ export async function dashboardImportPreviewPost(request: Request) {
     return Response.json(previewImport(body.bundle, mappings as ImportMappings), { headers });
   } catch (error) { return errorResponse(error); }
 }
-export async function dashboardImportCommitPost(request: Request) {
+export async function dashboardImportCommitPost(request: Request, expectedOrigin?: string) {
   try {
-    checkOrigin(request);
+    checkOrigin(request, expectedOrigin);
     const body = await readJson(request);
     if (typeof body?.previewId !== 'string' || body.previewId.length !== 36) throw new ImportError('INVALID_REQUEST', 'Invalid preview identifier');
     return Response.json(commitImport(body.previewId), { headers });

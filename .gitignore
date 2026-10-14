@@ -70,3 +70,6 @@ dashboard-snapshots.json*
 
 # Temporary browser acceptance evidence
 /.playwright-cli/
+
+# Temporary scratch space for local development and testing. This is a private
+/.scratch/

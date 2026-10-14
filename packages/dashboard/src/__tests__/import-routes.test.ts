@@ -7,6 +7,15 @@ const request = (body: unknown, origin = 'http://localhost:3000') => new Request
   method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 afterEach(() => vi.resetAllMocks());
 describe('import HTTP boundaries', () => {
+  it('uses only the host-supplied public origin behind a private reverse proxy', async () => {
+    service.previewImport.mockReturnValue({ previewId: 'preview' });
+    service.commitImport.mockReturnValue({ id: 'batch' });
+    const publicOrigin = 'https://site.example';
+    expect((await dashboardImportPreviewPost(request({ bundle: {} }, publicOrigin))).status).toBe(403);
+    expect((await dashboardImportPreviewPost(request({ bundle: {} }, publicOrigin), publicOrigin)).status).toBe(200);
+    expect((await dashboardImportCommitPost(request({ previewId: 'a'.repeat(36) }, publicOrigin), publicOrigin)).status).toBe(200);
+    expect((await dashboardImportPreviewPost(request({ bundle: {} }, 'https://evil.example'), publicOrigin)).status).toBe(403);
+  });
   it('rejects cross-origin writes before reading or importing the upload', async () => {
     const response = await dashboardImportPreviewPost(request({ bundle: {} }, 'https://untrusted.test'));
     expect(response.status).toBe(403); expect(service.previewImport).not.toHaveBeenCalled();

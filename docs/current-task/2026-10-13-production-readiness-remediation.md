@@ -157,3 +157,12 @@ deployment/validation 提供可复现systemd和代理/SSR回归、回环合成�
 服务器已具备，用户授权新的执行阶段。实际 root 公钥登录验证后关闭 password / keyboard-interactive，root保留公钥；配置校验、自动回滚定时器、reload、独立新连接确认完成。资源配置改为 app768MiB / PG384MiB / proxy96MiB / migrate320MiB，Node及Worker old-space256MiB、迁移128MiB；裁剪PG缓存/操作内存/连接和并行，保留持久性。
 
 新独立Linux容器夹具通过真实迁移/事务/角色、核心三身份HTTP、双语SSR、Owner Worker刷新、128MiB上传/Range、10并发读及HTTPS代理；cgroup峰值与OOM计数有实际证据。云主机还未部署应用，Caddy/sslip.io和真实公网门禁待下一阶段，历史隔离验收不被改写。详见 [加固与证据](./2026-10-13-lighthouse-security-memory-hardening.md)。
+
+## 2026-10-14 最终候选追加
+
+Caddy适配、共同重上传槽、公开HTTPS导入Origin修复、一致PG/shared/Caddy备份及已提交WAL/空目标/加密恢复完成。最终镜像ID=f35c6cd83e679cdd08fec14bc14f8d6f1d8da86e80fe3c28c6d54a66824dcd64，464tests、生产audit0、真实TLS128MiB上传与浏览器通过；旧8c84候选不作为本次交付。只读核查发现真实主机安全更新待安装，真实离机存储按用户确认暂无。详细证据、离线包和明天门禁见 [最终交付记录](./2026-10-14-final-caddy-release-readiness.md)。本轮未发布公网。
+
+
+## 2026-10-14 本地材料迁移说明
+
+原 output 下的审查/复现证据、普通日志、截图、测试夹具及备份已迁入私有 .scratch；最终发布包仍保留 output/final-caddy-readiness-2026-10-14/release。历史证据路径原文保留，当前定位与清理范围见 [本地材料规则](../runbooks/zh/local-artifacts.md) 及 [整理记录](2026-10-14-local-artifacts-and-final-commit.md)。被替代的中间构建记录不再作为最终验收依据。

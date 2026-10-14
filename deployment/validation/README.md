@@ -45,3 +45,7 @@ docker compose <fixture options> run --rm --no-deps -T --entrypoint node \
 ```
 
 Inspect PG settings, migration cgroup limits, memory.peak/events and restart counts separately. These scoped tests are not a long-duration leak test or a capacity guarantee for arbitrary imported histories and simultaneous uploads.
+
+For Caddy use production Compose plus compose.caddy.yml and a fixture-only internal CA configuration; never issue public certificates during this drill. caddy-check.mjs reads context.json with Project=incept-final-* or incept-caddy-recovery-*, Shared/CaddyState absolute paths and loopback TlsPort/HttpPort. It validates the CA, SSR, identities, invitation headers, media gates, forged forwarding headers, auth body limits, public import Origin and real cross-route upload admission. Run with INCEPT_TEST_DEPLOYMENT=1 and INCEPT_VALIDATION_ROOT.
+
+Stop app and Caddy before backup. Preserve a committed SQLite WAL-only sentinel with a terminated test child (use --init; PID1 does not handle the same signals), archive all three files, restore to empty independent targets and verify that sentinel plus Caddy certificate hashes. Check refusal of nonempty targets with successful SQL queries before/after. Retain diagnostic failures as history, use only the corrected final logs for acceptance. Restic must validate caddy.tar.gz whenever declared in the manifest. Test private password permissions on native Linux storage rather than bypassing the0777 shared-mount rejection.

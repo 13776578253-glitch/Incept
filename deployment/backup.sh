@@ -10,10 +10,12 @@ test "$deploy_root" != /
 cd "$deploy_root/current"
 exec 9>"$deploy_root/backup.lock"
 flock -n 9
-compose() { docker compose --project-name "$project" --env-file "$deploy_root/.env.production" -f deployment/compose.production.yml "$@"; }
+compose() { sh deployment/compose.sh --project "$project" --env-file "$deploy_root/.env.production" "$@"; }
 test -n "$(compose ps --status running --quiet app)"
-trap 'compose up -d --wait app' EXIT
+trap 'compose up -d --wait app proxy' EXIT
 compose stop app
+proxy=$(awk -F= '/^INCEPT_PROXY=/{sub(/\r$/, "", $2); print $2}' "$deploy_root/.env.production")
+if test "$proxy" = caddy; then compose stop proxy; fi
 node scripts/production-backup.mjs --env-file "$deploy_root/.env.production" --project "$project" --output "$deploy_root/backups"
 # Publish the newest completed manifest for the backup-age probe.
 find "$deploy_root/backups" -mindepth 2 -maxdepth 2 -name manifest.json -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2- > "$deploy_root/latest-backup-path"

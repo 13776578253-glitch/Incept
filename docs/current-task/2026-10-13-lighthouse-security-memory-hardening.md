@@ -55,3 +55,8 @@ Caddy + sslip.io 是下一步真实部署路径，当前 Nginx 的96MiB验证不
 遗留问题：上述生产门禁。Commit 建议：`fix: harden SSH and bound production memory for 2GB Lighthouse`。
 
 收尾：按 incept.audit 与 Compose project 双标签核对后，已停止本轮三个测试容器，保留数据库volume、shared与证据；现有 snowluma / incept-postgres 继续运行。最终差异及新文件空白检查通过。
+
+
+## 2026-10-14 本地材料迁移说明
+
+原 output 下的审查/复现证据、普通日志、截图、测试夹具及备份已迁入私有 .scratch；最终发布包仍保留 output/final-caddy-readiness-2026-10-14/release。历史证据路径原文保留，当前定位与清理范围见 [本地材料规则](../runbooks/zh/local-artifacts.md) 及 [整理记录](2026-10-14-local-artifacts-and-final-commit.md)。被替代的中间构建记录不再作为最终验收依据。

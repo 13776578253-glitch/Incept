@@ -6,6 +6,8 @@ After=incept-backup.service
 [Service]
 Type=oneshot
 WorkingDirectory=/srv/incept/current
+Environment="NODE_OPTIONS=--max-old-space-size=64 --max-semi-space-size=4"
+Environment=GOMEMLIMIT=128MiB
 ExecStart=/bin/sh deployment/offsite.sh
 TimeoutStartSec=2h
 StandardOutput=journal

@@ -1,0 +1,26 @@
+services:
+  proxy:
+    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    user: "1000:1000"
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    environment: !override
+      INCEPT_DOMAIN: ${INCEPT_DOMAIN:?Configure domain}
+      GOMEMLIMIT: 64MiB
+      GOMAXPROCS: "1"
+    volumes: !override
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${INCEPT_CADDY_STATE_DIR:?Configure Caddy persistent directory}/data:/data
+      - ${INCEPT_CADDY_STATE_DIR:?Configure Caddy persistent directory}/config:/config
+    tmpfs:
+      - /tmp:uid=1000,gid=1000,mode=1777,size=16m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:2019/config/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    mem_limit: 96m
+    memswap_limit: 96m
