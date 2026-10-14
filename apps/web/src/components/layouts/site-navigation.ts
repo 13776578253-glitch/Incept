@@ -62,6 +62,12 @@ export function createSiteNavigation(
       href: withLocale('/dashboard'),
       matchPrefix: withLocale('/dashboard'),
     },
+    {
+      id: 'about',
+      label: t('primary.about'),
+      href: withLocale('/about'),
+      matchPrefix: withLocale('/about'),
+    },
     // {
     //   id: 'resources',
     //   label: t('primary.resources'),
