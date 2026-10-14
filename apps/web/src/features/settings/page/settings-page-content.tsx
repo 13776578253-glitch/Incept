@@ -16,6 +16,7 @@ import { AccountSettingsPanel } from '../account/account-settings-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
 import { ProjectSurfacesPanel } from '../projects/project-surfaces-panel';
+import { LanguageSettingsPanel } from '../language/language-settings-panel';
 
 import type { SettingsSection } from '../shared/settings-types';
 
@@ -67,8 +68,10 @@ export function SettingsPageContent({
   viewerRole,
   settingsContributionData,
   projects,
+  documentLanguage,
 }: {
   viewerRole: 'guest' | 'pro' | 'owner';
+  documentLanguage: AppLocale;
   // 注册表贡献分区的 loader 数据：owner 门控，非 owner 为 null
   settingsContributionData: Record<string, unknown>;
   projects: Array<{ key: string; name: { en: string; zh: string }; roadmapEnabled: boolean; atlasEnabled: boolean }>;
@@ -142,6 +145,8 @@ export function SettingsPageContent({
       <div className="hidden lg:block">
         {selectedSection.id === 'projects' && viewerRole === 'owner' ? (
           <ProjectSurfacesPanel initialProjects={projects} language={language} />
+        ) : selectedSection.id === 'language' ? (
+          <LanguageSettingsPanel documentLanguage={documentLanguage} />
         ) : selectedSection.id === 'account' ? (
           <AccountSettingsPanel language={language} viewerRole={viewerRole} />
         ) : findSettingsSectionContribution(mountManifest, selectedSection.id) ? (
@@ -157,6 +162,8 @@ export function SettingsPageContent({
         {page.sections.map((section) => (
           section.id === 'projects' && viewerRole === 'owner' ? (
             <ProjectSurfacesPanel key={section.id} initialProjects={projects} language={language} />
+          ) : section.id === 'language' ? (
+            <LanguageSettingsPanel key={section.id} documentLanguage={documentLanguage} />
           ) : section.id === 'account' ? (
             <AccountSettingsPanel key={section.id} language={language} viewerRole={viewerRole} />
           ) : findSettingsSectionContribution(mountManifest, section.id) ? (

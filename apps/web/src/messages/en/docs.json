@@ -24,8 +24,9 @@
   },
   "reference": {
     "backToList": "Back to article list",
+    "outline": "On this page",
     "readingMeta": {
-      "zh": "全文 {characters} 字 · 预计 {minutes} 分钟阅读",
+      "zh": "{characters} characters · {minutes} min read",
       "en": "{words} words · {minutes} min read"
     },
     "lastEdited": "Last updated {date}"

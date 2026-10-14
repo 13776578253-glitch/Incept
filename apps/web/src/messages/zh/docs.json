@@ -24,9 +24,10 @@
   },
   "reference": {
     "backToList": "返回文章列表",
+    "outline": "本页目录",
     "readingMeta": {
       "zh": "全文 {characters} 字 · 预计 {minutes} 分钟阅读",
-      "en": "{words} words · {minutes} min read"
+      "en": "{words} 词 · 预计 {minutes} 分钟阅读"
     },
     "lastEdited": "最后更新于 {date}"
   },

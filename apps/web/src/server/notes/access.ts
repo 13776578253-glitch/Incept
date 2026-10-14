@@ -3,7 +3,6 @@ import {
   findPublishedNoteBySlug,
   listPublishedNotesHomeEntries,
 } from '@incept/db/docs';
-import type { DbDocsLocale } from '@incept/db/docs';
 import type {
   DocsAccessRole,
   DocsArticlePageModel,
@@ -14,6 +13,7 @@ import {
   mapDocsHomeEntriesToPageGroups,
 } from '@/server/docs/mappers';
 import { canAccessDocsArticle } from '@/server/docs/access';
+import { resolveArticleReadingRoute, preferredHomeEntries } from '@/server/docs/reading-language';
 
 const notesHomeIntro = {
   eyebrow: 'Notes',
@@ -29,9 +29,7 @@ export async function getNotesHomePage({
   locale: AppLocale;
   viewerRole: DocsAccessRole;
 }): Promise<DocsHomePageModel> {
-  const entries = await listPublishedNotesHomeEntries({
-    locale: locale as DbDocsLocale,
-  });
+  const entries = await preferredHomeEntries(locale, listPublishedNotesHomeEntries);
 
   return {
     intro: notesHomeIntro,
@@ -54,8 +52,7 @@ export async function getNotesArticlePage({
   viewerRole: DocsAccessRole;
 }): Promise<DocsArticlePageModel | null> {
   const record = await findPublishedNoteBySlug({
-    locale: locale as DbDocsLocale,
-    slug,
+    ...await resolveArticleReadingRoute(locale, slug, true),
   });
 
   if (!record) {

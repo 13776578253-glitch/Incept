@@ -33,7 +33,7 @@ export function DocsArticleFeature({
         aside={
           <DocsArticleRightRail
             items={page.outline}
-            label="On this page"
+            label={t('reference.outline')}
           />
         }
       >

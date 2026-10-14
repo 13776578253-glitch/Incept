@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { DocsArticlePageModel } from '@/features/docs/shared/types';
 import { DocsBlockRenderer } from '@/features/docs/shared/renderers';
 
@@ -18,6 +18,7 @@ export function DocsArticleBody({
 
   // 使用 next-intl 获取国际化翻译函数
   const t = useTranslations('docs');
+  const interfaceLocale = useLocale();
 
   // 根据文档的 locale 和阅读统计信息，生成阅读元信息字符串
   const readingMeta = page.locale === 'zh'
@@ -32,14 +33,14 @@ export function DocsArticleBody({
   
   // 如有最后编辑时间，则格式化为本地化日期字符串
   const lastEditedDate = page.lastEditedAt
-    ? new Intl.DateTimeFormat(page.locale === 'zh' ? 'zh-CN' : 'en-US', {
+    ? new Intl.DateTimeFormat(interfaceLocale === 'zh' ? 'zh-CN' : 'en-US', {
         dateStyle: 'long',
         timeZone: 'Asia/Shanghai',
       }).format(new Date(page.lastEditedAt))
     : null;
 
   return (
-    <article className="mx-auto w-full max-w-[var(--docs-prose-max-width)] min-w-0">
+    <article lang={page.locale} className="mx-auto w-full max-w-[var(--docs-prose-max-width)] min-w-0">
       <header className="pb-12 pt-2">
         {backToListHref && backToListLabel ? (
           <div className="mb-5 flex items-center justify-between gap-4">
