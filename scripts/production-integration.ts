@@ -9,10 +9,12 @@ import { emptyDashboard } from '../packages/dashboard/src/domain';
 import { saveDashboardSnapshot } from '../packages/dashboard/src/adapters/runtime/snapshot-store';
 import { DatabaseSync } from 'node:sqlite';
 import { ImportStore } from '../packages/dashboard/src/adapters/local/imports/store';
+import { initializeOwner, startOwnerLogin, completeOwnerChallenge, issueLoginApproval } from '../packages/db/src/owner';
+import { totpAt } from '../packages/db/src/owner/security';
 
 // This fixture runner must never target the developer's or production database.
 assert.equal(process.env.INCEPT_TEST_DEPLOYMENT, '1');
-assert.equal(new URL(process.env.DATABASE_URL!).pathname, '/incept_readiness');
+assert.ok(['/incept_readiness', '/incept_readiness_restored'].includes(new URL(process.env.DATABASE_URL!).pathname));
 const data = '/data';
 const mode = process.argv[2] ?? 'seed';
 const hash = (bytes: Buffer | string) => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -22,13 +24,20 @@ const source = (slug: string, role: 'guest' | 'pro' | 'private', url?: string): 
     accessRole: role, isListed: true, slug, title: slug, summary: 'Readiness fixture.', publishedAt: at },
   body: { sections: [{ id: 'main', title: 'Fixture', blocks: url ? [{ id: 'image', type: 'image', src: url, alt: 'Fixture image' }] : [] }] },
 });
-type Fixture = { owner: string; pro: string; principalId: string; media: Record<string, string> };
+type Fixture = { owner: string; ownerPassword: string; ownerTotp: string; pro: string; principalId: string; media: Record<string, string> };
 async function state() { return JSON.parse(await fs.readFile(path.join(data, 'fixture-state.json'), 'utf8')) as Fixture; }
 
 async function seed() {
   assert.equal(await prisma.docsDocument.count(), 0, 'Refuse to seed an existing dataset.');
-  const owner = crypto.randomBytes(32).toString('base64url'), pro = crypto.randomBytes(32).toString('base64url');
-  await prisma.accessSession.create({ data: { role: 'owner', tokenHash: hash(owner), expiresAt: new Date(Date.now() + 86_400_000) } });
+  const ownerPassword = crypto.randomBytes(32).toString('base64url'), pro = crypto.randomBytes(32).toString('base64url');
+  const initialized = await initializeOwner('owner', ownerPassword);
+  const started = await startOwnerLogin({ username: 'owner', password: ownerPassword, deviceLabel: 'Linux acceptance', networkHash: 'fixture' });
+  const enrollment = await completeOwnerChallenge({ challengeToken: started.challengeToken, code: initialized.setupCode });
+  if (!('secret' in enrollment) || !enrollment.secret) throw new Error('Owner enrollment failed');
+  const ownerTotp = enrollment.secret;
+  const completed = await completeOwnerChallenge({ challengeToken: started.challengeToken, code: totpAt(ownerTotp, Math.floor(Date.now() / 30000)) });
+  if (!('sessionToken' in completed) || !completed.sessionToken) throw new Error('Owner authentication failed');
+  const owner = completed.sessionToken;
   const principal = await prisma.accessPrincipal.create({ data: { type: 'anonymous', label: 'Readiness Pro' } });
   const grant = await prisma.accessGrant.create({ data: { type: 'sharedCode', label: 'Readiness grant', credentialHash: hash('test-shared-grant') } });
   await prisma.accessSession.create({ data: { role: 'pro', tokenHash: hash(pro), principalId: principal.id, grantId: grant.id } });
@@ -45,7 +54,7 @@ async function seed() {
   const project = await prisma.roadmapProject.create({ data: { key: 'readiness-project', nameEn: 'Readiness', nameZh: '上线验收', position: 0 } });
   await prisma.roadmap.create({ data: { key: 'readiness-board', nameEn: 'Release', nameZh: '发布', position: 0, projectId: project.id,
     columns: { create: { status: 'unstarted', labelEn: 'Not started', labelZh: '未开始', position: 0 } } } });
-  const record: Fixture = { owner, pro, principalId: principal.id, media };
+  const record: Fixture = { owner, ownerPassword, ownerTotp, pro, principalId: principal.id, media };
   await fs.writeFile(path.join(data, 'fixture-state.json'), JSON.stringify(record), { mode: 0o600 });
   for (const [name, token] of [['owner', owner], ['pro', pro]]) await fs.writeFile(path.join(data, `browser-${name}.json`), JSON.stringify({
     cookies: [{ name: 'incept-access-session', value: token, domain: 'localhost', path: '/', httpOnly: true, secure: true, sameSite: 'Lax', expires: Math.floor(Date.now() / 1000) + 86400 }], origins: [],
@@ -94,10 +103,16 @@ async function http() {
   const fixture = await state(), base = process.env.INCEPT_TEST_BASE_URL ?? 'http://app:3000';
   async function request(url: string, token?: string, init: RequestInit = {}) {
     const headers = new Headers(init.headers);
+    headers.set('x-forwarded-host', new URL(base).host);
+    headers.set('x-forwarded-proto', new URL(base).protocol.slice(0, -1));
     if (token) headers.set('cookie', `incept-access-session=${token}`);
     if (init.method && init.method !== 'GET') headers.set('origin', base);
     return fetch(base + url, { ...init, headers, redirect: 'manual', signal: AbortSignal.timeout(15_000) });
   }
+  const json = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const reauthenticated = await request('/api/auth/owner/reauthenticate', fixture.owner,
+    json({ password: fixture.ownerPassword, code: totpAt(fixture.ownerTotp, Math.floor(Date.now() / 30000)) }));
+  assert.equal(reauthenticated.status, 200, await reauthenticated.clone().text());
   assert.equal((await request('/api/health/ready')).status, 200);
   assert.equal((await request('/api/dashboard/usage?refresh=1')).status, 403);
   const publicData = await (await request('/api/dashboard/usage')).text();
@@ -107,9 +122,18 @@ async function http() {
   }
   assert.equal((await request(fixture.media.pro)).status, 404);
   assert.equal((await request(fixture.media.private, fixture.pro)).status, 404);
+  for (const [token, role] of [[undefined, 'guest'], [fixture.pro, 'pro'], [fixture.owner, 'owner']] as const) {
+    assert.equal((await request('/en/docs/fixture-guest', token)).status, 200);
+    assert.equal((await request('/en/docs/fixture-pro', token)).status, role === 'guest' ? 404 : 200);
+    assert.equal((await request('/en/docs/fixture-private', token)).status, role === 'owner' ? 200 : 404);
+    assert.equal((await request('/en/studio/roadmap', token)).status, role === 'owner' ? 200 : 404);
+    assert.equal((await request('/api/dashboard/imports', token)).status, role === 'owner' ? 200 : 404);
+    const management = await request('/api/auth/owner/state', token);
+    const publicState = await management.json() as { management?: unknown };
+    assert.equal(!!publicState.management, role === 'owner');
+  }
   assert.equal((await request('/api/internal/roadmap/roadmaps')).status, 404);
   assert.equal((await request('/api/internal/roadmap/roadmaps', fixture.owner)).status, 200);
-  const json = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const draftId = crypto.randomUUID(), draftSource = source(`http-published-${draftId}`, 'guest', fixture.media.guest);
   const previewBytes = Buffer.concat([await fs.readFile(path.join(process.env.INCEPT_DOCS_MEDIA_DIR!, path.basename(fixture.media.guest))), Buffer.from(draftId)]);
   const previewName = `${hash(previewBytes)}.png`, previewUrl = `/_docs-media/${previewName}`;
@@ -133,9 +157,20 @@ async function http() {
     status: 'unstarted', type: 'feature', priority: 'high', title: { en: 'Release check', zh: '发布检查' }, summary: { en: 'Check', zh: '检查' } }));
   assert.equal(created.status, 201, await created.text());
   assert.equal((await request('/api/internal/roadmap/roadmaps', fixture.owner)).status, 200);
-  const login = await request('/api/auth/owner/login', undefined, json({ secret: process.env.OWNER_ACCESS_SECRET }));
-  assert.equal(login.status, 204);
-  const cookie = login.headers.get('set-cookie') ?? '';
+  const login = await request('/api/auth/owner/login', undefined, json({ secret: 'retired-master-secret' }));
+  assert.equal(login.status, 401, 'Legacy master-secret login must stay disabled.');
+  const started = await request('/api/auth/owner/login', undefined, json({ username: 'owner', password: fixture.ownerPassword }));
+  assert.equal(started.status, 200);
+  const pendingCookie = (started.headers.get('set-cookie') ?? '').split(';')[0];
+  const verification = (body: unknown) => request('/api/auth/owner/verify', undefined, { ...json(body), headers: { 'Content-Type': 'application/json', cookie: pendingCookie } });
+  const otp = await verification({ code: totpAt(fixture.ownerTotp, Math.floor(Date.now() / 30000) + 1) });
+  assert.equal(otp.status, 200);
+  const challenge = await otp.json() as { stage: string; challengeId: string };
+  assert.equal(challenge.stage, 'approval');
+  const approval = await issueLoginApproval(challenge.challengeId);
+  const approved = await verification({ code: approval.code });
+  assert.equal(approved.status, 200);
+  const cookie = approved.headers.get('set-cookie') ?? '';
   assert.match(cookie, /HttpOnly/i); assert.match(cookie, /Secure/i); assert.match(cookie, /SameSite=Lax/i);
   const libraryResponse = await request('/api/internal/music/libraries', fixture.owner, json({ name: 'Readiness upload' }));
   assert.ok([200, 201].includes(libraryResponse.status));
@@ -163,6 +198,15 @@ async function http() {
 
 async function restoreCheck() {
   const fixture = await state();
+  const account = await prisma.ownerAccount.findUniqueOrThrow({ where: { id: 'owner' } });
+  const { decryptTotp, verifyPassword } = await import('../packages/db/src/owner/security');
+  assert.ok(await verifyPassword(fixture.ownerPassword, account.passwordHash));
+  assert.equal(decryptTotp(account.totpCiphertext!), fixture.ownerTotp);
+  assert.equal(await prisma.ownerRecoveryCode.count(), 8);
+  assert.ok(await prisma.securityAudit.count() > 0);
+  const ownerSession = await prisma.accessSession.findUniqueOrThrow({ where: { tokenHash: hash(fixture.owner) } });
+  assert.equal(ownerSession.ownerAccountId, account.id);
+  assert.equal(ownerSession.credentialVersion, account.credentialVersion);
   assert.equal(await prisma.docsDocument.count({ where: { documentKey: { in: ['fixture-guest', 'fixture-pro', 'fixture-private'] } } }), 3);
   assert.ok(await prisma.musicTrack.count() > 0);
   assert.ok(await prisma.docsImportConfirmation.count() > 0);

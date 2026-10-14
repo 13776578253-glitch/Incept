@@ -69,7 +69,13 @@ async function main() {
     const backup = path.resolve(option('--restore'));
     const manifest = JSON.parse(await fs.readFile(path.join(backup, 'manifest.json'), 'utf8'));
     if (manifest.version !== 1) throw new Error('Unsupported backup.');
+    if (manifest.sha256['auth-key.json']) names.push('auth-key.json');
     for (const name of names) if (await checksum(path.join(backup, name)) !== manifest.sha256[name]) throw new Error('Backup checksum mismatch.');
+    if (manifest.sha256['auth-key.json']) {
+      const secret = JSON.parse(await fs.readFile(path.join(backup, 'auth-key.json'), 'utf8'));
+      if (!/^[a-f\d]{64}$/i.test(secret.INCEPT_AUTH_ENCRYPTION_KEY ?? '')
+        || secret.INCEPT_AUTH_ENCRYPTION_KEY !== process.env.INCEPT_AUTH_ENCRYPTION_KEY) throw new Error('Restore the backed-up authentication key in the private environment before restoring data.');
+    }
     if ((await fs.readdir(data)).length) throw new Error('Restore data directory must be empty.');
     if (caddy && (await fs.readdir(caddy)).length) throw new Error('Restore Caddy directory must be empty.');
     const tables = await docker(['exec', '-T', 'postgres', 'psql', '-U', 'incept_migrator', '-d', database, '-Atc', "SELECT count(*) FROM information_schema.tables WHERE table_schema='public'"]);
@@ -109,6 +115,11 @@ async function main() {
   await docker(['exec', '-T', 'postgres', 'pg_dump', '-U', 'incept_migrator', '-d', database, '-Fc'], undefined, path.join(backup, 'database.dump'));
   await tar(['-czf', path.join(backup, 'data.tar.gz'), '-C', data, '.']);
   if (caddy) await tar(['-czf', path.join(backup, 'caddy.tar.gz'), '-C', caddy, '.']);
+  if (process.env.INCEPT_AUTH_ENCRYPTION_KEY) {
+    if (!/^[a-f\d]{64}$/i.test(process.env.INCEPT_AUTH_ENCRYPTION_KEY)) throw new Error('Invalid authentication key.');
+    names.push('auth-key.json');
+    await fs.writeFile(path.join(backup, 'auth-key.json'), JSON.stringify({ INCEPT_AUTH_ENCRYPTION_KEY: process.env.INCEPT_AUTH_ENCRYPTION_KEY }), { flag: 'wx', mode: 0o600 });
+  }
   const hashes = {};
   for (const name of names) hashes[name] = await checksum(path.join(backup, name));
   await fs.writeFile(path.join(backup, 'manifest.json'), JSON.stringify({ version: 1, createdAt: new Date().toISOString(), image: process.env.INCEPT_APP_IMAGE, sha256: hashes }, null, 2), { flag: 'wx', mode: 0o600 });

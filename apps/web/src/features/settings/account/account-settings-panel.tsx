@@ -2,10 +2,12 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { OwnerAccountPanel } from './owner-account-panel';
 
 // pro：显示临时访问并可退出。
 // owner：显示 Owner 状态并可退出。
 // Owner secret 仍没有放入设置页，仍只能调用原有 Owner API
+// 2026-10-14：普通 Owner 登录已迁移为密码 + TOTP + 风险授权，旧 secret 登录入口停用。
 
 type AccountViewerRole = 'guest' | 'pro' | 'owner';
 
@@ -63,12 +65,14 @@ function getCopy(language: 'zh' | 'en', viewerRole: AccountViewerRole) {
   };
 }
 
-export function AccountSettingsPanel({
+function LiveAccountSettingsPanel({
   language,
   viewerRole,
+  hideHeader = false,
 }: {
   language: 'zh' | 'en';
   viewerRole: AccountViewerRole;
+  hideHeader?: boolean;
 }) {
   const router = useRouter();
   const [code, setCode] = useState('');
@@ -105,10 +109,14 @@ export function AccountSettingsPanel({
 
   async function handleLogout() {
     setIsSubmitting(true);
+    setError(null);
 
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!response.ok) throw new Error('Logout failed');
       router.refresh();
+    } catch {
+      setError(language === 'zh' ? '退出未完成，请重试。' : 'Sign-out was not completed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -140,79 +148,127 @@ export function AccountSettingsPanel({
           };
 
   return (
-    <section id="account" className="space-y-3">
-      <header className="space-y-1.5">
-        <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
-          {language === 'zh' ? '账户' : 'Account'}
-        </h2>
-        <p className="max-w-3xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-          {language === 'zh' ? '身份与受控访问' : 'Identity and controlled access.'}
-        </p>
-      </header>
-
-      <div className="max-w-[760px] py-5">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-            {copy.title}
-          </h3>
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.06em]"
-            style={{
-              color: roleBadgeStyle.fg,
-              backgroundColor: roleBadgeStyle.bg,
-              borderColor: roleBadgeStyle.border,
-            }}
-          >
+    <section id="account" className="max-w-[760px] space-y-6">
+      {!hideHeader && (
+        <header className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
+              {language === 'zh' ? '账户' : 'Account'}
+            </h2>
             <span
-              aria-hidden="true"
-              className="size-1.5 rounded-full"
-              style={{ backgroundColor: roleBadgeStyle.dot }}
-            />
-            <span>{roleBadgeStyle.label}</span>
-          </span>
+              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.06em]"
+              style={{
+                color: roleBadgeStyle.fg,
+                backgroundColor: roleBadgeStyle.bg,
+                borderColor: roleBadgeStyle.border,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                className="size-1.5 rounded-full"
+                style={{ backgroundColor: roleBadgeStyle.dot }}
+              />
+              <span>{roleBadgeStyle.label}</span>
+            </span>
+          </div>
+          <p className="max-w-3xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
+            {language === 'zh' ? '身份与受控访问' : 'Identity and controlled access.'}
+          </p>
+        </header>
+      )}
+
+      <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-5 sm:p-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+                {copy.title}
+              </h3>
+              {hideHeader && (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.06em]"
+                  style={{
+                    color: roleBadgeStyle.fg,
+                    backgroundColor: roleBadgeStyle.bg,
+                    borderColor: roleBadgeStyle.border,
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="size-1.5 rounded-full"
+                    style={{ backgroundColor: roleBadgeStyle.dot }}
+                  />
+                  <span>{roleBadgeStyle.label}</span>
+                </span>
+              )}
+            </div>
+            <p className="max-w-2xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
+              {copy.description}
+            </p>
+          </div>
         </div>
-        <p className="mt-1.5 max-w-2xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-          {copy.description}
-        </p>
 
         {viewerRole === 'guest' ? (
-          <form onSubmit={handleSharedCodeSubmit} className="mt-4 flex w-full max-w-[460px] gap-3">
+          <form onSubmit={handleSharedCodeSubmit} className="flex flex-wrap items-center gap-2.5 pt-1 sm:flex-nowrap sm:max-w-[480px]">
             <input
               required
               value={code}
               onChange={(event) => setCode(event.target.value)}
               placeholder={copy.placeholder}
               disabled={isSubmitting}
-              className="min-h-10 min-w-0 flex-1 rounded-[12px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-nav-muted)] focus:border-[var(--color-nav-search-hover-border)]"
+              className="min-h-10 w-full min-w-0 flex-1 rounded-[12px] bg-[var(--color-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] outline-none shadow-[var(--shadow-card-sm)] transition-all placeholder:text-[var(--color-nav-muted)] focus:outline-none"
             />
             <button
               type="submit"
               disabled={isSubmitting || !code.trim()}
-              className="min-h-10 shrink-0 rounded-[12px] bg-[var(--color-pill-active-bg)] px-4 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-colors hover:bg-[color:var(--color-row-hover-bg)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] px-5 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {copy.action}
+              {isSubmitting ? (language === 'zh' ? '处理中…' : 'Processing…') : copy.action}
             </button>
           </form>
         ) : (
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={handleLogout}
-            className="mt-4 min-h-10 rounded-[12px] bg-[color:var(--color-row-bg)] px-4 text-[0.8125rem] font-medium text-[var(--color-text)] transition-colors hover:bg-[color:var(--color-row-hover-bg)] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {copy.action}
-          </button>
+          <div className="pt-1">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleLogout}
+              className="inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--color-bg)] px-5 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSubmitting ? (language === 'zh' ? '处理中…' : 'Processing…') : copy.action}
+            </button>
+          </div>
         )}
 
         {error ? (
-          <p
-            className="mt-3 text-[0.75rem] leading-5"
-            style={{ color: 'var(--badge-rose-fg)' }}
+          <div
+            role="status"
+            className="flex items-center gap-2 rounded-xl border border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] px-3.5 py-2.5 text-[0.8125rem] text-[var(--badge-rose-fg)]"
           >
-            {error}
-          </p>
+            <span
+              aria-hidden="true"
+              className="size-1.5 shrink-0 rounded-full bg-[var(--badge-rose-dot)]"
+            />
+            <span>{error}</span>
+          </div>
         ) : null}
       </div>
     </section>
+  );
+}
+
+export function AccountSettingsPanel({
+  language,
+  viewerRole,
+}: {
+  language: 'zh' | 'en';
+  viewerRole: AccountViewerRole;
+}) {
+  return (
+    <div className="max-w-[760px] space-y-6">
+      <OwnerAccountPanel language={language} viewerRole={viewerRole} />
+        <div className="pt-4">
+          <LiveAccountSettingsPanel language={language} viewerRole={viewerRole} hideHeader />
+        </div>
+    </div>
   );
 }

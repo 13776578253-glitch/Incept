@@ -76,6 +76,7 @@ model AccessPrincipal {
   revokedAt DateTime?
   grants    AccessGrant[]       @relation("AccessPrincipalGrants")
   sessions  AccessSession[]
+  redemptions ProRedemption[]
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
 
@@ -89,6 +90,13 @@ model AccessGrant {
   type           AccessGrantType
   label          String
   credentialHash String           @unique
+  mode           String?
+  codeHint       String?
+  redeemExpiresAt DateTime?
+  entitlementSeconds Int?
+  maxRedemptions Int?
+  redeemedCount  Int              @default(0)
+  redemptions    ProRedemption[]
   principalId    String?
   principal      AccessPrincipal? @relation("AccessPrincipalGrants", fields: [principalId], references: [id], onDelete: Restrict)
   expiresAt      DateTime?
@@ -114,12 +122,135 @@ model AccessSession {
   expiresAt   DateTime?
   revokedAt   DateTime?
   lastUsedAt  DateTime?
+  ownerAccountId String?
+  ownerAccount OwnerAccount? @relation(fields: [ownerAccountId], references: [id], onDelete: Restrict)
+  credentialVersion Int?
+  authenticatedAt DateTime?
+  deviceId String?
+  device OwnerDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  deviceLabel String?
   createdAt   DateTime          @default(now())
 
   @@index([role, expiresAt])
   @@index([principalId])
   @@index([grantId])
   @@map("access_sessions")
+}
+
+// Owner authentication is separate from content authors and cannot be publicly registered.
+model OwnerAccount {
+  id String @id @default("owner")
+  username String @unique
+  passwordHash String
+  totpCiphertext String?
+  totpLastStep Int @default(-1)
+  credentialVersion Int @default(1)
+  sessions AccessSession[]
+  devices OwnerDevice[]
+  challenges OwnerChallenge[]
+  permits OwnerPermit[]
+  recoveryCodes OwnerRecoveryCode[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("owner_accounts")
+}
+
+model OwnerChallenge {
+  id String @id @default(cuid())
+  tokenHash String @unique
+  ownerAccountId String
+  ownerAccount OwnerAccount @relation(fields: [ownerAccountId], references: [id], onDelete: Cascade)
+  credentialVersion Int
+  stage String
+  needsApproval Boolean
+  pendingTotpCiphertext String?
+  reauthSessionId String?
+  deviceId String?
+  deviceLabel String
+  networkHash String
+  failures Int @default(0)
+  expiresAt DateTime
+  consumedAt DateTime?
+  permits OwnerPermit[]
+  createdAt DateTime @default(now())
+  @@index([expiresAt])
+  @@map("owner_challenges")
+}
+
+model OwnerPermit {
+  id String @id @default(cuid())
+  ownerAccountId String
+  ownerAccount OwnerAccount @relation(fields: [ownerAccountId], references: [id], onDelete: Cascade)
+  credentialVersion Int
+  purpose String
+  codeHash String @unique
+  codeHint String
+  challengeId String?
+  challenge OwnerChallenge? @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  consumedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([purpose, expiresAt])
+  @@map("owner_permits")
+}
+
+model OwnerDevice {
+  id String @id @default(cuid())
+  ownerAccountId String
+  ownerAccount OwnerAccount @relation(fields: [ownerAccountId], references: [id], onDelete: Cascade)
+  credentialVersion Int
+  tokenHash String @unique
+  label String
+  networkHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  sessions AccessSession[]
+  createdAt DateTime @default(now())
+  @@map("owner_devices")
+}
+
+model OwnerRecoveryCode {
+  id String @id @default(cuid())
+  ownerAccountId String
+  ownerAccount OwnerAccount @relation(fields: [ownerAccountId], references: [id], onDelete: Cascade)
+  codeHash String @unique
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+  @@map("owner_recovery_codes")
+}
+
+model ProRedemption {
+  id String @id @default(cuid())
+  grantId String
+  grant AccessGrant @relation(fields: [grantId], references: [id], onDelete: Restrict)
+  deviceHash String
+  principalId String
+  principal AccessPrincipal @relation(fields: [principalId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+  @@unique([grantId, deviceHash])
+  @@map("pro_redemptions")
+}
+
+model AuthRateBucket {
+  key String @id
+  count Int @default(1)
+  expiresAt DateTime
+  @@index([expiresAt])
+  @@map("auth_rate_buckets")
+}
+
+// Audit payloads contain identifiers and outcomes, never credentials or cookie values.
+model SecurityAudit {
+  id String @id @default(cuid())
+  actorId String?
+  sessionId String?
+  action String
+  targetId String?
+  result String
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+  @@map("security_audits")
 }
 
 model DocsDocument {

@@ -1,10 +1,5 @@
 export { requireOwner } from './guards';
 
-export {
-  isOwnerAccessConfigured,
-  verifyOwnerAccessSecret,
-} from './owner-secret';
-
 export { hasSameOrigin, getRequestOrigin } from './request-origin';
 
 export {

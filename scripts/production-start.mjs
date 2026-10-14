@@ -7,8 +7,8 @@ function requireConfiguration() {
   const [major, minor] = process.versions.node.split('.').map(Number);
   if (major !== 24 || minor < 15) throw new Error('Node 24.15 or later on the 24 line is required.');
   if (process.env.NODE_ENV !== 'production') throw new Error('NODE_ENV must be production.');
-  const secret = process.env.OWNER_ACCESS_SECRET ?? '';
-  if (secret.length < 32 || /^(.)\1+$/.test(secret) || /change|example|placeholder/i.test(secret)) throw new Error('Configure a strong Owner secret.');
+  const key = process.env.INCEPT_AUTH_ENCRYPTION_KEY ?? '';
+  if (!/^[a-fA-F0-9]{64}$/.test(key) || /^(.)\1+$/.test(key)) throw new Error('Configure a random Owner encryption key.');
   const url = new URL(process.env.DATABASE_URL ?? '');
   if (!['postgres:', 'postgresql:'].includes(url.protocol) || url.username === 'postgres'
     || decodeURIComponent(url.password).length < 32) throw new Error('Configure a dedicated application database credential.');

@@ -305,4 +305,15 @@ Not touched: the `history:` notes the backlog's two tables above declare as inte
 
 2026-10-13 续执行：18/18代码与隔离验收完成，补齐真实本地ACME续期/回滚、systemd临时单元HTTPS告警、Restic/SFTP加密恢复与保留策略。正式主机/DNS/证书评级/开机重启、真实接收者和存储故障域、真实数据RTO/RPO、手机外网仍是剩余门禁，产品待办B-01/B-16保持原范围。
 
+### 2026-10-14 用户明确登记的上线后工作
+
+上线后的真实缺口、产品决策及逐项验收统一登记于 [上线后运营与后台待办](./current-task/2026-10-14-post-launch-operations-and-admin-todo.md)，使用AUTH/PUB/ACL/BAK/MON/ALT/REP/UI/OPS编号；这里保留入口，不重复维护状态或新增源码TODO标记。用户已选择单Owner账号＋密码、公开About及脱敏活动汇总；真实离机备份和外部告警仍待接入。现有B-01首页、B-09样式实验页等沿用既有范围，在界面盘点中关联，不能因“隐藏”自动删除。当前服务器已完成公网部署、真实内容恢复与重启验收，旧门禁记录的部署状态以 [2026-10-14部署记录](./current-task/2026-10-14-public-production-deployment.md) 为准。
+
 开发工具依赖安全后续：全量开发审计仍17 high/5 moderate（brace-expansion、js-yaml、nanoid、postcss、braces等，部分braces暂无修补版）。生产镜像已离线重装仅生产依赖，实际无Vitest/ESLint/jsdom/braces，生产审计0；不要把开发审计结果误记为已清零。升级这些开发工具时需验证ESLint/Vite/Vitest和各包构建兼容，未用跨主版本强制覆盖掩盖风险。
+
+
+2026-10-14 当前增量：AUTH-01/02/03、ACL-01/02/03的设计、2FA/异常登录、双模式临时Pro授权及完整验收/发布门禁见 [主控规划v0.1](./plans/2026-10-14-owner-auth-mfa-pro-incremental-plan.md)。仅启动本地基线和完成规划，未实现新账号/MFA、未执行生产迁移；邮件服务及界面策略待进一步讨论，不能据此将六项标记完成。
+
+2026-10-14 v0.2补充：用户要求风险追加验证先采用一次性Owner授权码，邮箱接入延后；以主控规划追加v0.2为当前策略。新增 [开发环境账户样式预览](./current-task/2026-10-14-owner-account-ui-preview.md)，展示密码/TOTP/授权码步骤及下方单次/共享Pro区域；不是实际认证或有效凭据。AUTH/ACL六项仍待实现与整轮验收，生产未更新。
+
+2026-10-14实施状态：AUTH/ACL真实认证授权与审计逻辑完成，本地内容库已备份迁移，代码与隔离验证详见 [实施记录](./current-task/2026-10-14-owner-auth-implementation.md)。账户预览/演示逻辑已移除。用户要求逻辑完成就停，前端仍待修改，不制作推送服务器的包；六项整体验收框等待前端人工认可及生产验收，不据隔离结果提前关闭，其他待办不扩展。

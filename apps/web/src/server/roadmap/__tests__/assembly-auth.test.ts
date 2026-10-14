@@ -11,6 +11,7 @@ vi.mock('@/server/auth', () => ({
 }));
 
 vi.mock('@incept/db', () => ({ prisma: {} }));
+vi.mock('@/server/auth/sensitive-action', () => ({ withSensitiveOwnerAction: (_action: string, handler: unknown) => handler }));
 
 import { authorizeOwner, isRoadmapOwner } from '../assembly';
 

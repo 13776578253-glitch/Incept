@@ -16,6 +16,14 @@
     "./access": {
       "types": "./src/access/index.ts",
       "default": "./src/access/index.ts"
+    },
+    "./owner": {
+      "types": "./src/owner/index.ts",
+      "default": "./src/owner/index.ts"
+    },
+    "./owner/security": {
+      "types": "./src/owner/security.ts",
+      "default": "./src/owner/security.ts"
     }
   },
   "scripts": {

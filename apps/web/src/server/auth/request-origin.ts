@@ -10,7 +10,16 @@ export function getRequestOrigin(request: Request) {
       return new URL(`${protocol}://${host}`).origin;
     }
   }
-  return new URL(request.url).origin;
+  const url = new URL(request.url);
+  // Next dev can normalize the internal URL to localhost even when the browser uses 127.0.0.1.
+  if (process.env.NODE_ENV === 'development' && ['localhost', '127.0.0.1', '0.0.0.0', '[::1]'].includes(url.hostname)) {
+    const host = request.headers.get('host');
+    if (host && !/[\s,/@\\?#]/.test(host)) {
+      const browserUrl = new URL(`${url.protocol}//${host}`);
+      if (['localhost', '127.0.0.1', '[::1]'].includes(browserUrl.hostname) && browserUrl.port === url.port) return browserUrl.origin;
+    }
+  }
+  return url.origin;
 }
 
 export function hasSameOrigin(request: Request) {

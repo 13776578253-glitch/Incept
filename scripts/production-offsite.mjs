@@ -40,7 +40,7 @@ async function main() {
   const backup = await fs.realpath(path.resolve(backupPath));
   const manifest = JSON.parse(await fs.readFile(path.join(backup, 'manifest.json'), 'utf8'));
   if (manifest.version !== 1 || !Number.isFinite(Date.parse(manifest.createdAt)) || Date.parse(manifest.createdAt) > Date.now()) throw new Error('Invalid completed backup manifest.');
-  for (const name of ['database.dump', 'data.tar.gz', ...(manifest.sha256['caddy.tar.gz'] ? ['caddy.tar.gz'] : [])]) {
+  for (const name of ['database.dump', 'data.tar.gz', ...(manifest.sha256['caddy.tar.gz'] ? ['caddy.tar.gz'] : []), ...(manifest.sha256['auth-key.json'] ? ['auth-key.json'] : [])]) {
     const file = path.join(backup, name);
     if ((await fs.lstat(file)).isSymbolicLink() || !/^[a-f0-9]{64}$/.test(manifest.sha256?.[name] ?? '') || await digest(file) !== manifest.sha256[name]) throw new Error('Backup validation failed.');
   }

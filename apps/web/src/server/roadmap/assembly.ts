@@ -25,6 +25,7 @@ import type {
 import type { RoadmapProject } from '@incept/roadmap/domain';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
+import { withSensitiveOwnerAction } from '@/server/auth/sensitive-action';
 
 // 宿主装配层：提供门禁、数据库连接与读写端口实现；业务包只依赖 ports 契约，解耦宿主会话模型。
 export function createRoadmapRepository(): RoadmapRepository {
@@ -128,13 +129,13 @@ export const roadmapsPost = roadmapsRoute.POST;
 export const projectsGet = projectsRoute.GET;
 export const projectsPost = projectsRoute.POST;
 export const projectUpdate = projectItemRoute.PATCH;
-export const projectDelete = projectItemRoute.DELETE;
+export const projectDelete = withSensitiveOwnerAction('roadmap.project.delete', projectItemRoute.DELETE);
 export const roadmapUpdate = roadmapItemRoute.PATCH;
-export const roadmapDelete = roadmapItemRoute.DELETE;
+export const roadmapDelete = withSensitiveOwnerAction('roadmap.delete', roadmapItemRoute.DELETE);
 export const columnUpsert = columnsRoute.POST;
 export const columnUpdate = columnItemRoute.PATCH;
-export const columnDelete = columnItemRoute.DELETE;
+export const columnDelete = withSensitiveOwnerAction('roadmap.column.delete', columnItemRoute.DELETE);
 export const entryCreate = entriesRoute.POST;
 export const entryUpdate = entryItemRoute.PATCH;
-export const entryDelete = entryItemRoute.DELETE;
+export const entryDelete = withSensitiveOwnerAction('roadmap.entry.delete', entryItemRoute.DELETE);
 export const roadmapImport = createRoadmapImportRoute(roadmapRouteDeps).POST;

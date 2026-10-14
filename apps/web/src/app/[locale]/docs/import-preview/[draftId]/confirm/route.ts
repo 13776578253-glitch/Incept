@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { confirmDocsImportDraft, findDocsImportConfirmation, importDocsArticleDraft, importDocsCollectionDirectory } from '@incept/db/docs';
 import { deleteDocsImportDraft, readDocsImportDraft } from '@/features/docs/importer/draft-store';
 import { getCurrentViewer, getRequestOrigin, hasSameOrigin } from '@/server/auth';
+import { OwnerAuthError, requireRecentOwnerSession, writeSecurityAudit } from '@incept/db/owner';
 
 // 处理导入预览的确认请求，将草稿文章正式导入文档数据库
 export async function POST(
@@ -27,6 +28,11 @@ export async function POST(
 
   const { draftId } = await context.params;
   if (!/^[a-f0-9-]{36}$/i.test(draftId)) return NextResponse.json({ error: 'Draft not found.' }, { status: 404 });
+  try { await requireRecentOwnerSession(viewer.sessionId); }
+  catch (error) {
+    if (error instanceof OwnerAuthError) return NextResponse.json({ error: error.code }, { status: error.status });
+    return NextResponse.json({ error: 'service_unavailable' }, { status: 503 });
+  }
   const previous = await findDocsImportConfirmation(draftId);
   if (previous) return NextResponse.redirect(new URL(previous.redirectPath, getRequestOrigin(_request)), {
     status: 303, headers: { 'x-docs-import-document-id': String(previous.documentId) },
@@ -67,6 +73,7 @@ export async function POST(
       ? await importDocsCollectionDirectory({ sources: draft.collectionSources ?? [draft.source],
           nodes: draft.collectionNodes ?? [], replace: draft.replace, db })
       : await importDocsArticleDraft({ source: draft.source, replace: draft.replace, db });
+    await writeSecurityAudit('docs.publish', 'success', draftId, viewer.sessionId, db);
     return { documentId: 'documentId' in result ? result.documentId : result.documentIds[0], redirectPath };
   });
   try { deleteDocsImportDraft(draftId); }
