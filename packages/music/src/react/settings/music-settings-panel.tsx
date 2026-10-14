@@ -20,7 +20,6 @@ export function getMusicSettingsSectionDescription(locale: MusicLocale): string 
 const SECTION_COPY: Record<
   MusicLocale,
   {
-    description: string;
     group: string;
     rateLock: { label: string; description: string; enabled: string; disabled: string };
     placement: { label: string; description: string; enabled: string; disabled: string };
@@ -32,7 +31,6 @@ const SECTION_COPY: Record<
   }
 > = {
   zh: {
-    description: '播放器偏好与曲库',
     group: '播放器',
     rateLock: {
       label: '倍速锁定',
@@ -59,7 +57,6 @@ const SECTION_COPY: Record<
     },
   },
   en: {
-    description: 'Player preferences and libraries.',
     group: 'Player',
     rateLock: {
       label: 'Speed lock',
@@ -106,7 +103,7 @@ function SettingsSegmentedControl({
   isInteractive?: boolean;
 }) {
   return (
-    <div className="inline-flex flex-wrap items-center gap-1 rounded-[12px] bg-[color:var(--color-row-bg)] p-1">
+    <div className="inline-flex flex-wrap items-center gap-1 rounded-full p-0.5">
       {options.map((option) => {
         const active = option.id === selected;
 
@@ -117,14 +114,12 @@ function SettingsSegmentedControl({
             disabled={!isInteractive}
             onClick={() => onSelect(option.id)}
             className={cx(
-              'rounded-[9px] px-3 py-1.5 text-[0.8125rem] transition-all duration-150',
+              'rounded-full px-3 py-1.5 text-[0.78rem] transition-all duration-150 outline-none focus:outline-none',
               active
-                ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                : 'text-[var(--color-nav-dropdown-description)]',
-              isInteractive &&
-                !active &&
-                'hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]',
-              !isInteractive && 'cursor-default opacity-80',
+                ? 'bg-[var(--color-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)]'
+                : 'text-[var(--color-nav-dropdown-description)] hover:text-[var(--color-text)]',
+              isInteractive && !active && 'hover:bg-[var(--color-bg)]/60',
+              !isInteractive && 'cursor-default opacity-50',
             )}
           >
             {option.label}
@@ -154,28 +149,18 @@ function SettingsBooleanToggle({
       disabled={!isInteractive}
       onClick={onToggle}
       className={cx(
-        'inline-flex rounded-[12px] bg-[color:var(--color-row-bg)] p-1 text-[0.8125rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]',
-        !enabled &&
-          'hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]',
-        !isInteractive && 'cursor-default opacity-80',
+        'inline-flex min-h-7.5 items-center justify-center gap-1.5 rounded-full bg-[var(--color-bg)] px-3.5 text-[0.75rem] font-medium shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] focus:outline-none disabled:cursor-default disabled:opacity-50',
+        enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-nav-dropdown-description)]',
       )}
     >
       <span
-        className={cx(
-          'inline-flex min-h-8 items-center justify-center gap-2 rounded-[9px] px-3 py-1 text-[var(--color-nav-dropdown-description)] transition-all duration-150',
-          enabled &&
-            'bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]',
-        )}
-      >
-        <span
-          aria-hidden="true"
-          className="size-1.5 rounded-full transition-colors"
-          style={{
-            backgroundColor: enabled ? 'var(--badge-emerald-dot)' : 'var(--color-nav-muted)',
-          }}
-        />
-        <span>{enabled ? labels.enabled : labels.disabled}</span>
-      </span>
+        aria-hidden="true"
+        className="size-1.5 rounded-full transition-colors"
+        style={{
+          backgroundColor: enabled ? 'var(--badge-emerald-dot)' : 'var(--color-nav-muted)',
+        }}
+      />
+      <span>{enabled ? labels.enabled : labels.disabled}</span>
     </button>
   );
 }
@@ -190,12 +175,12 @@ function PreferenceRow({
   control: React.ReactNode;
 }) {
   return (
-    <div className="grid gap-4 px-0 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-      <div className="space-y-1.5">
+    <div className="grid gap-3 py-3.5 sm:py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+      <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">{label}</h3>
+          <h3 className="text-[0.875rem] font-medium tracking-[-0.01em] text-[var(--color-text)]">{label}</h3>
         </div>
-        <p className="max-w-2xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
+        <p className="max-w-2xl text-[0.8125rem] leading-relaxed text-[var(--color-nav-dropdown-description)]">
           {description}
         </p>
       </div>
@@ -227,21 +212,26 @@ export function MusicSettingsPanel({
   } = useMusicPlayerPreferences();
 
   return (
-    <div className="space-y-8">
-      <section id="music" className="space-y-3">
+    <div className="max-w-[760px] space-y-8">
+      <section id="music" className="max-w-[760px] space-y-4">
         <header className="space-y-1.5">
           <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
             {getMusicSettingsSectionLabel(locale)}
           </h2>
-          <p className="max-w-3xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-            {copy.description}
-          </p>
         </header>
-        <div className="max-w-[760px]">
-          <h3 className="pb-3 text-[1.0625rem] font-semibold tracking-[-0.01em] text-[var(--color-text)]">
-            {copy.group}
-          </h3>
-          <div className="divide-y divide-[var(--color-nav-dropdown-border)]">
+        <div className="space-y-4 rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-violet-icon)] shadow-[var(--shadow-card-sm)]">
+              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2.5 4h11M2.5 8h11M2.5 12h11M5 2.5v3M11 6.5v3M7 10.5v3" />
+              </svg>
+            </span>
+            <h4 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+              {copy.group}
+            </h4>
+          </div>
+
+          <div className="divide-y divide-[var(--color-nav-dropdown-border)] pt-1">
             <PreferenceRow
               label={copy.rateLock.label}
               description={copy.rateLock.description}

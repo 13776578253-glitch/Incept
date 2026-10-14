@@ -19,7 +19,7 @@ export function getSettingsPageData(locale: AppLocale, includeProjects = false):
       ...(includeProjects ? [{
         id: 'projects',
         label: isZh ? '项目与功能' : 'Projects & surfaces',
-        description: isZh ? '管理项目名称，以及路线图和图谱的开放状态。' : 'Manage project names and whether Roadmap and Atlas are available.',
+        description: isZh ? '管理项目名称及开放状态' : 'Manage project names and availability.',
         visibility: 'admin' as const,
         rows: [],
       }] : []),

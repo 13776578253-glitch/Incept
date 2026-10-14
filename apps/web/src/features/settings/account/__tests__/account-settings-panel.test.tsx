@@ -17,14 +17,14 @@ afterEach(() => {
 
 it('renders live guest view with input and capsule submit button', () => {
   render(<AccountSettingsPanel language="zh" viewerRole="guest" />);
-  expect(screen.getByText('共享访问码')).toBeInTheDocument();
+  expect(screen.getByText('Pro 访问码')).toBeInTheDocument();
   expect(screen.getByPlaceholderText('输入共享访问码')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '启用访问' })).toBeInTheDocument();
 });
 
 it('renders live pro and owner views with logout capsule button', () => {
   const { rerender } = render(<AccountSettingsPanel language="zh" viewerRole="pro" />);
-  expect(screen.getByText('临时访问已启用')).toBeInTheDocument();
+  expect(screen.getByText('Pro 阅读权限已启用')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '退出访问' })).toBeInTheDocument();
 
   rerender(<AccountSettingsPanel language="zh" viewerRole="owner" />);

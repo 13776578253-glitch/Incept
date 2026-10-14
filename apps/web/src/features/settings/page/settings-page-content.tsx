@@ -123,9 +123,9 @@ export function SettingsPageContent({
       <button
         type="button"
         onClick={handleBack}
-        className="mb-5 inline-flex items-center gap-2 rounded-[8px] px-1.5 py-1 text-[0.8125rem] font-medium text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+        className="mb-6 inline-flex items-center gap-2 rounded-[8px] px-1.5 py-1 text-[0.8125rem] font-medium text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] active:bg-[var(--color-nav-item-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
       >
-        <span aria-hidden="true" className="text-[1.125rem] leading-none">
+        <span aria-hidden="true" className="text-[0.9375rem] leading-none">
           &larr;
         </span>
         {language === 'zh' ? '返回' : 'Back'}
@@ -148,7 +148,7 @@ export function SettingsPageContent({
           <ContributionSectionPanel section={selectedSection} data={settingsContributionData} />
         ) : (
           <div className="space-y-8">
-            <SettingsSectionPanel section={selectedSection} {...interactions} />
+            <SettingsSectionPanel section={selectedSection} showDescription={!['appearance', 'language'].includes(selectedSection.id)} {...interactions} />
           </div>
         )}
       </div>
@@ -163,7 +163,7 @@ export function SettingsPageContent({
             <ContributionSectionPanel key={section.id} section={section} data={settingsContributionData} />
           ) : (
             <div key={section.id} className="space-y-8">
-              <SettingsSectionPanel section={section} {...interactions} />
+              <SettingsSectionPanel section={section} showDescription={!['appearance', 'language'].includes(section.id)} {...interactions} />
             </div>
           )
         ))}

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 import { AccountSettingsPanel } from '../account-settings-panel';
@@ -43,7 +43,7 @@ it('does not report logout success when the server rejects it', async () => {
   render(<AccountSettingsPanel language="zh" viewerRole="owner" />);
   await waitFor(() => expect(screen.queryByText('正在读取账户状态…')).not.toBeInTheDocument());
   await user.click(screen.getByRole('button', { name: '退出登录' }));
-  expect(await screen.findByText('退出未完成，请重试。')).toBeInTheDocument();
+  expect(await screen.findByText('退出未完成，请重试')).toBeInTheDocument();
   expect(refresh).not.toHaveBeenCalled();
 });
 
@@ -72,4 +72,62 @@ it('uses six-hour group sharing by default and sends explicit hours', async () =
   expect(screen.queryByRole('option', { name: /Permanent/ })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Generate access code' }));
   expect(fetch).toHaveBeenCalledWith('/api/auth/owner/grant', expect.objectContaining({ body: JSON.stringify({ kind: 'shared', label: '', lifetimeHours: 6, limit: 10 }) }));
+});
+
+function mockModal() {
+  if (!HTMLDialogElement.prototype.showModal) {
+    HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute('open', ''); };
+  }
+  if (!HTMLDialogElement.prototype.close) {
+    HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute('open'); };
+  }
+  vi.spyOn(HTMLDialogElement.prototype, 'showModal').mockImplementation(function (this: HTMLDialogElement) { this.setAttribute('open', ''); });
+  vi.spyOn(HTMLDialogElement.prototype, 'close').mockImplementation(function (this: HTMLDialogElement) { this.removeAttribute('open'); });
+}
+
+it('opens identity verification as a modal and clears input on Escape while restoring focus', async () => {
+  mockModal();
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(response(ownerState));
+  const user = userEvent.setup();
+  render(<AccountSettingsPanel language="zh" viewerRole="owner" />);
+  const trigger = await screen.findByRole('button', { name: '验证身份' });
+  await user.click(trigger);
+  const dialog = screen.getByRole('dialog', { name: '确认敏感操作' });
+  expect(dialog).toHaveAttribute('aria-modal', 'true');
+  expect(within(dialog).getByLabelText('当前密码')).toHaveFocus();
+  await user.type(within(dialog).getByLabelText('当前密码'), 'unsent-password');
+  fireEvent(dialog, new Event('cancel', { cancelable: true }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+  await user.click(trigger);
+  expect(within(screen.getByRole('dialog')).getByLabelText('当前密码')).toHaveValue('');
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '取消' }));
+});
+
+it('keeps authentication errors inside the modal and resumes the original operation only after success', async () => {
+  mockModal();
+  let grantCalls = 0, verificationCalls = 0;
+  const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async url => {
+    if (url === '/api/auth/owner/grant') return ++grantCalls === 1 ? response({ error: 'reauthentication_required' }, 428) : response({ code: 'PRO-verified-grant' });
+    if (url === '/api/auth/owner/reauthenticate') return ++verificationCalls === 1 ? response({ error: 'invalid_credentials' }, 401) : response({ authenticated: true });
+    return response(ownerState);
+  });
+  const user = userEvent.setup();
+  render(<AccountSettingsPanel language="zh" viewerRole="owner" />);
+  await screen.findByLabelText('有效时间');
+  await user.click(screen.getByRole('button', { name: '生成授权码' }));
+  let dialog = screen.getByRole('dialog');
+  await user.type(within(dialog).getByLabelText('当前密码'), 'password-for-verification');
+  await user.type(within(dialog).getByLabelText('当前 TOTP'), '123456');
+  await user.click(within(dialog).getByRole('button', { name: '验证并继续' }));
+  expect(within(dialog).getByRole('alert')).toHaveTextContent('账号、密码或验证码不正确');
+  expect(grantCalls).toBe(1);
+  dialog = screen.getByRole('dialog');
+  await user.type(within(dialog).getByLabelText('当前密码'), 'password-for-verification');
+  await user.type(within(dialog).getByLabelText('当前 TOTP'), '654321');
+  await user.click(within(dialog).getByRole('button', { name: '验证并继续' }));
+  expect(await screen.findByText('PRO-verified-grant')).toBeInTheDocument();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(fetch).toHaveBeenCalledWith('/api/auth/owner/grant', expect.objectContaining({ body: JSON.stringify({ kind: 'single', label: '', lifetimeDays: 7 }) }));
+  expect(grantCalls).toBe(2);
 });

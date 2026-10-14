@@ -344,11 +344,6 @@ export function ProjectSurfacesPanel({
             {projects.length} {isZh ? '个项目' : projects.length === 1 ? 'project' : 'projects'}
           </span>
         </div>
-        <p className="max-w-2xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-          {isZh
-            ? '每个项目可分别启用路线图和规划图。两种入口始终显示；关闭的功能会以锁定状态呈现。'
-            : 'Enable Roadmap and Planning Board per project. Both entry points stay visible, with disabled surfaces shown as locked.'}
-        </p>
       </header>
 
       {message && (

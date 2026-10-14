@@ -3,14 +3,17 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { OwnerSecurityPanel } from './owner-security-panel';
+import { CustomSelect } from './custom-select';
 import type { OwnerAccountState, OwnerChallengeState } from './account-types';
 
 const fieldStyle =
-  'min-h-10 w-full min-w-0 rounded-[12px] bg-[var(--color-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] outline-none shadow-[var(--shadow-card-sm)] transition-all placeholder:text-[var(--color-nav-muted)] focus:outline-none';
+  'min-h-10 w-full min-w-0 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] outline-none shadow-[var(--shadow-card-sm)] transition-all placeholder:text-[var(--color-nav-muted)] focus:outline-none';
+const reauthFieldStyle =
+  'min-h-11 w-full min-w-0 rounded-[7px] border border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-lane-bg)]/45 px-3 text-[0.84rem] text-[var(--color-text)] outline-none transition-all placeholder:text-[var(--color-nav-muted)] focus:border-[#3b82f6] focus:bg-[var(--roadmap-card-bg,var(--color-bg))] focus:ring-2 focus:ring-[#3b82f6]/12';
 const buttonBase =
   'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full px-5 text-[0.8125rem] font-medium transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50';
-const primaryStyle = `${buttonBase} bg-[var(--color-text)] text-[var(--color-bg)] hover:opacity-90`;
-const secondaryStyle = `${buttonBase} bg-[var(--color-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)] hover:bg-[color:var(--color-row-hover-bg)]`;
+const primaryStyle = `${buttonBase} border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)] hover:bg-[color:var(--color-row-hover-bg)]`;
+const secondaryStyle = `${buttonBase} text-[var(--color-nav-dropdown-description)] hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]`;
 
 function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return (
@@ -27,9 +30,11 @@ function Field({ id, label, children }: { id: string; label: string; children: R
 export function OwnerAccountPanel({
   language,
   viewerRole,
+  hideHeader = false,
 }: {
   language: 'zh' | 'en';
   viewerRole: 'guest' | 'pro' | 'owner';
+  hideHeader?: boolean;
 }) {
   const prefix = useId();
   const router = useRouter();
@@ -39,12 +44,14 @@ export function OwnerAccountPanel({
   const [loading, setLoading] = useState(true);
   const [checkedAt, setCheckedAt] = useState(0);
   const reauthForm = useRef<HTMLFormElement>(null);
+  const reauthDialog = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [trustDevice, setTrustDevice] = useState(false);
   const [useRecovery, setUseRecovery] = useState(false);
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [pending, setPending] = useState<{ action: string; body: Record<string, unknown> } | null>(null);
+  const needsReauth = pending !== null;
   const [reauthPassword, setReauthPassword] = useState('');
   const [reauthCode, setReauthCode] = useState('');
   const [confirmGrant, setConfirmGrant] = useState<string | null>(null);
@@ -109,8 +116,19 @@ export function OwnerAccountPanel({
   }, []);
 
   useEffect(() => {
-    if (pending) { reauthForm.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' }); reauthForm.current?.querySelector('input')?.focus(); }
-  }, [pending]);
+    if (!needsReauth) return;
+    const dialog = reauthDialog.current!;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = 'hidden';
+    reauthForm.current?.querySelector('input')?.focus();
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true });
+    };
+  }, [needsReauth]);
 
   async function reloadState() {
     const response = await fetch('/api/auth/owner/state', { cache: 'no-store' });
@@ -174,6 +192,10 @@ export function OwnerAccountPanel({
     if (result && pending) { const next = pending; setPending(null); if (next.action) { const completed = await action(next.action, next.body); if (completed?.code) { if (next.action === 'approval') setIssuedApproval(completed.code as string); else setIssuedCode(completed.code as string); } } else await reloadState(); }
   }
 
+  function cancelReauthentication() {
+    setPending(null); setReauthPassword(''); setReauthCode(''); setError(null);
+  }
+
   function selectKind(next: 'single' | 'shared') {
     setKind(next);
     setIssuedCode(null);
@@ -188,12 +210,12 @@ export function OwnerAccountPanel({
   }
 
   const errorMessages: Record<string, [string, string]> = {
-    invalid_credentials: ['账号、密码或验证码不正确。', 'Incorrect credentials or verification code.'], invalid_code: ['验证码无效或已使用，请检查后重试。', 'The code is invalid or already used.'],
-    challenge_expired: ['本次验证已过期，请取消后重新登录。', 'Verification expired. Cancel and sign in again.'], rate_limited: ['尝试次数过多，请10分钟后再试。', 'Too many attempts. Try again in 10 minutes.'],
-    owner_not_initialized: ['Owner账户尚未初始化，请通过受控终端完成初始化。', 'Initialize the Owner account from the controlled terminal first.'],
-    reauthentication_required: ['请验证密码与当前TOTP，再执行此操作。', 'Verify your password and current TOTP before continuing.'], session_expired: ['登录已失效，请重新登录。', 'Your session expired. Sign in again.'],
-    forbidden: ['没有执行此操作的权限，请重新登录。', 'This action requires a valid Owner session.'], password_policy: ['新密码至少12个字符。', 'Use a password of at least 12 characters.'],
-    service_unavailable: ['操作未完成，服务暂时不可用，请重试。', 'The action was not completed. Please try again.'], invalid_request: ['请检查填写内容。', 'Check the submitted values.'],
+    invalid_credentials: ['账号、密码或验证码不正确', 'Incorrect credentials or verification code'], invalid_code: ['验证码无效或已使用，请检查后重试', 'The code is invalid or already used'],
+    challenge_expired: ['本次验证已过期，请取消后重新登录', 'Verification expired. Cancel and sign in again'], rate_limited: ['尝试次数过多，请10分钟后再试', 'Too many attempts. Try again in 10 minutes'],
+    owner_not_initialized: ['Owner账户尚未初始化，请通过受控终端完成初始化', 'Initialize the Owner account from the controlled terminal first'],
+    reauthentication_required: ['请验证密码与当前TOTP，再执行此操作', 'Verify your password and current TOTP before continuing'], session_expired: ['登录已失效，请重新登录', 'Your session expired. Sign in again'],
+    forbidden: ['没有执行此操作的权限，请重新登录', 'This action requires a valid Owner session'], password_policy: ['新密码至少12个字符', 'Use a password of at least 12 characters'],
+    service_unavailable: ['操作未完成，服务暂时不可用，请重试', 'The action was not completed. Please try again'], invalid_request: ['请检查填写内容', 'Check the submitted values'],
   };
 
   return (
@@ -201,506 +223,726 @@ export function OwnerAccountPanel({
       aria-label={t('账户与访问', 'Account and access')}
       className="space-y-6 text-[var(--color-text)]"
     >
-      <header className="space-y-1.5">
-        <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
-          {t('账户与访问', 'Account & access')}
-        </h2>
-        <p className="max-w-2xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-          {t('登录站点所有者账户，管理受控阅读权限。', 'Sign in as site owner and manage controlled reading access.')}
-        </p>
-      </header>
+      {!hideHeader && (
+        <header className="space-y-1.5">
+          <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
+            {t('账户与访问', 'Account & access')}
+          </h2>
+        </header>
+      )}
 
-      {loading && <p role="status" className="text-xs text-[var(--color-nav-muted)]">{t('正在读取账户状态…', 'Loading account status…')}</p>}
-      {error && <p role="alert" className="text-[0.8125rem] leading-6 text-[var(--badge-rose-fg)]">{t(...(errorMessages[error] ?? errorMessages.service_unavailable))}</p>}
-      {pending && <form ref={reauthForm} onSubmit={reauthenticate} className="max-w-[444px] space-y-4 rounded-2xl bg-[color:var(--color-row-bg)] p-5">
-        <h3 className="text-sm font-medium">{t('确认敏感操作', 'Confirm sensitive action')}</h3>
-        <Field id={inputId('reauth-password')} label={t('当前密码', 'Current password')}><input id={inputId('reauth-password')} type="password" autoComplete="current-password" required value={reauthPassword} onChange={e => setReauthPassword(e.target.value)} className={fieldStyle}/></Field>
-        <Field id={inputId('reauth-code')} label={t('当前 TOTP', 'Current TOTP')}><input id={inputId('reauth-code')} autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" required value={reauthCode} onChange={e => setReauthCode(e.target.value)} className={fieldStyle}/></Field>
-        <div className="flex gap-3"><button disabled={busy} className={primaryStyle}>{busy ? t('验证中…', 'Verifying…') : t('验证并继续', 'Verify and continue')}</button><button type="button" className={secondaryStyle} onClick={() => {setPending(null); setReauthPassword(''); setReauthCode(''); setError(null);}}>{t('取消', 'Cancel')}</button></div>
-      </form>}
-      {recoveryCodes.length > 0 && <div role="status" className="rounded-2xl bg-[color:var(--color-row-bg)] p-5 space-y-4">
-        <h3 className="text-sm font-medium">{t('保存恢复码', 'Save recovery codes')}</h3>
-        <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">{t('每个码只能使用一次，关闭后不能再次查看；更新整组会使旧码失效。', 'Each code can be used once. They cannot be viewed after dismissal; rotating the set invalidates old codes.')}</p>
-        <ul className="space-y-2 font-mono text-xs">{recoveryCodes.map(code => <li key={code} className="break-all">{code}</li>)}</ul>
-        <button className={secondaryStyle} onClick={() => {setRecoveryCodes([]); finishSignIn();}}>{t('已保存，继续', 'Saved, continue')}</button>
-      </div>}
-      {issuedApproval && role === 'owner' && <div role="status" className="rounded-2xl bg-[color:var(--color-row-bg)] p-5 space-y-3"><h3 className="text-sm font-medium">{t('本次登录的 Owner 授权码', 'Owner approval for this sign-in')}</h3><code className="block break-all select-all">{issuedApproval}</code><button className={secondaryStyle} onClick={() => setIssuedApproval(null)}>{t('关闭', 'Dismiss')}</button></div>}
-
-      {/* 1. 登录界面卡片 */}
-      {(role !== 'owner' || stage === 'enroll') && (
-      <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-5 sm:p-6 space-y-6">
-        <div className="space-y-1">
-          <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-            {t('Owner 登录', 'Owner sign in')}
-          </h3>
-          <p className="text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-            {t('密码与验证器共同验证，未知设备追加授权确认。', 'Password and authenticator verification, with additional approval for unknown devices.')}
-          </p>
+      {loading && (
+        <div role="status" className="flex items-center gap-2 rounded-xl bg-[color:var(--color-row-bg)] px-3.5 py-2.5 text-xs text-[var(--color-nav-muted)]">
+          <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[var(--badge-sky-dot)] animate-pulse" />
+          <span>{t('正在读取账户状态…', 'Loading account status…')}</span>
         </div>
+      )}
 
-        <ol className="flex max-w-[480px] flex-col" aria-label={t('登录步骤', 'Sign-in steps')}>
-          {steps.slice(0, step + 1).map((name, index) => (
-            <li
-              key={name}
-              aria-current={step === index ? 'step' : undefined}
-              className="relative flex items-center gap-3 pb-5 text-[0.8125rem]"
-            >
-              {index < step && (
-                <span
-                  aria-hidden="true"
-                  className="absolute left-[11px] top-6 h-5 w-px bg-[var(--color-nav-dropdown-border)]"
-                />
-              )}
-              <span
-                className={`relative flex size-6 shrink-0 items-center justify-center rounded-full text-xs transition-colors ${
-                  step === index
-                    ? 'bg-[var(--color-text)] font-medium text-[var(--color-bg)] shadow-[var(--shadow-card-sm)]'
-                    : index < step
-                      ? 'border border-[var(--badge-emerald-border)] bg-[var(--badge-emerald-bg)] font-medium text-[var(--badge-emerald-fg)]'
-                      : 'bg-[var(--color-bg)] text-[var(--color-nav-muted)] shadow-[var(--shadow-card-sm)]'
-                }`}
-              >
-                {index < step ? '✓' : index + 1}
-              </span>
-              <span
-                className={
-                  step === index
-                    ? 'font-medium text-[var(--color-text)]'
-                    : 'text-[var(--color-nav-dropdown-description)]'
-                }
-              >
-                {name}
-              </span>
-              {index < step && (
-                <span className="ml-auto text-xs text-[var(--color-nav-muted)]">
-                  {t('已验证', 'Verified')}
-                </span>
-              )}
-            </li>
-          ))}
-        </ol>
-
-        <form onSubmit={advance} className="max-w-[444px] space-y-4">
-          {stage === 'credentials' ? (
-            <>
-              <Field id={inputId('username')} label={t('用户名', 'Username')}>
-                <input
-                  id={inputId('username')}
-                  name="username"
-                  autoComplete="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder={t('输入 Owner 用户名', 'Owner username')}
-                  required
-                  className={fieldStyle}
-                />
-              </Field>
-              <Field id={inputId('password')} label={t('密码', 'Password')}>
-                <input
-                  id={inputId('password')}
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t('输入密码', 'Enter password')}
-                  required
-                  className={fieldStyle}
-                />
-              </Field>
-            </>
-          ) : stage === 'setup' ? (
-            <>
-              <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">{t('填写受控终端初始化时签发的一次性设置码，然后绑定验证器。', 'Enter the one-time setup code issued during terminal initialization, then enroll your authenticator.')}</p>
-              <Field id={inputId('setup')} label={t('一次性设置码', 'One-time setup code')}><input id={inputId('setup')} autoComplete="one-time-code" required value={riskCode} onChange={e => setRiskCode(e.target.value)} className={fieldStyle}/></Field>
-            </>
-          ) : stage === 'totp' || stage === 'enroll' ? (
-            <>
-              <div className="space-y-1">
-                <h4 className="text-[0.875rem] font-medium text-[var(--color-text)]">
-                  {t('验证器确认', 'Authenticator verification')}
-                </h4>
-                <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
-                  {t(
-                    '填写验证器中的 6 位动态码，验证请求5分钟内有效。',
-                    'Enter the 6-digit authenticator code within the 5-minute verification window.',
-                  )}
-                </p>
-              </div>
-              {stage === 'enroll' && challenge?.secret && <div className="space-y-2 rounded-xl bg-[var(--color-bg)] p-3 text-xs">
-                <p>{t('在验证器中添加账户，选择基于时间的6位动态码。', 'Add a time-based, six-digit account in your authenticator.')}</p>
-                <p>{t('账户', 'Account')}: Incept / {challenge.username}</p>
-                <code className="block break-all text-sm select-all">{challenge.secret}</code>
-              </div>}
-              {stage === 'enroll' && <label className="flex items-start gap-2.5 text-xs leading-5 text-[var(--color-nav-dropdown-description)]"><input type="checkbox" checked={trustDevice} onChange={e => setTrustDevice(e.target.checked)} disabled={busy}/>{t('信任此浏览器30天；每次登录仍需密码与TOTP。', 'Trust this browser for 30 days; password and TOTP remain required.')}</label>}
-              <Field id={inputId('otp')} label={useRecovery && stage === 'totp' ? t('恢复码', 'Recovery code') : t('TOTP 动态码', 'TOTP code')}>
-                <input
-                  id={inputId('otp')}
-                  name="totp"
-                  inputMode={useRecovery ? 'text' : 'numeric'}
-                  autoComplete="one-time-code"
-                  pattern={useRecovery ? undefined : '[0-9]{6}'}
-                  maxLength={useRecovery ? 256 : 6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder={useRecovery ? 'REC-…' : '000000'}
-                  required
-                  className={`${fieldStyle} tracking-[0.3em] font-mono`}
-                />
-              </Field>
-              {stage === 'totp' && <button
-                type="button"
-                onClick={() => {setUseRecovery(!useRecovery); setOtp('');}}
-                disabled={busy}
-                className="text-xs text-[var(--color-nav-muted)] underline underline-offset-4"
-              >
-                {useRecovery ? t('使用验证器', 'Use authenticator') : t('使用恢复码', 'Use recovery code')}
-              </button>}
-            </>
-          ) : (
-            <>
-              <div className="space-y-1">
-                <h4 className="text-[0.875rem] font-medium text-[var(--color-text)]">
-                  {t('首次 / 未知设备授权', 'First / unknown device approval')}
-                </h4>
-                <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
-                  {t(
-                    '在已登录设备或受控 SSH 中签发一次性授权码，绑定本次登录，10 分钟有效、仅可用一次。邮箱验证后续接入。',
-                    'Issue a login-bound approval code from a signed-in device or controlled SSH. Valid for 10 minutes, once only. Email verification is planned later.',
-                  )}
-                </p>
-              </div>
-              {challenge?.challengeId && <p className="text-xs break-all text-[var(--color-nav-dropdown-description)]">{t('登录请求编号', 'Sign-in request ID')}: <code className="select-all">{challenge.challengeId}</code></p>}
-              <Field id={inputId('risk')} label={t('Owner 一次性授权码', 'One-time Owner approval code')}>
-                <input
-                  id={inputId('risk')}
-                  name="approval"
-                  autoComplete="one-time-code"
-                  value={riskCode}
-                  onChange={(e) => setRiskCode(e.target.value)}
-                  placeholder={t('粘贴本次登录授权码', 'Paste this login approval code')}
-                  required
-                  className={fieldStyle}
-                />
-              </Field>
-              <label className="flex items-start gap-2.5 text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
-                <input
-                  type="checkbox"
-                  checked={trustDevice}
-                  onChange={e => setTrustDevice(e.target.checked)}
-                  className="mt-0.5 size-4 rounded accent-[var(--color-text)] shrink-0"
-                />
-                <span>
-                  {t(
-                    '信任此设备 30 天。仍需密码与 TOTP；公共设备请勿勾选。',
-                    'Trust this device for 30 days. Password and TOTP are still required; avoid on public devices.',
-                  )}
-                </span>
-              </label>
-            </>
-          )}
-
-          <div className="flex flex-wrap gap-3 pt-2">
-            <button type="submit" disabled={busy || loading} className={primaryStyle}>
-              {busy ? t('验证中…', 'Verifying…') : step === 2 ? t('完成登录', 'Complete sign-in') : t('下一步', 'Continue')}
-            </button>
-            {step > 0 && (
-              <button
-                type="button"
-                className={secondaryStyle}
-                disabled={busy}
-                onClick={cancelChallenge}
-              >
-                {t('取消', 'Cancel')}
-              </button>
-            )}
+      {error && !pending && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-xl border border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] px-3.5 py-2.5 text-[0.8125rem] text-[var(--badge-rose-fg)]"
+        >
+          <div className="flex items-center gap-2">
+            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[var(--badge-rose-dot)]" />
+            <span>{t(...(errorMessages[error] ?? errorMessages.service_unavailable))}</span>
           </div>
-
-          <p className="text-xs leading-5 text-[var(--color-nav-muted)]">
-            {t(
-              '登录有效期7天，敏感操作需验证身份。',
-              'Sessions last 7 days; sensitive actions require identity verification.',
-            )}
-          </p>
-        </form>
-
-        {step < 2 && (
-          <ol
-            start={step + 2}
-            className="flex max-w-[480px] flex-col gap-4 border-t border-[var(--color-nav-dropdown-border)] pt-5"
-            aria-label={t('接下来', 'Next steps')}
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-xs opacity-70 hover:opacity-100 transition-opacity"
+            aria-label={t('关闭提示', 'Dismiss')}
           >
-            {steps.slice(step + 1).map((name, offset) => (
-              <li
-                key={name}
-                className="flex items-start gap-3 text-[0.8125rem] text-[var(--color-nav-dropdown-description)]"
-              >
-                <span
-                  aria-hidden="true"
-                  className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-xs text-[var(--color-nav-muted)] shadow-[var(--shadow-card-sm)]"
-                >
-                  {step + offset + 2}
-                </span>
-                <div className="pt-0.5">
-                  <p className="font-medium text-[var(--color-text)]">{name}</p>
-                  <p className="mt-0.5 text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
-                    {step + offset + 1 === 1
-                      ? t('完成密码步骤后，填写验证器动态码。', 'Enter an authenticator code after the password step.')
-                      : t('首次或风险登录时，使用一次性授权码确认。', 'Approve first or risky sign-ins with a one-time code.')}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>)}
+            ✕
+          </button>
+        </div>
+      )}
 
-      {/* 2. Owner 账户与安全设置卡片 */}
-      {role === 'owner' && state?.management && <>
-      <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-5 sm:p-6 space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-1">
-            <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-              {t('Owner 账户', 'Owner account')}
-            </h3>
-            <p className="text-[0.8125rem] leading-5 text-[var(--color-nav-dropdown-description)]">
-              {t('安全设置与设备会话', 'Security settings and device sessions')}
-            </p>
+      {pending && (
+        <dialog
+          ref={reauthDialog}
+          aria-labelledby={inputId('reauth-title')}
+          aria-describedby={inputId('reauth-description')}
+          aria-modal="true"
+          className="fixed inset-0 m-auto w-[calc(100%_-_2rem)] max-w-[480px] max-h-[calc(100dvh_-_2rem)] overflow-y-auto rounded-[16px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-modal-bg,var(--color-bg))] p-0 text-[var(--color-text)] shadow-[0_24px_64px_rgba(0,0,0,0.38)] backdrop:bg-black/45 backdrop:backdrop-blur-[3px] dark:backdrop:bg-black/72"
+          onCancel={(event) => { event.preventDefault(); if (!busy) cancelReauthentication(); }}
+          onClick={(event) => { if (event.target === event.currentTarget && !busy) cancelReauthentication(); }}
+        >
+        <form
+          ref={reauthForm}
+          onSubmit={reauthenticate}
+          className="space-y-5 p-6 sm:p-7 [&_label]:text-[0.84rem] [&_label]:text-[var(--color-text-muted)]"
+        >
+          <div className="space-y-2">
+              <h3 id={inputId('reauth-title')} className="text-[1.15rem] font-semibold leading-snug tracking-[-0.01em] text-[var(--color-text)] sm:text-[1.22rem]">
+                {t('确认敏感操作', 'Confirm sensitive action')}
+              </h3>
+              <p id={inputId('reauth-description')} className="text-[0.84rem] leading-6 text-[var(--color-text-muted)]">
+                {t('需要重新验证身份以继续', 'Re-authentication required to continue')}
+              </p>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--badge-indigo-border)] bg-[var(--badge-indigo-bg)] px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.06em] text-[var(--badge-indigo-fg)]">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--badge-indigo-dot)]" />
-            <span>OWNER</span>
-          </span>
-        </div>
-
-        <dl className="divide-y divide-[var(--color-nav-dropdown-border)] border-y border-[var(--color-nav-dropdown-border)] text-[0.8125rem]">
-          {[
-            [t('账户', 'Account'), state.management.username],
-            [t('双重验证', 'Two-factor verification'), t('密码 + TOTP', 'Password + TOTP')],
-            [t('会话期限', 'Session lifetime'), t('7 天 / 敏感操作再认证', '7 days / sensitive action step-up')],
-          ].map(([name, value]) => (
-            <div key={name} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-3">
-              <dt className="text-[var(--color-nav-dropdown-description)]">{name}</dt>
-              <dd className="font-medium text-[var(--color-text)]">{value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        <div className="pt-2">
-          <h4 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-            {t('安全设置', 'Security settings')}
-          </h4>
-          <p className="mt-1 text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
-            {t('敏感操作需要5分钟内再认证。', 'Sensitive actions require reauthentication within 5 minutes.')}
-          </p>
-          <button type="button" disabled={busy} className={`${secondaryStyle} mt-3`} onClick={() => setPending({ action: '', body: {} })}>{t('验证身份', 'Verify identity')}</button>
-          <OwnerSecurityPanel state={state.management} language={language} busy={busy} action={action}
-            onEnrollment={result => setState(current => current ? {...current, challenge: result as OwnerChallengeState} : current)}
-            onRecoveryCodes={setRecoveryCodes}/>
-        </div>
-      </div>
-
-      {/* 3. 临时 Pro 授权卡片 */}
-      <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-5 sm:p-6 space-y-6">
-        <div className="space-y-1">
-          <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-            {t('临时 Pro 授权', 'Temporary Pro access')}
-          </h3>
-          <p className="text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-            {t('只开放 Pro 内容阅读；不授予 Owner 或后台管理权限。', 'Grants Pro reading only, without Owner or administration permissions.')}
-          </p>
-        </div>
-
-        <div className="space-y-2.5">
-          <p className="text-[0.8125rem] font-medium text-[var(--color-text)]">
-            {t('授权方式', 'Grant mode')}
-          </p>
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 max-w-[480px]">
-            {(['single', 'shared'] as const).map((mode) => {
-              const active = kind === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => selectKind(mode)}
-                  className={`flex items-start gap-3 rounded-xl p-3.5 text-left transition-all ${
-                    active
-                      ? 'bg-[var(--color-bg)] shadow-[var(--shadow-pill-active)] text-[var(--color-text)]'
-                      : 'bg-[var(--color-bg)]/50 text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
-                  }`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                      active
-                        ? 'border-[var(--color-text)] bg-[var(--color-text)]'
-                        : 'border-[var(--color-nav-dropdown-border)] bg-transparent'
-                    }`}
-                  >
-                    {active && <span className="size-1.5 rounded-full bg-[var(--color-bg)]" />}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-[0.8125rem] font-medium text-[var(--color-text)]">
-                      {mode === 'single' ? t('单次邀请', 'Single invitation') : t('范围分享', 'Group sharing')}
-                    </span>
-                    <span className="mt-0.5 block text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
-                      {mode === 'single' ? t('一个浏览器', 'One browser') : t('多个浏览器，统一到期', 'Multiple browsers, one expiry')}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <form onSubmit={generate} className="max-w-[480px] space-y-4">
-          <Field id={inputId('label')} label={t('用途标签', 'Purpose label')}>
+          {error && error !== 'reauthentication_required' && <p role="alert" className="text-[0.8125rem] text-[var(--badge-rose-fg)]">{t(...(errorMessages[error] ?? errorMessages.service_unavailable))}</p>}
+          <Field id={inputId('reauth-password')} label={t('当前密码', 'Current password')}>
             <input
-              id={inputId('label')}
-              value={label}
-              maxLength={60}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder={t('例如：作品审阅 / 朋友阅读', 'e.g. Portfolio review / friends')}
-              className={fieldStyle}
+              id={inputId('reauth-password')}
+              type="password"
+              autoComplete="current-password"
+              placeholder={t('输入当前密码', 'Enter current password')}
+              required
+              value={reauthPassword}
+              onChange={(e) => setReauthPassword(e.target.value)}
+              className={reauthFieldStyle}
             />
           </Field>
-
-          <div className="space-y-4">
-            <Field id={inputId('lifetime')} label={t('有效时间', 'Lifetime')}>
-              <select id={inputId('lifetime')} value={kind === 'single' ? lifetimeDays : lifetimeHours}
-                onChange={e => kind === 'single' ? setLifetimeDays(e.target.value) : setLifetimeHours(e.target.value)} className={fieldStyle}>
-                {(kind === 'single' ? ['1', '7', '30', 'permanent'] : ['1', '6', '24']).map(value => (
-                  <option key={value} value={value}>
-                    {value === 'permanent' ? t('永久（手动撤销）', 'Permanent (manual revocation)')
-                      : value + ' ' + (kind === 'single' ? t('天', 'days') : t('小时', 'hours'))}
-                    {value === (kind === 'single' ? '7' : '6') ? t('（默认）', ' (default)') : ''}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            {kind === 'shared' ? (
-              <Field id={inputId('limit')} label={t('浏览器凭据上限', 'Browser credential limit')}>
-                <select
-                  id={inputId('limit')}
-                  value={limit}
-                  onChange={(e) => setLimit(e.target.value)}
-                  className={fieldStyle}
-                >
-                  {['2', '5', '10', '20'].map((value) => (
-                    <option key={value} value={value}>
-                      {value} {t('个浏览器', 'browsers')}
-                      {value === '10' ? t('（默认）', ' (default)') : ''}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            ) : null}
-          </div>
-
-          <div className="flex items-start gap-2.5 rounded-xl bg-[var(--color-bg)] p-3 text-xs leading-5 text-[var(--color-nav-dropdown-description)] shadow-[var(--shadow-card-sm)]">
-            <span aria-hidden="true" className="mt-1 size-1.5 shrink-0 rounded-full bg-[var(--badge-sky-dot)]" />
-            <span>{summary}</span>
-          </div>
-
-          <button type="submit" disabled={busy} className={primaryStyle}>
-            {busy ? t('生成中…', 'Generating…') : t('生成授权码', 'Generate access code')}
-          </button>
-        </form>
-
-        {issuedCode && (
-          <div
-            role="status"
-            className="max-w-[480px] rounded-xl bg-[var(--color-bg)] p-4 shadow-[var(--shadow-card-sm)] space-y-2"
-          >
-            <div className="flex items-center gap-2">
-              <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--badge-emerald-dot)]" />
-              <p className="text-xs text-[var(--color-nav-dropdown-description)]">
-                {t('完整授权码仅此次显示，关闭前请保存。', 'The full access code is shown once. Save it before dismissal.')}
-              </p>
-            </div>
-            <code className="block rounded-lg bg-[color:var(--color-row-bg)] px-3 py-2 font-mono text-sm text-[var(--color-text)] break-all">
-              {issuedCode}
-            </code>
-            <button type="button" className={secondaryStyle} onClick={() => setIssuedCode(null)}>
-              {t('关闭', 'Dismiss')}
+          <Field id={inputId('reauth-code')} label={t('当前 TOTP', 'Current TOTP')}>
+            <input
+              id={inputId('reauth-code')}
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              placeholder="000000"
+              required
+              value={reauthCode}
+              onChange={(e) => setReauthCode(e.target.value)}
+              className={`${reauthFieldStyle} font-mono tracking-[0.25em]`}
+            />
+          </Field>
+          <div className="-mx-6 -mb-6 flex flex-wrap items-center justify-end gap-2.5 border-t border-[var(--roadmap-divider,var(--color-border))] px-6 py-4 sm:-mx-7 sm:-mb-7 sm:px-7">
+            <button
+              type="button"
+              disabled={busy}
+              className="inline-flex min-h-10 items-center justify-center rounded-full px-4 text-[0.84rem] font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--roadmap-lane-bg)] disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={cancelReauthentication}
+            >
+              {t('取消', 'Cancel')}
+            </button>
+            <button disabled={busy} className="inline-flex min-h-10 items-center justify-center rounded-full bg-[#5ba4cf] px-5 text-[0.84rem] font-medium text-white shadow-xs transition-colors hover:bg-[#4a93be] disabled:cursor-not-allowed disabled:opacity-50">
+              {busy ? t('验证中…', 'Verifying…') : t('验证并继续', 'Verify and continue')}
             </button>
           </div>
-        )}
+        </form>
+        </dialog>
+      )}
 
-        <div className="border-t border-[var(--color-nav-dropdown-border)] pt-5 space-y-3">
-          <h4 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-            {t('授权记录', 'Grant records')}
-          </h4>
-          {grants.length === 0 ? (
-            <p className="py-4 text-center text-xs text-[var(--color-nav-muted)]">
-              {t('暂无授权记录。', 'No grants yet.')}
-            </p>
-          ) : (
-            <ul className="divide-y divide-[var(--color-nav-dropdown-border)]">
-              {grants.map((grant) => (
-                <li
-                  key={grant.id}
-                  className="flex flex-wrap items-center justify-between gap-3 py-3.5"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="break-words text-sm font-medium text-[var(--color-text)]">
-                        {grant.label}
-                      </p>
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.68rem] font-medium ${
-                          grant.revoked
-                            ? 'border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] text-[var(--badge-rose-fg)]'
-                            : 'border-[var(--badge-amber-border)] bg-[var(--badge-amber-bg)] text-[var(--badge-amber-fg)]'
-                        }`}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="size-1.5 rounded-full"
-                          style={{
-                            backgroundColor: grant.revoked ? 'var(--badge-rose-dot)' : 'var(--badge-amber-dot)',
-                          }}
-                        />
-                        <span>{grant.kind === 'single' ? t('单次', 'Single') : t('共享', 'Shared')}</span>
-                        <span>·</span>
-                        <span>{grant.revoked ? t('已撤销', 'Revoked') : grant.mode === 'single' && grant.redeemedCount > 0 ? t('已兑换', 'Redeemed') : (grant.redeemExpiresAt ?? grant.expiresAt) && new Date((grant.redeemExpiresAt ?? grant.expiresAt)!).getTime() <= checkedAt ? t('兑换已截止', 'Redemption closed') : grant.mode === 'shared' && grant.maxRedemptions !== null && grant.redeemedCount >= grant.maxRedemptions ? t('仅已有浏览器', 'Existing browsers only') : t('可兑换', 'Redeemable')}</span>
-                      </span>
-                    </div>
-                    <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
-                      {grant.kind === 'single'
-                        ? t(
-                            `兑换截止 ${grant.redeemExpiresAt ? new Date(grant.redeemExpiresAt).toLocaleString('zh-CN') : '—'} · 兑换后 ${(grant.entitlementSeconds ?? 86400) / 3600} 小时`,
-                            `Redeem by ${grant.redeemExpiresAt ? new Date(grant.redeemExpiresAt).toLocaleString('en-US') : '—'} · ${(grant.entitlementSeconds ?? 86400) / 3600}h after redemption`,
-                          )
-                        : t(
-                            `统一到期 ${grant.expiresAt ? new Date(grant.expiresAt).toLocaleString('zh-CN') : '—'} · ${grant.redeemedCount}/${grant.maxRedemptions ?? '不限'} 个浏览器`,
-                            `Expires ${grant.expiresAt ? new Date(grant.expiresAt).toLocaleString('en-US') : '—'} · ${grant.redeemedCount}/${grant.maxRedemptions ?? 'unlimited'} browsers`,
-                          )}{' '}
-                      · {grant.codeHint ? `••••${grant.codeHint}` : t('旧授权', 'Legacy grant')}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={grant.revoked || busy}
-                    className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] px-3.5 text-[0.78rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-                    onClick={async () => { if (confirmGrant !== grant.id) {setConfirmGrant(grant.id); return;} const result = await action('revoke-grant', {grantId: grant.id}); if (result) {setConfirmGrant(null); setIssuedCode(null);} }}
-                  >
-                    {confirmGrant === grant.id ? t('确认撤销', 'Confirm revoke') : t('撤销', 'Revoke')}
-                  </button>
+      {recoveryCodes.length > 0 && (
+        <div role="status" className="max-w-[480px] rounded-2xl border border-[var(--badge-amber-border)] bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-3.5 shadow-[var(--shadow-card-sm)]">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-amber-icon)] shadow-[var(--shadow-card-sm)]">
+              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="5" cy="8" r="3" />
+                <path d="M8 8h6M11 8v2M13 8v2" />
+              </svg>
+            </span>
+            <div>
+              <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+                {t('保存恢复码', 'Save recovery codes')}
+              </h3>
+              <p className="text-xs text-[var(--color-nav-dropdown-description)]">
+                {t('每个码只能使用一次，关闭后不能再次查看；更新整组会使旧码失效', 'Each code can be used once. They cannot be viewed after dismissal; rotating the set invalidates old codes')}
+              </p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3.5 shadow-[var(--shadow-card-sm)]">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-xs select-all text-[var(--color-text)]">
+              {recoveryCodes.map((code) => (
+                <li key={code} className="break-all rounded-md bg-[color:var(--color-row-bg)] px-2 py-1">
+                  {code}
                 </li>
               ))}
             </ul>
-          )}
-          <p className="text-xs leading-5 text-[var(--color-nav-muted)]">
-            {t(
-              '撤销后，对应授权与会话立即失效。',
-              'Revocation immediately invalidates the associated grant and sessions.',
-            )}
-          </p>
+          </div>
+          <button
+            className={primaryStyle}
+            onClick={() => {
+              setRecoveryCodes([]);
+              finishSignIn();
+            }}
+          >
+            {t('已保存，继续', 'Saved, continue')}
+          </button>
         </div>
-      </div>
-      </>}
+      )}
+
+      {issuedApproval && role === 'owner' && (
+        <div role="status" className="max-w-[480px] rounded-2xl border border-[var(--badge-emerald-border)] bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-3 shadow-[var(--shadow-card-sm)]">
+          <div className="flex items-center gap-2">
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--badge-emerald-dot)]" />
+            <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+              {t('本次登录的 Owner 授权码', 'Owner approval for this sign-in')}
+            </h3>
+          </div>
+          <code className="block rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3 font-mono text-sm font-semibold text-[var(--color-text)] break-all select-all shadow-[var(--shadow-card-sm)]">
+            {issuedApproval}
+          </code>
+          <button className={secondaryStyle} onClick={() => setIssuedApproval(null)}>
+            {t('关闭', 'Dismiss')}
+          </button>
+        </div>
+      )}
+
+      {/* 1. 登录界面卡片 */}
+      {(role !== 'owner' || stage === 'enroll') && (
+        <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-indigo-icon)] shadow-[var(--shadow-card-sm)]">
+                <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <path d="M8 1.5 2.5 4v4.5c0 3.5 3 5.5 5.5 6 2.5-.5 5.5-2.5 5.5-6V4L8 1.5Z" />
+                </svg>
+              </span>
+              <div>
+                <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+                  {t('Owner 登录', 'Owner sign in')}
+                </h3>
+                <p className="text-[0.8125rem] leading-5 text-[var(--color-nav-dropdown-description)]">
+                  {t('密码与验证器共同验证，未知设备追加授权确认', 'Password and authenticator verification, with additional approval for unknown devices')}
+                </p>
+              </div>
+            </div>
+            <span className="text-[0.72rem] text-[var(--color-nav-muted)]">
+              {t(`第 ${step + 1} / ${steps.length} 步`, `Step ${step + 1} of ${steps.length}`)}
+            </span>
+          </div>
+
+          <ol className="flex max-w-[480px] flex-col" aria-label={t('登录步骤', 'Sign-in steps')}>
+            {steps.slice(0, step + 1).map((name, index) => (
+              <li
+                key={name}
+                aria-current={step === index ? 'step' : undefined}
+                className="relative flex items-center gap-3 pb-3.5 text-[0.8125rem]"
+              >
+                {index < step && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-[11px] top-6 h-3.5 w-px bg-[var(--color-nav-dropdown-border)]"
+                  />
+                )}
+                <span
+                  className={`relative flex size-6 shrink-0 items-center justify-center rounded-full text-xs transition-colors ${
+                    step === index
+                      ? 'border border-[var(--badge-indigo-border)] bg-[var(--badge-indigo-bg)] font-semibold text-[var(--badge-indigo-fg)] shadow-[var(--shadow-card-sm)]'
+                      : index < step
+                        ? 'border border-[var(--badge-emerald-border)] bg-[var(--badge-emerald-bg)] font-medium text-[var(--badge-emerald-fg)]'
+                        : 'border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-nav-muted)] shadow-[var(--shadow-card-sm)]'
+                  }`}
+                >
+                  {index < step ? '✓' : index + 1}
+                </span>
+                <span
+                  className={
+                    step === index
+                      ? 'font-medium text-[var(--color-text)]'
+                      : 'text-[var(--color-nav-dropdown-description)]'
+                  }
+                >
+                  {name}
+                </span>
+                {index < step && (
+                  <span className="ml-auto text-xs text-[var(--color-nav-muted)]">
+                    {t('已验证', 'Verified')}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+
+          <form onSubmit={advance} className="max-w-[480px] space-y-4">
+            {stage === 'credentials' ? (
+              <>
+                <Field id={inputId('username')} label={t('用户名', 'Username')}>
+                  <input
+                    id={inputId('username')}
+                    name="username"
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder={t('输入 Owner 用户名', 'Owner username')}
+                    required
+                    className={fieldStyle}
+                  />
+                </Field>
+                <Field id={inputId('password')} label={t('密码', 'Password')}>
+                  <input
+                    id={inputId('password')}
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={t('输入密码', 'Enter password')}
+                    required
+                    className={fieldStyle}
+                  />
+                </Field>
+              </>
+            ) : stage === 'setup' ? (
+              <>
+                <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                  {t('填写受控终端初始化时签发的一次性设置码，然后绑定验证器', 'Enter the one-time setup code issued during terminal initialization, then enroll your authenticator')}
+                </p>
+                <Field id={inputId('setup')} label={t('一次性设置码', 'One-time setup code')}>
+                  <input
+                    id={inputId('setup')}
+                    autoComplete="one-time-code"
+                    required
+                    value={riskCode}
+                    onChange={(e) => setRiskCode(e.target.value)}
+                    className={fieldStyle}
+                  />
+                </Field>
+              </>
+            ) : stage === 'totp' || stage === 'enroll' ? (
+              <>
+                <div className="space-y-1">
+                  <h4 className="text-[0.875rem] font-medium text-[var(--color-text)]">
+                    {t('验证器确认', 'Authenticator verification')}
+                  </h4>
+                  <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                    {t(
+                      '填写验证器中的 6 位动态码，验证请求5分钟内有效',
+                      'Enter the 6-digit authenticator code within the 5-minute verification window',
+                    )}
+                  </p>
+                </div>
+                {stage === 'enroll' && challenge?.secret && (
+                  <div className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3.5 text-xs shadow-[var(--shadow-card-sm)]">
+                    <p>{t('在验证器中添加账户，选择基于时间的6位动态码', 'Add a time-based, six-digit account in your authenticator')}</p>
+                    <p className="text-[var(--color-nav-muted)]">{t('账户', 'Account')}: Incept / {challenge.username}</p>
+                    <code className="block break-all font-mono text-sm font-semibold select-all text-[var(--color-text)]">{challenge.secret}</code>
+                  </div>
+                )}
+                {stage === 'enroll' && (
+                  <label className="flex items-start gap-2.5 text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                    <input
+                      type="checkbox"
+                      checked={trustDevice}
+                      onChange={(e) => setTrustDevice(e.target.checked)}
+                      disabled={busy}
+                      className="mt-0.5 size-4 rounded accent-[var(--badge-indigo-icon)] shrink-0"
+                    />
+                    <span>{t('信任此浏览器30天；每次登录仍需密码与TOTP', 'Trust this browser for 30 days; password and TOTP remain required')}</span>
+                  </label>
+                )}
+                <Field id={inputId('otp')} label={useRecovery && stage === 'totp' ? t('恢复码', 'Recovery code') : t('TOTP 动态码', 'TOTP code')}>
+                  <input
+                    id={inputId('otp')}
+                    name="totp"
+                    inputMode={useRecovery ? 'text' : 'numeric'}
+                    autoComplete="one-time-code"
+                    pattern={useRecovery ? undefined : '[0-9]{6}'}
+                    maxLength={useRecovery ? 256 : 6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder={useRecovery ? 'REC-…' : '000000'}
+                    required
+                    className={`${fieldStyle} font-mono ${useRecovery ? 'tracking-normal' : 'tracking-[0.25em]'}`}
+                  />
+                </Field>
+                {stage === 'totp' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUseRecovery(!useRecovery);
+                      setOtp('');
+                    }}
+                    disabled={busy}
+                    className="text-xs text-[var(--color-nav-muted)] hover:text-[var(--color-text)] transition-colors underline underline-offset-4"
+                  >
+                    {useRecovery ? t('使用验证器', 'Use authenticator') : t('使用恢复码', 'Use recovery code')}
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <h4 className="text-[0.875rem] font-medium text-[var(--color-text)]">
+                    {t('首次 / 未知设备授权', 'First / unknown device approval')}
+                  </h4>
+                  <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                    {t(
+                      '在已登录设备或受控 SSH 中签发一次性授权码，绑定本次登录，10 分钟有效、仅可用一次；邮箱验证后续接入',
+                      'Issue a login-bound approval code from a signed-in device or controlled SSH. Valid for 10 minutes, once only. Email verification is planned later',
+                    )}
+                  </p>
+                </div>
+                {challenge?.challengeId && (
+                  <p className="text-xs break-all text-[var(--color-nav-dropdown-description)]">
+                    {t('登录请求编号', 'Sign-in request ID')}: <code className="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono select-all text-[var(--color-text)]">{challenge.challengeId}</code>
+                  </p>
+                )}
+                <Field id={inputId('risk')} label={t('Owner 一次性授权码', 'One-time Owner approval code')}>
+                  <input
+                    id={inputId('risk')}
+                    name="approval"
+                    autoComplete="one-time-code"
+                    value={riskCode}
+                    onChange={(e) => setRiskCode(e.target.value)}
+                    placeholder={t('粘贴本次登录授权码', 'Paste this login approval code')}
+                    required
+                    className={fieldStyle}
+                  />
+                </Field>
+                <label className="flex items-start gap-2.5 text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                  <input
+                    type="checkbox"
+                    checked={trustDevice}
+                    onChange={(e) => setTrustDevice(e.target.checked)}
+                    className="mt-0.5 size-4 rounded accent-[var(--badge-indigo-icon)] shrink-0"
+                  />
+                  <span>
+                    {t(
+                      '信任此设备 30 天；仍需密码与 TOTP；公共设备请勿勾选',
+                      'Trust this device for 30 days. Password and TOTP are still required; avoid on public devices',
+                    )}
+                  </span>
+                </label>
+              </>
+            )}
+
+            <div className="flex flex-wrap gap-2.5 pt-1">
+              <button type="submit" disabled={busy || loading} className={primaryStyle}>
+                {busy ? t('验证中…', 'Verifying…') : step === 2 ? t('完成登录', 'Complete sign-in') : t('下一步', 'Continue')}
+              </button>
+              {step > 0 && (
+                <button
+                  type="button"
+                  className={secondaryStyle}
+                  disabled={busy}
+                  onClick={cancelChallenge}
+                >
+                  {t('取消', 'Cancel')}
+                </button>
+              )}
+            </div>
+
+            <p className="text-xs leading-5 text-[var(--color-nav-muted)]">
+              {t(
+                '登录有效期7天，敏感操作需验证身份',
+                'Sign-in lasts 7 days; sensitive actions require identity verification',
+              )}
+            </p>
+          </form>
+
+          {step < 2 && (
+            <ol
+              start={step + 2}
+              className="flex max-w-[480px] flex-col gap-3 border-t border-[var(--color-nav-dropdown-border)] pt-4"
+              aria-label={t('接下来', 'Next steps')}
+            >
+              {steps.slice(step + 1).map((name, offset) => (
+                <li
+                  key={name}
+                  className="flex items-start gap-3 text-[0.8125rem] text-[var(--color-nav-dropdown-description)]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] text-xs text-[var(--color-nav-muted)] shadow-[var(--shadow-card-sm)]"
+                  >
+                    {step + offset + 2}
+                  </span>
+                  <div className="pt-0.5">
+                    <p className="font-medium text-[var(--color-text)]">{name}</p>
+                    <p className="mt-0.5 text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                      {step + offset + 1 === 1
+                        ? t('完成密码步骤后，填写验证器动态码', 'Enter an authenticator code after the password step')
+                        : t('首次或风险登录时，使用一次性授权码确认', 'Approve first or risky sign-ins with a one-time code')}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+
+      {/* 2. Owner 账户与安全设置卡片 */}
+      {role === 'owner' && state?.management && (
+        <>
+          <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-indigo-icon)] shadow-[var(--shadow-card-sm)]">
+                  <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="8" cy="5" r="3" />
+                    <path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+                    {t('Owner 账户', 'Owner account')}
+                  </h3>
+                  <p className="text-[0.8125rem] leading-5 text-[var(--color-nav-dropdown-description)]">
+                    {t('安全设置与设备会话', 'Security settings and device sessions')}
+                  </p>
+                  <p className="mt-0.5 text-xs leading-5 text-[var(--color-nav-muted)]">
+                    {t('登录有效期7天，敏感操作需验证身份', 'Sign-in lasts 7 days; sensitive actions require identity verification')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-[0.875rem] font-medium text-[var(--color-text)]">
+                    {t('安全设置', 'Security settings')}
+                  </h4>
+                  <p className="mt-0.5 text-xs text-[var(--color-nav-dropdown-description)]">
+                    {t('敏感操作需要5分钟内再认证', 'Sensitive actions require reauthentication within 5 minutes')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  className={secondaryStyle}
+                  onClick={() => setPending({ action: '', body: {} })}
+                >
+                  {t('验证身份', 'Verify identity')}
+                </button>
+              </div>
+              <OwnerSecurityPanel
+                state={state.management}
+                language={language}
+                busy={busy}
+                action={action}
+                onEnrollment={(result) =>
+                  setState((current) => (current ? { ...current, challenge: result as OwnerChallengeState } : current))
+                }
+                onRecoveryCodes={setRecoveryCodes}
+              />
+            </div>
+          </div>
+
+          {/* 3. 临时 Pro 授权卡片 */}
+          <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-sky-icon)] shadow-[var(--shadow-card-sm)]">
+                  <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="12" height="10" rx="2" />
+                    <path d="M2 7h12M5 10h2" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+                    {t('Pro 授权', 'Pro access')}
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[0.8125rem] font-medium text-[var(--color-text)]">
+                {t('授权方式', 'Grant mode')}
+              </p>
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 max-w-[480px]">
+                {(['single', 'shared'] as const).map((mode) => {
+                  const active = kind === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => selectKind(mode)}
+                      className={`flex items-start gap-3 rounded-xl p-3 text-left transition-all ${
+                        active
+                          ? 'bg-[var(--color-bg)] shadow-[var(--shadow-card-sm)] text-[var(--color-text)]'
+                          : 'bg-[var(--color-bg)]/40 hover:bg-[var(--color-bg)]/80 text-[var(--color-nav-dropdown-description)] hover:text-[var(--color-text)]'
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                          active
+                            ? 'border-[var(--badge-sky-dot)] bg-[var(--badge-sky-bg)]'
+                            : 'border-[var(--color-border)] bg-transparent'
+                        }`}
+                      >
+                        {active && <span className="size-1.5 rounded-full bg-[var(--badge-sky-dot)]" />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[0.8125rem] font-medium text-[var(--color-text)]">
+                          {mode === 'single' ? t('单次邀请', 'Single invitation') : t('范围分享', 'Group sharing')}
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                          {mode === 'single' ? t('点对点分发，长期可控', 'Point-to-point, long-term control') : t('团队或公开分发，短期有效', 'Team or public distribution, short-lived')}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <form onSubmit={generate} className="max-w-[480px] space-y-3.5">
+              <Field id={inputId('label')} label={t('用途标签', 'Purpose label')}>
+                <input
+                  id={inputId('label')}
+                  value={label}
+                  maxLength={60}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder={t('例如：作品审阅 / 朋友阅读', 'e.g. Portfolio review / friends')}
+                  className={fieldStyle}
+                />
+              </Field>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field
+                  id={inputId('lifetime')}
+                  label={t('有效时间', 'Lifetime')}
+                >
+                  <CustomSelect
+                    id={inputId('lifetime')}
+                    value={kind === 'single' ? lifetimeDays : lifetimeHours}
+                    onChange={(val) => (kind === 'single' ? setLifetimeDays(val) : setLifetimeHours(val))}
+                    options={(kind === 'single' ? ['1', '7', '30', 'permanent'] : ['1', '6', '24']).map((value) => ({
+                      value,
+                      label: `${value === 'permanent' ? t('永久（手动撤销）', 'Permanent (manual revocation)') : `${value} ${kind === 'single' ? t('天', 'days') : t('小时', 'hours')}`}${value === (kind === 'single' ? '7' : '6') ? t('（默认）', ' (default)') : ''}`,
+                    }))}
+                    disabled={busy}
+                  />
+                </Field>
+
+                {kind === 'shared' && (
+                  <Field id={inputId('limit')} label={t('浏览器凭据上限', 'Browser credential limit')}>
+                    <CustomSelect
+                      id={inputId('limit')}
+                      value={limit}
+                      onChange={(val) => setLimit(val)}
+                      options={['2', '5', '10', '20'].map((value) => ({
+                        value,
+                        label: `${value} ${t('个浏览器', 'browsers')}${value === '10' ? t('（默认）', ' (default)') : ''}`,
+                      }))}
+                      disabled={busy}
+                    />
+                  </Field>
+                )}
+              </div>
+
+              <div className="flex items-start gap-2.5 rounded-xl bg-[var(--color-bg)] p-3 text-xs leading-5 text-[var(--color-nav-dropdown-description)] shadow-[var(--shadow-card-sm)]">
+                <span aria-hidden="true" className="mt-1 size-1.5 shrink-0 rounded-full bg-[var(--badge-sky-dot)]" />
+                <span>{summary}</span>
+              </div>
+
+              <button type="submit" disabled={busy} className={primaryStyle}>
+                {busy ? t('生成中…', 'Generating…') : t('生成授权码', 'Generate access code')}
+              </button>
+            </form>
+
+            {issuedCode && (
+              <div
+                role="status"
+                className="max-w-[480px] rounded-xl border border-[var(--badge-emerald-border)] bg-[var(--color-bg)] p-4 shadow-[var(--shadow-card-sm)] space-y-2.5"
+              >
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--badge-emerald-dot)]" />
+                  <p className="text-xs text-[var(--color-nav-dropdown-description)]">
+                    {t('完整授权码仅此次显示，关闭前请保存', 'The full access code is shown once. Save it before dismissal')}
+                  </p>
+                </div>
+                <code className="block rounded-lg border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3 py-2 font-mono text-sm font-semibold text-[var(--color-text)] break-all select-all">
+                  {issuedCode}
+                </code>
+                <button type="button" className={secondaryStyle} onClick={() => setIssuedCode(null)}>
+                  {t('关闭', 'Dismiss')}
+                </button>
+              </div>
+            )}
+
+            <div className="border-t border-[var(--color-nav-dropdown-border)] pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[0.875rem] font-medium text-[var(--color-text)]">
+                  {t('授权记录', 'Grant records')}
+                </h4>
+                <span className="text-[0.72rem] text-[var(--color-nav-muted)]">
+                  {t(`${grants.length} 条记录`, `${grants.length} record(s)`)}
+                </span>
+              </div>
+
+              {grants.length === 0 ? (
+                <p className="py-4 text-center text-xs text-[var(--color-nav-muted)]">
+                  {t('暂无授权记录', 'No grants yet')}
+                </p>
+              ) : (
+                <ul className="divide-y divide-[var(--color-nav-dropdown-border)]">
+                  {grants.map((grant) => (
+                    <li
+                      key={grant.id}
+                      className="flex flex-wrap items-center justify-between gap-3 py-3"
+                    >
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="break-words text-sm font-medium text-[var(--color-text)]">
+                            {grant.label || t('未命名授权', 'Untitled grant')}
+                          </p>
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[0.68rem] font-medium ${
+                              grant.revoked
+                                ? 'border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] text-[var(--badge-rose-fg)]'
+                                : 'border-[var(--badge-amber-border)] bg-[var(--badge-amber-bg)] text-[var(--badge-amber-fg)]'
+                            }`}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="size-1.5 rounded-full"
+                              style={{
+                                backgroundColor: grant.revoked ? 'var(--badge-rose-dot)' : 'var(--badge-amber-dot)',
+                              }}
+                            />
+                            <span>{grant.kind === 'single' ? t('邀请', 'Invitation') : t('分享', 'Sharing')}</span>
+                            <span>·</span>
+                            <span>{grant.revoked ? t('已撤销', 'Revoked') : grant.expiresAt && new Date(grant.expiresAt).getTime() <= checkedAt ? t('已到期', 'Expired') : grant.mode === 'single' && grant.redeemedCount > 0 ? t('已兑换', 'Redeemed') : grant.redeemExpiresAt && new Date(grant.redeemExpiresAt).getTime() <= checkedAt ? t('兑换已截止', 'Redemption closed') : grant.mode === 'shared' && grant.maxRedemptions !== null && grant.redeemedCount >= grant.maxRedemptions ? t('仅已有浏览器', 'Existing browsers only') : t('可兑换', 'Redeemable')}</span>
+                          </span>
+                        </div>
+                        <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                          {grant.kind === 'single' && grant.entitlementSeconds !== null
+                            ? t(
+                                `旧邀请：兑换截止 ${grant.redeemExpiresAt ? new Date(grant.redeemExpiresAt).toLocaleString('zh-CN') : '—'} · 兑换后 ${grant.entitlementSeconds / 3600} 小时`,
+                                `Legacy invitation: redeem by ${grant.redeemExpiresAt ? new Date(grant.redeemExpiresAt).toLocaleString('en-US') : '—'} · ${grant.entitlementSeconds / 3600}h after redemption`,
+                              )
+                            : grant.kind === 'single'
+                              ? grant.expiresAt
+                                ? t(`统一到期 ${new Date(grant.expiresAt).toLocaleString('zh-CN')} · 仅可兑换一次`, `Expires ${new Date(grant.expiresAt).toLocaleString('en-US')} · redeemable once`)
+                                : t('永久 · 手动撤销 · 仅可兑换一次', 'Permanent · manual revocation · redeemable once')
+                              : t(
+                                `统一到期 ${grant.expiresAt ? new Date(grant.expiresAt).toLocaleString('zh-CN') : '—'} · ${grant.redeemedCount}/${grant.maxRedemptions ?? '不限'} 个浏览器`,
+                                `Expires ${grant.expiresAt ? new Date(grant.expiresAt).toLocaleString('en-US') : '—'} · ${grant.redeemedCount}/${grant.maxRedemptions ?? 'unlimited'} browsers`,
+                              )}{' '}
+                          · {grant.codeHint ? `••••${grant.codeHint}` : t('旧授权', 'Legacy grant')}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={grant.revoked || busy}
+                        className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 text-[0.78rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                        onClick={async () => {
+                          if (confirmGrant !== grant.id) {
+                            setConfirmGrant(grant.id);
+                            return;
+                          }
+                          const result = await action('revoke-grant', { grantId: grant.id });
+                          if (result) {
+                            setConfirmGrant(null);
+                            setIssuedCode(null);
+                          }
+                        }}
+                      >
+                        {confirmGrant === grant.id ? t('确认撤销', 'Confirm revoke') : t('撤销', 'Revoke')}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-xs leading-5 text-[var(--color-nav-muted)]">
+                {t(
+                  '撤销后，对应授权与会话立即失效',
+                  'Revocation immediately invalidates the associated grant and sessions',
+                )}
+              </p>
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }

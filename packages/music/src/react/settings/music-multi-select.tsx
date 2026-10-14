@@ -72,24 +72,26 @@ export function MusicMultiSelect({
         aria-controls={isOpen ? listboxId : undefined}
         disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
-        className={`inline-flex w-full items-center justify-between gap-2 rounded-[9px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-2.5 text-[var(--color-text)] outline-none transition-colors hover:bg-[color:var(--color-row-hover-bg)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] disabled:cursor-default disabled:opacity-50 ${buttonClassName}`}
+        className={`group inline-flex w-full items-center justify-between gap-2 rounded-full px-2.5 outline-none transition-all focus:outline-none disabled:cursor-default disabled:opacity-50 ${
+          isOpen
+            ? 'bg-[var(--color-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)]'
+            : 'bg-transparent text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)] hover:shadow-[var(--shadow-card-sm)]'
+        } ${buttonClassName}`}
       >
         <span className="min-w-0 truncate">
           {selectedLabels.length > 0 ? selectedLabels.join(', ') : placeholder}
         </span>
         <svg
           aria-hidden="true"
-          viewBox="0 0 12 8"
-          className={`h-[6px] w-[9px] shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          viewBox="0 0 16 16"
+          className={`size-3 shrink-0 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-[var(--color-text)]' : 'text-[var(--color-nav-muted)] group-hover:text-[var(--color-text)]'
+          }`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
         >
-          <path
-            d="m1 1.25 5 5 5-5"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.25"
-          />
+          <path d="m4 6 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
@@ -99,7 +101,7 @@ export function MusicMultiSelect({
           role="listbox"
           aria-label={ariaLabel}
           aria-multiselectable="true"
-          className="absolute left-0 z-30 mt-1 min-w-full space-y-0.5 overflow-hidden rounded-[10px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 shadow-[var(--shadow-nav-dropdown)]"
+          className="absolute left-0 z-30 mt-1.5 min-w-full space-y-0.5 overflow-hidden rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg)] p-1.5 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-md"
         >
           {options.map((option) => {
             const isSelected = values.includes(option.value);
@@ -114,16 +116,16 @@ export function MusicMultiSelect({
                 title={option.title}
                 // 展开状态保持
                 onClick={() => onToggle(option.value)}
-                className={`flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left text-[0.78rem] leading-none whitespace-nowrap transition-colors disabled:cursor-default ${
+                className={`flex w-full items-center gap-2 rounded-[9px] px-2.5 py-1.5 text-left text-[0.78rem] leading-none whitespace-nowrap transition-colors disabled:cursor-default ${
                   isSelected
-                    ? 'bg-[var(--badge-sky-bg)] font-medium text-[var(--badge-sky-fg)]'
+                    ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
                     : 'text-[var(--color-nav-dropdown-description)] disabled:opacity-50'
                 } ${
                   option.disabled
                     ? ''
                     : isSelected
-                      ? 'hover:brightness-105'
-                      : 'hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
+                      ? 'hover:bg-[color:var(--color-row-hover-bg)]'
+                      : 'hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]'
                 }`}
               >
                 <span
