@@ -37,6 +37,18 @@ afterEach(() => {
 });
 
 describe('package server/client composition', () => {
+  it('projects Guest and Pro data before handing it to the client', async () => {
+    const data = { ...emptyData, collectionIssues: ['private-issue'], projects: [{ ...tokens, projectKey: 'project', projectName: 'Project',
+      workspacePath: 'private-path', sessionCount: 1, shareOfTokens: 1, shareOfCost: 1, lastActivity: '2026-10-14', modelsUsed: [] }] };
+    mocks.load.mockResolvedValue(data);
+    const guest = await TokenDashboardPage();
+    expect(guest.props.data.projects).toEqual([]);
+    expect(guest.props.canViewDetails).toBe(false);
+    const pro = await TokenDashboardPage({ canViewDetails: true });
+    expect(pro.props.data.projects[0].projectName).toBe('Project');
+    expect(pro.props.canImport).toBe(false);
+    expect(JSON.stringify(pro.props.data)).not.toContain('private-');
+  });
   it('renders a loading shell when history is absent without waiting for native collection', async () => {
     mocks.load.mockResolvedValue(null);
     render(<NextIntlClientProvider locale="zh" messages={{ dashboard: zh }} timeZone="Asia/Singapore">{await TokenDashboardPage()}</NextIntlClientProvider>);

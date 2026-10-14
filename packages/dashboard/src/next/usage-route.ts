@@ -4,7 +4,7 @@ import { emptyDashboard, publicDashboardSummary, usageRanges, type UsageRange } 
 
 const refreshes = new Map<string, number>();
 
-export async function dashboardUsageGet(request: Request, ownerSessionId?: string): Promise<Response> {
+export async function dashboardUsageGet(request: Request, ownerSessionId?: string, canViewDetails = !!ownerSessionId): Promise<Response> {
   const query = new URL(request.url).searchParams;
   const range = query.get('range') ?? '30d';
   if (!usageRanges.includes(range as UsageRange)) {
@@ -14,7 +14,7 @@ export async function dashboardUsageGet(request: Request, ownerSessionId?: strin
   if (!ownerSessionId) {
     if (force) return Response.json({ error: 'Owner access required.' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
     const history = await readDashboardSnapshot(range as UsageRange);
-    return Response.json(publicDashboardSummary(history ?? emptyDashboard(range as UsageRange)), {
+    return Response.json(publicDashboardSummary(history ?? emptyDashboard(range as UsageRange), canViewDetails), {
       headers: { 'Cache-Control': 'no-store', Vary: 'Cookie' },
     });
   }

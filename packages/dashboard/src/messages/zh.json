@@ -217,6 +217,7 @@
     }
   },
   "projects": {
+    "noAccess": "无权限查看",
     "eyebrow": "04 / PROJECTS & SESSIONS",
     "title": "项目归属排行与会话消耗明细",
     "description": "项目用量与会话记录",

@@ -6,8 +6,8 @@ import { clientSnapshot, rememberSnapshot } from './client-snapshots';
 
 export const DASHBOARD_REFRESH_INTERVAL = 60_000;
 
-export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean; owner?: boolean } = {}) {
-  const scope = options.owner ? 'owner' : 'public';
+export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean; owner?: boolean; canViewDetails?: boolean } = {}) {
+  const scope = options.owner ? 'owner' : options.canViewDetails ? 'pro' : 'public';
   const [data, setData] = useState(() => {
     const cached = clientSnapshot(initialData.range ?? '30d', scope);
     return cached && (Date.parse(cached.checkedAt ?? '') || 0) > (Date.parse(initialData.checkedAt ?? '') || 0) ? cached : initialData;

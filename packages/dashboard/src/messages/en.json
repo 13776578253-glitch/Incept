@@ -217,6 +217,7 @@
     }
   },
   "projects": {
+    "noAccess": "You do not have permission to view this data",
     "eyebrow": "04 / PROJECTS & SESSIONS",
     "title": "Project Attribution Ranking & Session Explorer",
     "description": "Project usage and sessions in the selected window; select a project to filter sessions.",

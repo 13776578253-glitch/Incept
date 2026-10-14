@@ -22,8 +22,9 @@ const ImportDialog = dynamic(() => import('./imports/import-dialog').then(module
 export function TokenDashboardFeature({
   data: initialData,
   canImport = false,
+  canViewDetails = canImport,
   initialStatus = 'live',
-}: { data: TokenDashboardData; canImport?: boolean; initialStatus?: 'history' | 'empty' | 'live' }) {
+}: { data: TokenDashboardData; canImport?: boolean; canViewDetails?: boolean; initialStatus?: 'history' | 'empty' | 'live' }) {
   const [importOpen, setImportOpen] = useState(false);
   const {
     rangePreset,
@@ -39,7 +40,7 @@ export function TokenDashboardFeature({
     isPollingPaused,
     hasSnapshot,
     showingHistory,
-  } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport });
+  } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport, canViewDetails });
 
   return (
     <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-24 md:pt-8 lg:px-10 lg:pt-9 lg:pb-28">
@@ -47,7 +48,6 @@ export function TokenDashboardFeature({
           TOKLENS v0.1.2 UNIFIED TOP TOOLBAR (统一顶部工具栏)
       ===================================================================== */}
       <DashboardToolbar
-        canViewDetails={canImport}
         rangePreset={rangePreset}
         setRangePreset={setRangePreset}
         setSelectedTrendIndex={setSelectedTrendIndex}
@@ -77,7 +77,7 @@ export function TokenDashboardFeature({
         {/* =====================================================================
             SECTION 02: MODELS & SOURCES (按模型、客户端来源、Token 类型拆解)
         ===================================================================== */}
-        {canImport ? <DeferredSection section="models" enabled={hasSnapshot}><ModelsSection data={data} /></DeferredSection> : null}
+        <DeferredSection section="models" enabled={hasSnapshot}><ModelsSection data={data} /></DeferredSection>
 
         {/* =====================================================================
             SECTION 03: COSTS & COVERAGE (API 等效费用、价格覆盖率)
@@ -87,7 +87,7 @@ export function TokenDashboardFeature({
         {/* =====================================================================
             SECTION 04: PROJECTS & SESSIONS (项目排行表格 + 会话主从检查器)
         ===================================================================== */}
-        {canImport ? <DeferredSection section="projects" enabled={hasSnapshot}><ProjectsSection data={data} /></DeferredSection> : null}
+        <DeferredSection section="projects" enabled={hasSnapshot || !canViewDetails}><ProjectsSection data={data} canViewDetails={canViewDetails} /></DeferredSection>
       </div>
     </div>
   );
