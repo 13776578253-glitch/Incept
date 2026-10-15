@@ -1,7 +1,17 @@
 import 'server-only';
-import type { CcusageModelBreakdown, SourceDescriptionKey } from '../../../domain/index';
+import type { BillingBreakdown, CcusageModelBreakdown, SourceDescriptionKey } from '../../../domain/index';
 import { type RawUsageEvent } from '../types';
 import { SOURCE_META } from '../source-metadata';
+
+function addBilling(target: { billing?: BillingBreakdown }, event: RawUsageEvent, totalTokens: number) {
+  const key = event.isPeak === undefined ? 'standard' : event.isPeak ? 'peak' : 'offPeak';
+  const billing = target.billing ??= {};
+  const part = billing[key] ??= { totalTokens: 0, cost: 0, nominalCost: 0, requests: 0 };
+  part.totalTokens += totalTokens;
+  part.cost += event.cost;
+  part.nominalCost += event.nominalCost ?? event.cost;
+  part.requests++;
+}
 
 export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
   const dailyMap = new Map<
@@ -40,6 +50,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     string,
     {
       modelName: string;
+      billing?: BillingBreakdown;
       sourcesUsed: Set<string>;
       inputTokens: number;
       outputTokens: number;
@@ -205,6 +216,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     dayModel.cacheCreationTokens += ev.cacheCreationTokens;
     dayModel.cacheReadTokens += ev.cacheReadTokens;
     dayModel.cost += ev.cost;
+    addBilling(dayModel, ev, evTotal);
     dayEntry.modelMap.set(ev.modelName, dayModel);
 
     // 2. Monthly
@@ -248,6 +260,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     monthModel.cacheCreationTokens += ev.cacheCreationTokens;
     monthModel.cacheReadTokens += ev.cacheReadTokens;
     monthModel.cost += ev.cost;
+    addBilling(monthModel, ev, evTotal);
     monthEntry.modelMap.set(ev.modelName, monthModel);
 
     // 3. Model
@@ -277,6 +290,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     modelEntry.reasoningTokens += ev.reasoningTokens;
     modelEntry.totalTokens += evTotal;
     modelEntry.cost += ev.cost;
+    addBilling(modelEntry, ev, evTotal);
     modelEntry.missingPricing ||= ev.missingPricing;
     const scopedSessionKey = `${ev.deviceId ?? 'local'}:${ev.sourceId}:${ev.sessionId}`;
     modelEntry.sessions.add(scopedSessionKey);
@@ -356,6 +370,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     sessModel.cacheCreationTokens += ev.cacheCreationTokens;
     sessModel.cacheReadTokens += ev.cacheReadTokens;
     sessModel.cost += ev.cost;
+    addBilling(sessModel, ev, evTotal);
     sessEntry.modelMap.set(ev.modelName, sessModel);
 
     // 6. Project

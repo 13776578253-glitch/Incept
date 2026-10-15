@@ -9,6 +9,9 @@ export type UnitPricing = {
 };
 
 export type RawUsageEvent = {
+  nominalCost?: number;
+  isPeak?: boolean;
+  peakMultiplier?: number;
   eventId?: string;
   costSource?: 'recorded' | 'calculated';
   deviceId?: string;

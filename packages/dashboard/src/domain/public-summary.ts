@@ -1,5 +1,16 @@
 import { emptyDashboard } from './empty-dashboard';
-import type { CcusageModelBreakdown, TokenBreakdown, TokenDashboardData } from './types';
+import type { BillingBreakdown, CcusageModelBreakdown, TokenBreakdown, TokenDashboardData } from './types';
+
+function billingSummary(billing?: BillingBreakdown): BillingBreakdown | undefined {
+  if (!billing) return undefined;
+  const result: BillingBreakdown = {};
+  for (const key of ['peak', 'offPeak', 'standard'] as const) {
+    const part = billing[key];
+    if (part) result[key] = { totalTokens: part.totalTokens, cost: part.cost,
+      nominalCost: part.nominalCost, requests: part.requests };
+  }
+  return result;
+}
 
 // Public data is constructed from an allowlist; never spread collected records.
 function tokens(value: TokenBreakdown): TokenBreakdown {
@@ -15,7 +26,7 @@ function modelBreakdowns(values: CcusageModelBreakdown[]) {
   return values.map(value => ({ modelName: value.modelName, inputTokens: value.inputTokens,
     outputTokens: value.outputTokens, cacheCreationTokens: value.cacheCreationTokens,
     cacheReadTokens: value.cacheReadTokens, reasoningTokens: value.reasoningTokens,
-    totalTokens: value.totalTokens, cost: value.cost, missingPricing: value.missingPricing }));
+    totalTokens: value.totalTokens, cost: value.cost, billing: billingSummary(value.billing), missingPricing: value.missingPricing }));
 }
 
 export function publicDashboardSummary(data: TokenDashboardData, canViewDetails = false): TokenDashboardData {
@@ -32,7 +43,7 @@ export function publicDashboardSummary(data: TokenDashboardData, canViewDetails 
     daily: data.daily.map(day => ({ ...tokens(day), date: day.date, modelsUsed: [...day.modelsUsed], modelBreakdowns: modelBreakdowns(day.modelBreakdowns) })),
     monthly: data.monthly.map(month => ({ ...tokens(month), month: month.month, modelsUsed: [...month.modelsUsed], modelBreakdowns: modelBreakdowns(month.modelBreakdowns) })),
     models: data.models.map(model => ({ ...tokens(model), modelName: model.modelName, displayName: model.displayName,
-      provider: model.provider, source: model.source, sourcesUsed: model.sourcesUsed ? [...model.sourcesUsed] : undefined,
+      provider: model.provider, source: model.source, billing: billingSummary(model.billing), sourcesUsed: model.sourcesUsed ? [...model.sourcesUsed] : undefined,
       shareOfTokens: model.shareOfTokens, shareOfCost: model.shareOfCost, cacheHitRate: model.cacheHitRate,
       missingPricing: model.missingPricing, slotStatus: model.slotStatus, sessionCount: model.sessionCount, activeDays: model.activeDays,
       unitPricing: model.unitPricing ? { inputPerMillion: model.unitPricing.inputPerMillion, outputPerMillion: model.unitPricing.outputPerMillion,

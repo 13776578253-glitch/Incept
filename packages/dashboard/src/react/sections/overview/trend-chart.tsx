@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { formatCompactTokens, formatPercent, formatUsd } from '../../formatters';
 import type { DashboardWindow } from '../../hooks/use-dashboard-window';
 import type { OverviewState } from './use-overview-state';
-import { modelSeries, modelShares, tokenShares } from './trend-series';
+import { modelSeries, modelShares, tokenShares, type ShareSegment } from './trend-series';
 
 type TrendChartProps = Pick<OverviewState, 'trendItems' | 'activeTrendIndex' | 'trendMetric' | 'maxTrendValue'>
   & { setSelectedTrendIndex: DashboardWindow['setSelectedTrendIndex'] };
@@ -17,7 +17,12 @@ export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrend
   const color = trendMetric === 'cost' ? 'var(--badge-emerald-dot)' : 'var(--badge-sky-dot)';
   const legend = trendMetric === 'models' && trendItems.length ? modelShares(trendItems[activeTrendIndex], series)
     : trendMetric === 'stacked' && trendItems.length ? tokenShares(trendItems[activeTrendIndex]) : [];
-  const segmentName = (id: string) => trendMetric === 'models' ? id : t('overview.trend.parts.' + id);
+  const segmentName = (part: ShareSegment) => trendMetric === 'models'
+    ? (part.modelName ?? part.id) + (part.billingPeriod ? ' · ' + t('overview.trend.' + part.billingPeriod) : '')
+    : t('overview.trend.parts.' + part.id);
+  const segmentDetail = (part: ShareSegment) => segmentName(part) + ': ' + formatPercent(part.share, 1)
+    + ' · ' + formatCompactTokens(part.tokens)
+    + (trendMetric === 'models' ? ' · ' + formatUsd(part.cost ?? 0) : '');
 
   return (
     <div className="dashboard-trend-chart">
@@ -34,7 +39,7 @@ export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrend
             const label = trendMetric === 'stacked' ? (hasValue ? '100%' : '—')
               : trendMetric === 'cost' ? formatUsd(value, 1) : formatCompactTokens(value);
             const title = isShare
-              ? item.fullLabel + '\n' + segments.map(part => segmentName(part.id) + ': ' + formatPercent(part.share, 1)).join('\n')
+              ? item.fullLabel + '\n' + segments.map(segmentDetail).join('\n')
               : item.fullLabel + ': ' + label;
             return (
               <button key={item.fullLabel} type="button" className="dashboard-trend-column"
@@ -50,8 +55,8 @@ export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrend
                     style={{ height: height + '%', backgroundColor: color, '--trend-color': color } as CSSProperties}>
                     {isShare ? segments.map(part => (
                       <span key={part.id} role="img" className="dashboard-trend-segment"
-                        aria-label={segmentName(part.id) + ': ' + formatPercent(part.share, 1)}
-                        title={segmentName(part.id) + ': ' + formatPercent(part.share, 1) + ' · ' + formatCompactTokens(part.tokens)}
+                        aria-label={segmentName(part) + ': ' + formatPercent(part.share, 1)}
+                        title={segmentDetail(part)}
                         style={{ height: part.share * 100 + '%', backgroundColor: part.color }} />
                     )) : null}
                   </div>
@@ -66,9 +71,9 @@ export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrend
       </div>
       <div className="dashboard-trend-legend dashboard-subtle-scrollbar" aria-label={t('overview.trend.legend')}>
         {legend.map(part => (
-          <span key={part.id} className="dashboard-trend-legend-item">
+          <span key={part.id} className="dashboard-trend-legend-item" title={segmentDetail(part)}>
             <i style={{ backgroundColor: part.color }} />
-            {segmentName(part.id)} <span>{formatPercent(part.share, 1)}</span>
+            {segmentName(part)} <span>{formatPercent(part.share, 1)}{trendMetric === 'models' ? ' · ' + formatUsd(part.cost ?? 0) : ''}</span>
           </span>
         ))}
       </div>

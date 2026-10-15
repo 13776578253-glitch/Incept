@@ -34,7 +34,7 @@ export function exportTokenData(options: { home?: string; deviceId?: string; lab
       projectName: raw.projectName, workspacePath: raw.workspacePath, sessionTitle: raw.sessionTitle,
       inputTokens: raw.inputTokens, outputTokens: raw.outputTokens, cacheReadTokens: raw.cacheReadTokens,
       cacheCreationTokens: raw.cacheCreationTokens, reasoningTokens: raw.reasoningTokens };
-    if (raw.sourceId === 'commandcode' && raw.costSource === 'recorded') event.recordedCost = raw.cost;
+    if (raw.sourceId === 'commandcode' && raw.costSource === 'recorded') event.recordedCost = raw.nominalCost ?? raw.cost;
     if (!eventTokens(event)) continue;
     const previous = events.get(event.eventId);
     if (previous && recordHash(previous) !== recordHash(event)) throw new Error('Conflicting source records; export stopped');

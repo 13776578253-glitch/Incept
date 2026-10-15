@@ -87,6 +87,8 @@
       "metricTokens": "Token 消耗",
       "metricStacked": "消耗占比",
       "metricModels": "模型占比",
+      "peak": "高峰 2×",
+      "offPeak": "平峰 1×",
       "metricCost": "等效费用",
       "legend": "消耗占比图例",
       "parts": {
@@ -204,6 +206,7 @@
       "allCovered": "所有活跃模型均已配置单价映射"
     },
     "pricingTable": {
+      "peakRates": "高峰：{rates}",
       "greyModelNote": "保留灰度模型原始标识，费用按 Gemini 3.8 Flash 费率折算",
       "title": "模型费率与成本归因表",
       "subtitle": "参考单价（USD / 1M Tokens，输入 / 输出 / 缓存读取 / 写入）及相对成本",

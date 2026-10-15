@@ -95,6 +95,7 @@ export function summarizeUsageEvents(allEvents: RawUsageEvent[], home: string, p
         reasoningTokens: m.reasoningTokens,
         totalTokens: m.totalTokens,
         cost: m.cost,
+        billing: m.billing,
         shareOfTokens: totalTokens > 0 ? (m.totalTokens / totalTokens) : 0,
         shareOfCost: totalCost > 0 ? (m.cost / totalCost) : 0,
         cacheHitRate: promptTotal > 0 ? (m.cacheReadTokens / promptTotal) : 0,

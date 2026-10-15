@@ -87,6 +87,8 @@
       "metricTokens": "Token Usage",
       "metricStacked": "Token Shares",
       "metricModels": "Model Shares",
+      "peak": "Peak 2×",
+      "offPeak": "Off-peak 1×",
       "metricCost": "Equiv. Cost",
       "legend": "Usage share legend",
       "parts": {
@@ -204,6 +206,7 @@
       "allCovered": "All active models have pricing rules configured"
     },
     "pricingTable": {
+      "peakRates": "Peak: {rates}",
       "greyModelNote": "Grey model identifiers are preserved; costs use Gemini 3.8 Flash rates",
       "title": "Unit Rates & Cost Attribution Table",
       "subtitle": "Reference rates (USD / 1M tokens, input / output / cache read / write) and relative costs",
