@@ -32,7 +32,8 @@ export function PlayerPlaylist({ items, emptyLabel, playLabel, onSelect }: Playe
             onClick={() => onSelect(item.id)}
             aria-label={`${playLabel}: ${item.title}`}
             aria-current={item.isCurrent ? 'true' : undefined}
-            className={`flex h-11 w-full cursor-pointer items-center gap-3 px-4 text-left transition-colors duration-[var(--duration-fast)] ${
+            style={{ outline: 'none' }}
+            className={`flex h-11 w-full cursor-pointer items-center gap-3 px-4 text-left transition-colors duration-[var(--duration-fast)] outline-none focus:outline-none focus-visible:outline-none ${
               item.isCurrent
                 ? 'bg-[color:var(--color-row-bg)]'
                 : 'hover:bg-[var(--color-nav-item-hover)]'

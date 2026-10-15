@@ -12,7 +12,6 @@ import { localeConfig } from '@/i18n/config/locales';
 // history: 原逐布局 JSX 传参已统一收敛至本配置
 export const MUSIC_HIDDEN_ROUTE_PREFIXES = [
   '/settings',
-  '/studio',
   '/docs/import-preview',
 ];
 

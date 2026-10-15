@@ -12,6 +12,7 @@ import {
 const STORAGE_KEY = 'incept-music-player-preferences';
 
 const DEFAULT_PREFERENCES = {
+  playerEnabled: true,
   playbackRateLocked: true,
   rememberPlacement: true,
   playbackMode: 'off',
@@ -153,7 +154,22 @@ it('does not overwrite stored preferences with defaults while hydrating', () => 
   const latest = renderPreferences({ strict: true });
 
   expect(latest.current).toMatchObject(stored);
-  expect(storedPreferences()).toEqual(stored);
+  expect(storedPreferences()).toEqual({ ...stored, playerEnabled: true });
+});
+
+it('persists the player switch without changing existing playback preferences', () => {
+  const latest = renderPreferences();
+  act(() => latest.current!.setPlayerEnabled(false));
+  expect(storedPreferences()).toEqual({ ...DEFAULT_PREFERENCES, playerEnabled: false });
+});
+
+it('applies a player switch changed in another browser tab', () => {
+  const latest = renderPreferences();
+  act(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULT_PREFERENCES, playerEnabled: false }));
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
+  });
+  expect(latest.current!.playerEnabled).toBe(false);
 });
 
 it('keeps working when storage writes fail', () => {

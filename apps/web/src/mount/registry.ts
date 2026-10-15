@@ -25,6 +25,8 @@ export const RESERVED_SETTINGS_SECTION_IDS = [
   'appearance',
   'language',
   'account',
+  'docs',
+  'projects',
   'ai',
 ];
 

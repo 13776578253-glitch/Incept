@@ -146,7 +146,7 @@ function MusicTrackRow({
         </span>
       </td>
       <td className="py-3 pl-1 pr-3.5">
-        <div className="flex min-h-7 flex-wrap items-center justify-center gap-2">
+        <div className="flex min-h-7 items-center justify-center gap-2 whitespace-nowrap">
           {track.isActive ? (
             <button
               type="button"
@@ -253,16 +253,16 @@ export function MusicTrackTable({
         />
       </div>
 
-      <div className="overflow-x-auto pt-1">
-        <table className="w-full table-fixed border-collapse text-left">
+      <div className="overflow-x-auto pt-1 [scrollbar-width:thin] [scrollbar-color:var(--color-border)_transparent] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--color-border)] [&::-webkit-scrollbar-button]:hidden">
+        <table className="w-full min-w-[900px] table-fixed border-collapse text-left">
           <colgroup>
-            <col className="w-[28%]" />
-            <col className="w-[15%]" />
-            <col className="w-[12%]" />
-            <col className="w-[16%]" />
-            <col className="w-[7%]" />
-            <col className="w-[12%]" />
-            <col className="w-[10%]" />
+            <col />
+            <col className="w-28" />
+            <col className="w-20" />
+            <col className="w-32" />
+            <col className="w-16" />
+            <col className="w-32" />
+            <col className="w-28" />
           </colgroup>
           <thead>
             <tr className="border-b border-[var(--color-nav-dropdown-border)] text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-nav-muted)]">

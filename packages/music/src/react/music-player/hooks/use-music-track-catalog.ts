@@ -22,7 +22,7 @@ export type MusicTrackCatalog = {
 
 const EMPTY_CATALOG: MusicCatalog = { libraries: [], entries: [] };
 
-export function useMusicTrackCatalog(): MusicTrackCatalog {
+export function useMusicTrackCatalog(enabled = true): MusicTrackCatalog {
   const [catalog, setCatalog] = useState<MusicCatalog>(EMPTY_CATALOG);
   const [status, setStatus] = useState<TrackCatalogStatus>('loading');
   const [requestId, setRequestId] = useState(0);
@@ -34,6 +34,7 @@ export function useMusicTrackCatalog(): MusicTrackCatalog {
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
 
     void fetch(musicEndpoints.catalog, { signal: controller.signal })
@@ -45,6 +46,7 @@ export function useMusicTrackCatalog(): MusicTrackCatalog {
         return response.json();
       })
       .then((payload: unknown) => {
+        if (controller.signal.aborted) return;
         setCatalog(toMusicCatalog(payload));
         setStatus('ready');
       })
@@ -57,7 +59,8 @@ export function useMusicTrackCatalog(): MusicTrackCatalog {
       });
 
     return () => controller.abort();
-  }, [requestId]);
+  }, [requestId, enabled]);
 
-  return { entries: catalog.entries, libraries: catalog.libraries, status, reload };
+  return { entries: enabled ? catalog.entries : EMPTY_CATALOG.entries,
+    libraries: enabled ? catalog.libraries : EMPTY_CATALOG.libraries, status, reload };
 }

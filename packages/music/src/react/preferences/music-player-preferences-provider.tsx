@@ -13,6 +13,8 @@ import {
 export type MusicPlaybackMode = 'off' | 'all' | 'one' | 'shuffle';
 
 export type MusicPlayerPreferencesValue = {
+  playerEnabled: boolean;
+  setPlayerEnabled: (enabled: boolean) => void;
   playbackRateLocked: boolean;
   rememberPlacement: boolean;
   playbackMode: MusicPlaybackMode;
@@ -26,6 +28,7 @@ export type MusicPlayerPreferencesValue = {
 };
 
 type StoredPreferences = {
+  playerEnabled: boolean;
   playbackRateLocked: boolean;
   rememberPlacement: boolean;
   playbackMode: MusicPlaybackMode;
@@ -36,6 +39,7 @@ const STORAGE_KEY = 'incept-music-player-preferences';
 
 // 默认锁速：访客表现为固定 1x
 const DEFAULT_PREFERENCES: StoredPreferences = {
+  playerEnabled: true,
   playbackRateLocked: true,
   rememberPlacement: true,
   playbackMode: 'off',
@@ -65,6 +69,7 @@ function readStoredPreferences(): StoredPreferences {
     const selectedLibrary = record.selectedLibrary;
 
     return {
+      playerEnabled: typeof record.playerEnabled === 'boolean' ? record.playerEnabled : true,
       playbackRateLocked:
         typeof record.playbackRateLocked === 'boolean'
           ? record.playbackRateLocked
@@ -102,6 +107,11 @@ export function MusicPlayerPreferencesProvider({ children }: { children: ReactNo
   useEffect(() => {
     setPreferences(readStoredPreferences());
     setIsReady(true);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY || event.key === null) setPreferences(readStoredPreferences());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   // 持久化放在 effect 里，让状态更新函数保持纯粹：StrictMode 下更新函数会被重复调用
@@ -118,6 +128,10 @@ export function MusicPlayerPreferencesProvider({ children }: { children: ReactNo
 
   const setPlaybackRateLocked = useCallback(
     (locked: boolean) => update({ playbackRateLocked: locked }),
+    [update],
+  );
+  const setPlayerEnabled = useCallback(
+    (enabled: boolean) => update({ playerEnabled: enabled }),
     [update],
   );
   const setRememberPlacement = useCallback(
@@ -137,6 +151,7 @@ export function MusicPlayerPreferencesProvider({ children }: { children: ReactNo
     () => ({
       ...preferences,
       isReady,
+      setPlayerEnabled,
       setPlaybackRateLocked,
       setRememberPlacement,
       setPlaybackMode,
@@ -145,6 +160,7 @@ export function MusicPlayerPreferencesProvider({ children }: { children: ReactNo
     [
       preferences,
       isReady,
+      setPlayerEnabled,
       setPlaybackRateLocked,
       setRememberPlacement,
       setPlaybackMode,

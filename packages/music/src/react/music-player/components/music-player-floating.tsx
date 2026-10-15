@@ -150,7 +150,15 @@ export function MusicPlayerFloating({
 
   const surface =
     viewMode === 'orb' ? (
-      <PlayerOrb label={copy.expand} clock={clock} totalClock={totalClock} onClick={() => setMode('compact')} />
+      <PlayerOrb
+        label={copy.expand}
+        clock={clock}
+        totalClock={totalClock}
+        onClick={() => setMode('compact')}
+        isPlaying={isPlaying}
+        currentTime={state.currentTime}
+        duration={state.duration}
+      />
     ) : viewMode === 'compact' ? (
       <PlayerCompact
         title={title}

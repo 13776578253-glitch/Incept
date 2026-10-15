@@ -12,7 +12,7 @@ export function getMusicSettingsSectionLabel(locale: MusicLocale): string {
 }
 
 export function getMusicSettingsSectionDescription(locale: MusicLocale): string {
-  return locale === 'zh' ? '播放器偏好与曲库' : 'Player preferences and libraries.';
+  return locale === 'zh' ? '播放器偏好与曲库' : 'Player preferences and libraries';
 }
 
 // 分区文案
@@ -21,6 +21,7 @@ const SECTION_COPY: Record<
   MusicLocale,
   {
     group: string;
+    player: { label: string; description: string; enabled: string; disabled: string };
     rateLock: { label: string; description: string; enabled: string; disabled: string };
     placement: { label: string; description: string; enabled: string; disabled: string };
     playbackMode: {
@@ -32,6 +33,7 @@ const SECTION_COPY: Record<
 > = {
   zh: {
     group: '播放器',
+    player: { label: '启用音乐播放器', description: '控制当前浏览器所有页面的悬浮播放器', enabled: '开启', disabled: '关闭' },
     rateLock: {
       label: '倍速锁定',
       description:
@@ -58,6 +60,7 @@ const SECTION_COPY: Record<
   },
   en: {
     group: 'Player',
+    player: { label: 'Music player', description: 'Show the floating player across this browser', enabled: 'On', disabled: 'Off' },
     rateLock: {
       label: 'Speed lock',
       description:
@@ -135,16 +138,19 @@ function SettingsBooleanToggle({
   onToggle,
   isInteractive,
   labels,
+  ariaLabel,
 }: {
   enabled: boolean;
   onToggle: () => void;
   isInteractive: boolean;
   labels: { enabled: string; disabled: string };
+  ariaLabel?: string;
 }) {
   return (
     <button
       type="button"
       role="switch"
+      aria-label={ariaLabel}
       aria-checked={enabled}
       disabled={!isInteractive}
       onClick={onToggle}
@@ -190,9 +196,7 @@ function PreferenceRow({
   );
 }
 
-// music 分区整块面板：3 行播放器偏好 + 整块曲库管理（owner 门控：data 为 null 时不渲染管理区）
-// 7 个偏好字段在面板内部经 useMusicPlayerPreferences 读写
-// history: 原 settings-renderer 的 7 个 props 现已内移至面板内部聚合读写
+// 浏览器播放器开关与偏好；Owner 曲库管理不受播放器开关影响。
 export function MusicSettingsPanel({
   locale,
   data,
@@ -202,6 +206,8 @@ export function MusicSettingsPanel({
 }) {
   const copy = SECTION_COPY[locale];
   const {
+    playerEnabled,
+    setPlayerEnabled,
     playbackRateLocked,
     setPlaybackRateLocked,
     rememberPlacement,
@@ -232,42 +238,47 @@ export function MusicSettingsPanel({
           </div>
 
           <div className="divide-y divide-[var(--color-nav-dropdown-border)] pt-1">
-            <PreferenceRow
-              label={copy.rateLock.label}
-              description={copy.rateLock.description}
-              control={
-                <SettingsBooleanToggle
-                  enabled={playbackRateLocked}
-                  onToggle={() => setPlaybackRateLocked(!playbackRateLocked)}
-                  isInteractive={isMusicPreferencesReady}
-                  labels={{ enabled: copy.rateLock.enabled, disabled: copy.rateLock.disabled }}
-                />
-              }
-            />
-            <PreferenceRow
-              label={copy.placement.label}
-              description={copy.placement.description}
-              control={
-                <SettingsBooleanToggle
-                  enabled={rememberPlacement}
-                  onToggle={() => setRememberPlacement(!rememberPlacement)}
-                  isInteractive={isMusicPreferencesReady}
-                  labels={{ enabled: copy.placement.enabled, disabled: copy.placement.disabled }}
-                />
-              }
-            />
-            <PreferenceRow
-              label={copy.playbackMode.label}
-              description={copy.playbackMode.description}
-              control={
-                <SettingsSegmentedControl
-                  options={copy.playbackMode.options}
-                  selected={isMusicPreferencesReady ? playbackMode : ''}
-                  onSelect={(id) => setPlaybackMode(id as MusicPlaybackMode)}
-                  isInteractive={isMusicPreferencesReady}
-                />
-              }
-            />
+            <PreferenceRow label={copy.player.label} description={copy.player.description}
+              control={<SettingsBooleanToggle enabled={playerEnabled} onToggle={() => setPlayerEnabled(!playerEnabled)}
+                isInteractive={isMusicPreferencesReady} labels={copy.player} ariaLabel={copy.player.label} />} />
+            <fieldset disabled={!playerEnabled} className={cx('min-w-0 divide-y divide-[var(--color-nav-dropdown-border)]', !playerEnabled && 'opacity-50')}>
+              <PreferenceRow
+                label={copy.rateLock.label}
+                description={copy.rateLock.description}
+                control={
+                  <SettingsBooleanToggle
+                    enabled={playbackRateLocked}
+                    onToggle={() => setPlaybackRateLocked(!playbackRateLocked)}
+                    isInteractive={isMusicPreferencesReady && playerEnabled}
+                    labels={{ enabled: copy.rateLock.enabled, disabled: copy.rateLock.disabled }}
+                  />
+                }
+              />
+              <PreferenceRow
+                label={copy.placement.label}
+                description={copy.placement.description}
+                control={
+                  <SettingsBooleanToggle
+                    enabled={rememberPlacement}
+                    onToggle={() => setRememberPlacement(!rememberPlacement)}
+                    isInteractive={isMusicPreferencesReady && playerEnabled}
+                    labels={{ enabled: copy.placement.enabled, disabled: copy.placement.disabled }}
+                  />
+                }
+              />
+              <PreferenceRow
+                label={copy.playbackMode.label}
+                description={copy.playbackMode.description}
+                control={
+                  <SettingsSegmentedControl
+                    options={copy.playbackMode.options}
+                    selected={isMusicPreferencesReady ? playbackMode : ''}
+                    onSelect={(id) => setPlaybackMode(id as MusicPlaybackMode)}
+                    isInteractive={isMusicPreferencesReady && playerEnabled}
+                  />
+                }
+              />
+            </fieldset>
           </div>
         </div>
       </section>

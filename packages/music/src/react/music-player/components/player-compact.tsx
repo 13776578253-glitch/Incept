@@ -99,7 +99,8 @@ export function PlayerCompact({
         data-player-interactive
         onClick={onTogglePlay}
         aria-label={isPlaying ? pauseLabel : playLabel}
-        className={`relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--color-pill-active-bg)] shadow-[var(--shadow-pill-active)] transition-all duration-[var(--duration-fast)] hover:scale-105 hover:bg-[var(--color-nav-item-hover)] active:scale-95 ${
+        style={{ outline: 'none' }}
+        className={`relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--color-pill-active-bg)] shadow-[var(--shadow-pill-active)] transition-all duration-[var(--duration-fast)] hover:scale-105 hover:bg-[var(--color-nav-item-hover)] active:scale-95 outline-none focus:outline-none focus-visible:outline-none ${
           isPlaying
             ? 'text-[var(--badge-sky-icon)] ring-2 ring-[var(--badge-sky-dot)]/25 shadow-[0_2px_10px_rgba(14,165,233,0.18)]'
             : 'text-[var(--color-text)]'
@@ -139,7 +140,8 @@ export function PlayerCompact({
         data-player-interactive
         onClick={onCycleRate}
         aria-label={`${rateCycleLabel} ${rateLabel}`}
-        className="shrink-0 cursor-pointer rounded-full px-2 py-0.5 text-[0.72rem] font-medium tabular-nums text-[var(--color-text-soft)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]"
+        style={{ outline: 'none' }}
+        className="shrink-0 cursor-pointer rounded-full px-2 py-0.5 text-[0.72rem] font-medium tabular-nums text-[var(--color-text-soft)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] outline-none focus:outline-none focus-visible:outline-none"
       >
         {rateLabel}
       </button>
@@ -151,7 +153,8 @@ export function PlayerCompact({
         onClick={onToggleList}
         aria-label={listExpanded ? collapseListLabel : expandListLabel}
         aria-expanded={listExpanded}
-        className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)]"
+        style={{ outline: 'none' }}
+        className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)] outline-none focus:outline-none focus-visible:outline-none"
       >
         <PlayerChevronIcon className={`h-3.5 w-3.5 ${listExpanded ? 'rotate-180' : ''}`} />
       </button>
@@ -163,7 +166,8 @@ export function PlayerCompact({
           data-player-interactive
           onClick={onCollapse}
           aria-label={collapseLabel}
-          className={`${clockClassName} group cursor-pointer transition-colors duration-[var(--duration-fast)] hover:scale-105 active:scale-95`}
+          style={{ outline: 'none' }}
+          className={`${clockClassName} group cursor-pointer transition-colors duration-[var(--duration-fast)] hover:scale-105 active:scale-95 outline-none focus:outline-none focus-visible:outline-none`}
         >
           {clockContent}
         </button>
