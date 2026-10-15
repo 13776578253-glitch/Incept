@@ -2,7 +2,7 @@ import { prisma } from '../client';
 import type { Prisma } from '../../generated/client/index.js';
 import {
   APPROVAL_TTL_MS, CHALLENGE_TTL_MS, DEVICE_TTL_MS, OWNER_TTL_MS, RECENT_AUTH_MS,
-  authEncryptionKey, createTotpSecret, decryptTotp, encryptTotp, hashCredential, hashPassword,
+  authEncryptionKey, createTotpSecret, decryptTotp, deviceEnvironment, encryptTotp, hashCredential, hashPassword,
   randomCredential, verifyPassword, verifyTotp,
 } from './security';
 
@@ -106,6 +106,39 @@ export async function refreshSetupPermit(now = new Date()) {
   });
 }
 
+// Scope risk to the presented device and network, rather than allowing strangers to lock every Owner device.
+const riskTargets = (deviceId: string | null, networkHash: string) => [
+  `network:${networkHash}`, ...(deviceId ? [`device:${deviceId}`] : []),
+];
+
+async function recordLoginRisk(tx: Tx, result: 'password_failure' | 'verification_exhausted' | 'verified', deviceId: string | null, networkHash: string, now: Date) {
+  await tx.securityAudit.createMany({ data: riskTargets(deviceId, networkHash).map(targetId => ({
+    actorId: 'system', action: 'owner.risk', result, targetId, createdAt: now,
+  })) });
+}
+
+async function hasHighLoginRisk(tx: Tx, deviceId: string | null, networkHash: string, now: Date) {
+  const targets = riskTargets(deviceId, networkHash);
+  const events = await tx.securityAudit.findMany({ where: { action: 'owner.risk', targetId: { in: targets },
+    createdAt: { gt: new Date(now.getTime() - 30 * 60000), lte: now } }, orderBy: { createdAt: 'desc' }, take: 200 });
+  return targets.some(target => {
+    const scoped = events.filter(event => event.targetId === target);
+    const verified = scoped.find(event => event.result === 'verified')?.createdAt.getTime() ?? -Infinity;
+    const unresolved = scoped.filter(event => event.createdAt.getTime() > verified);
+    return unresolved.some(event => event.result === 'verification_exhausted')
+      || unresolved.filter(event => event.result === 'password_failure' && event.createdAt.getTime() > now.getTime() - 10 * 60000).length >= 5;
+  });
+}
+
+async function issueOwnerSession(tx: Tx, account: { id: string; credentialVersion: number }, deviceId: string | null,
+  deviceLabel: string, recent: boolean, now: Date) {
+  const sessionToken = randomCredential();
+  const session = await tx.accessSession.create({ data: { role: 'owner', tokenHash: hashCredential(sessionToken), ownerAccountId: account.id,
+    credentialVersion: account.credentialVersion, authenticatedAt: recent ? now : null, lastUsedAt: now, createdAt: now,
+    expiresAt: future(now, OWNER_TTL_MS), deviceId, deviceLabel } });
+  return { stage: 'complete' as const, sessionToken, sessionId: session.id };
+}
+
 export async function startOwnerLogin({ username, password, deviceToken, deviceLabel, networkHash, now = new Date() }: {
   username: string; password: string; deviceToken?: string; deviceLabel: string; networkHash: string; now?: Date;
 }) {
@@ -113,23 +146,35 @@ export async function startOwnerLogin({ username, password, deviceToken, deviceL
   const account = await prisma.ownerAccount.findUnique({ where: { id: 'owner' } });
   if (!account) throw new OwnerAuthError(503, 'owner_not_initialized');
   const validPassword = await verifyPassword(password, account.passwordHash);
-  if (!validPassword || username !== account.username) {
-    await writeSecurityAudit('owner.login', 'invalid_credentials');
-    throw new OwnerAuthError(401, 'invalid_credentials');
-  }
-  return prisma.$transaction(async tx => {
+  const result = await prisma.$transaction(async tx => {
     const current = await lockAccount(tx);
-    if (!current || current.credentialVersion !== account.credentialVersion) throw new OwnerAuthError(401, 'invalid_credentials');
+    if (!current) return { error: 'invalid_credentials' as const };
     const device = deviceToken ? await tx.ownerDevice.findUnique({ where: { tokenHash: hashCredential(deviceToken) } }) : null;
     const trusted = !!device && !device.revokedAt && !expired(device.expiresAt, now)
-      && device.credentialVersion === current.credentialVersion && device.networkHash === networkHash;
+      && device.ownerAccountId === current.id && device.credentialVersion === current.credentialVersion;
+    const deviceId = trusted ? device.id : null;
+    if (!validPassword || username !== current.username || current.credentialVersion !== account.credentialVersion) {
+      await writeSecurityAudit('owner.login', 'invalid_credentials', undefined, undefined, tx);
+      await recordLoginRisk(tx, 'password_failure', deviceId, networkHash, now);
+      return { error: 'invalid_credentials' as const };
+    }
+    const highRisk = await hasHighLoginRisk(tx, deviceId, networkHash, now);
+    const environment = deviceEnvironment(deviceLabel);
+    if (current.totpCiphertext && trusted && environment && environment === deviceEnvironment(device.label) && !highRisk) {
+      const session = await issueOwnerSession(tx, current, deviceId, deviceLabel.slice(0, 512), false, now);
+      await tx.ownerDevice.update({ where: { id: device.id }, data: { networkHash } });
+      await writeSecurityAudit('owner.login', 'success', current.id, session.sessionId, tx);
+      return session;
+    }
     const challengeToken = randomCredential();
     const challenge = await tx.ownerChallenge.create({ data: { tokenHash: hashCredential(challengeToken), ownerAccountId: current.id,
-      credentialVersion: current.credentialVersion, stage: current.totpCiphertext ? 'totp' : 'setup', needsApproval: !trusted,
-      deviceId: trusted ? device.id : null, deviceLabel: deviceLabel.slice(0, 120), networkHash, expiresAt: future(now, CHALLENGE_TTL_MS) } });
+      credentialVersion: current.credentialVersion, stage: current.totpCiphertext ? 'totp' : 'setup', needsApproval: !trusted || highRisk,
+      deviceId, deviceLabel: deviceLabel.slice(0, 512), networkHash, expiresAt: future(now, CHALLENGE_TTL_MS) } });
     await writeSecurityAudit('owner.password', 'success', challenge.id, undefined, tx);
-    return { challengeToken, stage: challenge.stage, challengeId: challenge.id, expiresAt: challenge.expiresAt.toISOString() };
+    return { challengeToken, stage: challenge.stage, challengeId: challenge.id, needsApproval: challenge.needsApproval, expiresAt: challenge.expiresAt.toISOString() };
   });
+  if ('error' in result) throw new OwnerAuthError(401, result.error ?? 'invalid_credentials');
+  return result;
 }
 
 export async function issueLoginApproval(challengeId: string, sessionId?: string, now = new Date()) {
@@ -158,9 +203,20 @@ export async function completeOwnerChallenge({ challengeToken, code, recovery = 
     if (!account || !challenge || challenge.consumedAt || expired(challenge.expiresAt, now) || challenge.failures >= 5
       || challenge.credentialVersion !== account.credentialVersion) throw new OwnerAuthError(401, 'challenge_expired');
     if (challenge.reauthSessionId) await requireSession(tx, challenge.reauthSessionId, true, now);
+    if (challenge.deviceId && !challenge.reauthSessionId) {
+      const device = await tx.ownerDevice.findUnique({ where: { id: challenge.deviceId } });
+      if (!device || device.revokedAt || expired(device.expiresAt, now) || device.credentialVersion !== account.credentialVersion) {
+        throw new OwnerAuthError(401, 'challenge_expired');
+      }
+    }
+    if (challenge.stage === 'totp' && await hasHighLoginRisk(tx, challenge.deviceId, challenge.networkHash, now)) {
+      challenge.needsApproval = true;
+      await tx.ownerChallenge.update({ where: { id: challenge.id }, data: { needsApproval: true } });
+    }
     const fail = async () => {
       await tx.ownerChallenge.update({ where: { id: challenge.id }, data: { failures: { increment: 1 } } });
       await writeSecurityAudit('owner.verify', 'invalid_code', challenge.id, undefined, tx);
+      if (challenge.failures + 1 >= 5) await recordLoginRisk(tx, 'verification_exhausted', challenge.deviceId, challenge.networkHash, now);
       return { error: 'invalid_code' as const, stage: undefined };
     };
     if (challenge.stage === 'setup') {
@@ -190,7 +246,8 @@ export async function completeOwnerChallenge({ challengeToken, code, recovery = 
         await tx.ownerRecoveryCode.update({ where: { id: item.id }, data: { consumedAt: now } });
         await revokeCredentials(tx, now);
         account = await tx.ownerAccount.update({ where: { id: account.id }, data: { credentialVersion: { increment: 1 } } });
-        await tx.ownerChallenge.update({ where: { id: challenge.id }, data: { consumedAt: null, credentialVersion: account.credentialVersion, needsApproval: true } });
+        await tx.ownerChallenge.update({ where: { id: challenge.id }, data: { consumedAt: null, credentialVersion: account.credentialVersion, needsApproval: true, deviceId: null } });
+        challenge.deviceId = null;
         await writeSecurityAudit('owner.recovery-code', 'success', item.id, undefined, tx);
       } else {
         const step = verifyTotp(decryptTotp(account.totpCiphertext), code, account.totpLastStep, now);
@@ -200,7 +257,7 @@ export async function completeOwnerChallenge({ challengeToken, code, recovery = 
       if (challenge.needsApproval || recovery) {
         const expiresAt = future(now, APPROVAL_TTL_MS);
         await tx.ownerChallenge.update({ where: { id: challenge.id }, data: { stage: 'approval', expiresAt, failures: 0 } });
-        return { stage: 'approval', challengeId: challenge.id, expiresAt: expiresAt.toISOString() };
+        return { stage: 'approval', challengeId: challenge.id, needsApproval: true, expiresAt: expiresAt.toISOString() };
       }
     } else if (challenge.stage === 'approval') {
       const permit = await tx.ownerPermit.findUnique({ where: { codeHash: hashCredential(code) } });
@@ -210,18 +267,18 @@ export async function completeOwnerChallenge({ challengeToken, code, recovery = 
     } else return fail();
 
     let deviceId = challenge.deviceId, deviceToken: string | undefined;
-    if (trustDevice) {
+    if (trustDevice && (challenge.stage === 'approval' || challenge.stage === 'enroll')) {
       deviceToken = randomCredential();
       const device = await tx.ownerDevice.create({ data: { ownerAccountId: account.id, credentialVersion: account.credentialVersion,
         tokenHash: hashCredential(deviceToken), label: challenge.deviceLabel, networkHash: challenge.networkHash, expiresAt: future(now, DEVICE_TTL_MS) } });
       deviceId = device.id;
     }
-    const sessionToken = randomCredential();
-    const session = await tx.accessSession.create({ data: { role: 'owner', tokenHash: hashCredential(sessionToken), ownerAccountId: account.id,
-      credentialVersion: account.credentialVersion, authenticatedAt: now, lastUsedAt: now, createdAt: now, expiresAt: future(now, OWNER_TTL_MS), deviceId, deviceLabel: challenge.deviceLabel } });
+    if (deviceId && !deviceToken) await tx.ownerDevice.update({ where: { id: deviceId }, data: { label: challenge.deviceLabel, networkHash: challenge.networkHash } });
+    const session = await issueOwnerSession(tx, account, deviceId, challenge.deviceLabel, true, now);
+    await recordLoginRisk(tx, 'verified', deviceId, challenge.networkHash, now);
     await tx.ownerChallenge.update({ where: { id: challenge.id }, data: { consumedAt: now, pendingTotpCiphertext: null } });
-    await writeSecurityAudit(challenge.reauthSessionId ? 'owner.totp.rebind' : 'owner.login', 'success', account.id, session.id, tx);
-    return { stage: 'complete', sessionToken, deviceToken, recoveryCodes };
+    await writeSecurityAudit(challenge.reauthSessionId ? 'owner.totp.rebind' : 'owner.login', 'success', account.id, session.sessionId, tx);
+    return { ...session, deviceToken, recoveryCodes };
   });
 }
 
@@ -298,7 +355,7 @@ export async function getOwnerManagementState(sessionId: string, now = new Date(
       redeemExpiresAt: true, expiresAt: true, entitlementSeconds: true, maxRedemptions: true, redeemedCount: true, revokedAt: true }, orderBy: { createdAt: 'desc' }, take: 100 }),
     prisma.securityAudit.findMany({ orderBy: { createdAt: 'desc' }, take: 50, select: { id: true, action: true, result: true, targetId: true, createdAt: true } }),
   ]);
-  return { username: session.ownerAccount!.username, sessionId, recentAuthUntil: future(session.authenticatedAt ?? session.createdAt, RECENT_AUTH_MS),
+  return { username: session.ownerAccount!.username, sessionId, recentAuthUntil: session.authenticatedAt ? future(session.authenticatedAt, RECENT_AUTH_MS) : null,
     sessions, devices, challenges, permits, grants, audits };
 }
 

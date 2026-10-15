@@ -26,7 +26,9 @@ function requestNetwork(request: Request) {
 }
 
 async function clearChallenge() { (await cookies()).set(CHALLENGE_COOKIE, '', { ...cookieOptions, maxAge: 0 }); }
-async function challengeCookie(token: string) { (await cookies()).set(CHALLENGE_COOKIE, token, { ...cookieOptions, maxAge: 600 }); }
+async function challengeCookie(token: string, expiresAt: string) {
+  (await cookies()).set(CHALLENGE_COOKIE, token, { ...cookieOptions, expires: new Date(expiresAt) });
+}
 
 async function readChallenge() {
   const token = (await cookies()).get(CHALLENGE_COOKIE)?.value;
@@ -34,7 +36,7 @@ async function readChallenge() {
   const challenge = await prisma.ownerChallenge.findUnique({ where: { tokenHash: hashCredential(token) }, include: { ownerAccount: true } });
   if (!challenge || challenge.consumedAt || challenge.expiresAt <= new Date() || challenge.failures >= 5
     || challenge.credentialVersion !== challenge.ownerAccount.credentialVersion) return null;
-  return { stage: challenge.stage, challengeId: challenge.id, expiresAt: challenge.expiresAt.toISOString(),
+  return { stage: challenge.stage, challengeId: challenge.id, needsApproval: challenge.needsApproval, expiresAt: challenge.expiresAt.toISOString(),
     ...(challenge.stage === 'enroll' && challenge.pendingTotpCiphertext
       ? { secret: decryptTotp(challenge.pendingTotpCiphertext), username: challenge.ownerAccount.username } : {}) };
 }
@@ -64,9 +66,16 @@ export async function ownerPostAction(request: Request, action: string) {
       if (!username || username.length > 64 || !password || Buffer.byteLength(password) > 1024) return json({ error: 'invalid_credentials' }, 401);
       await consumeAuthLimit('owner:password:account', 30);
       const result = await startOwnerLogin({ username, password, deviceToken: jar.get(DEVICE_COOKIE)?.value,
-        deviceLabel: request.headers.get('user-agent')?.replace(/[\r\n]/g, ' ').slice(0, 120) ?? 'Browser', networkHash });
-      await challengeCookie(result.challengeToken);
-      return json({ stage: result.stage, challengeId: result.challengeId, expiresAt: result.expiresAt });
+        deviceLabel: request.headers.get('user-agent')?.replace(/[\r\n]/g, ' ').slice(0, 512) ?? 'Browser', networkHash });
+      const previous = jar.get(CHALLENGE_COOKIE)?.value;
+      if (previous) await prisma.ownerChallenge.updateMany({ where: { tokenHash: hashCredential(previous), consumedAt: null }, data: { consumedAt: new Date(), pendingTotpCiphertext: null } });
+      if ('sessionToken' in result) {
+        await writeOwnerSessionCookie(result.sessionToken);
+        await clearChallenge();
+        return json({ stage: 'complete' });
+      }
+      await challengeCookie(result.challengeToken, result.expiresAt);
+      return json({ stage: result.stage, challengeId: result.challengeId, needsApproval: result.needsApproval, expiresAt: result.expiresAt });
     }
     if (action === 'cancel') {
       const token = jar.get(CHALLENGE_COOKIE)?.value;
@@ -85,6 +94,7 @@ export async function ownerPostAction(request: Request, action: string) {
         await clearChallenge();
         return json({ stage: 'complete', recoveryCodes: result.recoveryCodes });
       }
+      if (result.expiresAt) await challengeCookie(token, result.expiresAt);
       return json(result);
     }
     const viewer = await getCurrentViewer();
@@ -110,10 +120,10 @@ export async function ownerPostAction(request: Request, action: string) {
       return json({ revoked: true });
     }
     const value = action === 'password' ? text(body, 'password') : text(body, 'id');
-    if (action === 'password' && (Array.from(value).length < 12 || Buffer.byteLength(value) > 1024)) return json({ error: 'password_policy' }, 400);
+    if (action === 'password' && (Array.from(value).length < 8 || Buffer.byteLength(value) > 1024)) return json({ error: 'password_policy' }, 400);
     const result = await manageOwner(viewer.sessionId, action, value);
     if ('challengeToken' in result && result.challengeToken) {
-      await challengeCookie(result.challengeToken);
+      await challengeCookie(result.challengeToken, result.expiresAt);
       return json({ stage: 'enroll', secret: result.secret, username: result.username, expiresAt: result.expiresAt });
     }
     if ('signedOut' in result && result.signedOut) {

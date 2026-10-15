@@ -6,6 +6,8 @@ let owner: typeof import('@incept/db/owner');
 let access: typeof import('@incept/db/access');
 let prisma: typeof import('@incept/db')['prisma'];
 const password = 'isolated-owner-password-2026';
+const browser = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+const otherBrowser = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0';
 let now: Date;
 const later = (ms: number) => new Date(now.getTime() + ms);
 const token = (label: string) => hashCredential(`isolated-${label}-${Math.random()}`);
@@ -25,9 +27,15 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
   });
   afterAll(async () => { await prisma?.$disconnect(); });
 
+  async function challengeLogin(input: Parameters<typeof owner.startOwnerLogin>[0]) {
+    const login = await owner.startOwnerLogin(input);
+    if (!('challengeToken' in login)) throw new Error('Expected a verification challenge');
+    return { ...login, challengeToken: login.challengeToken };
+  }
+
   async function initialized(trustDevice = true) {
     const setup = await owner.initializeOwner('owner', password, false, now);
-    const login = await owner.startOwnerLogin({ username: 'owner', password, deviceLabel: 'Acceptance browser', networkHash: 'network-one', now });
+    const login = await challengeLogin({ username: 'owner', password, deviceLabel: browser, networkHash: 'network-one', now });
     const enrollment = await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: setup.setupCode, now });
     if (!('secret' in enrollment) || !enrollment.secret) throw new Error('Enrollment did not start');
     const secret = enrollment.secret;
@@ -38,7 +46,7 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
     return { ...finished, secret, session, setup, login };
   }
   async function unknownLogin(secret: string, time = later(31000)) {
-    const login = await owner.startOwnerLogin({ username: 'owner', password, deviceLabel: 'Unknown browser', networkHash: 'network-two', now: time });
+    const login = await challengeLogin({ username: 'owner', password, deviceLabel: 'Unknown browser', networkHash: 'network-two', now: time });
     const result = await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: totpAt(secret, Math.floor(time.getTime() / 30000)), now: time });
     if (result.stage !== 'approval') throw new Error('Unknown device did not require approval');
     return { ...login, time };
@@ -65,7 +73,7 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
 
   it('requires the controlled setup permit and atomically consumes it', async () => {
     const setup = await owner.initializeOwner('owner', password, false, now);
-    const login = await owner.startOwnerLogin({ username: 'owner', password, deviceLabel: 'browser', networkHash: 'network', now });
+    const login = await challengeLogin({ username: 'owner', password, deviceLabel: 'browser', networkHash: 'network', now });
     expect(await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: 'not-a-permit', now })).toEqual({ error: 'invalid_code' });
     const outcomes = await Promise.allSettled(Array.from({ length: 3 }, () => owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: setup.setupCode, now })));
     expect(outcomes.filter(result => result.status === 'fulfilled' && result.value.stage === 'enroll')).toHaveLength(1);
@@ -75,10 +83,10 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
   it('rejects password failures, expired challenges and exhausted verification attempts', async () => {
     await owner.initializeOwner('owner', password, false, now);
     await expect(owner.startOwnerLogin({ username: 'owner', password: 'wrong', deviceLabel: 'browser', networkHash: 'network', now })).rejects.toMatchObject({ code: 'invalid_credentials' });
-    const login = await owner.startOwnerLogin({ username: 'owner', password, deviceLabel: 'browser', networkHash: 'network', now });
+    const login = await challengeLogin({ username: 'owner', password, deviceLabel: 'browser', networkHash: 'network', now });
     for (let attempt = 0; attempt < 5; attempt++) expect(await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: 'wrong', now })).toHaveProperty('error');
     await expect(owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: 'wrong', now })).rejects.toMatchObject({ code: 'challenge_expired' });
-    const expired = await owner.startOwnerLogin({ username: 'owner', password, deviceLabel: 'browser', networkHash: 'network', now });
+    const expired = await challengeLogin({ username: 'owner', password, deviceLabel: 'browser', networkHash: 'network', now });
     await expect(owner.completeOwnerChallenge({ challengeToken: expired.challengeToken, code: 'anything', now: later(300001) })).rejects.toMatchObject({ code: 'challenge_expired' });
   });
 
@@ -95,17 +103,101 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
     expect(results.filter(result => result.status === 'fulfilled' && result.value.stage === 'complete')).toHaveLength(1);
   });
 
-  it('trusts a verified device but requests approval after a network change and blocks TOTP replay', async () => {
+  it('skips TOTP for a trusted environment even after an IP change without granting recent authentication', async () => {
     const initial = await initialized();
     const time = later(31000);
-    const login = await owner.startOwnerLogin({ username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: 'Known', networkHash: 'network-one', now: time });
-    const result = await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: totpAt(initial.secret, Math.floor(time.getTime() / 30000)), now: time });
-    expect(result.stage).toBe('complete');
-    const again = await owner.startOwnerLogin({ username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: 'Known', networkHash: 'network-one', now: time });
-    expect(await owner.completeOwnerChallenge({ challengeToken: again.challengeToken, code: totpAt(initial.secret, Math.floor(time.getTime() / 30000)), now: time })).toHaveProperty('error');
-    const changed = await owner.startOwnerLogin({ username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: 'Known', networkHash: 'changed', now: later(62000) });
-    const pending = await owner.completeOwnerChallenge({ challengeToken: changed.challengeToken, code: totpAt(initial.secret, Math.floor(later(62000).getTime() / 30000)), now: later(62000) });
-    expect(pending.stage).toBe('approval');
+    const expiry = (await prisma.ownerDevice.findFirstOrThrow()).expiresAt;
+    for (const networkHash of ['network-one', 'changed']) {
+      const result = await owner.startOwnerLogin({ username: 'owner', password, deviceToken: initial.deviceToken,
+        deviceLabel: browser.replace('130.0', '131.0'), networkHash, now: time });
+      expect(result.stage).toBe('complete');
+      if (!('sessionToken' in result)) throw new Error('Expected password-only completion');
+      expect(result.sessionToken).toBeTruthy();
+      const session = await access.findActiveAccessSessionByTokenHash(hashCredential(result.sessionToken!), { now: time });
+      expect(session?.authenticatedAt).toBeNull();
+      expect(session?.expiresAt!.getTime()).toBe(time.getTime() + OWNER_TTL_MS);
+      expect((await owner.getOwnerManagementState(session!.id, time)).recentAuthUntil).toBeNull();
+      await expect(owner.createTemporaryProGrant(session!.id, { kind: 'single', label: '', lifetimeDays: 7 }, time)).rejects.toMatchObject({ status: 428 });
+      for (const action of ['password', 'recovery-codes', 'totp', 'sessions-all', 'session', 'device', 'permit']) {
+        await expect(owner.manageOwner(session!.id, action, action === 'password' ? 'another-valid-password-2026' : 'unused', time)).rejects.toMatchObject({ status: 428 });
+      }
+      await expect(owner.issueLoginApproval('unused', session!.id, time)).rejects.toMatchObject({ status: 428 });
+    }
+    expect((await prisma.ownerDevice.findFirstOrThrow()).expiresAt).toEqual(expiry);
+    expect(await prisma.ownerChallenge.count({ where: { consumedAt: null } })).toBe(0);
+  });
+
+  it('requires only TOTP for environment changes, updates the environment and rejects replay', async () => {
+    const initial = await initialized(), time = later(31000);
+    const login = await challengeLogin({ username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: otherBrowser, networkHash: 'changed', now: time });
+    expect(login.needsApproval).toBe(false);
+    const code = totpAt(initial.secret, Math.floor(time.getTime() / 30000));
+    expect((await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code, now: time })).stage).toBe('complete');
+    const repeat = await challengeLogin({ username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: browser, networkHash: 'changed', now: time });
+    expect(await owner.completeOwnerChallenge({ challengeToken: repeat.challengeToken, code, now: time })).toHaveProperty('error');
+    expect((await owner.startOwnerLogin({ username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: otherBrowser, networkHash: 'changed', now: time })).stage).toBe('complete');
+  });
+
+  it('requires full approval for expired, revoked, forged and old-version device credentials', async () => {
+    const initial = await initialized();
+    const device = await prisma.ownerDevice.findFirstOrThrow();
+    for (const update of [{ expiresAt: later(-1) }, { expiresAt: later(86400000), revokedAt: now }, { revokedAt: null, credentialVersion: 0 }]) {
+      await prisma.ownerDevice.update({ where: { id: device.id }, data: update });
+      const login = await challengeLogin({ username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: browser, networkHash: 'network-one', now: later(31000) });
+      expect(login.needsApproval).toBe(true);
+    }
+    const forged = await challengeLogin({ username: 'owner', password, deviceToken: 'forged', deviceLabel: browser, networkHash: 'network-one', now: later(31000) });
+    expect(forged.needsApproval).toBe(true);
+  });
+
+  it('escalates repeated password failures on the related device and clears risk only after full verification', async () => {
+    const initial = await initialized(), time = later(31000);
+    const input = { username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: browser, networkHash: 'network-one', now: time };
+    for (let i = 0; i < 5; i++) await expect(owner.startOwnerLogin({ ...input, password: 'incorrect' })).rejects.toMatchObject({ code: 'invalid_credentials' });
+    const login = await challengeLogin({ ...input, networkHash: 'new-network' });
+    expect(login.needsApproval).toBe(true);
+    expect((await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: totpAt(initial.secret, Math.floor(time.getTime() / 30000)), now: time })).stage).toBe('approval');
+    const approval = await owner.issueLoginApproval(login.challengeId!, undefined, time);
+    expect((await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: approval.code, now: later(32000) })).stage).toBe('complete');
+    expect((await owner.startOwnerLogin({ ...input, networkHash: 'new-network', now: later(33000) })).stage).toBe('complete');
+  });
+
+  it('keeps unrelated failures isolated and expires related password risk after ten minutes', async () => {
+    const initial = await initialized(), time = later(31000);
+    for (let i = 0; i < 5; i++) await expect(owner.startOwnerLogin({ username: 'owner', password: 'wrong', deviceLabel: browser, networkHash: 'stranger', now: time })).rejects.toMatchObject({ code: 'invalid_credentials' });
+    const input = { username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: browser, networkHash: 'network-one', now: time };
+    expect((await owner.startOwnerLogin(input)).stage).toBe('complete');
+    for (let i = 0; i < 5; i++) await expect(owner.startOwnerLogin({ ...input, password: 'wrong' })).rejects.toMatchObject({ code: 'invalid_credentials' });
+    expect((await challengeLogin(input)).needsApproval).toBe(true);
+    expect((await owner.startOwnerLogin({ ...input, now: later(631001) })).stage).toBe('complete');
+  });
+
+  it('recognizes same-network failures without cookies and step-up stays local to the quick-login session', async () => {
+    const initial = await initialized(), time = later(31000);
+    const input = { username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: browser, networkHash: 'network-one', now: time };
+    const quick = await owner.startOwnerLogin(input);
+    if (!('sessionToken' in quick)) throw new Error('Expected quick login');
+    const quickSession = await access.findActiveAccessSessionByTokenHash(hashCredential(quick.sessionToken), { now: time });
+    expect(await owner.reauthenticateOwner(quickSession!.id, password, totpAt(initial.secret, Math.floor(time.getTime() / 30000)), time)).toBe(true);
+    await owner.createTemporaryProGrant(quickSession!.id, { kind: 'single', label: 'after step-up', lifetimeDays: 7 }, time);
+    expect((await prisma.accessSession.findUniqueOrThrow({ where: { id: initial.session.id } })).authenticatedAt).toEqual(now);
+    await expect(owner.requireRecentOwnerSession(quickSession!.id, later(331000))).rejects.toMatchObject({ status: 428 });
+    for (let i = 0; i < 5; i++) await expect(owner.startOwnerLogin({ ...input, deviceToken: undefined, password: 'wrong' })).rejects.toMatchObject({ code: 'invalid_credentials' });
+    expect((await challengeLogin(input)).needsApproval).toBe(true);
+  });
+
+  it('rechecks risk and revocation while a TOTP challenge is pending', async () => {
+    const initial = await initialized(), time = later(31000);
+    const input = { username: 'owner', password, deviceToken: initial.deviceToken, deviceLabel: otherBrowser, networkHash: 'network-one', now: time };
+    const pending = await challengeLogin(input);
+    expect(pending.needsApproval).toBe(false);
+    const attacked = await challengeLogin(input);
+    for (let i = 0; i < 5; i++) await owner.completeOwnerChallenge({ challengeToken: attacked.challengeToken, code: 'wrong', now: time });
+    expect((await owner.completeOwnerChallenge({ challengeToken: pending.challengeToken, code: totpAt(initial.secret, Math.floor(time.getTime() / 30000)), now: later(32000) })).stage).toBe('approval');
+    const other = await challengeLogin({ ...input, now: later(33000) });
+    const device = await prisma.ownerDevice.findFirstOrThrow();
+    await owner.manageOwner(initial.session.id, 'device', device.id, later(34000));
+    await expect(owner.completeOwnerChallenge({ challengeToken: other.challengeToken, code: 'anything', now: later(35000) })).rejects.toMatchObject({ code: 'challenge_expired' });
   });
 
   it('keeps Owner signed in while idle, expires exactly at seven days and refuses historical secret sessions', async () => {
@@ -153,18 +245,19 @@ describe.skipIf(!url)('Owner / Pro real PostgreSQL acceptance', () => {
     const initial = await initialized();
     await expect(owner.createTemporaryProGrant(initial.session.id, { kind: 'single', label: '', lifetimeDays: 7 }, later(300001))).rejects.toMatchObject({ status: 428 });
     expect(await owner.reauthenticateOwner(initial.session.id, password, totpAt(initial.secret, Math.floor(later(310000).getTime() / 30000)), later(310000))).toBe(true);
-    await owner.manageOwner(initial.session.id, 'password', 'changed-owner-password-2026', later(311000));
+    await owner.manageOwner(initial.session.id, 'password', '12345678', later(311000));
     expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(312000) })).toBeNull();
     expect(await prisma.ownerDevice.count({ where: { revokedAt: null } })).toBe(0);
     await expect(owner.startOwnerLogin({ username: 'owner', password, deviceLabel: 'Known', networkHash: 'network', now: later(312000) })).rejects.toMatchObject({ code: 'invalid_credentials' });
+    expect((await owner.startOwnerLogin({ username: 'owner', password: '12345678', deviceLabel: browser, networkHash: 'network', now: later(313000) })).stage).toBe('totp');
   });
 
   it('consumes recovery once, revokes old state and supports SSH recovery after losing the encryption key', async () => {
     const initial = await initialized();
-    const login = await owner.startOwnerLogin({ username: 'owner', password, deviceLabel: 'Recovery', networkHash: 'network', now: later(31000) });
+    const login = await challengeLogin({ username: 'owner', password, deviceLabel: 'Recovery', networkHash: 'network', now: later(31000) });
     expect((await owner.completeOwnerChallenge({ challengeToken: login.challengeToken, code: initial.recoveryCodes![0], recovery: true, now: later(31000) })).stage).toBe('approval');
     expect(await access.findActiveAccessSessionByTokenHash(hashCredential(initial.sessionToken!), { now: later(31000) })).toBeNull();
-    const repeated = await owner.startOwnerLogin({ username: 'owner', password, deviceLabel: 'Recovery', networkHash: 'network', now: later(31000) });
+    const repeated = await challengeLogin({ username: 'owner', password, deviceLabel: 'Recovery', networkHash: 'network', now: later(31000) });
     expect(await owner.completeOwnerChallenge({ challengeToken: repeated.challengeToken, code: initial.recoveryCodes![0], recovery: true, now: later(31000) })).toHaveProperty('error');
     const originalKey = process.env.INCEPT_AUTH_ENCRYPTION_KEY;
     try {

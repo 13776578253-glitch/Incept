@@ -32,6 +32,7 @@ async function seed() {
   const ownerPassword = crypto.randomBytes(32).toString('base64url'), pro = crypto.randomBytes(32).toString('base64url');
   const initialized = await initializeOwner('owner', ownerPassword);
   const started = await startOwnerLogin({ username: 'owner', password: ownerPassword, deviceLabel: 'Linux acceptance', networkHash: 'fixture' });
+  if (!('challengeToken' in started)) throw new Error('Expected initial Owner enrollment');
   const enrollment = await completeOwnerChallenge({ challengeToken: started.challengeToken, code: initialized.setupCode });
   if (!('secret' in enrollment) || !enrollment.secret) throw new Error('Owner enrollment failed');
   const ownerTotp = enrollment.secret;

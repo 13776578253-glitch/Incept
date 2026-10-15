@@ -16,8 +16,8 @@ function derivePassword(password: string, salt: string) {
 }
 
 export function validatePassword(password: string) {
-  if (Array.from(password).length < 12 || Buffer.byteLength(password) > 1024) {
-    throw new Error('Password must contain at least 12 characters and at most 1024 bytes.');
+  if (Array.from(password).length < 8 || Buffer.byteLength(password) > 1024) {
+    throw new Error('Password must contain at least 8 characters and at most 1024 bytes.');
   }
 }
 
@@ -102,4 +102,14 @@ export function verifyTotp(secret: string, code: string, lastStep: number, now =
 
 export function networkFingerprint(address: string) {
   return createHmac('sha256', authEncryptionKey()).update(`network:${address}`).digest('hex');
+}
+
+// Coarse environment hints ignore routine version updates; the random device token remains the credential.
+export function deviceEnvironment(agent: string): string | null {
+  const browser = /Edg(?:A|iOS)?\//i.test(agent) ? 'edge' : /OPR\//i.test(agent) ? 'opera'
+    : /Firefox\/|FxiOS\//i.test(agent) ? 'firefox' : /Chrome\/|CriOS\//i.test(agent) ? 'chrome'
+      : /Version\/.*Safari\//i.test(agent) ? 'safari' : null;
+  const os = /iPhone|iPad|iPod/i.test(agent) ? 'ios' : /Android/i.test(agent) ? 'android'
+    : /Windows/i.test(agent) ? 'windows' : /Macintosh|Mac OS X/i.test(agent) ? 'macos' : /Linux/i.test(agent) ? 'linux' : null;
+  return browser && os ? `${browser}:${os}:${/Mobile|Android|iPhone|iPad|iPod/i.test(agent) ? 'mobile' : 'desktop'}` : null;
 }

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { createTotpSecret, decryptTotp, encryptTotp, hashPassword, totpAt, verifyPassword, verifyTotp } from '@incept/db/owner/security';
+import { createTotpSecret, decryptTotp, deviceEnvironment, encryptTotp, hashPassword, totpAt, verifyPassword, verifyTotp } from '@incept/db/owner/security';
 
 describe('Owner credential primitives', () => {
+  it('ignores routine browser versions but distinguishes browser, platform and missing environment hints', () => {
+    const chrome = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0.0.0 Safari/537.36';
+    expect(deviceEnvironment(chrome)).toBe(deviceEnvironment(chrome.replace('130.0', '131.0')));
+    expect(deviceEnvironment(chrome)).not.toBe(deviceEnvironment(chrome + ' Edg/130.0'));
+    expect(deviceEnvironment(chrome)).not.toBe(deviceEnvironment(chrome.replace('Windows NT 10.0', 'Linux')));
+    expect(deviceEnvironment('old label')).toBeNull();
+  });
   it('matches every SHA-1 RFC 6238 test vector', () => {
     const secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
     for (const [seconds, expected] of [[59, '94287082'], [1111111109, '07081804'], [1111111111, '14050471'], [1234567890, '89005924'], [2000000000, '69279037'], [20000000000, '65353130']] as const) {
@@ -24,6 +31,9 @@ describe('Owner credential primitives', () => {
     expect(await verifyPassword('incorrect password', first)).toBe(false);
     expect(await verifyPassword('a'.repeat(1025), first)).toBe(false);
     await expect(hashPassword('short')).rejects.toThrow();
+    await expect(hashPassword('1234567')).rejects.toThrow();
+    expect(await verifyPassword('12345678', await hashPassword('12345678'))).toBe(true);
+    await expect(hashPassword('😀'.repeat(7))).rejects.toThrow();
   });
   it('uses authenticated encryption and rejects a lost or substituted encryption key', () => {
     const original = process.env.INCEPT_AUTH_ENCRYPTION_KEY;

@@ -18,7 +18,7 @@ async function passwordInput() {
     for await (const chunk of process.stdin) { text += chunk.toString('utf8'); if (Buffer.byteLength(text) > 4096) throw new Error('Input too large.'); }
     return text.replace(/\r?\n$/, '');
   }
-  process.stderr.write('New Owner password (12+ characters, hidden): ');
+  process.stderr.write('New Owner password (8+ characters, hidden): ');
   return new Promise((resolve, reject) => {
     let value = '';
     const finish = (error) => {
