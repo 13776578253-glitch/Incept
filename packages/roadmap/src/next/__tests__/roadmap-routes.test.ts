@@ -4,15 +4,11 @@ import type { RoadmapEntry } from '../../domain';
 import type { RoadmapBoard, RoadmapEntryPatch, RoadmapWriter } from '../../ports';
 import type { RoadmapRouteContext, RoadmapRouteDeps } from '../shared';
 import {
-  createRoadmapColumnItemRoute,
-  createRoadmapColumnsRoute,
   createRoadmapEntryItemRoute,
   createRoadmapEntriesRoute,
   createRoadmapImportRoute,
-  createRoadmapItemRoute,
   createRoadmapProjectItemRoute,
   createRoadmapProjectsRoute,
-  createRoadmapsRoute,
 } from '../roadmap-routes';
 
 const board: RoadmapBoard = {
@@ -45,20 +41,6 @@ function fakeDeps(
     createProject: async (input) => ({ key: input.key, name: input.name, roadmapEnabled: input.roadmapEnabled ?? true, atlasEnabled: input.atlasEnabled ?? true }),
     updateProject: async ({ key, patch }) => ({ key, name: patch.name ?? { en: 'Project', zh: '项目' }, roadmapEnabled: patch.roadmapEnabled ?? true, atlasEnabled: patch.atlasEnabled ?? true }),
     deleteProject: async ({ key }) => ({ key }),
-    createRoadmap: async (input) => ({ ...board.roadmap, key: input.key, columns: [] }),
-    updateRoadmap: async () => board.roadmap,
-    deleteRoadmap: async ({ key }) => {
-      calls.push('roadmap.delete');
-      return { key };
-    },
-    upsertColumn: async (input) => {
-      calls.push('column.upsert');
-      return { status: input.status, label: input.label };
-    },
-    deleteColumn: async (input) => {
-      calls.push('column.delete');
-      return input;
-    },
     createEntry: async (input) => {
       calls.push('entry.create');
       return { ...createdEntry, key: input.key ?? 'generated-key' };
@@ -120,19 +102,6 @@ describe('roadmap route handlers', () => {
   it('returns 404 for every route when the caller is not the owner', async () => {
     const deps = fakeDeps(false);
     const calls: Promise<Response>[] = [
-      createRoadmapsRoute(deps).GET(request('GET')),
-      createRoadmapsRoute(deps).POST(request('POST', {})),
-      createRoadmapItemRoute(deps).PATCH(request('PATCH', {}), context({ key: 'k' })),
-      createRoadmapItemRoute(deps).DELETE(request('DELETE'), context({ key: 'k' })),
-      createRoadmapColumnsRoute(deps).POST(request('POST', {})),
-      createRoadmapColumnItemRoute(deps).PATCH(
-        request('PATCH', {}),
-        context({ roadmapKey: 'r', status: 'reviewing' }),
-      ),
-      createRoadmapColumnItemRoute(deps).DELETE(
-        request('DELETE'),
-        context({ roadmapKey: 'r', status: 'reviewing' }),
-      ),
       createRoadmapEntriesRoute(deps).POST(request('POST', {})),
       createRoadmapEntryItemRoute(deps).PATCH(request('PATCH', {}), context({ key: 'k' })),
       createRoadmapEntryItemRoute(deps).DELETE(request('DELETE'), context({ key: 'k' })),
@@ -162,23 +131,6 @@ describe('roadmap route handlers', () => {
     const payload = (await response.json()) as { entry: RoadmapEntry };
 
     expect(payload.entry.key).toBe('sample-new');
-  });
-
-  it('requires a project to create a roadmap and accepts project reassignment', async () => {
-    const missing = await createRoadmapsRoute(fakeDeps(true)).POST(request('POST', {
-      key: 'sample-new', name: { en: 'New', zh: '新' },
-    }));
-    expect(missing.status).toBe(400);
-    expect((await missing.json()).error).toMatch(/projectKey/);
-
-    const calls: string[] = [];
-    const deps = fakeDeps(true, calls);
-    const created = await createRoadmapsRoute(deps).POST(request('POST', {
-      key: 'sample-new', projectKey: 'project-one', name: { en: 'New', zh: '新' },
-    }));
-    expect(created.status).toBe(201);
-    const reassigned = await createRoadmapItemRoute(deps).PATCH(request('PATCH', { projectKey: 'project-two' }), context({ key: 'sample-roadmap' }));
-    expect(reassigned.status).toBe(200);
   });
 
   it('creates and renames projects; non-empty project deletion is rejected by the writer', async () => {
@@ -363,22 +315,5 @@ describe('roadmap route handlers', () => {
     const mismatchProjRes = await createRoadmapImportRoute(fakeDeps(true)).POST(mismatchProjReq);
     expect(mismatchProjRes.status).toBe(400);
     expect(((await mismatchProjRes.json()) as { error: string }).error).toMatch(/does not match current project/);
-  });
-
-  it('lists boards for the owner and deletes through the writer', async () => {
-    const deps = fakeDeps(true);
-    const listResponse = await createRoadmapsRoute(deps).GET(request('GET'));
-
-    expect(listResponse.status).toBe(200);
-    expect(((await listResponse.json()) as { boards: RoadmapBoard[] }).boards).toHaveLength(1);
-
-    const calls: string[] = [];
-    const deleteResponse = await createRoadmapItemRoute(fakeDeps(true, calls)).DELETE(
-      request('DELETE'),
-      context({ key: 'sample-roadmap' }),
-    );
-
-    expect(deleteResponse.status).toBe(200);
-    expect(calls).toEqual(['roadmap.delete']);
   });
 });

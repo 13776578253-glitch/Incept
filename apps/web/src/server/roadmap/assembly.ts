@@ -2,13 +2,9 @@ import { prisma } from '@incept/db';
 import {
   createRoadmapProjectItemRoute,
   createRoadmapProjectsRoute,
-  createRoadmapColumnItemRoute,
-  createRoadmapColumnsRoute,
   createRoadmapEntryItemRoute,
   createRoadmapEntriesRoute,
   createRoadmapImportRoute,
-  createRoadmapItemRoute,
-  createRoadmapsRoute,
 } from '@incept/roadmap/next';
 import {
   createPrismaRoadmapRepository,
@@ -18,7 +14,6 @@ import {
 } from '@incept/roadmap/adapters';
 import type {
   AuthorizeOwner,
-  RoadmapBoard,
   RoadmapRepository,
   RoadmapWriter,
 } from '@incept/roadmap/ports';
@@ -56,9 +51,7 @@ export function createRoadmapWriter(): RoadmapWriter {
     roadmap: {
       findUnique: (query) => prisma.roadmap.findUnique(query),
       findMany: (query) => prisma.roadmap.findMany(query),
-      count: (args) => prisma.roadmap.count(args),
       create: (args) => prisma.roadmap.create(args),
-      update: (args) => prisma.roadmap.update(args),
       delete: (args) => prisma.roadmap.delete(args),
     },
     roadmapProject: {
@@ -70,7 +63,6 @@ export function createRoadmapWriter(): RoadmapWriter {
     },
     roadmapColumn: {
       upsert: (args) => prisma.roadmapColumn.upsert(args),
-      delete: (args) => prisma.roadmapColumn.delete(args),
     },
     roadmapEntry: {
       count: (args) => prisma.roadmapEntry.count(args),
@@ -83,28 +75,13 @@ export function createRoadmapWriter(): RoadmapWriter {
       deleteMany: (args) => prisma.roadmapEntryLink.deleteMany(args),
       create: (args) => prisma.roadmapEntryLink.create(args),
     },
-    // Prisma transaction proxy exposes roadmap.count for the project deletion invariant.
     $transaction: (fn) => prisma.$transaction((tx) => fn(tx as unknown as RoadmapPrismaTx)),
   };
 
   return createPrismaRoadmapWriter(client);
 }
 
-export async function loadRoadmapAdminBoards(): Promise<RoadmapBoard[]> {
-  const repository = createRoadmapRepository();
-  const roadmaps = await repository.listRoadmaps();
-  const boards: RoadmapBoard[] = [];
-
-  for (const roadmap of roadmaps) {
-    const board = await repository.listBoard(roadmap.key);
-
-    if (board) boards.push(board);
-  }
-
-  return boards;
-}
-
-export async function loadRoadmapAdminProjects(): Promise<RoadmapProject[]> {
+export async function loadRoadmapProjects(): Promise<RoadmapProject[]> {
   return createRoadmapRepository().listProjects();
 }
 
@@ -115,26 +92,15 @@ const roadmapRouteDeps = {
   writer: createRoadmapWriter(),
 };
 
-const roadmapsRoute = createRoadmapsRoute(roadmapRouteDeps);
 const projectsRoute = createRoadmapProjectsRoute(roadmapRouteDeps);
 const projectItemRoute = createRoadmapProjectItemRoute(roadmapRouteDeps);
-const roadmapItemRoute = createRoadmapItemRoute(roadmapRouteDeps);
-const columnsRoute = createRoadmapColumnsRoute(roadmapRouteDeps);
-const columnItemRoute = createRoadmapColumnItemRoute(roadmapRouteDeps);
 const entriesRoute = createRoadmapEntriesRoute(roadmapRouteDeps);
 const entryItemRoute = createRoadmapEntryItemRoute(roadmapRouteDeps);
 
-export const roadmapsGet = roadmapsRoute.GET;
-export const roadmapsPost = roadmapsRoute.POST;
 export const projectsGet = projectsRoute.GET;
 export const projectsPost = projectsRoute.POST;
 export const projectUpdate = projectItemRoute.PATCH;
 export const projectDelete = withSensitiveOwnerAction('roadmap.project.delete', projectItemRoute.DELETE);
-export const roadmapUpdate = roadmapItemRoute.PATCH;
-export const roadmapDelete = withSensitiveOwnerAction('roadmap.delete', roadmapItemRoute.DELETE);
-export const columnUpsert = columnsRoute.POST;
-export const columnUpdate = columnItemRoute.PATCH;
-export const columnDelete = withSensitiveOwnerAction('roadmap.column.delete', columnItemRoute.DELETE);
 export const entryCreate = entriesRoute.POST;
 export const entryUpdate = entryItemRoute.PATCH;
 export const entryDelete = withSensitiveOwnerAction('roadmap.entry.delete', entryItemRoute.DELETE);

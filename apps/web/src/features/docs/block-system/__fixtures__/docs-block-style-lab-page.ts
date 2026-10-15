@@ -4,65 +4,7 @@ import { docsBlockCatalog } from '../catalog';
 import type { DocsContentBlockModel } from '../schema';
 import { buildCodeExample } from './docs-code-example-utils';
 
-// 根据 block 类型从目录中获取对应的内容块模型，默认为 defaultPayload，可以选择 examplePayload 进行展示
-// 服务于样式实验室页面/style-lab，方便快速对比不同类型和变体的内容块样式 / 半保留结构
-
-// 测试界面地址：http://localhost:3000/en/docs/style-lab
-
-// 目前已实现block：heading、paragraph、list、checklist、callout、quote、divider、code、image
-// 待实现block：table
-
-// - 当前 block 范围：
-//   'paragraph' | 'list' | 'checklist' | 'callout' | 'heading' | 'quote' | 'code' | 'divider' | 'image'
-// - 当前已接入 style-lab：
-//   heading、paragraph、list、checklist、callout、quote、divider、code、image
-// - 当前主要用途：
-//   1. 在接近真实 docs 正文外壳的环境里测试 block 样式
-//   2. 逐条验证 block 的 variant、换行、间距和阅读节奏
-//   3. 为未来 create 与 AI 选型提供可视化参考面
-// - 下一阶段待补：
-//   1. 行内标记系统：delete line、mark、code span、strong、em
-//   2. 未完成 block：table
-//   3. 未来可扩展：embed、timeline、interactive block
-// - 重点观察项：
-//   1. paragraph / list / checklist 在标准正文列宽下的换行稳定性
-//   2. emphasis 变体是否足够明确，但不会破坏正文整体节奏
-//   3. checklist 完成态的勾选框、删除线、降级字色是否清晰但不过重
-
-// 已实现：代码块 section 后续不只验证“容器样式”，还要升级成“多语言代码展示实验面”。
-// 这里的职责目标：
-// 1. 给 docs block system 提供稳定的代码示例输入面
-// 2. 验证不同语言在 light / dark 下的 token 配色是否可读
-// 3. 验证长行、命令行、结构化数据、缩进代码在同一外壳里的表现差异
-//
-// 计划：
-// 1. 保留当前 3 类代码测试：
-//    - multiline code
-//    - compact command
-//    - long-line overflow
-// 2. 新增语言覆盖测试：
-//    - txt
-//    - bash / cli
-//    - html
-//    - css
-//    - javascript / typescript
-//    - python
-//    - c / cpp
-//    - go
-//    - sql
-// 3. 每种语言至少保留一条“最能暴露排版问题”的样例：
-//    - 关键字 + 字符串 + 注释
-//    - 多级缩进
-//    - 长行
-//    - 命令列表
-// 4. 未来如果接 syntax highlighting：
-//    - style-lab 先成为第一落点
-//    - 先验证 example 页面，再进入真实 docs 正文链
-//    - 让 DocsCodeBlock 继续只负责 UI，不负责语言解析
-
-// history: The catalog-backed fixture lookup remains sufficient for the retained Owner-only Style Lab.
-// Deferred: expand inline-mark fixtures or formalize the lab specification only with a concrete regression-testing need.
-
+// 开发用内容块样例，供样式回归检查直接导入；不注册线上路由。
 function getBlock<TType extends DocsContentBlockModel['type']>(
   type: TType,
   example = false,
@@ -147,7 +89,7 @@ export function getDocsBlockStyleLabPage(locale: AppLocale): DocsArticlePageMode
           {
             id: 'style-lab',
             label: isZh ? '段落与标题实验' : 'Heading and paragraph lab',
-            href: '/docs/style-lab',
+            href: '/docs',
             active: true,
           },
         ],
@@ -399,7 +341,7 @@ export function getDocsBlockStyleLabPage(locale: AppLocale): DocsArticlePageMode
                   },
                   {
                     type: 'inlineCode',
-                    code: '/en/docs/style-lab',
+                    code: '/en/docs',
                   },
                   {
                     type: 'text',
@@ -429,7 +371,7 @@ export function getDocsBlockStyleLabPage(locale: AppLocale): DocsArticlePageMode
                   },
                   {
                     type: 'inlineCode',
-                    code: '/en/docs/style-lab',
+                    code: '/en/docs',
                   },
                   {
                     type: 'text',

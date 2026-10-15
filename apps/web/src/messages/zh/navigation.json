@@ -6,8 +6,6 @@
     "docs": "文档",
     "roadmap": "路线图",
     "dashboard": "仪表盘",
-    "workspace": "工作台",
-    "resources": "资源",
     "about": "关于",
     "settings": "设置"
   },
@@ -20,10 +18,6 @@
       "notes": {
         "label": "随笔",
         "description": "个人想法与随笔"
-      },
-      "archive": {
-        "label": "归档",
-        "description": "按时间整理的文章归档"
       }
     }
   },

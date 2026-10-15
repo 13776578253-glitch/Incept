@@ -88,7 +88,6 @@ function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
     roadmap: {
       findUnique: async () => board(),
       findMany: async () => state.roadmaps ?? [{ ...roadmapRow, project: projectRow, columns: [columnRow] }],
-      count: async () => state.entryCountByStatus ?? 0,
       create: async (args) => ({
         ...roadmapRow,
         project: projectRow,
@@ -99,12 +98,6 @@ function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
         position: args.data.position,
         columns: [],
       }),
-      update: async (args) => ({
-        ...roadmapRow,
-        nameEn: args.data.nameEn ?? roadmapRow.nameEn,
-        nameZh: args.data.nameZh ?? roadmapRow.nameZh,
-        position: args.data.position ?? roadmapRow.position,
-      }),
       delete: async () => roadmapRow,
     },
     roadmapColumn: {
@@ -114,10 +107,6 @@ function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
         labelEn: args.create.labelEn,
         labelZh: args.create.labelZh,
       }),
-      delete: async () => {
-        calls.push('column.delete');
-        return columnRow;
-      },
     },
     roadmapEntry: {
       count: async () => state.entryCountByStatus ?? 0,
@@ -218,18 +207,6 @@ describe('createPrismaRoadmapWriter', () => {
     await expect(writer.createEntry({ ...draft, status: 'completed' })).rejects.toThrow(/no column/);
   });
 
-  it('refuses to delete a column that still holds entries', async () => {
-    const calls: string[] = [];
-    const writer = createPrismaRoadmapWriter(
-      fakeWriteClient({ entryCountByStatus: 2, calls }),
-    );
-
-    await expect(
-      writer.deleteColumn({ roadmapKey: 'sample-roadmap', status: 'reviewing' }),
-    ).rejects.toThrow(/still holds 2 entries/);
-    expect(calls).not.toContain('column.delete');
-  });
-
   it('rewrites links on update only when links are provided', async () => {
     const calls: string[] = [];
     const boards = [
@@ -254,20 +231,6 @@ describe('createPrismaRoadmapWriter', () => {
     });
     expect(calls).toContain('links.deleteMany');
     expect(calls).toContain('links.create');
-  });
-
-  it('maps createRoadmap to a bilingual pair without columns', async () => {
-    const writer = createPrismaRoadmapWriter(fakeWriteClient());
-
-    const roadmap = await writer.createRoadmap({
-      key: 'sample-fresh',
-      name: { en: 'Fresh', zh: '新板' },
-      projectKey: 'project-one',
-    });
-
-    expect(roadmap.key).toBe('sample-fresh');
-    expect(roadmap.name).toEqual({ en: 'Fresh', zh: '新板' });
-    expect(roadmap.columns).toEqual([]);
   });
 
   it('persists, clears and preserves detail across the three patch states', async () => {

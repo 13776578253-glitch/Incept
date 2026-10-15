@@ -48,8 +48,8 @@ describe('roadmap owner gate', () => {
   it('permits owner reads without Origin but never anonymous reads', async () => {
     mocks.origin.mockReturnValue(false);
     mocks.viewer.mockResolvedValue({ role: 'owner', sessionId: 's' });
-    expect(await authorizeOwner(new Request('http://localhost/api/internal/roadmap/roadmaps'))).toBe(true);
+    expect(await authorizeOwner(new Request('http://localhost/api/internal/roadmap/projects'))).toBe(true);
     mocks.viewer.mockResolvedValue({ role: 'guest' });
-    expect(await authorizeOwner(new Request('http://localhost/api/internal/roadmap/roadmaps'))).toBe(false);
+    expect(await authorizeOwner(new Request('http://localhost/api/internal/roadmap/projects'))).toBe(false);
   });
 });

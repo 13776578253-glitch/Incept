@@ -2,11 +2,6 @@
   "archive": {
     "title": "Documentation and references"
   },
-  "archivePage": {
-    "eyebrow": "Docs archive",
-    "title": "Browse published content over time",
-    "description": "The archive gathers articles, notes, and references by publication period. Timeline filters and archive-specific browsing will continue to improve in future updates."
-  },
   "access": {
     "requiresRole": "Requires {role} access"
   },

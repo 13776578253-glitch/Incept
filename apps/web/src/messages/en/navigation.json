@@ -6,8 +6,6 @@
     "docs": "Docs",
     "roadmap": "Roadmap",
     "dashboard": "Dashboard",
-    "workspace": "Workspace",
-    "resources": "Resources",
     "about": "About",
     "settings": "Settings"
   },
@@ -20,10 +18,6 @@
       "notes": {
         "label": "Notes",
         "description": "Personal thoughts and notes."
-      },
-      "archive": {
-        "label": "Archive",
-        "description": "Articles organised by publication time."
       }
     }
   },

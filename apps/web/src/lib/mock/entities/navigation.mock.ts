@@ -13,16 +13,6 @@ export const navigationEntitiesMock: MockNavigationItem[] = [
     description: 'Archive, reading pages, and structured reference content.',
   },
   {
-    id: 'workspace',
-    label: 'Workspace',
-    href: '/workspace',
-  },
-  {
-    id: 'resources',
-    label: 'Resources',
-    href: '/resources',
-  },
-  {
     id: 'about',
     label: 'About',
     href: '/about',

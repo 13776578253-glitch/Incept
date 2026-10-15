@@ -1,10 +1,11 @@
-import { SimpleShell } from '@/components/layouts/containers/simple-shell';
-import { DocsArchiveFeature } from '@/features/docs/archive';
+import { redirect } from 'next/navigation';
+import type { AppLocale } from '@/i18n/config/locales';
 
-export default function DocsArchivePage() {
-  return (
-    <SimpleShell>
-      <DocsArchiveFeature />
-    </SimpleShell>
-  );
+export default async function DocsArchivePage({
+  params,
+}: {
+  params: Promise<{ locale: AppLocale }>;
+}) {
+  const { locale } = await params;
+  redirect(`/${locale}/docs`);
 }

@@ -2,11 +2,6 @@
   "archive": {
     "title": "最近文档"
   },
-  "archivePage": {
-    "eyebrow": "归档",
-    "title": "归档页",
-    "description": "归档页用于集中查看不同时期发布的文章、说明和参考资料，完整的时间线筛选会在后续版本中继续完善"
-  },
   "access": {
     "requiresRole": "需要 {role} 权限"
   },

@@ -10,5 +10,5 @@ export default async function PlaybackRedirectPage({
 }) {
   const { locale } = await params;
 
-  redirect(`/${locale}/settings`);
+  redirect(`/${locale}/settings?section=music`);
 }
