@@ -1,5 +1,8 @@
 'use client';
 
+import type { DocsLibraryPageModel } from '../docs/types';
+import { DocsSettingsPanel } from '../docs/docs-settings-panel';
+
 import { useMounted } from '@/hooks/use-mounted';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -69,9 +72,11 @@ export function SettingsPageContent({
   settingsContributionData,
   projects,
   documentLanguage,
+  docs,
 }: {
   viewerRole: 'guest' | 'pro' | 'owner';
   documentLanguage: AppLocale;
+  docs: DocsLibraryPageModel | null;
   // 注册表贡献分区的 loader 数据：owner 门控，非 owner 为 null
   settingsContributionData: Record<string, unknown>;
   projects: Array<{ key: string; name: { en: string; zh: string }; roadmapEnabled: boolean; atlasEnabled: boolean }>;
@@ -143,7 +148,9 @@ export function SettingsPageContent({
       </header>
 
       <div className="hidden lg:block">
-        {selectedSection.id === 'projects' && viewerRole === 'owner' ? (
+        {selectedSection.id === 'docs' && viewerRole === 'owner' && docs ? (
+          <DocsSettingsPanel page={docs} />
+        ) : selectedSection.id === 'projects' && viewerRole === 'owner' ? (
           <ProjectSurfacesPanel initialProjects={projects} language={language} />
         ) : selectedSection.id === 'language' ? (
           <LanguageSettingsPanel documentLanguage={documentLanguage} />
@@ -160,7 +167,9 @@ export function SettingsPageContent({
 
       <div className="space-y-12 lg:hidden">
         {page.sections.map((section) => (
-          section.id === 'projects' && viewerRole === 'owner' ? (
+          section.id === 'docs' && viewerRole === 'owner' && docs ? (
+            <DocsSettingsPanel key={section.id} page={docs} />
+          ) : section.id === 'projects' && viewerRole === 'owner' ? (
             <ProjectSurfacesPanel key={section.id} initialProjects={projects} language={language} />
           ) : section.id === 'language' ? (
             <LanguageSettingsPanel key={section.id} documentLanguage={documentLanguage} />

@@ -32,9 +32,6 @@
     "description": "The draft has been written to the database and is now loading through the normal docs route."
   },
   "library": {
-    "eyebrow": "Workspace",
-    "title": "Docs library overview",
-    "description": "A current-state view of what is published in docs, where each article is mounted, and which routes are live right now.",
     "roles": {
       "guest": "guest",
       "pro": "Temporary access",

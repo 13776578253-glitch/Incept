@@ -16,14 +16,20 @@ export function getSettingsPageData(locale: AppLocale, includeProjects = false):
       getLanguageSettingsSection(locale),
       getAccountSettingsSection(locale),
       ...(includeProjects ? [{
+        id: 'docs',
+        label: 'Docs',
+        description: isZh ? '发布总览与文档列表' : 'Published documents and routes',
+        visibility: 'admin' as const,
+        rows: [],
+      }, {
         id: 'projects',
         label: isZh ? '项目与功能' : 'Projects & surfaces',
-        description: isZh ? '管理项目名称及开放状态' : 'Manage project names and availability.',
+        description: isZh ? '管理项目名称及开放状态' : 'Manage project names and availability',
         visibility: 'admin' as const,
         rows: [],
       }] : []),
       // 注册表贡献分区按 order 追加
-      // history: 原 music 硬编码已由注册面持有，贡献分区插在 ai 之前以保持原分区顺序
+      // history: 原 music 硬编码已由注册面持有，贡献分区按 order 排列
       ...collectSettingsSectionContributions(mountManifest).map((contribution) => ({
         id: contribution.id,
         label: contribution.label(locale),

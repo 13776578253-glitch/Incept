@@ -5,8 +5,16 @@ import { expect, it, vi } from 'vitest';
 import { SettingsSectionPanel } from '../settings-renderer';
 import type { SettingsSection } from '../settings-types';
 import { getAppearanceSettingsSection } from '../../appearance/appearance-schema';
+import { getSettingsPageData } from '../settings-schema';
 
 type Interactions = Omit<Parameters<typeof SettingsSectionPanel>[0], 'section'>;
+
+it('places Owner Docs between Account and Projects without exposing it to other viewers', () => {
+  expect(getSettingsPageData('en', true).sections.map(section => section.id)).toEqual([
+    'appearance', 'language', 'account', 'docs', 'projects', 'music',
+  ]);
+  expect(getSettingsPageData('en').sections.some(section => section.id === 'docs')).toBe(false);
+});
 
 function makeInteractions(overrides: Partial<Interactions> = {}): Interactions {
   return {

@@ -55,7 +55,7 @@ export function getAppearanceSettingsSection(locale: AppLocale): SettingsSection
   return {
     id: 'appearance',
     label: 'Appearance',
-    description: 'Control the overall appearance and reading contrast of the site.',
+    description: 'Control the overall appearance and reading contrast of the site',
     visibility: 'public',
     rows: [
       {

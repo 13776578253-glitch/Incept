@@ -1,3 +1,4 @@
+import { loadDocsSettings } from '@/server/settings/docs';
 import { SettingsShell } from '@/components/layouts/containers/settings-shell';
 import {
   SettingsPageContent,
@@ -21,7 +22,10 @@ export default async function SettingsPage() {
     settingsSectionServerLoaders,
     viewer.role === 'owner',
   );
-  const projects = viewer.role === 'owner' ? await loadRoadmapProjects() : [];
+  const [projects, docs] = await Promise.all([
+    viewer.role === 'owner' ? loadRoadmapProjects() : Promise.resolve([]),
+    loadDocsSettings(),
+  ]);
 
   return (
     <SettingsShell sidebar={<SettingsPageSidebar viewerRole={viewer.role} />}>
@@ -30,6 +34,7 @@ export default async function SettingsPage() {
         documentLanguage={documentLanguage}
         settingsContributionData={settingsContributionData}
         projects={projects}
+        docs={docs}
       />
     </SettingsShell>
   );

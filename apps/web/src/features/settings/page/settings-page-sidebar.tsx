@@ -37,6 +37,14 @@ function SectionIcon({ id, active }: { id: string; active: boolean }) {
     );
   }
 
+  if (id === 'docs') {
+    return (
+      <svg viewBox="0 0 16 16" aria-hidden="true" className={`size-3.5 shrink-0 transition-colors ${colorClass}`} fill="none">
+        <path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3M6 8h4M6 10.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
   if (id === 'music') {
     return (
       <svg viewBox="0 0 16 16" aria-hidden="true" className={`size-3.5 shrink-0 transition-colors ${colorClass}`} fill="none">

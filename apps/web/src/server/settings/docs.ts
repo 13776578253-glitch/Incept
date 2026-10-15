@@ -1,4 +1,5 @@
-import type { AppLocale } from '@/i18n/config/locales';
+import 'server-only';
+import { getCurrentViewer } from '@/server/auth';
 import {
   getDocsLibraryStats,
   listDocsLibraryEntries,
@@ -11,7 +12,7 @@ import type {
   DocsLibraryEntryModel,
   DocsLibraryPageModel,
   DocsLibraryStatsModel,
-} from '@/features/docs/admin/types';
+} from '@/features/settings/docs/types';
 
 function mapDocsLibraryEntryRecord(
   record: DbDocsLibraryEntryRecord,
@@ -47,12 +48,9 @@ function mapDocsLibraryStatsRecord(
   };
 }
 
-// 读取 studio/docs/library 所需的当前发布状态数据 / 不包含导入历史
-export async function getDocsLibraryPage({
-  locale: _locale,
-}: {
-  locale: AppLocale;
-}): Promise<DocsLibraryPageModel> {
+// 设置页的 Owner 发布总览，不向 Guest/Pro 查询或传递条目数据。
+export async function loadDocsSettings(): Promise<DocsLibraryPageModel | null> {
+  if ((await getCurrentViewer()).role !== 'owner') return null;
   const [stats, entries] = await Promise.all([
     getDocsLibraryStats(),
     listDocsLibraryEntries(),

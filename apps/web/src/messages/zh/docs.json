@@ -32,9 +32,6 @@
     "description": "这份草稿已经写入数据库，现在正通过正式 docs 路由加载"
   },
   "library": {
-    "eyebrow": "工作台",
-    "title": "Docs 发布总览",
-    "description": "用于查看当前 docs 里到底发布了什么、每篇文章挂载到了哪里，以及哪些正式路由现在已经生效",
     "roles": {
       "guest": "访客",
       "pro": "临时准许",
