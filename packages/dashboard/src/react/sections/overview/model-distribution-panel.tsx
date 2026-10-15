@@ -108,7 +108,7 @@ export function ModelDistributionPanel({
                     />
                   </div>
                 )}
-                <span className="w-20 text-right font-mono text-[0.68rem] tabular-nums text-[var(--color-nav-muted)]">
+                <span className="w-28 shrink-0 whitespace-nowrap text-right font-mono text-[0.68rem] tabular-nums text-[var(--color-nav-muted)]">
                   {isSlot
                     ? t('overview.distribution.slotBadge')
                     : model.missingPricing
