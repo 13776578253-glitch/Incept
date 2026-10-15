@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { OwnerSecurityPanel } from './owner-security-panel';
 import { CustomSelect } from './custom-select';
+import { PasswordInput } from './password-input';
+import { RecoveryCodesDialog } from './recovery-codes-dialog';
+import { OwnerLoginCompletion, LOGIN_STEP_ANIMATION_MS, LOGIN_SUCCESS_HOLD_MS } from './owner-login-completion';
 import type { OwnerAccountState, OwnerChallengeState } from './account-types';
 
 const fieldStyle =
@@ -46,6 +49,8 @@ export function OwnerAccountPanel({
   const reauthForm = useRef<HTMLFormElement>(null);
   const reauthDialog = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
+  const [signInComplete, setSignInComplete] = useState(false);
+  const [completionFrom, setCompletionFrom] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [trustDevice, setTrustDevice] = useState(false);
   const [useRecovery, setUseRecovery] = useState(false);
@@ -73,7 +78,8 @@ export function OwnerAccountPanel({
   const role = state?.role ?? viewerRole;
   const grants = (state?.management?.grants ?? []).map(grant => ({ ...grant, kind: grant.mode ?? 'shared', revoked: !!grant.revokedAt }));
   const inputId = (name: string) => `${prefix}-${name}`;
-  const steps = enrolling ? [t('账号密码', 'Credentials'), t('初始化授权', 'Setup approval'), t('绑定验证器', 'Enroll authenticator')] : [t('账号密码', 'Credentials'), 'TOTP', t('授权确认', 'Approval')];
+  const steps = enrolling ? [t('账号密码', 'Credentials'), t('初始化授权', 'Setup approval'), t('绑定验证器', 'Enroll authenticator')]
+    : [t('账号密码', 'Credentials'), 'TOTP', t('授权确认', 'Approval')];
   const summary =
     kind === 'single'
       ? lifetimeDays === 'permanent'
@@ -137,7 +143,7 @@ export function OwnerAccountPanel({
     setCheckedAt(Date.now());
   }
 
-  function finishSignIn() {
+  const finishSignIn = useCallback(() => {
     const requested = searchParams.get('returnTo');
     if (requested?.startsWith('/') && !requested.startsWith('//') && !/[\\\u0000-\u001f]/.test(requested)) {
       const destination = new URL(requested, window.location.origin);
@@ -146,7 +152,20 @@ export function OwnerAccountPanel({
       }
     }
     router.refresh();
-  }
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    if (!signInComplete) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch('/api/auth/owner/state', { cache: 'no-store', signal: controller.signal });
+        if (response.ok && !controller.signal.aborted) { setState(await response.json() as OwnerAccountState); setCheckedAt(Date.now()); }
+      } catch { /* The completed server session remains valid if the management refresh is interrupted. */ }
+      if (!controller.signal.aborted) { setSignInComplete(false); finishSignIn(); }
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : (3 - completionFrom) * LOGIN_STEP_ANIMATION_MS + LOGIN_SUCCESS_HOLD_MS);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [signInComplete, completionFrom, finishSignIn]);
 
   async function action(name: string, body: Record<string, unknown>): Promise<Record<string, unknown> | null> {
     setBusy(true); setError(null);
@@ -162,8 +181,10 @@ export function OwnerAccountPanel({
         setPassword(''); setOtp(''); setRiskCode('');
         if (result.stage && result.stage !== 'complete') setState(current => current ? { ...current, challenge: result as OwnerChallengeState } : current);
         if (result.stage === 'complete') {
-          setUseRecovery(false); await reloadState();
-          if (!Array.isArray(result.recoveryCodes)) finishSignIn();
+          setUseRecovery(false); setTrustDevice(false);
+          setState(current => ({ ...(current ?? { configured: true }), role: 'owner', challenge: null }));
+          if (!Array.isArray(result.recoveryCodes)) { setCompletionFrom(step); setSignInComplete(true); }
+          else await reloadState();
         }
       }
       if (Array.isArray(result.recoveryCodes)) setRecoveryCodes(result.recoveryCodes as string[]);
@@ -176,6 +197,18 @@ export function OwnerAccountPanel({
 
   async function advance(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (stage === 'credentials' && (!username.trim() || !password)) {
+      setError(!username.trim() ? 'username_required' : 'password_required');
+      return;
+    }
+    if ((stage === 'totp' || stage === 'enroll') && !(useRecovery && stage === 'totp' ? otp.trim() : /^\d{6}$/.test(otp))) {
+      setError(useRecovery && stage === 'totp' ? 'recovery_code_required' : 'totp_format');
+      return;
+    }
+    if ((stage === 'setup' || stage === 'approval') && !riskCode.trim()) {
+      setError(stage === 'setup' ? 'setup_code_required' : 'approval_code_required');
+      return;
+    }
     if (stage === 'credentials') await action('login', { username, password });
     else await action('verify', { code: stage === 'totp' || stage === 'enroll' ? otp : riskCode, recovery: stage === 'totp' && useRecovery, trustDevice });
   }
@@ -187,6 +220,10 @@ export function OwnerAccountPanel({
 
   async function reauthenticate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!reauthPassword || !/^\d{6}$/.test(reauthCode)) {
+      setError(!reauthPassword ? 'password_required' : 'totp_format');
+      return;
+    }
     const result = await action('reauthenticate', { password: reauthPassword, code: reauthCode });
     setReauthPassword(''); setReauthCode('');
     if (result && pending) { const next = pending; setPending(null); if (next.action) { const completed = await action(next.action, next.body); if (completed?.code) { if (next.action === 'approval') setIssuedApproval(completed.code as string); else setIssuedCode(completed.code as string); } } else await reloadState(); }
@@ -214,7 +251,10 @@ export function OwnerAccountPanel({
     challenge_expired: ['本次验证已过期，请取消后重新登录', 'Verification expired. Cancel and sign in again'], rate_limited: ['尝试次数过多，请10分钟后再试', 'Too many attempts. Try again in 10 minutes'],
     owner_not_initialized: ['Owner账户尚未初始化，请通过受控终端完成初始化', 'Initialize the Owner account from the controlled terminal first'],
     reauthentication_required: ['请验证密码与当前TOTP，再执行此操作', 'Verify your password and current TOTP before continuing'], session_expired: ['登录已失效，请重新登录', 'Your session expired. Sign in again'],
-    forbidden: ['没有执行此操作的权限，请重新登录', 'This action requires a valid Owner session'], password_policy: ['新密码至少12个字符', 'Use a password of at least 12 characters'],
+    forbidden: ['没有执行此操作的权限，请重新登录', 'This action requires a valid Owner session'], password_policy: ['新密码至少8个字符', 'Use a password of at least 8 characters'],
+    username_required: ['请填写用户名', 'Enter your username'], password_required: ['请填写密码', 'Enter your password'],
+    totp_format: ['请填写6位动态码', 'Enter a 6-digit authenticator code'], recovery_code_required: ['请填写恢复码', 'Enter a recovery code'],
+    setup_code_required: ['请填写一次性设置码', 'Enter the one-time setup code'], approval_code_required: ['请填写一次性授权码', 'Enter the one-time approval code'],
     service_unavailable: ['操作未完成，服务暂时不可用，请重试', 'The action was not completed. Please try again'], invalid_request: ['请检查填写内容', 'Check the submitted values'],
   };
 
@@ -270,6 +310,7 @@ export function OwnerAccountPanel({
         >
         <form
           ref={reauthForm}
+          noValidate
           onSubmit={reauthenticate}
           className="space-y-5 p-6 sm:p-7 [&_label]:text-[0.84rem] [&_label]:text-[var(--color-text-muted)]"
         >
@@ -281,11 +322,12 @@ export function OwnerAccountPanel({
                 {t('需要重新验证身份以继续', 'Re-authentication required to continue')}
               </p>
           </div>
-          {error && error !== 'reauthentication_required' && <p role="alert" className="text-[0.8125rem] text-[var(--badge-rose-fg)]">{t(...(errorMessages[error] ?? errorMessages.service_unavailable))}</p>}
+          {error && error !== 'reauthentication_required' && <p role="alert" className="rounded-lg border border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] px-3 py-2 text-[0.8125rem] text-[var(--badge-rose-fg)]">{t(...(errorMessages[error] ?? errorMessages.service_unavailable))}</p>}
           <Field id={inputId('reauth-password')} label={t('当前密码', 'Current password')}>
-            <input
+            <PasswordInput
               id={inputId('reauth-password')}
-              type="password"
+              language={language}
+              passwordLabel={t('当前密码', 'current password')}
               autoComplete="current-password"
               placeholder={t('输入当前密码', 'Enter current password')}
               required
@@ -325,42 +367,7 @@ export function OwnerAccountPanel({
       )}
 
       {recoveryCodes.length > 0 && (
-        <div role="status" className="max-w-[480px] rounded-2xl border border-[var(--badge-amber-border)] bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-3.5 shadow-[var(--shadow-card-sm)]">
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-amber-icon)] shadow-[var(--shadow-card-sm)]">
-              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="5" cy="8" r="3" />
-                <path d="M8 8h6M11 8v2M13 8v2" />
-              </svg>
-            </span>
-            <div>
-              <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-                {t('保存恢复码', 'Save recovery codes')}
-              </h3>
-              <p className="text-xs text-[var(--color-nav-dropdown-description)]">
-                {t('每个码只能使用一次，关闭后不能再次查看；更新整组会使旧码失效', 'Each code can be used once. They cannot be viewed after dismissal; rotating the set invalidates old codes')}
-              </p>
-            </div>
-          </div>
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3.5 shadow-[var(--shadow-card-sm)]">
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-xs select-all text-[var(--color-text)]">
-              {recoveryCodes.map((code) => (
-                <li key={code} className="break-all rounded-md bg-[color:var(--color-row-bg)] px-2 py-1">
-                  {code}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <button
-            className={primaryStyle}
-            onClick={() => {
-              setRecoveryCodes([]);
-              finishSignIn();
-            }}
-          >
-            {t('已保存，继续', 'Saved, continue')}
-          </button>
-        </div>
+        <RecoveryCodesDialog codes={recoveryCodes} language={language} onContinue={() => { setRecoveryCodes([]); finishSignIn(); }} />
       )}
 
       {issuedApproval && role === 'owner' && (
@@ -381,7 +388,9 @@ export function OwnerAccountPanel({
       )}
 
       {/* 1. 登录界面卡片 */}
-      {(role !== 'owner' || stage === 'enroll') && (
+      {signInComplete ? (
+        <OwnerLoginCompletion language={language} fromStep={completionFrom} />
+      ) : (role !== 'owner' || stage === 'enroll') && (
         <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -395,7 +404,7 @@ export function OwnerAccountPanel({
                   {t('Owner 登录', 'Owner sign in')}
                 </h3>
                 <p className="text-[0.8125rem] leading-5 text-[var(--color-nav-dropdown-description)]">
-                  {t('密码与验证器共同验证，未知设备追加授权确认', 'Password and authenticator verification, with additional approval for unknown devices')}
+                  {t('可信设备快捷登录，需要时验证身份', 'Quick sign-in on trusted devices, with verification when needed')}
                 </p>
               </div>
             </div>
@@ -446,7 +455,7 @@ export function OwnerAccountPanel({
             ))}
           </ol>
 
-          <form onSubmit={advance} className="max-w-[480px] space-y-4">
+          <form noValidate onSubmit={advance} className="max-w-[480px] space-y-4">
             {stage === 'credentials' ? (
               <>
                 <Field id={inputId('username')} label={t('用户名', 'Username')}>
@@ -462,10 +471,10 @@ export function OwnerAccountPanel({
                   />
                 </Field>
                 <Field id={inputId('password')} label={t('密码', 'Password')}>
-                  <input
+                  <PasswordInput
                     id={inputId('password')}
                     name="password"
-                    type="password"
+                    language={language}
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -520,7 +529,7 @@ export function OwnerAccountPanel({
                       disabled={busy}
                       className="mt-0.5 size-4 rounded accent-[var(--badge-indigo-icon)] shrink-0"
                     />
-                    <span>{t('信任此浏览器30天；每次登录仍需密码与TOTP', 'Trust this browser for 30 days; password and TOTP remain required')}</span>
+                    <span>{t('信任此浏览器30天；低风险时可凭密码登录', 'Trust this browser for 30 days; low-risk sign-ins need only your password')}</span>
                   </label>
                 )}
                 <Field id={inputId('otp')} label={useRecovery && stage === 'totp' ? t('恢复码', 'Recovery code') : t('TOTP 动态码', 'TOTP code')}>
@@ -560,8 +569,8 @@ export function OwnerAccountPanel({
                   </h4>
                   <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
                     {t(
-                      '在已登录设备或受控 SSH 中签发一次性授权码，绑定本次登录，10 分钟有效、仅可用一次；邮箱验证后续接入',
-                      'Issue a login-bound approval code from a signed-in device or controlled SSH. Valid for 10 minutes, once only. Email verification is planned later',
+                      '在已登录设备或受控 SSH 中签发一次性授权码，绑定本次登录，10 分钟有效、仅可用一次',
+                      'Issue a login-bound approval code from a signed-in device or controlled SSH. Valid for 10 minutes, once only.',
                     )}
                   </p>
                 </div>
@@ -591,8 +600,8 @@ export function OwnerAccountPanel({
                   />
                   <span>
                     {t(
-                      '信任此设备 30 天；仍需密码与 TOTP；公共设备请勿勾选',
-                      'Trust this device for 30 days. Password and TOTP are still required; avoid on public devices',
+                      '信任此设备30天；低风险时可凭密码登录；公共设备请勿勾选',
+                      'Trust this device for 30 days for password-only sign-in at low risk; avoid on public devices',
                     )}
                   </span>
                 </label>
@@ -601,7 +610,7 @@ export function OwnerAccountPanel({
 
             <div className="flex flex-wrap gap-2.5 pt-1">
               <button type="submit" disabled={busy || loading} className={primaryStyle}>
-                {busy ? t('验证中…', 'Verifying…') : step === 2 ? t('完成登录', 'Complete sign-in') : t('下一步', 'Continue')}
+                {busy ? t('验证中…', 'Verifying…') : stage === 'credentials' ? t('登录', 'Sign in') : step === steps.length - 1 ? t('完成登录', 'Complete sign-in') : t('下一步', 'Continue')}
               </button>
               {step > 0 && (
                 <button
@@ -615,15 +624,9 @@ export function OwnerAccountPanel({
               )}
             </div>
 
-            <p className="text-xs leading-5 text-[var(--color-nav-muted)]">
-              {t(
-                '登录有效期7天，敏感操作需验证身份',
-                'Sign-in lasts 7 days; sensitive actions require identity verification',
-              )}
-            </p>
           </form>
 
-          {step < 2 && (
+          {step < steps.length - 1 && (
             <ol
               start={step + 2}
               className="flex max-w-[480px] flex-col gap-3 border-t border-[var(--color-nav-dropdown-border)] pt-4"
@@ -644,7 +647,7 @@ export function OwnerAccountPanel({
                     <p className="font-medium text-[var(--color-text)]">{name}</p>
                     <p className="mt-0.5 text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
                       {step + offset + 1 === 1
-                        ? t('完成密码步骤后，填写验证器动态码', 'Enter an authenticator code after the password step')
+                        ? t('需要时填写验证器动态码', 'Enter an authenticator code when required')
                         : t('首次或风险登录时，使用一次性授权码确认', 'Approve first or risky sign-ins with a one-time code')}
                     </p>
                   </div>
@@ -656,7 +659,7 @@ export function OwnerAccountPanel({
       )}
 
       {/* 2. Owner 账户与安全设置卡片 */}
-      {role === 'owner' && state?.management && (
+      {!signInComplete && role === 'owner' && state?.management && (
         <>
           <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -673,9 +676,6 @@ export function OwnerAccountPanel({
                   </h3>
                   <p className="text-[0.8125rem] leading-5 text-[var(--color-nav-dropdown-description)]">
                     {t('安全设置与设备会话', 'Security settings and device sessions')}
-                  </p>
-                  <p className="mt-0.5 text-xs leading-5 text-[var(--color-nav-muted)]">
-                    {t('登录有效期7天，敏感操作需验证身份', 'Sign-in lasts 7 days; sensitive actions require identity verification')}
                   </p>
                 </div>
               </div>

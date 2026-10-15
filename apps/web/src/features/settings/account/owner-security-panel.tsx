@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useId, useRef, useState, type FormEvent } from 'react';
 import { CustomSelect } from './custom-select';
+import { PasswordInput } from './password-input';
 import type { OwnerManagementState } from './account-types';
 
 const inputStyle =
@@ -30,18 +31,35 @@ export function OwnerSecurityPanel({
   const [open, setOpen] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
+  const [passwordSubmitted, setPasswordSubmitted] = useState(false);
+  const passwordInput = useRef<HTMLInputElement>(null);
+  const confirmationInput = useRef<HTMLInputElement>(null);
+  const passwordId = useId();
   const [approvedCode, setApprovedCode] = useState<string | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState('');
   const date = (value: string | null) =>
     value ? new Date(value).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US') : '—';
+  const passwordIssue = !newPassword ? t('请填写新密码', 'Enter a new password')
+    : Array.from(newPassword).length < 8 ? t('新密码至少8个字符', 'Use at least 8 characters')
+      : new TextEncoder().encode(newPassword).length > 1024 ? t('新密码最多1024字节', 'Use no more than 1024 bytes') : null;
+  const confirmationIssue = !confirmation ? t('请再次填写新密码', 'Confirm your new password')
+    : confirmation !== newPassword ? t('两次密码不一致', 'The passwords do not match') : null;
+  const passwordError = passwordSubmitted ? passwordIssue : null;
+  const confirmationError = passwordSubmitted || confirmation ? confirmationIssue : null;
+  const errorStyle = 'flex items-start gap-2 rounded-lg border border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] px-3 py-2 text-xs leading-5 text-[var(--badge-rose-fg)]';
 
   async function changePassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (newPassword !== confirmation) return;
+    setPasswordSubmitted(true);
+    if (passwordIssue || confirmationIssue) {
+      (passwordIssue ? passwordInput : confirmationInput).current?.focus();
+      return;
+    }
     const result = await action('password', { password: newPassword });
     if (result) {
       setNewPassword('');
       setConfirmation('');
+      setPasswordSubmitted(false);
       setOpen(null);
     }
   }
@@ -65,7 +83,7 @@ export function OwnerSecurityPanel({
     [
       'approval',
       t('签发登录授权码', 'Issue login approval'),
-      t('批准另一台设备的首次或未知网络登录', 'Approve a sign-in on another device or network'),
+      t('批准新设备或高风险登录', 'Approve a new device or high-risk sign-in'),
     ],
     [
       'audits',
@@ -94,6 +112,7 @@ export function OwnerSecurityPanel({
                   setApprovedCode(null);
                   setNewPassword('');
                   setConfirmation('');
+                  setPasswordSubmitted(false);
                 }}
                 className={buttonStyle}
               >
@@ -104,45 +123,53 @@ export function OwnerSecurityPanel({
             {open === key && (
               <div
                 className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 sm:p-5 shadow-[var(--shadow-card-sm)] space-y-4 ${
-                  key === 'password' ? 'max-w-[360px]' : key === 'approval' ? 'max-w-[480px]' : ''
+                  key === 'approval' ? 'max-w-[480px]' : 'w-full'
                 }`}
               >
                 {key === 'password' && (
-                  <form onSubmit={changePassword} className="space-y-3.5">
-                    <label className="block space-y-1.5 text-xs text-[var(--color-text)]">
-                      <span className="font-medium">{t('新密码（至少12个字符）', 'New password (12+ characters)')}</span>
-                      <input
-                        type="password"
+                  <form noValidate onSubmit={changePassword} className="grid w-full gap-4 md:grid-cols-2">
+                    <div className="min-w-0 space-y-1.5 text-xs text-[var(--color-text)]">
+                      <label htmlFor={`${passwordId}-new`} className="font-medium">{t('新密码（至少8个字符）', 'New password (8+ characters)')}</label>
+                      <PasswordInput
+                        ref={passwordInput}
+                        id={`${passwordId}-new`}
+                        name="new-password"
+                        language={language}
+                        passwordLabel={t('新密码', 'new password')}
                         autoComplete="new-password"
                         required
-                        minLength={12}
+                        minLength={8}
+                        aria-invalid={!!passwordError}
+                        aria-describedby={passwordError ? `${passwordId}-new-error` : undefined}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         className={inputStyle}
                       />
-                    </label>
-                    <label className="block space-y-1.5 text-xs text-[var(--color-text)]">
-                      <span className="font-medium">{t('确认新密码', 'Confirm new password')}</span>
-                      <input
-                        type="password"
+                      {passwordError && <p id={`${passwordId}-new-error`} role="alert" className={errorStyle}><span aria-hidden="true">ⓘ</span>{passwordError}</p>}
+                    </div>
+                    <div className="min-w-0 space-y-1.5 text-xs text-[var(--color-text)]">
+                      <label htmlFor={`${passwordId}-confirm`} className="font-medium">{t('确认新密码', 'Confirm new password')}</label>
+                      <PasswordInput
+                        ref={confirmationInput}
+                        id={`${passwordId}-confirm`}
+                        name="confirm-password"
+                        language={language}
+                        passwordLabel={t('确认新密码', 'confirmed password')}
                         autoComplete="new-password"
                         required
+                        aria-invalid={!!confirmationError}
+                        aria-describedby={confirmationError ? `${passwordId}-confirm-error` : undefined}
                         value={confirmation}
                         onChange={(e) => setConfirmation(e.target.value)}
                         className={inputStyle}
                       />
-                    </label>
-                    {confirmation && confirmation !== newPassword && (
-                      <p className="text-xs text-[var(--badge-rose-fg)]">
-                        {t('两次密码不一致', 'The passwords do not match')}
-                      </p>
-                    )}
-                    <button
-                      disabled={busy || !newPassword || newPassword !== confirmation}
-                      className={primaryButtonStyle}
-                    >
-                      {t('确认改密并退出', 'Change password and sign out')}
-                    </button>
+                      {confirmationError && <p id={`${passwordId}-confirm-error`} role="alert" className={errorStyle}><span aria-hidden="true">ⓘ</span>{confirmationError}</p>}
+                    </div>
+                    <div className="md:col-span-2">
+                      <button disabled={busy} className={primaryButtonStyle}>
+                        {t('确认改密并退出', 'Change password and sign out')}
+                      </button>
+                    </div>
                   </form>
                 )}
 

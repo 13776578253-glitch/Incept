@@ -1,0 +1,24 @@
+/* Success feedback follows server authentication and respects reduced motion. */
+.success {
+  animation: appear 300ms ease-out both;
+}
+
+.check {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 0;
+  animation: draw 300ms ease-out both;
+}
+
+@keyframes appear {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes draw {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success, .check { animation: none; }
+}
