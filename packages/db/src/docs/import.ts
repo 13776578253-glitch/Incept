@@ -1096,8 +1096,7 @@ export async function previewDocsCollectionDirectory({
     changes.push({
       key: source.meta.documentKey ?? source.meta.slug,
       type: 'article',
-      // TODO: Both branches of the replace check resolve to 'updated'; collapse this once the renamed and removed statuses are final.
-      status: unchanged ? 'unchanged' : replace ? 'updated' : 'updated',
+      status: unchanged ? 'unchanged' : 'updated',
     });
   }
 

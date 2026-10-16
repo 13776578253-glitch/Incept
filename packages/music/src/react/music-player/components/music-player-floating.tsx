@@ -115,8 +115,8 @@ export function MusicPlayerFloating({
     sendIntent({ type: 'playbackRateRequested', rate: getNextPlaybackRate(state.playbackRate) });
   };
 
-  /* TODO: nextRequested / previousRequested / seekRequested 已在 core 实现并有测试覆盖，播放器 UI 依然没有入口；
-     repeatModeRequested 由设置里的「默认播放模式」驱动，不走播放器 UI。登记在 BACKLOG B-16。 */
+  /* TODO: nextRequested / previousRequested 已在 core 实现并有测试覆盖，播放器 UI 依然没有入口；
+     seekRequested 已接入展开列表原生进度滑杆；repeatModeRequested 由设置里的「默认播放模式」驱动。登记在 BACKLOG B-16。 */
 
   // 错误码在 adapter 里映射成本地化文案，不外抛浏览器的原始 message
   const errorText =
