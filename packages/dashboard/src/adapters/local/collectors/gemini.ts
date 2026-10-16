@@ -5,6 +5,7 @@ import { type UnitPricing, type RawUsageEvent } from '../types';
 import { lookupPricing, computeCostFromPricing, canPriceUsage } from '../pricing';
 import { toLocalDateAndMonth, resolveProjectFromPath } from '../normalization';
 import { walkFiles } from '../files';
+import { hash } from '../imports/identity';
 
 export function collectGeminiEvents(home: string, pricingMap: Map<string, UnitPricing>) {
   const events: RawUsageEvent[] = [];
@@ -26,6 +27,7 @@ export function collectGeminiEvents(home: string, pricingMap: Map<string, UnitPr
         sessionId?: string;
         startTime?: string;
         messages?: Array<{
+          id?: string;
           timestamp?: string;
           type?: string;
           model?: string;
@@ -67,6 +69,7 @@ export function collectGeminiEvents(home: string, pricingMap: Map<string, UnitPr
 
         parsedFiles.add(chatFile.toLowerCase().replace(/\//g, '\\'));
         events.push({
+          eventId: msg.id ? hash(['geminiCli', sessionId, msg.id]) : undefined,
           sourceFile: chatFile,
           sourceId: 'geminiCli',
           sourceLabel: 'Gemini CLI',

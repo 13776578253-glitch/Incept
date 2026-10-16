@@ -1,9 +1,11 @@
 import type { TransferBundle, TransferEvent, TransferPrice } from '../../../domain';
+import { TRANSFER_SOURCES } from '../../../domain';
 import { hash } from './identity';
 
 export const MAX_TRANSFER_BYTES = 64 * 1024 * 1024;
 const digest = /^[a-f0-9]{64}$/;
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+const allowedSources = new Set<string>(TRANSFER_SOURCES);
 export class ImportError extends Error {
   constructor(public readonly code: string, message: string, public readonly status = 400) { super(message); }
 }
@@ -35,7 +37,6 @@ function validateEvent(value: unknown, exportedAt: number): TransferEvent {
   keys(row, ['eventId', 'source', 'sessionId', 'timestampMs', 'modelName', 'projectKey', 'projectName', 'workspacePath', 'sessionTitle',
     'inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheCreationTokens', 'reasoningTokens', 'recordedCost']);
   const source = row.source as TransferEvent['source'];
-  const allowedSources = new Set(['codex', 'commandcode', 'antigravity', 'claudeCode', 'opencode', 'zcode', 'geminiCli']);
   if (!allowedSources.has(source)) fail('Unsupported transfer source: ' + source);
   const eventId = text(row.eventId, 'eventId', 64); if (!digest.test(eventId)) fail('Invalid event identifier');
   const timestampMs = row.timestampMs;

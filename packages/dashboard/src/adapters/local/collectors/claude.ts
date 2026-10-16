@@ -4,6 +4,7 @@ import { basename, join } from 'node:path';
 import type { RawUsageEvent, UnitPricing } from '../types';
 import { walkFiles } from '../files';
 import { emptyCollection, fileUpdatedAt, markCovered, usageEvent } from './common';
+import { hash } from '../imports/identity';
 
 export function collectClaudeEvents(home: string, pricing: Map<string, UnitPricing>) {
   const result = emptyCollection(), requests = new Map<string, RawUsageEvent>();
@@ -26,6 +27,7 @@ export function collectClaudeEvents(home: string, pricing: Map<string, UnitPrici
             inputTokens: Number(tokens.input_tokens ?? 0), outputTokens: Number(tokens.output_tokens ?? 0),
             cacheReadTokens: Number(tokens.cache_read_input_tokens ?? 0), cacheCreationTokens: Number(tokens.cache_creation_input_tokens ?? 0) }, pricing);
           const key = sessionId + ':' + (msg.id ? [row.requestId ?? '', msg.id].join(':') : basename(file) + ':' + index);
+          if (msg.id) event.eventId = hash(['claudeCode', sessionId, row.requestId ?? '', msg.id]);
           const previous = fileEvents.get(key);
           if (!previous || event.inputTokens + event.outputTokens + event.cacheReadTokens + event.cacheCreationTokens
             >= previous.inputTokens + previous.outputTokens + previous.cacheReadTokens + previous.cacheCreationTokens) fileEvents.set(key, event);

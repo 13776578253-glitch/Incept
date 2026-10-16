@@ -6,6 +6,7 @@ import { walkFiles } from '../files';
 import { emptyCollection, fileUpdatedAt, markCovered, usageEvent } from './common';
 import { readConversation } from './antigravity/events';
 import { lookupPricing } from '../pricing';
+import { hash } from '../imports/identity';
 
 export function collectAntigravityEvents(home: string, pricing: Map<string, UnitPricing>) {
   const result = emptyCollection(), seen = new Set<string>();
@@ -49,8 +50,11 @@ export function collectAntigravityEvents(home: string, pricing: Map<string, Unit
       const keys = event.usage.identities.length ? event.usage.identities : [event.key];
       if (keys.some(key => seen.has(sessionId + ':' + key))) continue;
       for (const key of keys) seen.add(sessionId + ':' + key);
-      result.events.push(usageEvent({ ...event.usage, sourceId: 'antigravity', sourceLabel: 'Antigravity',
-        sourceFile: file, sessionId, modelName: event.modelName!, timestampMs: event.timestampMs!, cwd: conversation.cwd }, pricing));
+      const raw = usageEvent({ ...event.usage, sourceId: 'antigravity', sourceLabel: 'Antigravity',
+        sourceFile: file, sessionId, modelName: event.modelName!, timestampMs: event.timestampMs!, cwd: conversation.cwd }, pricing);
+      const request = ['response:', 'provider:', 'message:'].map(prefix => keys.find(key => key.startsWith(prefix))).find(Boolean);
+      if (request) raw.eventId = hash(['antigravity', sessionId, request]);
+      result.events.push(raw);
     }
   }
   return result;

@@ -35,6 +35,11 @@ export class ImportStore {
     return this.db.prepare('SELECT receipt,payload FROM batches' + (activeOnly ? " WHERE status='active'" : '') + ' ORDER BY rowid DESC')
       .all().map(row => ({ ...JSON.parse(String(row.payload)), receipt: JSON.parse(String(row.receipt)) }));
   }
+  receipts(limit?: number): ImportReceipt[] {
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1)) throw new Error('Invalid history limit');
+    return this.db.prepare('SELECT receipt FROM batches ORDER BY rowid DESC' + (limit === undefined ? '' : ' LIMIT ?'))
+      .all(...(limit === undefined ? [] : [limit])).map(row => JSON.parse(String(row.receipt)) as ImportReceipt);
+  }
   preview(id: string): StoredPreview | undefined {
     const row = this.db.prepare('SELECT payload FROM previews WHERE id=?').get(id);
     return row ? JSON.parse(String(row.payload)) : undefined;

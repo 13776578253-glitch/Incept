@@ -38,14 +38,14 @@ export function commitImport(previewId: string, options: Options = {}): ImportRe
     return receipt;
   }); } finally { store.close(); }
 }
-export function importHistory(path = importStorePath()): ImportReceipt[] {
+export function importHistory(path = importStorePath(), limit?: number): ImportReceipt[] {
   const store = new ImportStore(path);
-  try { return store.batches().map(batch => batch.receipt); } finally { store.close(); }
+  try { return store.receipts(limit); } finally { store.close(); }
 }
 export function rollbackImport(id: string, path = importStorePath()): ImportReceipt {
   const store = new ImportStore(path);
   try { return store.transaction(() => {
-    const receipt = store.batches().find(batch => batch.receipt.id === id)?.receipt;
+    const receipt = store.receipts().find(receipt => receipt.id === id);
     if (!receipt) throw new ImportError('BATCH_NOT_FOUND', 'Import batch not found', 404);
     if (receipt.status === 'active') { receipt.status = 'rolled_back'; receipt.rolledBackAt = new Date().toISOString(); store.setReceipt(receipt); }
     return receipt;

@@ -10,6 +10,7 @@ import { collectZCodeEvents } from '../adapters/local/collectors/zcode';
 import { collectCcusageFallback } from '../adapters/local/collectors/ccusage';
 import { canonicalModelName, readLocalOverrides } from '../adapters/local/overrides';
 import { canPriceUsage, loadLocalPricingMap, lookupPricing } from '../adapters/local/pricing';
+import { exportTokenData } from '../adapters/local/imports/exporter';
 
 let home = '';
 const price = new Map();
@@ -43,6 +44,35 @@ const generation = (id: string, input = 100) => pb([1, pb([3, 9876], [19, 'model
   [9, pb([4, pb([1, at / 1000])])])], [2, 0]);
 
 describe('repeatable native collection', () => {
+  it('exports independent Antigravity requests with identical counters and timestamps', () => {
+    const db = nativeDb();
+    db.prepare('INSERT INTO gen_metadata VALUES (?, ?)').run(0, generation('independent-one'));
+    db.prepare('INSERT INTO gen_metadata VALUES (?, ?)').run(1, generation('independent-two'));
+    db.close();
+    const bundle = exportTokenData({ home });
+    expect(bundle.events).toHaveLength(2);
+    expect(new Set(bundle.events.map(event => event.eventId)).size).toBe(2);
+  });
+  it('exports independent Gemini CLI message IDs with identical counters and timestamps', () => {
+    const directory = join(home, '.gemini', 'tmp', 'fixture', 'chats'); mkdirSync(directory, { recursive: true });
+    writeFileSync(join(directory, 'session-fixture.json'), JSON.stringify({ sessionId: 'fixture', messages: ['one', 'two'].map(id => ({
+      id, timestamp: new Date(at).toISOString(), model: 'fixture-model', tokens: { input: 100, output: 20 },
+    })) }));
+    const bundle = exportTokenData({ home });
+    expect(bundle.events).toHaveLength(2);
+    expect(new Set(bundle.events.map(event => event.eventId)).size).toBe(2);
+  });
+  it('exports independent ZCode usage IDs with identical counters and timestamps', () => {
+    const directory = join(home, '.zcode', 'cli', 'db'); mkdirSync(directory, { recursive: true });
+    const db = new DatabaseSync(join(directory, 'db.sqlite'));
+    db.exec('CREATE TABLE session (id TEXT, title TEXT, directory TEXT); CREATE TABLE model_usage (id TEXT, session_id TEXT, model_id TEXT, status TEXT, started_at INTEGER, input_tokens INTEGER, output_tokens INTEGER)');
+    db.prepare('INSERT INTO session VALUES (?,?,?)').run('fixture', 'Fixture', 'D:/fixture');
+    for (const id of ['one', 'two']) db.prepare('INSERT INTO model_usage VALUES (?,?,?,?,?,?,?)').run(id, 'fixture', 'fixture-model', 'completed', at, 100, 20);
+    db.close();
+    const bundle = exportTokenData({ home });
+    expect(bundle.events).toHaveLength(2);
+    expect(new Set(bundle.events.map(event => event.eventId)).size).toBe(2);
+  });
   it('reads IDE Antigravity data, deduplicates generation/step copies and sees appended requests on the next collection', () => {
     const db = nativeDb();
     db.prepare('INSERT INTO gen_metadata VALUES (?, ?)').run(0, generation('response-1'));

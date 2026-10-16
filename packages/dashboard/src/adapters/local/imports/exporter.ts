@@ -9,6 +9,7 @@ import { normalizeFile } from '../collectors/common';
 import { loadLocalPricingMap, lookupPricing } from '../pricing';
 import { hash, nativeEventId, eventTokens, recordHash } from './identity';
 import { validateBundle } from './validation';
+import { canonicalTransferId } from './matching';
 
 export function deviceId(home: string) {
   const directory = join(home, '.incept'), path = join(directory, 'token-device.json');
@@ -39,8 +40,10 @@ export function exportTokenData(options: { home?: string; deviceId?: string; lab
       inputTokens: raw.inputTokens, outputTokens: raw.outputTokens, cacheReadTokens: raw.cacheReadTokens,
       cacheCreationTokens: raw.cacheCreationTokens, reasoningTokens: raw.reasoningTokens };
     if (raw.costSource === 'recorded' && raw.sourceId !== 'codex') event.recordedCost = raw.nominalCost ?? raw.cost;
+    event.eventId = canonicalTransferId(event);
     if (!eventTokens(event)) continue;
     const previous = events.get(event.eventId);
+    if (previous && !raw.eventId) throw new Error('Usage records share an ambiguous identity; export stopped');
     if (previous && recordHash(previous) !== recordHash(event)) throw new Error('Conflicting source records; export stopped');
     events.set(event.eventId, event);
     const price = lookupPricing(pricing, raw.modelName); if (price) prices[raw.modelName] = { ...price };

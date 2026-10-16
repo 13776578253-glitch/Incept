@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import type { UnitPricing } from '../types';
 import { openSqliteReadOnly } from '../sqlite';
 import { emptyCollection, fileUpdatedAt, markCovered, usageEvent } from './common';
+import { hash } from '../imports/identity';
 
 export function collectOpenCodeEvents(home: string, pricing: Map<string, UnitPricing>) {
   const result = emptyCollection();
@@ -30,11 +31,13 @@ export function collectOpenCodeEvents(home: string, pricing: Map<string, UnitPri
           if (seen.has(key)) continue;
           seen.add(key);
           const session = meta.get(sessionId);
-          result.events.push(usageEvent({ sourceId: 'opencode', sourceLabel: 'OpenCode', sourceFile: file, sessionId,
+          const event = usageEvent({ sourceId: 'opencode', sourceLabel: 'OpenCode', sourceFile: file, sessionId,
             sessionTitle: String(session?.title ?? '') || undefined, cwd: String(session?.directory ?? ''),
             modelName, timestampMs: Number(data.time?.created ?? row.time_created), recordedCost: data.cost,
             inputTokens: Number(tokens.input ?? 0), outputTokens: Number(tokens.output ?? 0), reasoningTokens: Number(tokens.reasoning ?? 0),
-            cacheReadTokens: Number(tokens.cache?.read ?? 0), cacheCreationTokens: Number(tokens.cache?.write ?? 0) }, pricing));
+            cacheReadTokens: Number(tokens.cache?.read ?? 0), cacheCreationTokens: Number(tokens.cache?.write ?? 0) }, pricing);
+          event.eventId = hash(['opencode', sessionId, data.id ?? row.id]);
+          result.events.push(event);
         } catch { failedSessions.add(sessionId); }
       }
     }

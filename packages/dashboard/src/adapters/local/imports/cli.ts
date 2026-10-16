@@ -5,6 +5,7 @@ import { commitImport, importHistory, previewImport, rollbackImport } from './se
 import { importStorePath } from './store';
 import { MAX_TRANSFER_BYTES } from './validation';
 import type { ImportMappings } from '../../../domain';
+import { TRANSFER_SOURCES } from '../../../domain';
 
 function run() {
   const [major, minor] = process.versions.node.split('.').map(Number);
@@ -27,7 +28,7 @@ function run() {
     if (Buffer.byteLength(json) > MAX_TRANSFER_BYTES) throw new Error('Export exceeds 64 MiB; no file was written');
     writeFileSync(path, json + '\n', { flag: 'wx', mode: 0o600 });
     console.log(JSON.stringify({ path, device: bundle.device, records: bundle.events.length,
-      sources: ['codex', 'commandcode'].map(source => ({ source, records: bundle.events.filter(event => event.source === source).length })),
+      sources: TRANSFER_SOURCES.map(source => ({ source, records: bundle.events.filter(event => event.source === source).length })),
       warnings: bundle.warnings }, null, 2));
     return;
   }
