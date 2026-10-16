@@ -19,6 +19,13 @@ export function loadImportedEvents(native: RawUsageEvent[], pricing: Map<string,
   try { batches = readActiveBatches(path).reverse(); }
   catch { return { events, pricing: combinedPricing, updatedAt, replacedIndexed, issues: ['Import storage could not be read; imported usage is unavailable.'] }; }
   for (const batch of batches) {
+    for (const [model, price] of Object.entries(batch.bundle.prices ?? {})) {
+      const canonical = canonicalModelName(model, aliases).toLowerCase();
+      if (price && !lookupPricing(combinedPricing, canonical)) combinedPricing.set(canonical, price);
+      if (price && !lookupPricing(combinedPricing, model.toLowerCase())) combinedPricing.set(model.toLowerCase(), price);
+    }
+  }
+  for (const batch of batches) {
     updatedAt = Math.max(updatedAt, Date.parse(batch.receipt.importedAt));
     for (const event of batch.bundle.events) {
       if (seen.has(event.eventId)) continue;
@@ -32,7 +39,11 @@ export function loadImportedEvents(native: RawUsageEvent[], pricing: Map<string,
       const project = target ? targets.get(target) : undefined;
       const cost = event.recordedCost ?? computeCostFromPricing(price, event);
       const dateKey = dashboardDate(event.timestampMs);
-      events.push({ ...event, modelName, sourceId: event.source, sourceLabel: event.source === 'codex' ? 'Codex CLI' : 'CommandCode',
+      const sourceLabels: Record<string, string> = {
+        codex: 'Codex CLI', commandcode: 'CommandCode', antigravity: 'Antigravity',
+        claudeCode: 'Claude Code', opencode: 'OpenCode', zcode: 'ZCode', geminiCli: 'Gemini CLI',
+      };
+      events.push({ ...event, modelName, sourceId: event.source, sourceLabel: sourceLabels[event.source] ?? event.source,
         deviceId: batch.bundle.device.id, deviceLabel: batch.bundle.device.label, importBatchId: batch.receipt.id,
         projectKey: target || externalProject(batch.bundle.device.id, event.projectKey),
         projectName: project?.projectName ?? (target ? event.projectName : event.projectName + ' · ' + batch.bundle.device.label),

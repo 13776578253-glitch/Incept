@@ -28,6 +28,7 @@ export function usageEvent(input: EventInput, pricingMap: Map<string, UnitPricin
   const recorded = readRecordedCost(input.recordedCost);
   const price = lookupPricing(pricingMap, input.modelName);
   return { ...input, ...tokens, ...resolveProjectFromPath(input.cwd, input.sourceLabel), ...toLocalDateAndMonth(input.timestampMs),
+    costSource: recorded === undefined ? 'calculated' : 'recorded',
     cost: recorded ?? computeCostFromPricing(price, tokens), missingPricing: recorded === undefined && !canPriceUsage(price, tokens) };
 }
 

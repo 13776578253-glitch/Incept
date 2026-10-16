@@ -1,4 +1,4 @@
-export type TransferSource = 'codex' | 'commandcode';
+export type TransferSource = 'codex' | 'commandcode' | 'antigravity' | 'claudeCode' | 'opencode' | 'zcode' | 'geminiCli';
 export type TransferEvent = {
   eventId: string;
   source: TransferSource;

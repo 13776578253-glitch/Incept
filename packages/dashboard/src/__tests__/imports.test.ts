@@ -131,6 +131,18 @@ describe('validated cross-device imports', () => {
     expect(pricing.size).toBe(1);
     expect(loadImportedEvents([], new Map(), {}, storePath).events[0].cost).toBeCloseTo(.000156);
   });
+  it('shares pricing across multiple batches so older batches without rates benefit from newer catalogs', () => {
+    const captured = { inputPerMillion: 2, outputPerMillion: 10, cacheReadPerMillion: .2 };
+    const oldBatch = bundle([event('old-event', { modelName: 'shared-model', sessionId: 'old-session' })], { prices: {} });
+    const newBatch = bundle([event('new-event', { modelName: 'other-model', sessionId: 'new-session' })], { prices: { 'shared-model': captured } });
+    const options = { storePath, context: context() };
+    commitImport(previewImport(oldBatch, {}, options).previewId, options);
+    commitImport(previewImport(newBatch, {}, options).previewId, options);
+    const output = loadImportedEvents([], new Map(), {}, storePath);
+    const oldEv = output.events.find(e => e.sessionId === 'old-session');
+    expect(oldEv?.missingPricing).toBe(false);
+    expect(oldEv?.cost).toBeGreaterThan(0);
+  });
   it('rejects corruption, invalid counts, extra fields, repeated IDs and expired previews', () => {
     const valid = bundle(); expect(validateBundle(JSON.parse(JSON.stringify(valid)))).toEqual(valid);
     expect(() => validateBundle({ ...valid, events: [event('changed')] })).toThrow('Checksum mismatch');

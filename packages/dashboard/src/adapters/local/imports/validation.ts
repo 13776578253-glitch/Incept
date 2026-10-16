@@ -34,8 +34,9 @@ function validateEvent(value: unknown, exportedAt: number): TransferEvent {
   const row = object(value);
   keys(row, ['eventId', 'source', 'sessionId', 'timestampMs', 'modelName', 'projectKey', 'projectName', 'workspacePath', 'sessionTitle',
     'inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheCreationTokens', 'reasoningTokens', 'recordedCost']);
-  const source = row.source;
-  if (source !== 'codex' && source !== 'commandcode') fail('Only Codex and CommandCode transfer records are supported');
+  const source = row.source as TransferEvent['source'];
+  const allowedSources = new Set(['codex', 'commandcode', 'antigravity', 'claudeCode', 'opencode', 'zcode', 'geminiCli']);
+  if (!allowedSources.has(source)) fail('Unsupported transfer source: ' + source);
   const eventId = text(row.eventId, 'eventId', 64); if (!digest.test(eventId)) fail('Invalid event identifier');
   const timestampMs = row.timestampMs;
   if (typeof timestampMs !== 'number' || !Number.isSafeInteger(timestampMs)) fail('Invalid timestampMs');
@@ -48,7 +49,7 @@ function validateEvent(value: unknown, exportedAt: number): TransferEvent {
     cacheReadTokens: count(row.cacheReadTokens, 'cacheReadTokens'), cacheCreationTokens: count(row.cacheCreationTokens, 'cacheCreationTokens'),
     reasoningTokens: count(row.reasoningTokens, 'reasoningTokens') };
   if (row.recordedCost !== undefined) {
-    if (source !== 'commandcode') fail('Codex exports have no recorded fee field');
+    if (source === 'codex') fail('Codex exports have no recorded fee field');
     event.recordedCost = rate(row.recordedCost);
   }
   if (event.inputTokens + event.outputTokens + event.cacheReadTokens + event.cacheCreationTokens + event.reasoningTokens <= 0) fail('Empty usage event');
