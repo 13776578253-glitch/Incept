@@ -113,6 +113,13 @@ export type DocsHomeArticleItemModel = {
   href?: string;
 };
 
+export type DocsHomeStatsModel = {
+  totalArticles: number;
+  standalone: number;
+  collections: number;
+  recentlyUpdated: number;
+};
+
 export type DocsHomeGroupModel = {
   id: string;
   label: string;
@@ -122,5 +129,6 @@ export type DocsHomeGroupModel = {
 
 export type DocsHomePageModel = {
   intro: DocsHomeIntroModel;
+  stats?: DocsHomeStatsModel;
   groups: DocsHomeGroupModel[];
 };

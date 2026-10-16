@@ -1,4 +1,4 @@
-import { SimpleShell } from '@/components/layouts/containers/simple-shell';
+import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell';
 import { DocsHomeFeature } from '@/features/docs';
 import type { AppLocale } from '@/i18n/config/locales';
 import { getCurrentViewer } from '@/server/auth';
@@ -19,8 +19,8 @@ export default async function DocsPage({
   });
 
   return (
-    <SimpleShell>
+    <WorkspaceShell>
       <DocsHomeFeature page={page} />
-    </SimpleShell>
+    </WorkspaceShell>
   );
 }
