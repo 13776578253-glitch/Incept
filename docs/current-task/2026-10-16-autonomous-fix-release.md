@@ -68,3 +68,21 @@ Commit 建议：`docs: record validated fix release and paired token tools`。
 ### 根入口转发端口修复前确认
 
 新版本已切换、备份与七来源校验通过。扩展外网检查发现根 `/` 返回 `307 https://43-155-136-83.sslip.io:3000/zh`；本语言完整路径正常。Next 16 的 `proxy.ts` 正常执行；问题是 Caddy 未覆盖 X-Forwarded-Port，Next/next-intl 继承了应用内部端口。修复仅在 HTTPS 反代段覆盖端口为 443，保持显式 Host 端口的隔离测试行为。先用真实隔离 Caddy 验证无端口 Host 的中英文跳转及伪造转发端口，再替换线上 Caddyfile 并验证配置、重载，保留原配置。应用镜像和数据库不变。
+
+## [2026-10-16 14:13] - Update by AI完成改动:
+
+13:58:56（Asia/Singapore）完成获批切换，`/srv/incept/current` 指向 `/srv/incept/releases/1a29a92`，app 精确镜像为 `sha256:1c72587851fa47faf8c40745b2d252c84edeef57a86113a412282e326dca401a`。迁移检查返回无待应用迁移，仍为 21；PG 未重启，真实内容卷及 shared/Caddy 路径保持一致。
+
+发布前一致备份为 `/srv/incept/backups/2026-10-16T05-58-32.483Z-3a861936-1e51-4fa7-b43d-86c72d3c2008`，manifest 完成于 13:58:39。PG/shared/Caddy/认证密钥四归档 SHA256 全部匹配，认证密钥与真实 env 一致；旧镜像、旧目录及私有 env 回退副本均保留。Owner 1/TOTP 1、活动 Owner 会话 1、文档 14（private 7）、音乐 12、八个未消费恢复码均保持。
+
+根入口修复单独提交为 `bffe078`，14:07:20 已验证 Caddy 配置并重载。根 `/` 与 `/docs` 的中英文跳转、默认/显式 HTTPS 端口及伪造转发头八组隔离检查和八组外网检查通过。完整 Caddy 安全验收在保留隔离栈（localhost 上下文）通过：TLS、双语高亮阅读、邀请隐私头、媒体权限、Origin、体积限制、跨接口上传并发门禁。三个运维回归通过。
+
+实际生产验收：双语首页/Docs/Dashboard/About/活动页及 live/ready 正常；HTTP 308 至 HTTPS、TLSv1.3 信任有效；reference 跳本语言 Docs；匿名强制刷新 403、导入/项目 API 404，private 正文匿名 404、guest 正文 200；音乐 11 个公开可播放项，Range 206/1024 bytes。部署验证器接受全部七来源。
+
+现有真实 Owner 浏览器会话已刷新到新前端，成功完成 Refresh now 并打开导入历史；没有新建测试账号、重绑认证或写入合成生产批次。独立生产 Worker 读取的 30d 为 3,248,040,709 Token、20 个模型、已知费用 $493.8565029348002、采集问题 0；七来源槽位中六个有实际用量，Gemini CLI 为 0。浏览器费用显示 $493.86，与 Worker 相符。
+
+交付包增加 `token-tools.zip` 和包含端口修复的完整运维归档 `ops-linux-https-port-bffe078.tar.gz`。应用镜像仍为已验收 `1a29a92`，运维文件版本为 `bffe078`，两者独立记录于 manifest/上线回执。数据上传与本地更新说明已改为可执行状态。其他并行工作区改动及暂存归档保持原有内容；修正过一次误带并行暂存项的未推送本地提交，最终代理提交只包含本轮三个文件。
+
+遗留问题：本轮软件修复、上线与验收已完成，交接用户的数据导出/上传及本地站点刷新。离机存储、外部告警接收端、自动上报仍属原运营计划中的独立后续任务。新增审计报告中的 `proxy.ts → middleware.ts` 建议与 Next 16 本地文档不符；本轮已按真实原因修复端口。
+
+Commit 建议：`docs: record approved fix rollout and data handoff`。
