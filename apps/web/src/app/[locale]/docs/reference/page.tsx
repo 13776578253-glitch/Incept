@@ -7,5 +7,5 @@ export default async function DocsReferencePage({
   params: Promise<{ locale: AppLocale }>;
 }) {
   const { locale } = await params;
-  redirect(`/${locale}/docs/series/document-shells/shell-foundations`);
+  redirect(`/${locale}/docs`);
 }

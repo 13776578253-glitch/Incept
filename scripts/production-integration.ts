@@ -127,14 +127,29 @@ async function http() {
     assert.equal((await request('/en/docs/fixture-guest', token)).status, 200);
     assert.equal((await request('/en/docs/fixture-pro', token)).status, role === 'guest' ? 404 : 200);
     assert.equal((await request('/en/docs/fixture-private', token)).status, role === 'owner' ? 200 : 404);
-    assert.equal((await request('/en/studio/roadmap', token)).status, role === 'owner' ? 200 : 404);
+    for (const locale of ['en', 'zh']) {
+      for (const retired of ['studio/roadmap', 'studio/docs/library', 'docs/style-lab', 'workspace', 'resources', 'create']) {
+        assert.equal((await request(`/${locale}/${retired}`, token)).status, 404);
+      }
+      const legacyReference = await request(`/${locale}/docs/reference`, token);
+      assert.equal(legacyReference.status, 307);
+      assert.equal(new URL(legacyReference.headers.get('location')!, base).pathname, `/${locale}/docs`);
+      const docsSettings = await request(`/${locale}/settings?section=docs`, token);
+      const docsSettingsHtml = await docsSettings.text();
+      assert.equal(docsSettings.status, 200);
+      assert.equal(docsSettingsHtml.includes(`id="docs"`), role === 'owner');
+      assert.equal(docsSettingsHtml.includes('fixture-private'), role === 'owner');
+      const projectSettings = await request(`/${locale}/settings?section=projects`, token);
+      assert.equal(projectSettings.status, 200);
+      assert.equal((await projectSettings.text()).includes('readiness-project'), role === 'owner');
+    }
     assert.equal((await request('/api/dashboard/imports', token)).status, role === 'owner' ? 200 : 404);
     const management = await request('/api/auth/owner/state', token);
     const publicState = await management.json() as { management?: unknown };
     assert.equal(!!publicState.management, role === 'owner');
   }
-  assert.equal((await request('/api/internal/roadmap/roadmaps')).status, 404);
-  assert.equal((await request('/api/internal/roadmap/roadmaps', fixture.owner)).status, 200);
+  assert.equal((await request('/api/internal/roadmap/projects')).status, 404);
+  assert.equal((await request('/api/internal/roadmap/projects', fixture.owner)).status, 200);
   const draftId = crypto.randomUUID(), draftSource = source(`http-published-${draftId}`, 'guest', fixture.media.guest);
   const previewBytes = Buffer.concat([await fs.readFile(path.join(process.env.INCEPT_DOCS_MEDIA_DIR!, path.basename(fixture.media.guest))), Buffer.from(draftId)]);
   const previewName = `${hash(previewBytes)}.png`, previewUrl = `/_docs-media/${previewName}`;
@@ -157,7 +172,7 @@ async function http() {
   const created = await request('/api/internal/roadmap/entries', fixture.owner, json({ key: `entry-${crypto.randomUUID()}`, roadmapKey: 'readiness-board',
     status: 'unstarted', type: 'feature', priority: 'high', title: { en: 'Release check', zh: '发布检查' }, summary: { en: 'Check', zh: '检查' } }));
   assert.equal(created.status, 201, await created.text());
-  assert.equal((await request('/api/internal/roadmap/roadmaps', fixture.owner)).status, 200);
+  assert.equal((await request('/api/internal/roadmap/projects', fixture.owner)).status, 200);
   const login = await request('/api/auth/owner/login', undefined, json({ secret: 'retired-master-secret' }));
   assert.equal(login.status, 401, 'Legacy master-secret login must stay disabled.');
   const started = await request('/api/auth/owner/login', undefined, json({ username: 'owner', password: fixture.ownerPassword }));

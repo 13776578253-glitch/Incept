@@ -44,3 +44,5 @@ The user requested carrying the remaining [post-launch tasks](./current-task/202
 6. **Finish operational surfaces and maintenance:** MON-03, remaining UI-01/03, PUB-04 and OPS-02; keep OPS-01/03 as release constraints.
 
 Detailed tasks, dependencies, acceptance and the full 31-ID mapping are in [the next-steps plan](./plans/2026-10-16-post-launch-next-steps-plan.md). This is a planning update; execution begins with the selected slice and its current-task record.
+
+2026-10-16 autonomous continuation: current baseline committed as `48a679a`. Recorded fees, indexed/native transfer matching, seven-source protocol/CLI, per-batch pricing, bounded history storage, and reference/integration-checker fixes are implemented and entering the complete release gate. The 03:04 production backup now covers the TOTP/recovery setup and all four archive hashes passed. Follow [the active fix-release record](./current-task/2026-10-16-autonomous-fix-release.md); actual data upload/local data refresh is the requested final handoff.
