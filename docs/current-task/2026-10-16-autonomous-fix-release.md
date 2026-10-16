@@ -58,3 +58,13 @@ Commit 建议：`docs: record validated fix release and paired token tools`。
 数据交接已整理为交付包的 `DATA-HANDOFF.md`：服务器先更新；数据电脑使用同版工具、保留设备 ID、完整快照导出、Owner 预览/认证/上传；本地站点重启时通过 predev 重建 Worker，保留个人存储并刷新。线上与本地站点各自存储导入批次，需要按使用目标分别上传。
 
 当前等待上一轮提交的上线批准；其余软件、制品、配置预检和交接准备已完成。Commit 建议：`docs: record server candidate preflight and data handoff`。
+
+## [2026-10-16 14:00] - Update by AI完成改动:
+
+用户明确批准上线并继续推进。执行前确认：发布冻结应用提交 `1a29a92`；21 个迁移与线上相同；沿用真实 PG/shared/Caddy 卷与认证密钥。先停止写入并制作四归档一致备份、验证哈希与认证密钥匹配，保留旧镜像/私有 env/current，再运行无变更迁移检查、切换镜像及版本目录、重建 app/proxy，进行可信 HTTPS、公开页面、权限、媒体与七来源校验验收。失败时恢复旧镜像与配置，保留真实数据及备份。
+
+发布前只读基线：三个容器均 healthy/restarts 0；21 个成功迁移；1 个 Owner 且已绑定 TOTP、1 个活动 Owner 会话、14 个文档（private 7，Pro 0）、12 条音乐记录。工作区新增未跟踪审计报告由用户侧带入，保留原样，发布仍使用已验收冻结镜像。
+
+### 根入口转发端口修复前确认
+
+新版本已切换、备份与七来源校验通过。扩展外网检查发现根 `/` 返回 `307 https://43-155-136-83.sslip.io:3000/zh`；本语言完整路径正常。Next 16 的 `proxy.ts` 正常执行；问题是 Caddy 未覆盖 X-Forwarded-Port，Next/next-intl 继承了应用内部端口。修复仅在 HTTPS 反代段覆盖端口为 443，保持显式 Host 端口的隔离测试行为。先用真实隔离 Caddy 验证无端口 Host 的中英文跳转及伪造转发端口，再替换线上 Caddyfile 并验证配置、重载，保留原配置。应用镜像和数据库不变。

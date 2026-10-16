@@ -28,6 +28,18 @@ const ready = await request('/api/health/ready');
 assert.equal(ready.status, 200);
 assert.equal(ready.headers['referrer-policy'], 'same-origin');
 assert.match(ready.headers['strict-transport-security'], /max-age/);
+for (const locale of ['en', 'zh']) {
+  for (const route of ['/', '/docs']) {
+    const redirect = await request(route, { headers: { host: 'incept.test', 'accept-language': locale,
+      'x-forwarded-port': '3000', 'x-forwarded-host': 'evil.example:3000', 'x-forwarded-proto': 'http' } });
+    assert.equal(redirect.status, 307);
+    const location = new URL(redirect.headers.location);
+    assert.equal(location.origin, 'https://incept.test');
+    assert.equal(location.pathname, `/${locale}${route === '/' ? '' : route}`);
+  }
+  const explicitPort = await request('/', { headers: { 'accept-language': locale } });
+  assert.equal(new URL(explicitPort.headers.location).origin, base);
+}
 for (const [locale, title] of [['en', 'Readiness article'], ['zh', '上线验收文章']]) {
   const article = await request(`/${locale}/docs/fixture-guest`);
   assert.equal(article.status, 200); assert.ok(article.body.includes(title) && article.body.includes('<pre'));
@@ -38,7 +50,7 @@ for (const prefix of ['', '/en', '/zh']) {
   const redirect = await request(route, { tls: false });
   assert.equal(redirect.status, 308); assert.equal(redirect.headers['referrer-policy'], 'no-referrer');
 }
-assert.equal((await request('/api/internal/roadmap/roadmaps', { owner: true })).status, 200);
+assert.equal((await request('/api/internal/roadmap/projects', { owner: true })).status, 200);
 assert.equal((await request(fixture.media.private)).status, 404);
 assert.equal((await request(fixture.media.private, { owner: true })).status, 200);
 assert.equal((await request('/api/dashboard/usage?refresh=1')).status, 403);

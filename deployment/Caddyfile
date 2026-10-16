@@ -52,6 +52,7 @@
 		header_up Host {http.request.hostport}
 		header_up X-Forwarded-Host {http.request.hostport}
 		header_up X-Forwarded-Proto {http.request.scheme}
+		header_up X-Forwarded-Port 443
 		header_up X-Forwarded-For {http.request.remote.host}
 		header_up X-Request-ID {http.request.uuid}
 		header_up -Forwarded
