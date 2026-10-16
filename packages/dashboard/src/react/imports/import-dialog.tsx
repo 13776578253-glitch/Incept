@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useImportDialog } from './use-import-dialog';
 import { ImportPreviewPanel } from './import-preview';
 import { ImportHistory } from './import-history';
+import { ImportReauthentication } from './import-reauthentication';
 import { CloseIcon, ImportIcon } from './import-icons';
 
 export function ImportDialog({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
@@ -31,14 +32,15 @@ export function ImportDialog({ onClose, onImported }: { onClose: () => void; onI
       <div className="dashboard-import-file-area">
         <label className="dashboard-import-button cursor-pointer">
           <span className="text-[var(--color-text-muted)]"><ImportIcon /></span>{t('chooseFile')}
-          <input className="sr-only" aria-label={t('chooseFile')} type="file" accept=".json,application/json" disabled={state.busy}
+          <input className="sr-only" aria-label={t('chooseFile')} type="file" accept=".json,application/json" disabled={state.busy || state.reauthRequired}
             onChange={event => { void state.chooseFile(event.target.files?.[0]); event.target.value = ''; }} />
         </label>
         {state.fileName ? <span className="max-w-full break-all text-[0.76rem] text-[var(--color-text-muted)]">{state.fileName}</span> : null}
       </div>
       {state.error ? <p role="alert" className="rounded-xl border border-[var(--badge-rose-dot)] p-3 text-xs">{state.error}</p> : null}
       {state.busy ? <p role="status" className="text-xs text-[var(--color-nav-muted)]">{t('working')}</p> : null}
-      <ImportPreviewPanel {...state} />
+      {state.reauthRequired ? <ImportReauthentication {...state} /> : null}
+      <ImportPreviewPanel {...state} busy={state.busy || state.reauthRequired} />
       {state.receipt ? <p role="status" className="break-all rounded-xl bg-[var(--color-row-bg)] p-3 text-xs">{t('success')} · {state.receipt.id}</p> : null}
     </div>
     <aside className="dashboard-import-sidebar">
@@ -47,8 +49,8 @@ export function ImportDialog({ onClose, onImported }: { onClose: () => void; onI
           title={t('close')} disabled={state.busy} onClick={onClose}><CloseIcon /></button>} />
       </div>
       {state.preview ? <div className="dashboard-import-actions">
-        {state.dirty ? <button className="dashboard-import-button" disabled={state.busy} onClick={() => void state.revalidate()}>{t('revalidate')}</button> : null}
-        <button className="dashboard-import-button is-primary" disabled={state.busy || state.dirty || state.preview.conflicts > 0 || !!state.receipt}
+        {state.dirty ? <button className="dashboard-import-button" disabled={state.busy || state.reauthRequired} onClick={() => void state.revalidate()}>{t('revalidate')}</button> : null}
+        <button className="dashboard-import-button is-primary" disabled={state.busy || state.reauthRequired || state.dirty || state.preview.conflicts > 0 || !!state.receipt}
           onClick={() => void state.commit()}>{t(state.receipt ? 'imported' : 'confirm')}</button>
       </div> : null}
     </aside>

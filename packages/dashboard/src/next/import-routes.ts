@@ -27,7 +27,7 @@ function errorResponse(error: unknown) {
     code: error instanceof ImportError ? error.code : 'IMPORT_STORAGE_ERROR' }, { status: error instanceof ImportError ? error.status : 503, headers });
 }
 export async function dashboardImportsGet() {
-  try { return Response.json({ history: importHistory() }, { headers }); } catch (error) { return errorResponse(error); }
+  try { return Response.json({ history: importHistory().slice(0, 10) }, { headers }); } catch (error) { return errorResponse(error); }
 }
 export async function dashboardImportPreviewPost(request: Request, expectedOrigin?: string) {
   try {

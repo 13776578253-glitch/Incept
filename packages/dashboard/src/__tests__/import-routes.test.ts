@@ -44,4 +44,10 @@ describe('import HTTP boundaries', () => {
     expect((await dashboardImportPreviewPost(upload)).status).toBe(413);
     expect(service.previewImport).not.toHaveBeenCalled();
   });
+  it('limits browser history to ten entries while preserving the complete history', async () => {
+    const history = Array.from({ length: 12 }, (_, index) => ({ id: `batch-${index}` }));
+    service.importHistory.mockReturnValue(history);
+    expect(await (await dashboardImportsGet()).json()).toEqual({ history: history.slice(0, 10) });
+    expect(history).toHaveLength(12);
+  });
 });
