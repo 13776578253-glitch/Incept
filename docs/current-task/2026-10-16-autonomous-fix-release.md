@@ -50,3 +50,11 @@ Commit 建议：`docs: record validated fix release and paired token tools`。
 ### 13:21 交付回执
 
 镜像、运维归档、便携工具、manifest 和说明已上传至 `43.155.136.83:/srv/incept/incoming/release-2-fix-20261016-1a29a92`。远端三项 `sha256sum -c` 全部返回 OK，磁盘可用 26GB。`/srv/incept/current` 仍解析为 `/srv/incept/releases/7bee9ad`；候选已可审核，未切换生产。
+
+### 后续候选准备核验
+
+在独立 incoming 目录解包白名单运维文件，并将候选镜像载入服务器 Docker。平台 manifest、Linux/amd64 架构、node 用户与 manifest 一致。使用同一生产 env 与持久化覆盖分别解析线上和候选 Compose，包含 ops profile；app、migrate、postgres、proxy 四服务除候选应用镜像及版本目录路径外完全一致，共享卷及私有环境保持一致。app/PG/迁移均无宿主端口，Caddy 保持两个发布端口；当前运行镜像和 current 继续指向 `7bee9ad`。
+
+数据交接已整理为交付包的 `DATA-HANDOFF.md`：服务器先更新；数据电脑使用同版工具、保留设备 ID、完整快照导出、Owner 预览/认证/上传；本地站点重启时通过 predev 重建 Worker，保留个人存储并刷新。线上与本地站点各自存储导入批次，需要按使用目标分别上传。
+
+当前等待上一轮提交的上线批准；其余软件、制品、配置预检和交接准备已完成。Commit 建议：`docs: record server candidate preflight and data handoff`。
