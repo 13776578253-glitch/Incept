@@ -1,5 +1,7 @@
 # 上线后待办：登录、公开页面、备份、监控、告警、上报与后台整理
 
+> **2026-10-16 线上验收**：第二版 `7bee9ad` 已运行，21 个迁移完成，Owner/TOTP、生产密钥及 GitHub 活动配置均已就绪。当前实测、备份时间差和 Gemini 本地改动审查见 [第二版生产验收](2026-10-16-release-2-production-acceptance.md)。下文保留立项与历次验收历史。
+
 日期：2026-10-14，Asia/Singapore。基线：codex/production-readiness / 98b77ff；正式部署见 [部署记录](2026-10-14-public-production-deployment.md)。本文是本轮后续讨论和逐项验收的主清单。本轮只登记与核查，不修改应用代码、生产权限或线上服务，不创建提交。
 
 ## 用户已决定
@@ -168,3 +170,42 @@ P1：优先解决的实际运营/管理问题；P2：基础闭环稳定后处理
 ## 2026-10-14 本轮验收确认与提交
 
 用户已明确本轮验收通过，授权本地提交，后续样式独立成轮；AUTH-01/02/03与ACL-01/02/03的当前逻辑/本地界面基线已接受。此追加取代上一节等待当前界面人工确认的状态，不将以后样式变更并入本轮逻辑。生产发布、真实离机目标及其余PUB/REP/UI任务仍按各自范围执行，不推送或上线本轮。详见 [提交与验证记录](./2026-10-14-owner-auth-implementation.md)。
+
+## 2026-10-15 第二版正式上线与 Owner 激活
+
+第二版 `7bee9ad` 已成功切换至生产环境（`/srv/incept/current` 指向 `/srv/incept/releases/7bee9ad`）。19~21 数据库增量迁移成功应用，服务器独立 `INCEPT_AUTH_ENCRYPTION_KEY` 已就绪并纳入新一致备份，GitHub 活动汇总四项环境变量已接入并正常工作（`/zh/about/activity` 成功抓取真实 GitHub 统计）。
+
+用户已使用初始凭据完成首次登录，通过 Setup Code 成功绑定手机 Aegis TOTP，系统状态 `totpConfigured: true`。旧 `master-secret` 普通登录已废除。
+
+### 新增与遗留问题登记（排入下一版本）
+
+1. **UI-BUG-01 / P2：Windows Edge 密码输入框“双眼睛”图标**
+   * **现象**：在 Windows Edge（Chromium）下，原生 `<input type="password">` 会自动渲染浏览器自带的 `::-ms-reveal` 眼睛图标，与 `PasswordInput` 组件右侧自定义的眼睛按钮并列并重叠（用户已截图留存）。
+   * **修复方案**：在 `apps/web/src/features/settings/account/password-input.tsx` 的 `<input>` 样式中追加 `[&::-ms-reveal]:hidden [&::-ms-clear]:hidden`。
+2. **UI-BUG-02 / P2：Token 仪表盘导入敏感操作缺少就地二次认证弹窗**
+   * **现象**：登录超过 5 分钟后，在 `/zh/dashboard` 提交用量导入触发敏感操作保护返回 HTTP 428，界面直接暴露裸错误字符串 `reauthentication_required`，没有像账户面板一样引导用户就地输入密码与 TOTP 验证码。
+   * **修复方案**：在 `packages/dashboard/src/react/imports/use-import-dialog.ts` 捕获 428 时拉起二次认证抽屉/弹窗，完成认证后自动重试提交。
+3. **UI-BUG-03 / P2：设置侧边栏 Owner 分区“Docs”未适配中文**
+   * **现象**：中文模式下（`/zh/settings`），“身份与受控访问”分组下方的文档分区标题硬编码显示为英文 `Docs`，其下方副标题已正确显示为 `发布总览与文档列表`（用户已截图留存）。
+   * **修复方案**：在 `apps/web/src/features/settings/shared/settings-schema.ts` 中将 `label: 'Docs'` 改为 `label: isZh ? '文档' : 'Docs'`（本地已修改）。
+4. **UI-BUG-04 / P2：模型热力矩阵左侧长模型名字符被遮盖/截断**
+   * **现象**：在仪表盘“用量分析视图”切换至“模型热力矩阵”模式时，左侧固定列宽度不足（原设定 170px），较长模型名（如 `deepseek/deepseek-v4.1-flash-fast`）末尾字符被右侧单元格及粘性表头遮挡，显示为 `deepseek/deepseek-v4.1-flash-fas`（用户已截图留存）。
+   * **修复方案**：在 `packages/dashboard/src/react/dashboard.css` 和 `model-heatmap.tsx` 中将第一列固定宽度由 `170px` 拓宽至 `220px`，并在 `[role="rowheader"]` 强化截断与完整 title tooltip 提示。
+5. **UI-02 遗留 / P2：`/docs/reference` 路由跳转 404**
+   * **现象**：`/{locale}/docs/reference` 当前 307 重定向至不存在的样例文章 `shell-foundations`，导致 404。
+   * **修复方案**：下一版平滑重定向至对应语言的文档总览页 `/{locale}/docs`。
+6. **运维与外部基建待办（保持未完成，按计划后续接入）**：
+   * **BAK-01~04**：异地加密备份（待选定对象存储或备用主机目标及凭据）。
+   * **MON-01~03 & ALT-01~03**：外部独立探针可用性检测及告警通道（待选定邮件服务或 Webhook 接收端）。
+   * **REP-01~04**：Windows 电脑用量全自动上报链路（待定义设备专属凭据与传输协议）。
+   * **PUB-04**：数据库中命名为测试的文章与测试头像的人工清理/保留确认。
+
+## 2026-10-16 下一步计划承接
+
+已将本文件原始 31 项、新增 UI-BUG-01～04、reference 残留，以及线上验收发现的恢复点时间差、导出费用丢失、跨索引/原始记录重复计数和七来源协议配套事项，纳入 [下一步计划](../plans/2026-10-16-post-launch-next-steps-plan.md)。活跃入口同步到 [NEXT.md](../NEXT.md)。
+
+顺序为：核对绑定后备份 → 下一版数据/交互修复 → 真实离机备份与恢复 → 监测告警 → 设备自动上报 → 运营入口/公共内容/维护。已上线的认证、权限、公开页面和后台退役作为回归基线，剩余工作按原 ID 继续追踪。外部目标和凭据的准备条件单列，原有历史记录保留。
+
+## 2026-10-16 UI-BUG-02 本地完成
+
+导入提交遇到 428 后，在原导入窗口内追加密码与 TOTP 验证区，成功后续接一次原提交。历史区独立滚动且仅展示最近十次，完整批次日志保留。实现、测试与浏览器证据见 [本轮任务记录](2026-10-16-import-inline-reauthentication.md)，随后续修复包部署。

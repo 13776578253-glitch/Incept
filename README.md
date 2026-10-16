@@ -36,11 +36,7 @@
 
 ## 📖 项目简介 (Introduction)
 
-**Incept** 是一个私有化部署、高工程密度的个人数字化内容站点与创作系统。它并非千篇一律的通用博客模板，而是一个集成了 **Docs 技术文档引擎**、**环境声学流媒体播放系统**、**多项目交互式路线图与知识全景**、**开发者指标仪表盘** 以及 **严格 Owner 权限防护体系** 的综合型个人工作台。
-
-系统基于 **pnpm workspace** 驱动的现代 Monorepo 架构构建，前端采用 **Next.js 16 (App Router)**、**React 19** 与 **Tailwind CSS v4**，数据层依托 **Prisma ORM** 与 **PostgreSQL**，并具备严谨的中英双语对等支持（`next-intl`）与深浅色模式（`next-themes`）。
-
-> “凡能够说的，都能够说清楚；凡不能谈的，就应该保持沉默。” —— 路德维希·维特根斯坦
+**Incept** 是一个私有化部署、高工程密度的个人数字化内容站点与创作系统。系统基于 **pnpm workspace** 驱动的现代 Monorepo 架构构建，前端采用 **Next.js 16 (App Router)**、**React 19** 与 **Tailwind CSS v4**，数据层依托 **Prisma ORM** 与 **PostgreSQL**，并具备中英双语对等支持（`next-intl`）与深浅色模式（`next-themes`）。
 
 > [!NOTE]
 > **当前界面演进状态**：原始 Home 落地页基于早期 Mock 设计，目前已列入重构周期（当前不展示作为主入口）。系统当前的核心体验与展示重心聚焦于 **Docs 知识发布引擎**、**Roadmap 看板**、**Ambient Music** 及 **Dashboard 仪表盘**。

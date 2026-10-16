@@ -31,3 +31,16 @@ The public service is now deployed with real content, trusted HTTPS, boot recove
 2026-10-14 v0.2: the user replaced risk email verification with one-time Owner approval codes; email is deferred and no longer a current release dependency. A development-only account/login/Pro style preview is available locally; see [the preview record](./current-task/2026-10-14-owner-account-ui-preview.md) and the appended v0.2 proposal. Real authentication/authorization remains pending and requires complete acceptance before production update.
 
 2026-10-14 implementation: real Owner password/TOTP/one-time approval, sessions, recovery, bounded Pro grants and ACL/audit logic are implemented and locally/isolated tested; see [implementation evidence](./current-task/2026-10-14-owner-auth-implementation.md). Preview logic is retired. The user's latest boundary is to stop after logic, without a server release package; front-end revisions/approval remain next. Keep port3000 available, wait for UI instructions, and do not deploy this increment.
+
+## 2026-10-16 Current next steps
+
+The user requested carrying the remaining [post-launch tasks](./current-task/2026-10-14-post-launch-operations-and-admin-todo.md) into the next plan. Production `7bee9ad`, 21 migrations, Owner/TOTP and public About/activity are now verified in [the production acceptance](./current-task/2026-10-16-release-2-production-acceptance.md). This section sets the current priority over the historical ordering above; existing content/parser tasks stay queued.
+
+1. **Verify the recovery point:** check whether the latest successful backup includes the current TOTP binding and recovery codes; arrange a consistent backup if needed.
+2. **Prepare the next fix release:** resolve recorded-cost loss and indexed/native duplicate imports; deliver the seven-source exporter and receiver together; complete the 428 reauthentication dialog, validate Gemini's Edge/Docs/matrix fixes, and repair the reference redirect.
+3. **Connect real off-host recovery:** BAK-01–04, independent key custody, retention/receipts and a real empty-target restore with measured RPO/RTO.
+4. **Connect monitoring and delivered alerts:** MON-01/02 and ALT-01–03, an external probe, real receiver, deduplication/retries and failure/recovery exercises.
+5. **Add device reporting:** REP-01–04 with explicit fields, scoped device credentials, idempotent receipt/retry and source status, after the import correctness fixes.
+6. **Finish operational surfaces and maintenance:** MON-03, remaining UI-01/03, PUB-04 and OPS-02; keep OPS-01/03 as release constraints.
+
+Detailed tasks, dependencies, acceptance and the full 31-ID mapping are in [the next-steps plan](./plans/2026-10-16-post-launch-next-steps-plan.md). This is a planning update; execution begins with the selected slice and its current-task record.
