@@ -15,7 +15,7 @@ export function PasswordInput({ language, passwordLabel, className, onChange, ..
       <input
         {...props}
         type={visible ? 'text' : 'password'}
-        className={`${className ?? ''} pr-12`}
+        className={`${className ?? ''} pr-12 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden`}
         onChange={(event) => {
           if (!event.target.value) setVisible(false);
           onChange?.(event);

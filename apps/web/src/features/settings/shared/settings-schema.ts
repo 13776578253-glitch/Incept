@@ -17,7 +17,7 @@ export function getSettingsPageData(locale: AppLocale, includeProjects = false):
       getAccountSettingsSection(locale),
       ...(includeProjects ? [{
         id: 'docs',
-        label: 'Docs',
+        label: isZh ? '文档' : 'Docs',
         description: isZh ? '发布总览与文档列表' : 'Published documents and routes',
         visibility: 'admin' as const,
         rows: [],

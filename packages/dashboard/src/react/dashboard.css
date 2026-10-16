@@ -136,11 +136,12 @@
 .dashboard-calendar-swatch { width: 10px; height: 10px; border-radius: 2px; border: 1px solid var(--color-border); }
 
 .dashboard-model-matrix { display: grid; height: 100%; grid-template-rows: 28px repeat(var(--matrix-rows), minmax(0, 1fr)); gap: 5px; font-size: .68rem; color: var(--color-text); }
-.dashboard-matrix-header, .dashboard-matrix-row { display: grid; grid-template-columns: 170px repeat(var(--matrix-columns), minmax(28px, 1fr)); align-items: stretch; gap: 5px; min-height: 0; }
+.dashboard-matrix-header, .dashboard-matrix-row { display: grid; grid-template-columns: 240px repeat(var(--matrix-columns), minmax(28px, 1fr)); align-items: stretch; gap: 5px; min-height: 0; }
 .dashboard-matrix-header { color: var(--color-nav-muted); align-items: center; text-align: center; font-size: .63rem; }
 .dashboard-matrix-header > :first-child { text-align: left; }
 .dashboard-matrix-header > :first-child, .dashboard-matrix-row > [role="rowheader"] { position: sticky; left: 0; z-index: 2; background: var(--color-surface); box-shadow: 5px 0 0 var(--color-surface), 6px 0 0 var(--color-border); }
-.dashboard-matrix-row > [role="rowheader"] { display: flex; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: monospace; padding-right: 8px; }
+.dashboard-matrix-row > [role="rowheader"] { display: flex; align-items: center; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: monospace; padding-right: 8px; }
+.dashboard-matrix-row > [role="rowheader"] > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; width: 100%; }
 .dashboard-matrix-row > [role="cell"] { min-height: 0; }
 .dashboard-matrix-cell { display: block; height: 100%; border: 1px solid var(--color-border); border-radius: 5px; background: var(--color-row-bg); }
 
