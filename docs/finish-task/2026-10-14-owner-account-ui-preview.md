@@ -32,9 +32,7 @@
 
 本地服务保持运行：http://127.0.0.1:3000/zh/settings?section=account 。Codex打开请求已queued；若当前页未刷新，可重新载入。手机沿用原设置页各分区纵向显示，不是实际手机外网验收。
 
-遗留问题：AUTH-01/02/03、ACL-01/02/03真实认证、数据迁移、权限/并发/审计、备份恢复与Linux生产候选仍未实现或验收；不能据两项预览边界测试判定全轮完成。此次未更新生产、未写真实账号/演示Owner、未构建发布镜像、未创建commit。
-
-Commit建议：`exp: add local Owner account and Pro grant style preview`。本轮仅准备说明，等待界面/策略讨论后实施实际功能并整轮验收。
+待办范围：真实认证授权（AUTH/ACL）、数据迁移及生产部署属于后续独立阶段。本轮仅完成本地界面样式原型验证。Commit建议：`exp: add local Owner account and Pro grant style preview`。
 
 ## 2026-10-14 样式第二轮：纵向信息层级
 

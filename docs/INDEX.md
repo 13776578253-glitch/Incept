@@ -114,7 +114,7 @@ flight.
 - a plan that is finished has no home here; its outcome is recorded as a `finish-task/`
   record and any stable rule it produced moves to `decisions/`
 
-The directory is currently empty, which is a valid state.
+Currently active plan: `docs/plans/2026-10-16-post-launch-next-steps-plan.md`. Finished plans move to `docs/finish-task/`.
 
 ### `finish-task/`
 
@@ -178,11 +178,23 @@ Examples:
 
 Current content import manuals:
 
+- `docs/runbooks/en/docs-content-import.md`
 - `docs/runbooks/zh/docs-content-import.md`
 - `docs/runbooks/en/music-content-import.md`
 - `docs/runbooks/zh/music-content-import.md`
 - `docs/runbooks/en/music-library-management.md`
 - `docs/runbooks/zh/music-library-management.md`
+- `docs/runbooks/en/roadmap-content-import.md`
+- `docs/runbooks/zh/roadmap-content-import.md`
+
+Current infrastructure and deployment manuals:
+
+- `docs/runbooks/en/local-postgres-docker-setup.md`
+- `docs/runbooks/zh/local-postgres-docker-setup.md`
+- `docs/runbooks/en/production-deployment.md`
+- `docs/runbooks/zh/production-deployment.md`
+- `docs/runbooks/zh/local-artifacts.md`
+- `docs/runbooks/zh/owner-account-aegis.md`
 
 Current workflow manuals:
 
@@ -238,14 +250,12 @@ Rules:
 Documents with no counterpart in the other language. They are listed here so the gap is
 visible rather than silently tolerated; adding the missing version is the fix.
 
-| Document | Missing version |
-| --- | --- |
-| `docs/decisions/zh/docs-markdown-like-authoring-syntax.md` | English |
-
-That is the only remaining gap. The other three documents that used to be Chinese-only
-(`internal-surfaces-not-in-public-nav.md`, `docs-content-import.md`, and the archived
-`docs-import-flow-rules.md` and `docs-authoring-markdown-like-rules.md`) gained English
-versions on 2026-09-23.
+| Document | Missing version | Area |
+| --- | --- | --- |
+| `docs/decisions/zh/docs-markdown-like-authoring-syntax.md` | English | Decisions |
+| `docs/decisions/en/account-and-access-design.md` | Chinese | Decisions |
+| `docs/runbooks/zh/local-artifacts.md` | English | Runbooks |
+| `docs/runbooks/zh/owner-account-aegis.md` | English | Runbooks |
 
 ## Legacy Rules
 
@@ -271,14 +281,6 @@ Focus on:
 - command order
 - operational checks
 - failure recovery
-
-### For decisions
-
-Focus on:
-
-- why the project chose this approach
-- what constraints are now stable
-- what should not be casually changed
 
 ### For decisions
 

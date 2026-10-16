@@ -189,7 +189,7 @@ pnpm dev
 * **Docs 知识库与文章阅读**：`http://localhost:3000/zh/docs`
 * **路线图与全景规划**：`http://localhost:3000/zh/roadmap`
 * **开发者指标与 AI 消耗**：`http://localhost:3000/zh/dashboard`
-* **站长工作台与草稿审核**：`http://localhost:3000/zh/studio`（需 Owner 登录）
+* **站长设置与系统偏好**：`http://localhost:3000/zh/settings`（需 Owner 登录）
 
 *(注：根路径 `/` 的旧版 Home 界面已冻结待重构，建议直接访问上述核心功能页体验。)*
 

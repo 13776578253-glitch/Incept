@@ -77,11 +77,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ### 3.2 Commit Type 
 | Type        | Description                                     | Corresponding Scene / Directory |
 |-------------|-------------------------------------------------|---------------------------------|
-| feat        | Add new features                                | New items in roadmap/           |
-| fix         | Bug fixes                                       | Debug records in ai-context/    |
+| feat        | Add new features                                | New features in apps/ or packages/ |
+| fix         | Bug fixes                                       | Bug fixes across workspace      |
 | refactor    | Code structure and logic optimization           | No specific directory           |
-| milestone   | Project milestone                               | Used with roadmap updates       |
-| exp         | Experimental content                            | Recorded in scratchpad.md       |
+| milestone   | Project milestone                               | Milestone releases and reviews  |
+| exp         | Experimental content                            | Temporary records in .scratch/  |
 | anchor      | Snapshot before large-scale refactoring         | No specific directory           |
 
 <!-- END:nextjs-agent-rules -->

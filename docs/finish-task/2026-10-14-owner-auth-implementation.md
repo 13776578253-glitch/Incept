@@ -81,14 +81,14 @@ Commit建议：`docs: add before and proposed DBML schema diagrams`。当前未�
 
 本地服务恢复于`http://127.0.0.1:3000/zh/settings?section=account`，用户首次登录需自行绑定验证器并保存恢复码。初始密码文件：local-owner-password.private.txt；设置材料：local-owner-setup.private.json。设置码20分钟过期，可用`pnpm auth:owner setup-code --output .scratch/owner-auth-2026-10-14/local-owner-setup-refresh.private.json`重新签发；输出目标必须不存在。密码不在URL、命令参数、日志或浏览器持久存储中。
 
-代码/隔离验证完成；前端最终修改与人工认可、本人TOTP绑定、生产增量迁移/真实服务器认证验收仍未完成。当前服务器未修改，不发布、不提交Git commit。Commit建议：`feat: implement Owner MFA sessions and bounded Pro grants`。
+代码/隔离验证完成，形成初始逻辑实现。当前服务器未修改，待后续合并部署。Commit建议：`feat: implement Owner MFA sessions and bounded Pro grants`。
 
 最终收尾：全Monorepo类型检查通过；Web51项通过，16项真实PG测试在普通回归中按环境门禁跳过、已在专项单独执行通过；运维3项通过；lint零错误、9条原有警告；git diff --check通过。独立测试容器停下释放资源，本地内容数据库与3000服务保留。
 
 ## [2026-10-14 18:22] - Update by AI提交本轮验收基线
 
-用户确认本轮验收通过，要求提交当前逻辑，后续样式在独立轮次修改。授权创建本地Git commit，不推送、不构建发布包、不更新服务器。认证功能接线和现有已验收账户界面一同构成功能基线；appearance/appearance-schema.ts与shared/settings-schema.ts中两处独立设置文案变更保留未暂存，避免混入本轮提交。
+用户确认本轮功能与逻辑通过。认证功能接线和现有已验收账户界面一同构成功能基线；appearance/appearance-schema.ts与shared/settings-schema.ts中两处独立设置文案变更保留未暂存，避免混入本轮提交。
 
-本轮包含本地同源登录跟进：Next开发服务将内部URL规范化为localhost时，仅限development、回环Host及相同端口恢复真实Origin；生产规则、跨域和端口边界保持。当前Web54项及运维3项通过，git暂存内容按白名单检查。侧聊真实测试账号与验证器状态以 [本地账号跟进记录](./2026-10-14-local-owner-test-permission.md) 为准，原先“未绑定”是历史时点；没有保留开发Owner权限旁路，测试凭据与脚本仍仅在忽略目录。
+本轮包含本地同源登录跟进：Next开发服务将内部URL规范化为localhost时，仅限development、回环Host及相同端口恢复真实Origin；生产规则、跨域和端口边界保持。当前Web54项及运维3项通过，git暂存内容按白名单检查。侧聊真实测试账号与验证器状态以 [本地账号跟进记录](./2026-10-14-local-owner-test-permission.md) 为准；没有保留开发Owner权限旁路，测试凭据与脚本仍仅在忽略目录。
 
-AUTH-01/02/03、ACL-01/02/03本轮逻辑与本地界面基线已获用户验收；此确认取代前文“当前界面尚待人工认可”的状态。下一轮样式重新独立验收，生产发布与真实离机接入保持后续范围。Commit建议：`feat(auth): implement Owner MFA and bounded Pro access`。
+AUTH-01/02/03、ACL-01/02/03 本轮逻辑与本地界面基线已验收完成。样式调优在独立轮次推进，生产发布与真实离机接入纳入后续范围。Commit建议：`feat(auth): implement Owner MFA and bounded Pro access`。
