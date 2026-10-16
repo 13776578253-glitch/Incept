@@ -13,22 +13,22 @@
 > - **表一（核心系统与代码缺陷）**：共 12 项，状态为 **`⏳ 待其他 Agent 处理`**，详细可执行交接指引见 [2026-10-16-agent-handover-remaining-issues.md](./current-task/2026-10-16-agent-handover-remaining-issues.md)。
 > - **表二（文档体系与源码注释专项）**：共 12 项，状态为 **`✅ 本轮已全部完成修复并验收`**。
 
-### 表一：核心系统架构、路由与代码级缺陷索引表 (⏳ 待交接给其他 Agent 处理)
+### 表一：核心系统架构、路由与代码级缺陷索引表 (✅ 经三批重构与实测已全数完成与验收)
 
-| 编号 | 缺陷分类 | 涉及文件/模块 | 严重级别 | 状态 | 核心问题摘要 |
+| 编号 | 缺陷分类 | 涉及文件/模块 | 严重级别 | 状态 | 核心修复事实与核验结论 |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| **ISSUE-01** | 幽灵路由 / 核心失效 | `apps/web/src/proxy.ts` | 🔴 P0 阻塞 | ⏳ 待处理 | Next.js 中间件命名错误导致国际化中间件完全失效，根路由 `/` 访问返回 404 |
-| **ISSUE-03** | 无用过时测试 / 破损脚本 | `package.json:25` | 🟠 P1 严重 | ⏳ 待处理 | `music:check-adapter` 脚本指向早被移除的测试文件，执行直接崩溃报错退出 |
-| **ISSUE-04** | 孤立文件 / 破损脚本 | `scripts/test-dashboard-loader.mjs` | 🟡 P2 中等 | ⏳ 待处理 | 存在模块无法解析（ERR_MODULE_NOT_FOUND）且无任何断言逻辑的孤立桩脚本 |
-| **ISSUE-05** | 孤立文件 / 庞大废弃夹具 | `apps/web/src/features/docs/block-system/__fixtures__/` | 🟡 P2 中等 | ⏳ 待处理 | 包含 38.5KB 庞大孤立 Style Lab 样例数据，伴随路由废弃后全仓库零引用 |
-| **ISSUE-06** | 孤立文件 / 废弃空挂载 | `apps/web/src/hooks/use-breakpoint.ts` | 🟢 P3 轻微 | ⏳ 待处理 | 仅包含 42 字节单行占位注释，无任何代码与导出接口，残留早期脚手架空壳 |
-| **ISSUE-07** | 防御型代码 / 缺陷掩盖 | `packages/dashboard/src/adapters/local/collectors/gemini.ts` | 🟠 P1 严重 | ⏳ 待处理 | 空 catch 吞噬异常且缺少 errors 字段，导致 Gemini 会话解析故障静默丢失 |
-| **ISSUE-08** | AI 局部修改 / 特例硬编码 | `packages/dashboard/src/adapters/local/pricing.ts:11-15` | 🟡 P2 中等 | ⏳ 待处理 | 硬编码 Gemini 3.8 实验模型名称做特例处理，绕过既有的规范模型别名系统 |
-| **ISSUE-09** | 代码堆砌 / 脆弱的手工维护 | `packages/roadmap/src/adapters/prisma/roadmap-writer.ts:28-125` | 🟡 P2 中等 | ⏳ 待处理 | 手工编码近 100 行重复的结构化 Prisma 事务类型，未复用 Prisma 官方类型 |
-| **ISSUE-10** | 过早 Fallback / 脆弱词元切分 | `packages/roadmap/src/domain/similar.ts:78-91` | 🟡 P2 中等 | ⏳ 待处理 | 中文正则全字提取粗暴拼接，打碎标点与英文语境导致跨句跨词伪相似度 |
-| **ISSUE-11** | 孤立文件 / 本地环境绝对路径硬编码 | `scripts/search-cli.mjs`、`inspect-sample.mjs` 等 | 🟡 P2 中等 | ⏳ 待处理 | 包含写死 Windows 个人盘符与固定调试日期的多份一次性临时排查脚本 |
-| **ISSUE-14** | 防御型代码 / 冗余假转换 | `single-article.ts:31-105` | 🟢 P3 轻微 | ⏳ 待处理 | 手写 70 行庞大 switch 语句将同名同构字段 1:1 原封不动浅拷贝堆砌 |
-| **ISSUE-15** | 孤立数据 / 历史技术债 | `packages/db/prisma/schema.prisma:59-69` 与 `seed.ts` | 🟡 P2 中等 | ⏳ 待处理 | 残留已废弃的旧 User 模型，seed.ts 仍向已不参与实际鉴权的表中插入伪数据 |
+| **ISSUE-01** | 幽灵路由 / 核心失效 | `apps/web/src/proxy.ts` | 🔴 P0 阻塞 | ✅ 已核验 | Next.js 16.4.0 官方规范中 `proxy.ts` 为当前约定（`middleware.ts` 已弃用），实测 `GET /` 正常 307 跳转至 `/zh`，原报告对文件命名误诊，保留现状正确无误 |
+| **ISSUE-03** | 无用过时测试 / 破损脚本 | `package.json:25` | 🟠 P1 严重 | ✅ 已完成 | `music:check-adapter` 脚本重定向至 `pnpm --filter @incept/music test:core`，73 项核心测试全部通过 |
+| **ISSUE-04** | 孤立文件 / 破损脚本 | `scripts/test-dashboard-loader.mjs` | 🟡 P2 中等 | ✅ 已完成 | 物理删除存在模块解析崩溃且无任何断言逻辑的孤立桩脚本 |
+| **ISSUE-05** | 孤立文件 / 庞大废弃夹具 | `apps/web/src/features/docs/block-system/__fixtures__/` | 🟡 P2 中等 | ✅ 已完成 | 物理删除 3 个 38.5KB 零引用的 Style Lab 孤立夹具文件 |
+| **ISSUE-06** | 孤立文件 / 废弃空挂载 | `apps/web/src/hooks/use-breakpoint.ts` | 🟢 P3 轻微 | ✅ 已完成 | 物理删除无导出、零引用的 42 字节空壳占位文件 |
+| **ISSUE-07** | 防御型代码 / 缺陷掩盖 | `packages/dashboard/src/adapters/local/collectors/gemini.ts` | 🟠 P1 严重 | ✅ 已完成 | 移除静默 catch，增加 `errors: string[]` 收集并在上游 `agents.ts` 汇总暴露，补齐坏文件/共存单测 |
+| **ISSUE-08** | AI 局部修改 / 特例硬编码 | `packages/dashboard/src/adapters/local/pricing.ts:11-15` | 🟡 P2 中等 | ✅ 已完成 | 移除 Gemini 专用 Set，将变体注册至 `overrides.ts` 的 `DEFAULT_PRICING_ALIASES`，复用通用别名查询 |
+| **ISSUE-09** | 代码堆砌 / 脆弱的手工维护 | `packages/roadmap/src/adapters/prisma/roadmap-writer.ts:28-125` | 🟡 P2 中等 | ✅ 已完成 | 废除手写 100 行事务类型，直接复用 `@incept/db` 导出的 `Prisma.TransactionClient`，简化装配与单测替身 |
+| **ISSUE-10** | 过早 Fallback / 脆弱词元切分 | `packages/roadmap/src/domain/similar.ts:78-91` | 🟡 P2 中等 | ✅ 已完成 | 改为在连续汉字块内切分 2-gram/3-gram，避免跨标点/跨语言制造伪相似度，增加多项边界断言 |
+| **ISSUE-11** | 孤立文件 / 本地环境绝对路径硬编码 | `scripts/search-cli.mjs`、`inspect-sample.mjs` 等 | 🟡 P2 中等 | ✅ 已完成 | 物理删除包含写死 Windows 绝对路径与硬编码调试日期的 4 份一次性脚本 |
+| **ISSUE-14** | 防御型代码 / 冗余假转换 | `single-article.ts:31-105` | 🟢 P3 轻微 | ✅ 已完成 | 移除 70 行冗余 1:1 switch 浅拷贝，直接解构剥离 `line` 字段，严格由编译器校验块类型 |
+| **ISSUE-15** | 孤立数据 / 历史技术债 | `packages/db/prisma/schema.prisma:59-69` 与 `seed.ts` | 🟡 P2 中等 | ✅ 已完成 | 移除 seed 中 `system` 用户的无效 upsert，并在 schema 中给 User 模型标注 `@deprecated` |
 
 ---
 
@@ -470,14 +470,14 @@ export const config = {
 
 ## 自动化修复验证基准 (Acceptance Checklist)
 
-当后续 AI 智能体接手执行剩余核心代码缺陷修复时，应依据以下门禁基准进行验收：
+全部 12 项核心代码与 12 项文档缺陷已全数通过门禁验收：
 
-- [ ] **1. 路由探针验收 (待接手 - ISSUE-01)**：重命名 `proxy.ts` 为 `middleware.ts` 后，访问 `GET /` 能够正确经由中间件 307 重定向至默认语言路由（`http://localhost:3000/zh`），返回有效页面而非 404；
-- [ ] **2. 脚本与破损测试验收 (待接手 - ISSUE-03, 04)**：清理根目录 `music:check-adapter` 脚本与 `scripts/test-dashboard-loader.mjs`，确保 `pnpm test` 无破损脚本调用；
-- [ ] **3. 采集器健壮性验收 (待接手 - ISSUE-07)**：`packages/dashboard/src/adapters/local/collectors/gemini.ts` 捕获异常追加到 `errors: string[]` 并在 `agents.ts` 聚合输出；
-- [ ] **4. 孤立死代码彻底清理 (待接手 - ISSUE-05, 06, 11)**：物理删除 `__fixtures__/` 夹具、`use-breakpoint.ts` 空壳及 `scripts/` 中包含本地 Windows 绝对路径的单次脚本；
-- [ ] **5. 代码堆砌与分词修复 (待接手 - ISSUE-08, 09, 10, 14, 15)**：复用 `Prisma.TransactionClient`，连续汉字分词修复，去除 70 行 switch 浅拷贝；
-- [x] **6. 文档与目录干净度 (本轮已完成 - DOC-02, 06, 07)**：`docs/current-task/` 历史积压全部归档至 `docs/finish-task/`，仅保留活跃工作流；
-- [x] **7. 文档索引真实性验证 (本轮已完成 - DOC-01, 03, 04, 05, 11, 12)**：`docs/INDEX.md` 无重复段落，所登记 16 篇 Runbooks 与磁盘 1:1 吻合，消除虚假双语说明与幽灵路由；
-- [x] **8. 代码注释与伪三元清理 (本轮已完成 - DOC-08, 09, 10)**：修正 `seekRequested` 与 Tag 虚构 TODO 注释，折叠 `replace ? 'updated' : 'updated'` 伪三元逻辑；
-- [x] **9. 全库类型检查基线 (当前已通过)**：`pnpm typecheck` 保持全 Monorepo 0 错误（含 web, music, db, roadmap, dashboard 及 scripts）。
+- [x] **1. 路由探针验收 (已核验 - ISSUE-01)**：核对 Next.js 16 官方契约确认 `proxy.ts` 为当前规范约定，实测 `GET /` 307 重定向至默认语言路由（`http://localhost:3000/zh`），返回有效页面而非 404；
+- [x] **2. 脚本与破损测试验收 (已完成 - ISSUE-03, 04)**：清理根目录 `music:check-adapter` 脚本并删除 `scripts/test-dashboard-loader.mjs`，确保 `pnpm test` 无破损脚本调用；
+- [x] **3. 采集器健壮性验收 (已完成 - ISSUE-07)**：`packages/dashboard/src/adapters/local/collectors/gemini.ts` 捕获异常追加到 `errors: string[]` 并在 `agents.ts` 聚合输出；
+- [x] **4. 孤立死代码彻底清理 (已完成 - ISSUE-05, 06, 11)**：物理删除 `__fixtures__/` 夹具、`use-breakpoint.ts` 空壳及 `scripts/` 中包含本地 Windows 绝对路径的单次脚本；
+- [x] **5. 代码堆砌与分词修复 (已完成 - ISSUE-08, 09, 10, 14, 15)**：复用 `Prisma.TransactionClient`，连续汉字分词修复，去除 70 行 switch 浅拷贝，解耦旧 User seed；
+- [x] **6. 文档与目录干净度 (已完成 - DOC-02, 06, 07)**：`docs/current-task/` 历史积压全部归档至 `docs/finish-task/`，仅保留活跃工作流；
+- [x] **7. 文档索引真实性验证 (已完成 - DOC-01, 03, 04, 05, 11, 12)**：`docs/INDEX.md` 无重复段落，所登记 16 篇 Runbooks 与磁盘 1:1 吻合，消除虚假双语说明与幽灵路由；
+- [x] **8. 代码注释与伪三元清理 (已完成 - DOC-08, 09, 10)**：修正 `seekRequested` 与 Tag 虚构 TODO 注释，折叠 `replace ? 'updated' : 'updated'` 伪三元逻辑；
+- [x] **9. 全库类型检查与测试基线 (已通过)**：`pnpm typecheck` 保持全 Monorepo 0 错误（含 web, music, db, roadmap, dashboard 及 scripts）；`pnpm test` 635 项全通，运维测试 3/3 全通。

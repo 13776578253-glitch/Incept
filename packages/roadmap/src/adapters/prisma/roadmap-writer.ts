@@ -1,3 +1,4 @@
+import type { Prisma } from '@incept/db';
 import {
   assertLocalizedText,
   validateEntry,
@@ -7,8 +8,6 @@ import {
   type RoadmapEntry,
   type RoadmapEntryImportItem,
   type RoadmapEntryLink,
-  type RoadmapEntryPriority,
-  type RoadmapEntryType,
   type RoadmapStatus,
 } from '../../domain';
 import type { RoadmapEntryPatch, RoadmapWriter } from '../../ports';
@@ -16,101 +15,12 @@ import type { RoadmapEntryPatch, RoadmapWriter } from '../../ports';
 import {
   toEntry,
   toRoadmap,
-  type RoadmapColumnRow,
   type RoadmapEntryLinkRow,
   type RoadmapEntryRow,
-  type RoadmapRow,
-  type RoadmapProjectRow,
-  type RoadmapWithProject,
 } from './roadmap-repository';
 
-// 写端口的结构化 Prisma 句柄：事务回调只拿事务代理（Prisma TransactionClient 同形）。
-export type RoadmapPrismaTx = {
-  roadmap: {
-    findUnique(query: {
-      where: { key: string };
-      include: { columns: true; project: true; entries: { include: { links: true } } };
-    }): Promise<
-      | (RoadmapRow & {
-          project: RoadmapProjectRow | null;
-          columns: RoadmapColumnRow[];
-          entries: (RoadmapEntryRow & { links: RoadmapEntryLinkRow[] })[];
-        })
-      | null
-    >;
-    findMany(query: {
-      orderBy: { position: 'asc' };
-      include: { columns: true; project: true };
-    }): Promise<(RoadmapWithProject & { columns: RoadmapColumnRow[] })[]>;
-    create(args: {
-      data: { key: string; nameEn: string; nameZh: string; position: number; project: { connect: { key: string } } };
-      include: { project: true; columns: true };
-    }): Promise<RoadmapWithProject & { columns: RoadmapColumnRow[] }>;
-    delete(args: { where: { key: string } }): Promise<RoadmapRow>;
-  };
-  roadmapProject: {
-    findMany(args: { orderBy: { position: 'asc' } }): Promise<RoadmapProjectRow[]>;
-    findUnique(args: { where: { key: string } }): Promise<RoadmapProjectRow | null>;
-    create(args: { data: { key: string; nameEn: string; nameZh: string; position: number; roadmapEnabled: boolean; atlasEnabled: boolean } }): Promise<RoadmapProjectRow>;
-    update(args: { where: { key: string }; data: { nameEn?: string; nameZh?: string; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean } }): Promise<RoadmapProjectRow>;
-    delete(args: { where: { key: string } }): Promise<RoadmapProjectRow>;
-  };
-  roadmapColumn: {
-    upsert(args: {
-      where: { roadmapId_status: { roadmapId: string; status: RoadmapStatus } };
-      create: {
-        roadmapId: string;
-        status: RoadmapStatus;
-        labelEn: string;
-        labelZh: string;
-        position: number;
-      };
-      update: { labelEn: string; labelZh: string; position?: number };
-    }): Promise<RoadmapColumnRow>;
-  };
-  roadmapEntry: {
-    count(args: { where: { roadmapId: string; status?: RoadmapStatus } }): Promise<number>;
-    findUnique(args: { where: { key: string } }): Promise<RoadmapEntryRow | null>;
-    create(args: {
-      data: {
-        roadmapId: string;
-        key: string;
-        status: RoadmapStatus;
-        type: RoadmapEntryType;
-        priority: RoadmapEntryPriority;
-        titleEn: string;
-        titleZh: string;
-        summaryEn: string;
-        summaryZh: string;
-        detailEn: string | null;
-        detailZh: string | null;
-        position: number;
-      };
-    }): Promise<RoadmapEntryRow>;
-    update(args: {
-      where: { key: string };
-      data: {
-        status?: RoadmapStatus;
-        type?: RoadmapEntryType;
-        priority?: RoadmapEntryPriority;
-        titleEn?: string;
-        titleZh?: string;
-        summaryEn?: string;
-        summaryZh?: string;
-        detailEn?: string | null;
-        detailZh?: string | null;
-        position?: number;
-      };
-    }): Promise<RoadmapEntryRow>;
-    delete(args: { where: { key: string } }): Promise<RoadmapEntryRow>;
-  };
-  roadmapEntryLink: {
-    deleteMany(args: { where: { entryId: string } }): Promise<{ count: number }>;
-    create(args: {
-      data: { entryId: string; labelEn: string; labelZh: string; href: string; position: number };
-    }): Promise<RoadmapEntryLinkRow>;
-  };
-};
+// Use the schema-generated transaction delegates for all write operations.
+export type RoadmapPrismaTx = Prisma.TransactionClient;
 
 export type RoadmapPrismaWriteClient = RoadmapPrismaTx & {
   $transaction<T>(fn: (tx: RoadmapPrismaTx) => Promise<T>): Promise<T>;

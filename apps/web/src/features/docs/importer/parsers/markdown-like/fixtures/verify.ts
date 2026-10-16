@@ -43,6 +43,11 @@ export async function runMarkdownLikeFixtureChecks() {
     assert.equal(source.meta.collectionSlug, fixture.expectedSource.collectionSlug);
     assert.equal(source.meta.position, fixture.expectedSource.position);
     assert.equal(source.body.sections[0]?.blocks[0]?.type, 'paragraph');
+    for (const section of source.body.sections) {
+      for (const block of section.blocks) {
+        assert.ok(!('line' in block), `${fixture.fileName} should omit parser-only block locations.`);
+      }
+    }
 
     const outline = buildDocsOutline(source.body.sections);
     for (const [sectionIndex, section] of source.body.sections.entries()) {
@@ -64,7 +69,7 @@ export async function runMarkdownLikeFixtureChecks() {
     const nestedHeadings = outline[0]?.children?.[0]?.children?.[0]?.children;
     assert.equal(
       nestedHeadings?.[0]?.label,
-      'Fine detail',
+      fixture.expectedNestedHeading,
       `${fixture.fileName} should nest level-four headings below level-three headings.`,
     );
   }

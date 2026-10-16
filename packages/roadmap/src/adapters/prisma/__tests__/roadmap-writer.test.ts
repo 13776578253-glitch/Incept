@@ -70,6 +70,16 @@ type FakeState = {
   roadmaps?: (RoadmapWithProject & { columns: RoadmapColumnRow[] })[];
   calls?: string[];
   entryWrites?: unknown[];
+  roadmapWrites?: unknown[];
+  columnWrites?: unknown[];
+};
+
+// Fakes use generated argument types, but return ordinary promises instead of PrismaPromise.
+type FakeDelegate<T> = {
+  [K in keyof T]?: T[K] extends (...args: infer A) => unknown ? (...args: A) => Promise<unknown> : never;
+};
+type FakeTx = {
+  [K in 'roadmap' | 'roadmapProject' | 'roadmapColumn' | 'roadmapEntry' | 'roadmapEntryLink']: FakeDelegate<RoadmapPrismaTx[K]>;
 };
 
 // 假写客户端：$transaction 直接以自身回调执行（不变式断言看 calls 序列）。
@@ -77,7 +87,7 @@ function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
   const calls = state.calls ?? [];
   const board = () =>
     state.boards?.[0] ?? { ...roadmapRow, project: projectRow, columns: [columnRow], entries: [] };
-  const tx: RoadmapPrismaTx = {
+  const tx = {
     roadmapProject: {
       findMany: async () => [projectRow],
       findUnique: async () => projectRow,
@@ -88,25 +98,31 @@ function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
     roadmap: {
       findUnique: async () => board(),
       findMany: async () => state.roadmaps ?? [{ ...roadmapRow, project: projectRow, columns: [columnRow] }],
-      create: async (args) => ({
-        ...roadmapRow,
-        project: projectRow,
-        projectId: projectRow.id,
-        key: args.data.key,
-        nameEn: args.data.nameEn,
-        nameZh: args.data.nameZh,
-        position: args.data.position,
-        columns: [],
-      }),
+      create: async (args) => {
+        state.roadmapWrites?.push(args.data);
+        return {
+          ...roadmapRow,
+          project: projectRow,
+          projectId: projectRow.id,
+          key: args.data.key,
+          nameEn: args.data.nameEn,
+          nameZh: args.data.nameZh,
+          position: args.data.position,
+          columns: [],
+        };
+      },
       delete: async () => roadmapRow,
     },
     roadmapColumn: {
-      upsert: async (args) => ({
-        ...columnRow,
-        status: args.create.status,
-        labelEn: args.create.labelEn,
-        labelZh: args.create.labelZh,
-      }),
+      upsert: async (args) => {
+        state.columnWrites?.push(args.create);
+        return {
+          ...columnRow,
+          status: args.create.status,
+          labelEn: args.create.labelEn,
+          labelZh: args.create.labelZh,
+        };
+      },
     },
     roadmapEntry: {
       count: async () => state.entryCountByStatus ?? 0,
@@ -158,12 +174,12 @@ function fakeWriteClient(state: FakeState = {}): RoadmapPrismaWriteClient {
         };
       },
     },
-  };
+  } satisfies FakeTx;
 
   return {
     ...tx,
-    $transaction: (fn) => fn(tx),
-  };
+    $transaction: <T>(fn: (tx: RoadmapPrismaTx) => Promise<T>) => fn(tx as unknown as RoadmapPrismaTx),
+  } as unknown as RoadmapPrismaWriteClient;
 }
 
 const draft: Omit<RoadmapEntry, 'roadmap' | 'order'> & { roadmapKey: string; order?: number } = {
@@ -323,15 +339,7 @@ describe('createPrismaRoadmapWriter', () => {
   it('auto-scaffolds default roadmap and planning boards with columns on project creation', async () => {
     const createdRoadmaps: unknown[] = [];
     const createdColumns: unknown[] = [];
-    const txClient = fakeWriteClient();
-    txClient.roadmap.create = async (args) => {
-      createdRoadmaps.push(args.data);
-      return { ...roadmapRow, project: projectRow, key: args.data.key, nameEn: args.data.nameEn, nameZh: args.data.nameZh, position: args.data.position, columns: [] };
-    };
-    txClient.roadmapColumn.upsert = async (args) => {
-      createdColumns.push(args.create);
-      return { ...columnRow, status: args.create.status };
-    };
+    const txClient = fakeWriteClient({ roadmapWrites: createdRoadmaps, columnWrites: createdColumns });
 
     const writer = createPrismaRoadmapWriter(txClient);
     const project = await writer.createProject({

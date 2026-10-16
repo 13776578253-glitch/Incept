@@ -36,6 +36,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.src.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@incept/db": "workspace:*"
+  },
   "peerDependencies": {
     "next": "^16.2.0",
     "react": "^19.2.4",

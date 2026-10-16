@@ -8,6 +8,8 @@ import { collectClaudeEvents } from '../adapters/local/collectors/claude';
 import { collectOpenCodeEvents } from '../adapters/local/collectors/opencode-usage';
 import { collectZCodeEvents } from '../adapters/local/collectors/zcode';
 import { collectCcusageFallback } from '../adapters/local/collectors/ccusage';
+import { collectGeminiEvents } from '../adapters/local/collectors/gemini';
+import { collectAiusageAndRawAgentEvents } from '../adapters/local/collectors/agents';
 import { canonicalModelName, readLocalOverrides } from '../adapters/local/overrides';
 import { canPriceUsage, loadLocalPricingMap, lookupPricing } from '../adapters/local/pricing';
 import { exportTokenData } from '../adapters/local/imports/exporter';
@@ -44,6 +46,23 @@ const generation = (id: string, input = 100) => pb([1, pb([3, 9876], [19, 'model
   [9, pb([4, pb([1, at / 1000])])])], [2, 0]);
 
 describe('repeatable native collection', () => {
+  it('reports malformed Gemini sessions through the agent collector while retaining valid sessions', () => {
+    const directory = join(home, '.gemini', 'tmp', 'fixture', 'chats');
+    mkdirSync(directory, { recursive: true });
+    const broken = join(directory, 'session-broken.json');
+    writeFileSync(broken, '{invalid json');
+    writeFileSync(join(directory, 'session-valid.json'), JSON.stringify({ sessionId: 'valid', messages: [{
+      id: 'one', model: 'fixture-model', tokens: { input: 100, output: 20 },
+    }] }));
+    const gemini = collectGeminiEvents(home, price);
+    expect(gemini.events).toHaveLength(1);
+    expect(gemini.errors).toHaveLength(1);
+    expect(gemini.errors[0]).toContain(`Failed to parse Gemini session at ${broken}:`);
+    expect(collectAiusageAndRawAgentEvents(home, price).errors).toEqual(gemini.errors);
+  });
+  it('returns no Gemini errors when the source is absent', () => {
+    expect(collectGeminiEvents(home, price)).toMatchObject({ events: [], errors: [] });
+  });
   it('exports independent Antigravity requests with identical counters and timestamps', () => {
     const db = nativeDb();
     db.prepare('INSERT INTO gen_metadata VALUES (?, ?)').run(0, generation('independent-one'));

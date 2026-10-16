@@ -9,8 +9,6 @@ import {
 import {
   createPrismaRoadmapRepository,
   createPrismaRoadmapWriter,
-  type RoadmapPrismaTx,
-  type RoadmapPrismaWriteClient,
 } from '@incept/roadmap/adapters';
 import type {
   AuthorizeOwner,
@@ -47,38 +45,7 @@ export const authorizeOwner: AuthorizeOwner<Request> = async (request) =>
   (await isRoadmapOwner());
 
 export function createRoadmapWriter(): RoadmapWriter {
-  const client: RoadmapPrismaWriteClient = {
-    roadmap: {
-      findUnique: (query) => prisma.roadmap.findUnique(query),
-      findMany: (query) => prisma.roadmap.findMany(query),
-      create: (args) => prisma.roadmap.create(args),
-      delete: (args) => prisma.roadmap.delete(args),
-    },
-    roadmapProject: {
-      findMany: (args) => prisma.roadmapProject.findMany(args),
-      findUnique: (args) => prisma.roadmapProject.findUnique(args),
-      create: (args) => prisma.roadmapProject.create(args),
-      update: (args) => prisma.roadmapProject.update(args),
-      delete: (args) => prisma.roadmapProject.delete(args),
-    },
-    roadmapColumn: {
-      upsert: (args) => prisma.roadmapColumn.upsert(args),
-    },
-    roadmapEntry: {
-      count: (args) => prisma.roadmapEntry.count(args),
-      findUnique: (args) => prisma.roadmapEntry.findUnique(args),
-      create: (args) => prisma.roadmapEntry.create(args),
-      update: (args) => prisma.roadmapEntry.update(args),
-      delete: (args) => prisma.roadmapEntry.delete(args),
-    },
-    roadmapEntryLink: {
-      deleteMany: (args) => prisma.roadmapEntryLink.deleteMany(args),
-      create: (args) => prisma.roadmapEntryLink.create(args),
-    },
-    $transaction: (fn) => prisma.$transaction((tx) => fn(tx as unknown as RoadmapPrismaTx)),
-  };
-
-  return createPrismaRoadmapWriter(client);
+  return createPrismaRoadmapWriter(prisma);
 }
 
 export async function loadRoadmapProjects(): Promise<RoadmapProject[]> {

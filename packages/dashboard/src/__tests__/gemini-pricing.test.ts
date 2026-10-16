@@ -2,7 +2,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { lookupPricing } from '../adapters/local/pricing';
+import { loadLocalPricingMap, lookupPricing } from '../adapters/local/pricing';
+import { canonicalModelName, readLocalOverrides } from '../adapters/local/overrides';
 import { usageEvent } from '../adapters/local/collectors/common';
 import { summarizeUsageEvents } from '../adapters/local/aggregation/summarize';
 
@@ -50,6 +51,22 @@ describe('Gemini grey-model pricing without identity aliases', () => {
       expect(data.sessions.flatMap(session => session.modelsUsed).sort()).toEqual([...variants].sort());
       expect(data.totals.cost).toBeCloseTo(21.9);
       for (const model of data.models) expect(model.unitPricing).toMatchObject(price);
+    } finally {
+      if (!resolve(home).startsWith(join(resolve(tmpdir()), 'dashboard-grey-pricing-'))) throw new Error('Unsafe fixture cleanup');
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('uses configured base rates without turning pricing aliases into identity aliases', () => {
+    const home = mkdtempSync(join(tmpdir(), 'dashboard-grey-pricing-'));
+    try {
+      const overrides = readLocalOverrides(join(home, 'absent-overrides.json'));
+      overrides.prices['gemini-3.8-flash'] = price;
+      overrides.prices[variants[0]] = { ...price, outputPerMillion: 7 };
+      const pricing = loadLocalPricingMap(home, overrides);
+      expect(lookupPricing(pricing, variants[0])?.outputPerMillion).toBe(7);
+      expect(lookupPricing(pricing, variants[1])).toEqual(price);
+      for (const variant of variants) expect(canonicalModelName(variant, overrides.aliases)).toBe(variant);
     } finally {
       if (!resolve(home).startsWith(join(resolve(tmpdir()), 'dashboard-grey-pricing-'))) throw new Error('Unsafe fixture cleanup');
       rmSync(home, { recursive: true, force: true });

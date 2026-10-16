@@ -56,6 +56,8 @@ enum DocsCollectionItemType {
   folder
 }
 
+/// @deprecated Legacy content ownership only. Authentication uses OwnerAccount / AccessPrincipal.
+/// Retained for existing DocsDocument / DocsCollection foreign keys until ownership migration.
 model User {
   id          Int              @id @default(autoincrement())
   username    String           @unique

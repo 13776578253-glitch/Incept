@@ -5,6 +5,13 @@ import type { UnitPricing } from './types';
 
 export type LocalOverrides = { aliases: Record<string, string>; prices: Record<string, UnitPricing>; updatedAt: number; error?: string };
 
+// Pricing aliases share rates without merging usage identities in summaries or imports.
+export const DEFAULT_PRICING_ALIASES: Readonly<Record<string, string>> = {
+  'gemini-3.8-flash-exp-a': 'gemini-3.8-flash',
+  'gemini-3.8-flash-n': 'gemini-3.8-flash',
+  'gemini-3.8-flash-tiered': 'gemini-3.8-flash',
+};
+
 export function overridesPath() {
   if (process.env.INCEPT_DASHBOARD_OVERRIDES_FILE) return resolve(process.env.INCEPT_DASHBOARD_OVERRIDES_FILE);
   let directory = process.cwd();

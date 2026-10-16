@@ -249,3 +249,57 @@ git status
 
 ---
 *本交接文档完结。接手 Agent 可直接读取本指南，按 Wave 1 -> Wave 2 -> Wave 3 顺序执行。*
+
+---
+
+## 五、2026-10-16 分批执行与验收结果
+
+**状态：12 项已结项（11 项完成修复或清理，ISSUE-01 经版本核对与 HTTP 实测确认现状正确）。**
+
+执行基线：`codex/production-readiness`，起点 `88966bc`，起始工作区干净。按 Wave 1 → Wave 2 → Wave 3 顺序实施，并完成最终全仓门禁。当前变更保留在该分支工作区，尚未提交。
+
+### 逐项结果
+
+| 波次 | 事项 | 结果 |
+| --- | --- | --- |
+| 1 | ISSUE-01 | 核对安装的 Next.js **16.4.0** 随包文档：`proxy.ts` 是当前约定，`middleware.ts` 已弃用。保留原文件；启动 `pnpm dev` 后实测 `/` 返回 **307**、`Location: /zh`，纠正本交接原文对文件命名的误诊。 |
+| 1 | ISSUE-03 | `music:check-adapter` 改为 `pnpm --filter @incept/music test:core`，命令通过 73 项测试。 |
+| 1 | ISSUE-07 | Gemini 采集结果新增 `errors`，附会话文件路径和异常原因，上游 agent 采集合并这些错误。补测损坏 JSON、有效会话共存、缺失来源和错误上报。 |
+| 2 | ISSUE-08 | 删除 Gemini 专用 Set 和模型专用查询分支，在 `overrides.ts` 的 `DEFAULT_PRICING_ALIASES` 注册三种变体，复用通用别名解析。定价别名只影响费率；模型原名、会话和汇总身份保留，显式变体价格优先。 |
+| 2 | ISSUE-09 | 使用 `Prisma.TransactionClient` 替代手写事务接口。仓库配置了自定义生成目录，故从 `@incept/db` 导出生成类型，声明 Roadmap 工作区依赖并同步锁文件。Web 装配直接传入 Prisma 客户端，移除重复包装与事务强制转换；测试替身复用生成参数类型。 |
+| 2 | ISSUE-10 | 在连续汉字块内部生成二元、三元词，保留停用词规则。新增标点、空格、换行、英文、数字边界、孤立单字及伪相关卡片回归测试。 |
+| 3 | ISSUE-04 | 删除孤立桩脚本 `scripts/test-dashboard-loader.mjs`。 |
+| 3 | ISSUE-05 | 删除 Style Lab 的 3 个无引用夹具文件（`block-system/__fixtures__`）。 |
+| 3 | ISSUE-06 | 删除无导出、无引用的空壳 `use-breakpoint.ts`。 |
+| 3 | ISSUE-11 | 删除 `search-cli.mjs`、`inspect-sample.mjs`、`check-other-projects.mjs`、`audit-commandcode-usage.mjs` 四个一次性排查脚本。 |
+| 3 | ISSUE-14 | 将逐类型逐字段 switch 简化为去除解析专用 `line` 后的统一浅拷贝，编译器直接检查块联合类型，移除多余断言和内联恒等映射。 |
+| 3 | ISSUE-15 | 移除 seed 对 `system` 用户的 upsert；`User` 标记 `@deprecated` 并注明保留现有内容归属关联。文档导入器仍按需维护内容归属用户，身份认证继续使用 OwnerAccount / AccessPrincipal。 |
+
+### 与交接原文的适配
+
+- ISSUE-01 以已安装版本的 `apps/web/node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md` 和 `03-api-reference/03-file-conventions/middleware.md` 为依据，配合实际 HTTP 响应验收。
+- ISSUE-08 的默认别名用于定价查询，保持原有“共用费率、独立模型身份”行为；本地 `modelAliases` 仍控制显式身份别名。
+- ISSUE-09 使用本 schema 生成的类型。直接从默认 `@prisma/client` 导入与当前自定义生成路径不匹配。
+- 第三批额外运行 Markdown 导入夹具，发现原清单漏记 `Nested detail` / `Fine detail` 及其段落，且四级标题断言误用于集合文章。已按源夹具修正预期，并补充导出块移除解析行号的断言。
+- 本机 Corepack 缓存需显式设置 `COREPACK_HOME=C:\Users\86139\AppData\Local\node\corepack`。工作区依赖安装经 `pnpm install --frozen-lockfile --ignore-scripts --prefer-offline` 完成；锁文件仅新增 Roadmap → DB 的本地依赖。
+
+### 最终验收
+
+| 命令 / 检查 | 结果 |
+| --- | --- |
+| `pnpm typecheck` | 通过，全部 5 个包及 scripts，0 错误 |
+| `pnpm test:ops` | 3 / 3 通过 |
+| `pnpm --filter @incept/music test:core` | 73 / 73 通过 |
+| `pnpm --filter @incept/dashboard test` | 187 / 187 通过（原 184，加 3 项回归） |
+| `pnpm --filter @incept/roadmap test` | 71 / 71 通过（原 63，加 8 项回归） |
+| `pnpm test` | 通过：Dashboard 187、Roadmap 71、音乐 Vitest 195 + 核心 73、Web 109；共 635 项通过 |
+| Web 真实 PostgreSQL 测试 | 28 项按既有环境门禁跳过：未设置 `INCEPT_AUTH_TEST_DATABASE_URL` |
+| `pnpm db:generate` + `pnpm --filter @incept/db typecheck` | Prisma Client 6.19.3 生成成功，DB 类型检查通过 |
+| `pnpm docs:check-markdown-like` | 全部合法及非法夹具通过 |
+| 改动的 Web 文件 ESLint | 通过，无输出 |
+| `curl.exe --noproxy '*' -I http://localhost:3000/` | 307，`Location: /zh`；验证后已停止本次启动的服务 |
+| `git diff --check`、删除文件引用检查、`git status` | 通过；无新增未跟踪死代码或临时文件，变更均为本次任务范围 |
+
+本地完整日志保存在已忽略目录 `.scratch/handover-2026-10-16/`。`docs/NEXT.md` 已移除此项活跃待办。
+
+提交建议：`fix: complete remaining core defect remediation`。

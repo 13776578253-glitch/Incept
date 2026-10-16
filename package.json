@@ -22,7 +22,7 @@
     "test:web": "pnpm --filter web test",
     "test:watch:web": "pnpm --filter web test:watch",
     "music:check-core": "pnpm --filter @incept/music run test:core",
-    "music:check-adapter": "pnpm --filter web exec vitest run src/features/music-player/adapter/__tests__/music-source.test.ts",
+    "music:check-adapter": "pnpm --filter @incept/music test:core",
     "music:typecheck-core": "pnpm --filter @incept/music typecheck",
     "music:mock-audio": "node scripts/music-mock-audio.mjs",
     "music:manifest": "node scripts/music-manifest.mjs",

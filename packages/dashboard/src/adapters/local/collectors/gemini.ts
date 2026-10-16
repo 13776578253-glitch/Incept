@@ -9,6 +9,7 @@ import { hash } from '../imports/identity';
 
 export function collectGeminiEvents(home: string, pricingMap: Map<string, UnitPricing>) {
   const events: RawUsageEvent[] = [];
+  const errors: string[] = [];
   const parsedFiles = new Set<string>();
   let latestMtimeMs = 0;
 
@@ -90,10 +91,10 @@ export function collectGeminiEvents(home: string, pricingMap: Map<string, UnitPr
           missingPricing: !canPriceUsage(pricing, { inputTokens: uncachedInput, outputTokens, cacheReadTokens, cacheCreationTokens: 0, reasoningTokens: reasoningTokens }),
         });
       }
-    } catch {
-      // ignore
+    } catch (error) {
+      errors.push(`Failed to parse Gemini session at ${chatFile}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  return { events, latestMtimeMs, parsedFiles };
+  return { events, errors, latestMtimeMs, parsedFiles };
 }

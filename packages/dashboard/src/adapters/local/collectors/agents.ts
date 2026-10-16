@@ -29,7 +29,7 @@ export function collectAiusageAndRawAgentEvents(home: string, pricingMap: Map<st
     fallbackEvents,
     coveredSessions,
     parsedFiles,
-    errors: [...indexed.errors, ...codex.errors, ...native.flatMap(result => result.errors)],
+    errors: [...indexed.errors, ...codex.errors, ...gemini.errors, ...native.flatMap(result => result.errors)],
     fallbackSources: [...new Set([...fallbackEvents.map(event => event.sourceId),
       ...native.flatMap((result, index) => result.errors.length ? [(['antigravity', 'claudeCode', 'opencode', 'zcode'] as const)[index]] : [])])],
     fallbackDateHints: Object.fromEntries([...new Set(fallbackEvents.map(event => event.sourceId))].map(source => [source,
