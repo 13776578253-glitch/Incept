@@ -100,3 +100,13 @@ CLI 的导出摘要仍只列两种来源，扩展后应同步统计与使用说�
 证据目录：`.scratch/production-acceptance-2026-10-16/`，包括 server-audit.log、public-check.json、server-detail.log、document-gates.log、import-probes.log、测试与类型日志及浏览器截图。临时探针只使用独立合成目录。
 
 下一步优先级：补绑定后备份；修两个导出数据问题；按同一版本交付七来源协议；处理 428 弹窗和 reference 旧跳转；其余外部运维接入继续排期。
+
+## [2026-10-16 13:20] - Update by AI完成改动:
+
+后续结果覆盖上文当时的待办状态，历史复现与验收数值继续保留：Gemini 样式、导入就地认证/十条历史、README、费用保留、索引/原始去重、七来源 CLI/校验、跨批次费率、reference 跳转及正式集成检查器均已提交。源码提交截至 `1a29a92`。
+
+最新 03:04 完整生产备份已覆盖 TOTP/恢复码建立，四归档哈希有效。精确 Linux/amd64 候选通过 655 项自动测试、真实 PostgreSQL 权限/事务、三身份 HTTP、七来源 428/重新认证/幂等导入/回滚、可信 TLS、运行镜像检查及新空目标恢复，生产依赖审计 0 漏洞。迁移数量仍为 21，与线上完全一致。
+
+交付包已包含同版接收端和便携导出工具。线上运行 `7bee9ad`，候选待人工发布评审及切换；本轮隔离测试只操作独立数据。离机备份、外部告警与设备上报保留在运营计划。完整证据见 [自主修复包](./2026-10-16-autonomous-fix-release.md)。
+
+Commit 建议：`docs: record validated fix release and paired token tools`。

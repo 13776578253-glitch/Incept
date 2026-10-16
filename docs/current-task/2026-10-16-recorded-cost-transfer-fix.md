@@ -21,3 +21,9 @@ Commit 建议：`fix(dashboard): preserve native recorded costs in token exports
 - 独立工具 `build:tools` 成功。打包后的 CLI 在隔离来源/接收目录中完成 export → preview → commit → history：两条记录共 260 Token，费用 `[0.2, 0]` 保留到导出文件及 SQLite 批次存储。
 
 本轮费用修复留在工作区，等待与后续数据修复一起整理。此前 Gemini 的五个数据脚本/类型/测试文件改动保留，索引/原始事件身份问题和七来源发布配套继续待办。
+
+## [2026-10-16 13:20] - Update by AI完成改动:
+
+费用修复及现有 Gemini 数据脚本已提交为 `48a679a`；后续身份/费率/历史修复为 `b0132d9`，路由/检查器为 `1a29a92`。完整 Linux/amd64 候选通过 655 项测试及真实隔离导入、认证、回滚、TLS 和空目标恢复；进入配套发布评审。详情见 [自主修复包记录](./2026-10-16-autonomous-fix-release.md)。
+
+遗留问题：线上仍需切换至配套接收端，再使用同版七来源工具上传。Commit 建议：`docs: record validated fix release and paired token tools`。

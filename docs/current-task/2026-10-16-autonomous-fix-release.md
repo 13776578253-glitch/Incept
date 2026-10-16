@@ -25,3 +25,28 @@ Commit 建议：按数据修复、路由/检查器和交付记录分组提交。
 - 只读生产核对：仍运行 `7bee9ad`；最新完整备份为 `2026-10-15T19:04:09.294Z`（10 月 16 日 03:04，UTC+8），晚于 Owner 更新及恢复码建立；四份归档 SHA256 全部有效，八个恢复码未消费。REC-01 的绑定后备份时间差已解决。
 
 下一门禁：本机 Linux/amd64 精确提交构建、隔离 PostgreSQL/真实 HTTP/权限与 TLS 检查、独立工具验收及发布制品关联。生产卷和本机个人数据尚未修改。
+
+## [2026-10-16 13:20] - Update by AI完成改动:
+
+源码已按用户要求分组提交：`48a679a` 保留原始费用并扩展七来源；`b0132d9` 修复传输身份、跨批次费率和历史读取；`1a29a92` 修复 reference 与正式集成检查器。前两轮 UI/README 提交分别为 `b11d84f`、`42356fc`、`78a1c48`。
+
+精确候选为 `1a29a92c2ababb80380d81e5aa9ce27aa98121f0`，Linux/amd64 构建完成，21 个数据库迁移与生产 `7bee9ad` 完全一致。镜像标签 `incept:fix-20261016-1a29a92`，平台 manifest 为 `sha256:79292633a94bfcaf38ecdd3fb561a70449a7815506c57b6bba70bbb0ec8ad24e`；本机镜像索引为 `sha256:1c72587851fa47faf8c40745b2d252c84edeef57a86113a412282e326dca401a`。
+
+验收完成：
+
+- 构建内全仓类型、Lint、测试及 Next 生产构建通过。Roadmap 63、Dashboard 184、Music 195＋Core 73、Web 109、运维 3；另在全新真实 PostgreSQL 中执行 Owner/Pro 28 项，合计 655 项通过。
+- 正式隔离事务门禁验证回滚、并发确认和应用数据库角色限制。正式 HTTP 门禁验证 Guest/Pro/Owner、授权撤销、Secure Cookie、文档/媒体/重复上传及最新退役路由和设置权限。
+- 隔离真实 HTTP 七来源导入得到 7 条、910 Token；过期 Owner 提交 428，失败认证不写入，成功认证后原预览提交，同一预览重放保持同一批次，跨域写入 403，工作线程读取全部七来源。回滚后为 0 Token，回执保留。刷新受 30 秒频控保护，回滚后终态核查在限流窗口后续跑完成。
+- 受信任本地 Caddy CA 的 TLS 门禁通过，包含私有媒体、认证体积限制及 Owner 强制刷新。运行镜像包含 Worker/Prisma，引擎正常，未携带 `.scratch`、Git、私有 env 或测试运行库。
+- 生产运行依赖 277 项，审计为 0 漏洞。Lint 保留原有 8 警告，Next 保留 15 个动态文件访问 tracing 警告；独立镜像检查和实际 Worker 运行通过。
+- 使用正式备份程序停止隔离写入后完成一致备份，四归档 SHA256 均有效；恢复至全新独立 PG/目录后验证密码、加密 TOTP、恢复码、审计、文档、媒体、SQLite 与 Caddy CA 全部通过。
+
+本地发布包位于 `output/release-2-fix-2026-10-16-1a29a92`，包含应用镜像、白名单运维归档、同版便携工具与 manifest，真实配置、个人用量及认证材料不在交付范围。镜像归档 SHA256 为 `9f572d47bc33ff09d4a56699731ff3da48f8d0f2b59c95cba5baa4c96fa89d5a`；运维归档为 `890b12df6966911fe4dcdced442499f69c3fa06f87ab079ab76e048113662836`；工具归档为 `9fe9893eff6372e7814c07ab0ca1dfcdedf8a19cd30c7a621832df04789f22a6`。
+
+遗留问题：线上仍为 `7bee9ad`。候选进入发布评审阶段，按生产手册在人工评审后进行短维护窗口备份、切换及线上验收；服务端更新后再上传七来源数据。离机存储、外部告警接收端和设备自动上报继续由运营计划跟踪。
+
+Commit 建议：`docs: record validated fix release and paired token tools`。
+
+### 13:21 交付回执
+
+镜像、运维归档、便携工具、manifest 和说明已上传至 `43.155.136.83:/srv/incept/incoming/release-2-fix-20261016-1a29a92`。远端三项 `sha256sum -c` 全部返回 OK，磁盘可用 26GB。`/srv/incept/current` 仍解析为 `/srv/incept/releases/7bee9ad`；候选已可审核，未切换生产。
