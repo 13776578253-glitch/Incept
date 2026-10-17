@@ -4,12 +4,10 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { DocsHomeCard } from '@/features/docs/home/components/docs-home-card';
 import { DocsHomeEmpty } from '@/features/docs/home/components/docs-home-empty';
-import { DocsHomeRow } from '@/features/docs/home/components/docs-home-row';
 import { DocsHomeStats } from '@/features/docs/home/components/docs-home-stats';
 import {
   DocsHomeToolbar,
   type DocsCategoryFilter,
-  type DocsViewMode,
 } from '@/features/docs/home/components/docs-home-toolbar';
 import type {
   DocsHomeArticleItemModel,
@@ -44,7 +42,6 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
   const t = useTranslations('docs');
   const [categoryFilter, setCategoryFilter] = useState<DocsCategoryFilter>('all');
   const [searchValue, setSearchValue] = useState('');
-  const [viewMode, setViewMode] = useState<DocsViewMode>('grid');
 
   const deferredSearch = useDeferredValue(searchValue);
 
@@ -100,13 +97,11 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
           onCategoryChange={setCategoryFilter}
           searchValue={searchValue}
           onSearchChange={setSearchValue}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
           totalVisible={totalVisible}
         />
       </div>
 
-      {/* Content Stream */}
+      {/* Content Stream (Elongated full-width rows in single sequence) */}
       <main>
         {totalVisible === 0 ? (
           <DocsHomeEmpty
@@ -118,7 +113,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
         ) : (
           <div className="space-y-10 md:space-y-12">
             {filteredGroups.map((group) => (
-              <section key={group.id} className="space-y-4">
+              <section key={group.id} className="space-y-3.5">
                 <header className="flex items-center justify-between border-b border-[var(--color-border)] pb-2.5">
                   <div className="flex items-center gap-2">
                     <span
@@ -135,19 +130,11 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
                   </span>
                 </header>
 
-                {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-                    {group.entries.map((entry) => (
-                      <DocsHomeCard key={entry.id} article={entry} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {group.entries.map((entry) => (
-                      <DocsHomeRow key={entry.id} article={entry} />
-                    ))}
-                  </div>
-                )}
+                <div className="space-y-3">
+                  {group.entries.map((entry) => (
+                    <DocsHomeCard key={entry.id} article={entry} />
+                  ))}
+                </div>
               </section>
             ))}
           </div>

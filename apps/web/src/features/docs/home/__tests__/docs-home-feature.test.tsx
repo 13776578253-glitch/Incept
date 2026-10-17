@@ -143,17 +143,4 @@ describe('DocsHomeFeature', () => {
     expect(await screen.findByText('System Architecture Blueprint')).toBeInTheDocument();
     expect(await screen.findByText('Database Migration Guide')).toBeInTheDocument();
   });
-
-  it('toggles between grid view and list view', async () => {
-    const user = userEvent.setup();
-    render(<DocsHomeFeature page={mockPage} />);
-
-    const listViewButton = screen.getByRole('button', { name: 'List view' });
-    await user.click(listViewButton);
-    expect(listViewButton).toHaveAttribute('aria-pressed', 'true');
-
-    const gridViewButton = screen.getByRole('button', { name: 'Grid view' });
-    await user.click(gridViewButton);
-    expect(gridViewButton).toHaveAttribute('aria-pressed', 'true');
-  });
 });
