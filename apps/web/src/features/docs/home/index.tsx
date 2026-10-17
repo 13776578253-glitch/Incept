@@ -4,10 +4,7 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { DocsHomeCard } from '@/features/docs/home/components/docs-home-card';
 import { DocsHomeEmpty } from '@/features/docs/home/components/docs-home-empty';
-import {
-  DocsHomeToolbar,
-  type DocsCategoryFilter,
-} from '@/features/docs/home/components/docs-home-toolbar';
+import { DocsHomeToolbar } from '@/features/docs/home/components/docs-home-toolbar';
 import type {
   DocsHomeArticleItemModel,
   DocsHomePageModel,
@@ -25,21 +22,12 @@ function matchesSearch(entry: DocsHomeArticleItemModel, query: string): boolean 
   );
 }
 
-function matchesCategory(
-  entry: DocsHomeArticleItemModel,
-  category: DocsCategoryFilter,
-): boolean {
-  if (category === 'all') return true;
-  return entry.entryType === category;
-}
-
 type DocsHomeFeatureProps = {
   page: DocsHomePageModel;
 };
 
 export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
   const t = useTranslations('docs');
-  const [categoryFilter, setCategoryFilter] = useState<DocsCategoryFilter>('all');
   const [searchValue, setSearchValue] = useState('');
 
   const deferredSearch = useDeferredValue(searchValue);
@@ -49,10 +37,8 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
 
     return page.groups
       .map((group) => {
-        const matchingEntries = group.entries.filter(
-          (entry) =>
-            matchesCategory(entry, categoryFilter) &&
-            matchesSearch(entry, trimmedQuery),
+        const matchingEntries = group.entries.filter((entry) =>
+          matchesSearch(entry, trimmedQuery),
         );
 
         return {
@@ -61,7 +47,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
         };
       })
       .filter((group) => group.entries.length > 0);
-  }, [page.groups, categoryFilter, deferredSearch]);
+  }, [page.groups, deferredSearch]);
 
   const totalVisible = useMemo(() => {
     return filteredGroups.reduce((acc, group) => acc + group.entries.length, 0);
@@ -72,14 +58,11 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
       {/* Accessible Title */}
       <h1 className="sr-only">{t('home.title')}</h1>
 
-      {/* Toolbar Controls */}
-      <div className="mb-5 md:mb-6">
+      {/* Centered Search Toolbar with subtle breathing room */}
+      <div className="mb-8 sm:mb-9 md:mb-10">
         <DocsHomeToolbar
-          categoryFilter={categoryFilter}
-          onCategoryChange={setCategoryFilter}
           searchValue={searchValue}
           onSearchChange={setSearchValue}
-          totalVisible={totalVisible}
         />
       </div>
 
@@ -89,7 +72,6 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
           <DocsHomeEmpty
             onClear={() => {
               setSearchValue('');
-              setCategoryFilter('all');
             }}
           />
         ) : (

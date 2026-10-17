@@ -62,7 +62,7 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
 
   const cardContent = (
     <article
-      className="group relative flex h-full flex-col justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-3.5 transition-all duration-150 hover:border-[var(--color-border-hover,var(--color-text-soft))] hover:shadow-[var(--shadow-card-hover)]"
+      className="group relative flex h-[124px] w-full flex-col justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-3.5 transition-all duration-150 hover:border-[var(--color-border-hover,var(--color-text-soft))] hover:shadow-[var(--shadow-card-hover)]"
       aria-label={article.title}
     >
       <div className="min-w-0">
@@ -103,20 +103,20 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
 
         {/* Summary */}
         {article.summary ? (
-          <p className="mt-1 text-[0.78rem] leading-[1.5] text-[var(--color-text-muted)] line-clamp-2">
+          <p className="mt-1 text-[0.78rem] leading-[1.4] text-[var(--color-text-muted)] line-clamp-1">
             {article.summary}
           </p>
         ) : null}
 
         {isLocked ? (
-          <p className="mt-1 text-[0.7rem] leading-5 text-[var(--color-nav-muted)]">
+          <p className="mt-1 text-[0.7rem] leading-4 text-[var(--color-nav-muted)] line-clamp-1">
             {t('access.requiresRole', { role: roleLabel })}
           </p>
         ) : null}
       </div>
 
       {/* Footer: Tag & Micro Arrow (Clean and light, no divider line) */}
-      <div className="mt-2.5 flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 pt-1">
         <div className="flex min-w-0 items-center text-[0.7rem] text-[var(--color-nav-muted)]">
           {tag ? (
             <span className="truncate">#{tag}</span>
@@ -140,13 +140,13 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
   );
 
   if (!href || isLocked) {
-    return <div className="h-full w-full">{cardContent}</div>;
+    return <div className="h-[124px] w-full">{cardContent}</div>;
   }
 
   return (
     <Link
       href={href}
-      className="group block h-full w-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--badge-sky-dot)]"
+      className="group block h-[124px] w-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--badge-sky-dot)]"
     >
       {cardContent}
     </Link>

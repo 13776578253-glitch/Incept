@@ -92,31 +92,11 @@ describe('DocsHomeFeature', () => {
     vi.clearAllMocks();
   });
 
-  it('renders accessible title, toolbar filters, and documents', () => {
+  it('renders accessible title, search box, and documents', () => {
     render(<DocsHomeFeature page={mockPage} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Technical Documentation' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'All' })).toBeInTheDocument();
-    expect(screen.getByText('System Architecture Blueprint')).toBeInTheDocument();
-    expect(screen.getByText('Database Migration Guide')).toBeInTheDocument();
-  });
-
-  it('filters documents by category capsule tabs', async () => {
-    const user = userEvent.setup();
-    render(<DocsHomeFeature page={mockPage} />);
-
-    // Click "Collections" tab
-    await user.click(screen.getByRole('tab', { name: 'Collections' }));
-    expect(screen.getByText('System Architecture Blueprint')).toBeInTheDocument();
-    expect(screen.queryByText('Database Migration Guide')).not.toBeInTheDocument();
-
-    // Click "Guides" tab
-    await user.click(screen.getByRole('tab', { name: 'Guides' }));
-    expect(screen.queryByText('System Architecture Blueprint')).not.toBeInTheDocument();
-    expect(screen.getByText('Database Migration Guide')).toBeInTheDocument();
-
-    // Click "All" tab
-    await user.click(screen.getByRole('tab', { name: 'All' }));
+    expect(screen.getByRole('searchbox', { name: 'Search articles, topics or tags…' })).toBeInTheDocument();
     expect(screen.getByText('System Architecture Blueprint')).toBeInTheDocument();
     expect(screen.getByText('Database Migration Guide')).toBeInTheDocument();
   });

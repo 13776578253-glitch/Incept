@@ -3,22 +3,14 @@
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 
-export type DocsCategoryFilter = 'all' | 'collection' | 'singleArticle';
-
 type DocsHomeToolbarProps = {
-  categoryFilter: DocsCategoryFilter;
-  onCategoryChange: (category: DocsCategoryFilter) => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  totalVisible: number;
 };
 
 export function DocsHomeToolbar({
-  categoryFilter,
-  onCategoryChange,
   searchValue,
   onSearchChange,
-  totalVisible,
 }: DocsHomeToolbarProps) {
   const t = useTranslations('docs');
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -39,58 +31,9 @@ export function DocsHomeToolbar({
   }, []);
 
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      {/* Category capsule filter */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div
-          role="tablist"
-          aria-label="Filter documentation by type"
-          className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--roadmap-lane-bg,var(--color-row-bg))] p-1 shadow-[var(--shadow-card-sm)]"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={categoryFilter === 'all'}
-            onClick={() => onCategoryChange('all')}
-            className={`rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all ${
-              categoryFilter === 'all'
-                ? 'border border-[var(--color-border)] bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
-            }`}
-          >
-            {t('home.filter.all')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={categoryFilter === 'collection'}
-            onClick={() => onCategoryChange('collection')}
-            className={`rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all ${
-              categoryFilter === 'collection'
-                ? 'border border-[var(--color-border)] bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
-            }`}
-          >
-            {t('home.filter.collections')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={categoryFilter === 'singleArticle'}
-            onClick={() => onCategoryChange('singleArticle')}
-            className={`rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all ${
-              categoryFilter === 'singleArticle'
-                ? 'border border-[var(--color-border)] bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
-            }`}
-          >
-            {t('home.filter.standalone')}
-          </button>
-        </div>
-      </div>
-
-      {/* Real-time search box */}
-      <div className="relative w-full sm:w-64 md:w-72">
+    <div className="flex w-full justify-center">
+      {/* Centered real-time search box matching top button height (38px) */}
+      <div className="relative w-full max-w-[420px] sm:max-w-[460px]">
         <svg
           aria-hidden="true"
           viewBox="0 0 16 16"
