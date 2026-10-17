@@ -41,21 +41,21 @@ export function DocsHomeToolbar({
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       {/* Category capsule filter */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         <div
           role="tablist"
           aria-label="Filter documentation by type"
-          className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-row-bg)] p-1 shadow-[var(--shadow-card-sm)]"
+          className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--roadmap-lane-bg,var(--color-row-bg))] p-1 shadow-[var(--shadow-card-sm)]"
         >
           <button
             type="button"
             role="tab"
             aria-selected={categoryFilter === 'all'}
             onClick={() => onCategoryChange('all')}
-            className={`rounded-full px-3.5 py-1.5 text-[0.76rem] font-medium transition-all ${
+            className={`rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all ${
               categoryFilter === 'all'
-                ? 'bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                ? 'border border-[var(--color-border)] bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
+                : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
             }`}
           >
             {t('home.filter.all')}
@@ -65,10 +65,10 @@ export function DocsHomeToolbar({
             role="tab"
             aria-selected={categoryFilter === 'collection'}
             onClick={() => onCategoryChange('collection')}
-            className={`rounded-full px-3.5 py-1.5 text-[0.76rem] font-medium transition-all ${
+            className={`rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all ${
               categoryFilter === 'collection'
-                ? 'bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                ? 'border border-[var(--color-border)] bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
+                : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
             }`}
           >
             {t('home.filter.collections')}
@@ -78,10 +78,10 @@ export function DocsHomeToolbar({
             role="tab"
             aria-selected={categoryFilter === 'singleArticle'}
             onClick={() => onCategoryChange('singleArticle')}
-            className={`rounded-full px-3.5 py-1.5 text-[0.76rem] font-medium transition-all ${
+            className={`rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all ${
               categoryFilter === 'singleArticle'
-                ? 'bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                ? 'border border-[var(--color-border)] bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
+                : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
             }`}
           >
             {t('home.filter.standalone')}
@@ -94,11 +94,11 @@ export function DocsHomeToolbar({
       </div>
 
       {/* Real-time search box */}
-      <div className="relative w-full md:w-80">
+      <div className="relative w-full md:w-72 lg:w-80">
         <svg
           aria-hidden="true"
           viewBox="0 0 16 16"
-          className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[var(--color-nav-muted)]"
+          className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--color-nav-muted)]"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.6"
@@ -114,7 +114,7 @@ export function DocsHomeToolbar({
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={t('home.filter.searchPlaceholder')}
           aria-label={t('home.filter.searchPlaceholder')}
-          className="h-9 w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-card)] pl-9 pr-9 text-[0.8125rem] text-[var(--color-text)] placeholder:text-[var(--color-nav-muted)] shadow-[var(--shadow-card-sm)] transition-colors focus:border-[var(--color-text-soft)] focus:outline-none"
+          className="h-[38px] w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-card)] pl-9.5 pr-9 text-[0.82rem] text-[var(--color-text)] placeholder:text-[var(--color-nav-muted)] shadow-[var(--shadow-card-sm)] transition-colors focus:border-[var(--color-text-soft)] focus:outline-none"
         />
 
         {searchValue ? (
@@ -122,7 +122,7 @@ export function DocsHomeToolbar({
             type="button"
             aria-label={t('home.filter.clearSearch')}
             onClick={() => onSearchChange('')}
-            className="absolute right-2.5 top-1/2 flex size-4 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-nav-muted)] hover:text-[var(--color-text)]"
+            className="absolute right-2.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-nav-muted)] hover:text-[var(--color-text)]"
           >
             ×
           </button>

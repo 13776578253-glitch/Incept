@@ -4,7 +4,6 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { DocsHomeCard } from '@/features/docs/home/components/docs-home-card';
 import { DocsHomeEmpty } from '@/features/docs/home/components/docs-home-empty';
-import { DocsHomeStats } from '@/features/docs/home/components/docs-home-stats';
 import {
   DocsHomeToolbar,
   type DocsCategoryFilter,
@@ -69,7 +68,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
   }, [filteredGroups]);
 
   return (
-    <div className="mx-auto w-full max-w-[1020px] px-5 sm:px-6 pt-6 pb-20 md:pt-8 md:pb-24 lg:pt-9 lg:pb-28">
+    <div className="mx-auto w-full max-w-[1140px] px-5 sm:px-6 lg:px-8 pt-6 pb-20 md:pt-8 md:pb-24 lg:pt-9 lg:pb-28">
       {/* Accessible Title */}
       <h1 className="sr-only">{t('home.title')}</h1>
 
@@ -84,7 +83,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
         />
       </div>
 
-      {/* Content Stream (Elongated full-width rows in single sequence) */}
+      {/* Content Stream (Two-column vertical grid) */}
       <main>
         {totalVisible === 0 ? (
           <DocsHomeEmpty
@@ -113,7 +112,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
                   </span>
                 </header>
 
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-4.5">
                   {group.entries.map((entry) => (
                     <DocsHomeCard key={entry.id} article={entry} />
                   ))}

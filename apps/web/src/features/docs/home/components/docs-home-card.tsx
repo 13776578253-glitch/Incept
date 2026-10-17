@@ -62,13 +62,13 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
 
   const cardContent = (
     <article
-      className="group relative flex w-full flex-col justify-between rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-card)] p-4 sm:p-5 shadow-[var(--shadow-card-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--color-text-soft)] hover:shadow-[var(--shadow-card-hover)]"
+      className="group relative flex h-full min-h-[160px] w-full flex-col justify-between rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface-card)] p-5 shadow-[var(--shadow-card-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--color-border-hover,var(--color-text-soft))] hover:shadow-[var(--shadow-card-hover)]"
       aria-label={article.title}
     >
-      {/* 上段：写正文 (Upper section: Badge, Title, Date, Action, Summary) */}
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-2.5 sm:gap-3">
+      {/* Top and Body: Badges, Date, Title, Summary */}
+      <div className="min-w-0">
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             {/* Type badge */}
             <div className="shrink-0">
               {isCollection ? (
@@ -112,63 +112,72 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
                 <span>{roleLabel}</span>
               </span>
             ) : null}
-
-            {/* Title */}
-            <h3 className="text-[1.02rem] font-semibold tracking-[-0.015em] text-[var(--color-text)] transition-colors group-hover:text-[var(--badge-sky-icon)]">
-              {article.title}
-            </h3>
           </div>
 
-          {/* Right meta: Date + Action */}
-          <div className="flex shrink-0 items-center gap-3.5 text-[0.74rem]">
-            <time
-              dateTime={article.publishedAt}
-              className="font-mono tabular-nums text-[var(--color-nav-muted)]"
-            >
-              {formatPublishedDate(article.publishedAt, locale)}
-            </time>
-
-            <div className="inline-flex shrink-0 items-center gap-1 text-[0.76rem] font-medium text-[var(--color-text-soft)] transition-colors group-hover:text-[var(--color-text)]">
-              <span>{isCollection ? t('home.filter.viewSeriesAction') : t('home.filter.readAction')}</span>
-              <span className="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-            </div>
-          </div>
+          {/* Published Date */}
+          <time
+            dateTime={article.publishedAt}
+            className="shrink-0 font-mono text-[0.72rem] tabular-nums text-[var(--color-nav-muted)]"
+          >
+            {formatPublishedDate(article.publishedAt, locale)}
+          </time>
         </div>
 
-        {/* Summary (正文摘要) */}
+        {/* Title */}
+        <h3 className="mt-2.5 text-[1.02rem] font-semibold leading-[1.38] tracking-[-0.015em] text-[var(--color-text)] transition-colors group-hover:text-[var(--badge-sky-icon)] line-clamp-1">
+          {article.title}
+        </h3>
+
+        {/* Summary */}
         {article.summary ? (
-          <p className="mt-2 text-[0.835rem] leading-relaxed text-[var(--color-text-muted)]">
+          <p className="mt-1.5 text-[0.825rem] leading-[1.6] text-[var(--color-text-muted)] line-clamp-2">
             {article.summary}
           </p>
         ) : null}
 
         {isLocked ? (
-          <p className="mt-1 text-[0.72rem] leading-5 text-[var(--color-nav-muted)]">
+          <p className="mt-1.5 text-[0.72rem] leading-5 text-[var(--color-nav-muted)]">
             {t('access.requiresRole', { role: roleLabel })}
           </p>
         ) : null}
       </div>
 
-      {/* 下段：写标签 (Lower section: Tags) */}
-      {tag ? (
-        <div className="mt-3.5 flex items-center gap-2 border-t border-[var(--color-border)] pt-3">
-          <span className="inline-flex items-center gap-1 rounded-md border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2.5 py-0.5 text-[0.68rem] font-medium text-[var(--color-text-muted)]">
-            <span aria-hidden="true" className="text-[var(--color-text-soft)]">#</span>
-            <span>{tag}</span>
-          </span>
+      {/* Footer: Tag on left, DeepWiki circular arrow on right */}
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--color-border)] pt-3">
+        <div className="flex min-w-0 items-center gap-2">
+          {tag ? (
+            <span className="inline-flex items-center gap-1 rounded-md border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2 py-0.5 text-[0.68rem] font-medium text-[var(--color-text-muted)]">
+              <span aria-hidden="true" className="text-[var(--color-text-soft)]">#</span>
+              <span className="truncate max-w-[140px]">{tag}</span>
+            </span>
+          ) : (
+            <span className="text-[0.72rem] text-[var(--color-text-soft)]">
+              {isCollection ? t('home.filter.viewSeriesAction') : t('home.filter.readAction')}
+            </span>
+          )}
         </div>
-      ) : null}
+
+        {/* DeepWiki circular arrow icon */}
+        <div
+          className="flex size-7 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-row-bg)] text-[var(--color-text-soft)] transition-all duration-200 group-hover:border-transparent group-hover:bg-[var(--color-text)] group-hover:text-[var(--color-bg)] group-hover:translate-x-0.5"
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 3.5 10.5 8 6 12.5" />
+          </svg>
+        </div>
+      </div>
     </article>
   );
 
   if (!href || isLocked) {
-    return <div className="w-full">{cardContent}</div>;
+    return <div className="h-full w-full">{cardContent}</div>;
   }
 
   return (
     <Link
       href={href}
-      className="group block w-full rounded-[14px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--badge-sky-dot)]"
+      className="group block h-full w-full rounded-[16px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--badge-sky-dot)]"
     >
       {cardContent}
     </Link>
