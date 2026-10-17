@@ -92,12 +92,11 @@ describe('DocsHomeFeature', () => {
     vi.clearAllMocks();
   });
 
-  it('renders page header, KPI stats, and documents in grid mode', () => {
+  it('renders accessible title, toolbar filters, and documents', () => {
     render(<DocsHomeFeature page={mockPage} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Technical Documentation' })).toBeInTheDocument();
-    expect(screen.getByText('Total Documents')).toBeInTheDocument();
-    expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'All' })).toBeInTheDocument();
     expect(screen.getByText('System Architecture Blueprint')).toBeInTheDocument();
     expect(screen.getByText('Database Migration Guide')).toBeInTheDocument();
   });

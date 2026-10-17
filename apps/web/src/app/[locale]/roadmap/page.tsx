@@ -150,16 +150,9 @@ export default async function RoadmapMapPage({
   return (
     <WorkspaceShell>
       <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-16 md:flex md:h-[calc(100dvh-var(--navbar-height,64px))] md:min-h-[560px] md:flex-col md:overflow-hidden md:pt-8 md:pb-16 lg:px-10 lg:pt-9 lg:pb-20">
-        <header className="shrink-0 pb-6 md:pb-7">
-          <div className="max-w-[46rem] space-y-2 md:space-y-2.5">
-            <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
-              {activeSurface === 'atlas' ? 'PLANNING' : t('page.eyebrow')}
-            </p>
-            <h1 className="max-w-[44rem] text-[2rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[2.45rem] md:leading-[1.08]">
-              {activeSurface === 'atlas' ? (current?.name[locale] ?? (locale === 'zh' ? '规划图' : 'Planning Board')) : t('page.title')}
-            </h1>
-          </div>
-        </header>
+        <h1 className="sr-only">
+          {activeSurface === 'atlas' ? (current?.name[locale] ?? (locale === 'zh' ? '规划图' : 'Planning Board')) : t('page.title')}
+        </h1>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 shrink-0 md:mb-5">
           <SurfaceNavigation
             projects={projects}

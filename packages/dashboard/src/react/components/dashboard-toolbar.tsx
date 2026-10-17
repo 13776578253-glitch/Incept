@@ -38,15 +38,11 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
   }, []);
 
   return (
-    <header className="space-y-6 pb-6 md:space-y-7 md:pb-7">
-      <div className="space-y-2 md:space-y-2.5">
-        <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">{t('page.eyebrow')}</p>
-        <h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[2.45rem] md:leading-[1.08]">{t('page.title')}</h1>
-        <p className="text-[0.78rem] tabular-nums text-[var(--color-nav-muted)]">{t('page.updatedAt', { time: data.updatedAt ? formatDateTimeShort(data.updatedAt) : '—' })}</p>
-        <p role="status" aria-atomic="true" className="h-5 truncate text-[0.72rem] leading-5 text-[var(--color-nav-muted)]">
-          {!hasSnapshot || showingHistory ? t(hasSnapshot ? 'page.showingHistory' : 'page.loadingFirst') : ''}
-        </p>
-      </div>
+    <header className="space-y-4 pb-4 md:space-y-5 md:pb-5">
+      <h1 className="sr-only">{t('page.title')}</h1>
+      <p role="status" aria-atomic="true" className="sr-only">
+        {!hasSnapshot || showingHistory ? t(hasSnapshot ? 'page.showingHistory' : 'page.loadingFirst') : ''}
+      </p>
       <div className="space-y-2.5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <nav aria-label="Dashboard sections" className="dashboard-segmented">
@@ -56,6 +52,9 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
             ))}
           </nav>
           <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[0.72rem] tabular-nums text-[var(--color-nav-muted)] mr-1 hidden sm:inline-block">
+              {data.updatedAt ? formatDateTimeShort(data.updatedAt) : '—'}
+            </span>
             <div className="dashboard-segmented" role="group" aria-label={t('page.window')}>
               {(['7d', '30d', 'all'] as const).map(preset => (
                 <button key={preset} type="button" aria-pressed={rangePreset === preset} data-active={rangePreset === preset}

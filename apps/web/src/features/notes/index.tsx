@@ -19,8 +19,7 @@ export function NotesHomeFeature({ page }: NotesHomeFeatureProps) {
 
   return (
     <div className="mx-auto w-full max-w-[920px] px-5 md:px-8">
-      <div className="mx-auto max-w-[720px] pb-16 pt-6 md:pb-20 md:pt-10">
-        <DocsHomeIntro intro={intro} />
+        <h1 className="sr-only">{intro.title}</h1>
 
         <div className="space-y-10 md:space-y-12">
           {page.groups.map((group) => (
@@ -33,6 +32,5 @@ export function NotesHomeFeature({ page }: NotesHomeFeatureProps) {
           ))}
         </div>
       </div>
-    </div>
   );
 }
