@@ -87,14 +87,10 @@ export function DocsHomeToolbar({
             {t('home.filter.standalone')}
           </button>
         </div>
-
-        <span className="hidden font-mono text-[0.72rem] tabular-nums text-[var(--color-nav-muted)] sm:inline-block">
-          {t('groups.entries', { count: totalVisible })}
-        </span>
       </div>
 
       {/* Real-time search box */}
-      <div className="relative w-full md:w-72 lg:w-80">
+      <div className="relative w-full sm:w-64 md:w-72">
         <svg
           aria-hidden="true"
           viewBox="0 0 16 16"

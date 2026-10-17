@@ -68,12 +68,12 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
   }, [filteredGroups]);
 
   return (
-    <div className="mx-auto w-full max-w-[1140px] px-5 sm:px-6 lg:px-8 pt-6 pb-20 md:pt-8 md:pb-24 lg:pt-9 lg:pb-28">
+    <div className="mx-auto w-full max-w-[780px] px-4 sm:px-6 pt-6 pb-20 md:pt-8 md:pb-24 lg:pt-9 lg:pb-28">
       {/* Accessible Title */}
       <h1 className="sr-only">{t('home.title')}</h1>
 
       {/* Toolbar Controls */}
-      <div className="mb-6 md:mb-7">
+      <div className="mb-5 md:mb-6">
         <DocsHomeToolbar
           categoryFilter={categoryFilter}
           onCategoryChange={setCategoryFilter}
@@ -83,7 +83,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
         />
       </div>
 
-      {/* Content Stream (Two-column vertical grid) */}
+      {/* Content Stream (Two-column compact vertical grid) */}
       <main>
         {totalVisible === 0 ? (
           <DocsHomeEmpty
@@ -93,26 +93,26 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
             }}
           />
         ) : (
-          <div className="space-y-10 md:space-y-12">
+          <div className="space-y-8 md:space-y-9">
             {filteredGroups.map((group) => (
-              <section key={group.id} className="space-y-3.5">
-                <header className="flex items-center justify-between border-b border-[var(--color-border)] pb-2.5">
+              <section key={group.id} className="space-y-2.5">
+                <header className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
                   <div className="flex items-center gap-2">
                     <span
                       aria-hidden="true"
-                      className="size-2 rounded-full"
+                      className="size-1.5 rounded-full"
                       style={{ backgroundColor: 'var(--badge-sky-dot)' }}
                     />
-                    <h2 className="text-[1.05rem] font-semibold tracking-[-0.02em] text-[var(--color-text)]">
+                    <h2 className="text-[0.95rem] font-semibold tracking-[-0.015em] text-[var(--color-text)]">
                       {group.label}
                     </h2>
                   </div>
-                  <span className="font-mono text-[0.72rem] tabular-nums text-[var(--color-nav-muted)]">
+                  <span className="font-mono text-[0.7rem] tabular-nums text-[var(--color-nav-muted)]">
                     {t('groups.entries', { count: group.entries.length })}
                   </span>
                 </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-4.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {group.entries.map((entry) => (
                     <DocsHomeCard key={entry.id} article={entry} />
                   ))}
