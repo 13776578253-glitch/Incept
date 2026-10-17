@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { TokenDashboardData } from '../../domain';
 import { formatDateTimeShort } from '../formatters';
@@ -26,16 +25,6 @@ type DashboardToolbarProps = {
 export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrendIndex,
   data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport, hasSnapshot = true, showingHistory = false }: DashboardToolbarProps) {
   const t = useTranslations('dashboard');
-  const [activeSection, setActiveSection] = useState('#overview');
-  useEffect(() => {
-    const update = () => {
-      const sections = ['overview', 'models', 'costs', 'projects'];
-      const current = sections.filter(id => (document.getElementById(id)?.getBoundingClientRect().top ?? Infinity) <= 160).at(-1);
-      setActiveSection('#' + (current ?? 'overview'));
-    };
-    window.addEventListener('scroll', update, { passive: true });
-    return () => window.removeEventListener('scroll', update);
-  }, []);
 
   return (
     <header className="pb-4 md:pb-5">
@@ -44,32 +33,26 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
         {!hasSnapshot || showingHistory ? t(hasSnapshot ? 'page.showingHistory' : 'page.loadingFirst') : ''}
       </p>
       <div className="space-y-2.5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <nav aria-label="Dashboard sections" className="dashboard-segmented">
-            {(['overview', 'models', 'costs', 'projects'] as const).map(section => (
-              <a key={section} href={'#' + section} aria-current={activeSection === '#' + section ? 'location' : undefined}
-                data-active={activeSection === '#' + section} onClick={() => setActiveSection('#' + section)}>{t(`nav.${section}`)}</a>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="dashboard-segmented" role="group" aria-label={t('page.window')}>
+            {(['7d', '30d', 'all'] as const).map(preset => (
+              <button key={preset} type="button" aria-pressed={rangePreset === preset} data-active={rangePreset === preset}
+                onClick={() => { setRangePreset(preset); setSelectedTrendIndex(999); }}>
+                {t(preset === 'all' ? 'page.rangeAll' : `page.range${preset}`)}
+              </button>
             ))}
-          </nav>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-[0.72rem] tabular-nums text-[var(--color-nav-muted)] mr-1 hidden sm:inline-block">
               {t('page.updatedAt', { time: data.updatedAt ? formatDateTimeShort(data.updatedAt) : '—' })}
             </span>
-            <div className="dashboard-segmented" role="group" aria-label={t('page.window')}>
-              {(['7d', '30d', 'all'] as const).map(preset => (
-                <button key={preset} type="button" aria-pressed={rangePreset === preset} data-active={rangePreset === preset}
-                  onClick={() => { setRangePreset(preset); setSelectedTrendIndex(999); }}>
-                  {t(preset === 'all' ? 'page.rangeAll' : `page.range${preset}`)}
-                </button>
-              ))}
-            </div>
+            {onOpenImport ? <button type="button" onClick={onOpenImport} className="dashboard-import-button">
+              <span className="text-[var(--color-text-muted)]"><ImportIcon /></span>{t('imports.open')}
+            </button> : null}
             <button type="button" onClick={onRefresh} disabled={isRefreshing}
               className="dashboard-refresh-button">
               {t(isRefreshing ? 'page.refreshing' : 'page.refresh')}
             </button>
-            {onOpenImport ? <button type="button" onClick={onOpenImport} className="dashboard-import-button">
-              <span className="text-[var(--color-text-muted)]"><ImportIcon /></span>{t('imports.open')}
-            </button> : null}
           </div>
         </div>
         <div className="dashboard-refresh-area">

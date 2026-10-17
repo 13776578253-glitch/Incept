@@ -16,9 +16,7 @@ function withMessages(children: React.ReactNode) {
 
 it('Guest sees all navigation and statistical sections plus three permission placeholders in section 04', async () => {
   render(withMessages(<TokenDashboardFeature data={emptyDashboard()} />));
-  for (const name of ['01 概览', '02 模型', '03 费用', '04 项目与会话']) {
-    expect(screen.getByRole('link', { name })).toBeDefined();
-  }
+  expect(screen.getByRole('button', { name: zh.page.range30d })).toBeDefined();
   expect(await screen.findByRole('heading', { name: zh.models.title })).toBeDefined();
   expect(await screen.findByRole('heading', { name: zh.costs.title })).toBeDefined();
   expect(await screen.findByRole('heading', { name: zh.projects.title })).toBeDefined();
