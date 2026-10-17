@@ -53,7 +53,7 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
           </nav>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-[0.72rem] tabular-nums text-[var(--color-nav-muted)] mr-1 hidden sm:inline-block">
-              {data.updatedAt ? formatDateTimeShort(data.updatedAt) : '—'}
+              {t('page.updatedAt', { time: data.updatedAt ? formatDateTimeShort(data.updatedAt) : '—' })}
             </span>
             <div className="dashboard-segmented" role="group" aria-label={t('page.window')}>
               {(['7d', '30d', 'all'] as const).map(preset => (
