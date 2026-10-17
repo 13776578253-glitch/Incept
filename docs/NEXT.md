@@ -31,3 +31,11 @@ Detailed tasks, dependencies, acceptance and the full 31-ID mapping are in [the 
 2026-10-16 autonomous continuation: current baseline committed as `48a679a`. Recorded fees, indexed/native transfer matching, seven-source protocol/CLI, per-batch pricing, bounded history storage, and reference/integration-checker fixes are implemented and entering the complete release gate. The 03:04 production backup now covers the TOTP/recovery setup and all four archive hashes passed. Follow [the active fix-release record](./current-task/2026-10-16-autonomous-fix-release.md); actual data upload/local data refresh is the requested final handoff.
 
 2026-10-16 fix-release gates complete: `48a679a` / `b0132d9` / `1a29a92` are committed. The exact `1a29a92` Linux/amd64 image passed 655 automated tests, real PostgreSQL and three-role HTTP checks, seven-source import/reauthentication/replay/rollback, trusted TLS, runtime audit (0 vulnerabilities) and empty-target restore. No migrations changed. A paired server/tool release is prepared; production remains `7bee9ad` pending the runbook's human release review. After cutover and smoke checks, hand off data export/upload and local refresh. REC-01 is complete based on the 03:04 backup. Detailed evidence is appended to the active fix-release record.
+
+## 2026-10-17 Docs Redesign & Branch Split Handoff
+
+Agent A completed the DeepWiki-aligned redesign of Docs Home (`DocsHomeAddCard` steel-slate palette, bare `+` icon, uniform card dimensions, clean hover state, and centered search) and successfully merged `feature/docs-redesign` into `codex/production-readiness` at commit `d9ab52a`.
+
+- **Current Progress & Handoff Record:** See [2026-10-17 Docs Redesign and Agent Handoff](./current-task/2026-10-17-docs-redesign-and-agent-handoff.md) and [.scratch/handoff-2026-10-17-branch-split.md](../.scratch/handoff-2026-10-17-branch-split.md).
+- **Next Stage Plan (Agent B):** Merge `feature/sync-agent-v2` resolving the 3 expected conflicts in `messages` and `dashboard-toolbar.tsx`, followed by `pnpm install` and full verification gates.
+- **Subsequent Waves:** Agent C (disk and artifact cleanup), Agent D (`feature/sync-agent-phase5` implementation), and Agent E (`feature/operations-console` integration).
