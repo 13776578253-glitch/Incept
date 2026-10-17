@@ -26,10 +26,10 @@
       "viewGrid": "网格视图",
       "viewList": "列表视图",
       "readAction": "阅读文档",
-      "viewSeriesAction": "查看专栏",
-      "addDoc": "添加文档",
-      "addDocDesc": "撰写或管理知识库条目"
-    }
+      "viewSeriesAction": "查看专栏"
+    },
+    "addDoc": "添加文档",
+    "addDocDesc": "撰写或管理知识库条目"
   },
   "access": {
     "requiresRole": "需要 {role} 权限"

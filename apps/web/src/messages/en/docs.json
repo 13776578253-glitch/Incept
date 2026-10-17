@@ -26,10 +26,10 @@
       "viewGrid": "Grid view",
       "viewList": "List view",
       "readAction": "Read",
-      "viewSeriesAction": "View series",
-      "addDoc": "Add doc",
-      "addDocDesc": "Create or manage documents"
-    }
+      "viewSeriesAction": "View series"
+    },
+    "addDoc": "Add doc",
+    "addDocDesc": "Create or manage documents"
   },
   "access": {
     "requiresRole": "Requires {role} access"
