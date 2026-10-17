@@ -34,6 +34,8 @@ vi.mock('next-intl', () => ({
       'docs.roles.pro': 'Temporary access',
       'docs.roles.private': 'Private',
       'docs.groups.entries': `${values?.count ?? 0} entries`,
+      'docs.home.addDoc': 'Add doc',
+      'docs.home.addDocDesc': 'Create or manage documents',
     };
     return messages[fullKey] ?? messages[key] ?? key;
   },

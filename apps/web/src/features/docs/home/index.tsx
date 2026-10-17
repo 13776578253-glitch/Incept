@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { DocsHomeAddCard } from '@/features/docs/home/components/docs-home-add-card';
 import { DocsHomeCard } from '@/features/docs/home/components/docs-home-card';
 import { DocsHomeEmpty } from '@/features/docs/home/components/docs-home-empty';
 import { DocsHomeToolbar } from '@/features/docs/home/components/docs-home-toolbar';
@@ -76,7 +77,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
           />
         ) : (
           <div className="space-y-8 md:space-y-9">
-            {filteredGroups.map((group) => (
+            {filteredGroups.map((group, groupIndex) => (
               <section key={group.id} className="space-y-2.5">
                 <header className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
                   <div className="flex items-center gap-2">
@@ -95,6 +96,9 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
                 </header>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {groupIndex === 0 && !deferredSearch.trim() ? (
+                    <DocsHomeAddCard />
+                  ) : null}
                   {group.entries.map((entry) => (
                     <DocsHomeCard key={entry.id} article={entry} />
                   ))}

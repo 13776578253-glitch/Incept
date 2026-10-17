@@ -70,9 +70,15 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
 
   const cardContent = (
     <article
-      className="group relative flex h-[116px] w-full flex-col justify-between rounded-[14px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-row-bg)] p-3.5 transition-all duration-150 hover:bg-black/[0.055] dark:hover:bg-white/[0.07] hover:border-black/[0.09] dark:hover:border-white/[0.12]"
+      className="group relative flex h-[116px] w-full flex-col justify-between rounded-[14px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-row-bg)] p-3.5 transition-all duration-200 hover:bg-black/[0.045] dark:hover:bg-white/[0.06] hover:shadow-[0_4px_24px_-4px_rgba(139,92,246,0.14),0_2px_12px_-2px_rgba(56,189,248,0.12)]"
       aria-label={article.title}
     >
+      {/* Chromatic iridescent border on hover/focus (炫彩渐变边框，无明显黑边框) */}
+      <div
+        className="pointer-events-none absolute -inset-[1px] rounded-[15px] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100 p-[1px] bg-gradient-to-br from-violet-500/50 via-sky-400/45 to-pink-500/45 [mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [mask-composite:exclude]"
+        aria-hidden="true"
+      />
+
       <div className="min-w-0">
         {/* Title row */}
         <div className="flex items-center justify-between gap-2">
@@ -129,9 +135,9 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
           </time>
         </div>
 
-        {/* DeepWiki style circular arrow with stem */}
+        {/* DeepWiki style circular arrow with stem and subtle chromatic hover */}
         <div
-          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-black/[0.06] dark:bg-white/[0.09] text-[var(--color-text-muted)] transition-all duration-150 group-hover:bg-black/[0.1] dark:group-hover:bg-white/[0.15] group-hover:text-[var(--color-text)] group-hover:translate-x-0.5"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-black/[0.06] dark:bg-white/[0.09] text-[var(--color-text-muted)] transition-all duration-200 group-hover:bg-gradient-to-br group-hover:from-violet-500/15 group-hover:to-sky-500/15 group-hover:text-violet-600 dark:group-hover:text-violet-300 group-hover:translate-x-0.5"
           aria-hidden="true"
         >
           <ArrowRightIcon />

@@ -26,7 +26,9 @@
       "viewGrid": "Grid view",
       "viewList": "List view",
       "readAction": "Read",
-      "viewSeriesAction": "View series"
+      "viewSeriesAction": "View series",
+      "addDoc": "Add doc",
+      "addDocDesc": "Create or manage documents"
     }
   },
   "access": {
