@@ -34,6 +34,14 @@ function LockIcon() {
   );
 }
 
+function ArrowRightIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
+    </svg>
+  );
+}
+
 function formatPublishedDate(publishedAt: string, locale: string) {
   try {
     const date = new Date(publishedAt);
@@ -62,91 +70,84 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
 
   const cardContent = (
     <article
-      className="group relative flex h-[124px] w-full flex-col justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-3.5 transition-all duration-150 hover:border-[var(--color-border-hover,var(--color-text-soft))] hover:shadow-[var(--shadow-card-hover)]"
+      className="group relative flex h-[116px] w-full flex-col justify-between rounded-[14px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-row-bg)] p-3.5 transition-all duration-150 hover:bg-black/[0.055] dark:hover:bg-white/[0.07] hover:border-black/[0.09] dark:hover:border-white/[0.12]"
       aria-label={article.title}
     >
       <div className="min-w-0">
-        {/* Top: Type & Date */}
-        <div className="flex items-center justify-between gap-2 text-xs">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <span
-              className={`inline-flex items-center gap-1 text-[0.7rem] font-medium ${
-                isCollection
-                  ? 'text-[var(--badge-amber-fg)]'
-                  : 'text-[var(--color-text-muted)]'
-              }`}
-            >
-              {isCollection ? <CollectionIcon /> : <ArticleIcon />}
-              <span>{isCollection ? t('home.filter.collections') : t('home.filter.standalone')}</span>
-            </span>
+        {/* Title row */}
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="truncate text-[0.9375rem] font-medium leading-snug tracking-[-0.01em] text-[var(--color-text)]">
+            {article.title}
+          </h3>
 
-            {isLocked ? (
-              <span className="inline-flex shrink-0 items-center gap-1 text-[0.66rem] text-[var(--badge-rose-fg)]">
-                <LockIcon />
-                <span>{roleLabel}</span>
-              </span>
-            ) : null}
-          </div>
+          {isLocked ? (
+            <span
+              className="inline-flex shrink-0 items-center gap-1 text-[0.66rem] font-medium text-[var(--badge-rose-fg)]"
+              title={roleLabel}
+            >
+              <LockIcon />
+              <span>{roleLabel}</span>
+            </span>
+          ) : null}
+        </div>
+
+        {/* Description / Summary */}
+        {article.summary ? (
+          <p className="mt-1 text-[0.8125rem] leading-[1.45] text-[var(--color-text-muted)] line-clamp-1">
+            {article.summary}
+          </p>
+        ) : null}
+      </div>
+
+      {/* Footer: Metadata on left, DeepWiki circular arrow button on right */}
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <div className="flex min-w-0 items-center gap-1.5 text-[0.75rem] text-[var(--color-text-muted)]">
+          {isCollection ? (
+            <span className="inline-flex items-center gap-1 text-[var(--badge-amber-fg)] font-medium">
+              <CollectionIcon />
+              <span>{t('home.filter.collections')}</span>
+            </span>
+          ) : tag ? (
+            <span className="inline-flex items-center gap-1 truncate font-medium">
+              <span className="text-[var(--color-text-soft)]">#</span>
+              <span className="truncate">{tag}</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <ArticleIcon />
+              <span>{t('home.filter.standalone')}</span>
+            </span>
+          )}
+
+          <span aria-hidden="true" className="text-[var(--color-nav-muted)] opacity-60">·</span>
 
           <time
             dateTime={article.publishedAt}
-            className="shrink-0 font-mono text-[0.68rem] tabular-nums text-[var(--color-nav-muted)]"
+            className="shrink-0 font-mono text-[0.7rem] tabular-nums text-[var(--color-nav-muted)]"
           >
             {formatPublishedDate(article.publishedAt, locale)}
           </time>
         </div>
 
-        {/* Title */}
-        <h3 className="mt-1.5 text-[0.92rem] font-medium leading-snug tracking-[-0.01em] text-[var(--color-text)] transition-colors group-hover:text-[var(--badge-sky-icon)] line-clamp-1">
-          {article.title}
-        </h3>
-
-        {/* Summary */}
-        {article.summary ? (
-          <p className="mt-1 text-[0.78rem] leading-[1.4] text-[var(--color-text-muted)] line-clamp-1">
-            {article.summary}
-          </p>
-        ) : null}
-
-        {isLocked ? (
-          <p className="mt-1 text-[0.7rem] leading-4 text-[var(--color-nav-muted)] line-clamp-1">
-            {t('access.requiresRole', { role: roleLabel })}
-          </p>
-        ) : null}
-      </div>
-
-      {/* Footer: Tag & Micro Arrow (Clean and light, no divider line) */}
-      <div className="flex items-center justify-between gap-2 pt-1">
-        <div className="flex min-w-0 items-center text-[0.7rem] text-[var(--color-nav-muted)]">
-          {tag ? (
-            <span className="truncate">#{tag}</span>
-          ) : (
-            <span className="text-[var(--color-text-soft)]">
-              {isCollection ? t('home.filter.viewSeriesAction') : t('home.filter.readAction')}
-            </span>
-          )}
-        </div>
-
+        {/* DeepWiki style circular arrow with stem */}
         <div
-          className="flex size-5 shrink-0 items-center justify-center text-[var(--color-text-soft)] transition-all duration-150 group-hover:text-[var(--color-text)] group-hover:translate-x-0.5"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-black/[0.06] dark:bg-white/[0.09] text-[var(--color-text-muted)] transition-all duration-150 group-hover:bg-black/[0.1] dark:group-hover:bg-white/[0.15] group-hover:text-[var(--color-text)] group-hover:translate-x-0.5"
           aria-hidden="true"
         >
-          <svg viewBox="0 0 16 16" className="size-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 3.5 10.5 8 6 12.5" />
-          </svg>
+          <ArrowRightIcon />
         </div>
       </div>
     </article>
   );
 
   if (!href || isLocked) {
-    return <div className="h-[124px] w-full">{cardContent}</div>;
+    return <div className="h-[116px] w-full">{cardContent}</div>;
   }
 
   return (
     <Link
       href={href}
-      className="group block h-[124px] w-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[var(--badge-sky-dot)]"
+      className="group block h-[116px] w-full rounded-[14px] outline-none focus-visible:ring-1 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
     >
       {cardContent}
     </Link>
