@@ -7,8 +7,8 @@ import { withLocalePath } from '@/i18n/utils/locale-path';
 
 function PlusIcon() {
   return (
-    <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M8 3.5v9M3.5 8h9" />
+    <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4 text-[#334155] dark:text-[#cbd5e1]" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+      <path d="M8 3v10M3 8h10" />
     </svg>
   );
 }
@@ -29,34 +29,26 @@ export function DocsHomeAddCard() {
   return (
     <Link
       href={href}
-      className="group relative block h-[116px] w-full rounded-[14px] outline-none focus-visible:ring-1 focus-visible:ring-indigo-500/30"
+      className="group relative block h-[116px] w-full rounded-[14px] outline-none focus-visible:ring-1 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
     >
       <article
-        className="relative flex h-[116px] w-full flex-col justify-between rounded-[14px] border border-indigo-200/60 dark:border-indigo-500/25 bg-gradient-to-br from-[#ebeaf8] to-[#deddf5] dark:from-[#1e1b4b]/50 dark:to-[#312e81]/30 p-3.5 transition-all duration-200 hover:from-[#e3e1f5] hover:to-[#d5d4f2] dark:hover:from-[#25225c] dark:hover:to-[#3c3899] hover:shadow-[0_4px_20px_-4px_rgba(124,58,237,0.18)]"
+        className="relative flex h-[116px] w-full flex-col justify-between rounded-[14px] border border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-br from-[#ccd4dd] via-[#cad2dc] to-[#d6d5e2] dark:from-[#202530] dark:via-[#1c212a] dark:to-[#262436] p-3.5 transition-all duration-150 hover:from-[#c5cdd6] hover:to-[#cfcee0] dark:hover:from-[#262c39] dark:hover:to-[#2d2b40]"
         aria-label={t('home.addDoc')}
       >
         <div className="min-w-0">
-          {/* Top row: Plus icon badge */}
-          <div className="flex items-center justify-between">
-            <span className="flex size-5 items-center justify-center rounded-md bg-indigo-950/10 text-indigo-900 dark:bg-white/10 dark:text-indigo-200">
-              <PlusIcon />
-            </span>
-          </div>
+          {/* Bare plus icon directly on card */}
+          <PlusIcon />
 
-          {/* Title & subtitle */}
-          <h3 className="mt-2 truncate text-[0.9375rem] font-semibold leading-snug tracking-[-0.01em] text-indigo-950 dark:text-indigo-100">
+          {/* Title right below plus icon without redundant subtitle */}
+          <h3 className="mt-2.5 text-[0.95rem] font-medium leading-snug tracking-[-0.01em] text-[#1e293b] dark:text-[#f8fafc]">
             {t('home.addDoc')}
           </h3>
-
-          <p className="mt-0.5 truncate text-[0.8125rem] leading-[1.45] text-indigo-900/65 dark:text-indigo-300/70">
-            {t('home.addDocDesc')}
-          </p>
         </div>
 
-        {/* Footer: Circular arrow */}
+        {/* Footer: Circular arrow button on bottom-right matching DocsHomeCard baseline */}
         <div className="flex items-center justify-end pt-1">
           <div
-            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-indigo-950/10 dark:bg-white/10 text-indigo-900/70 dark:text-indigo-200 transition-all duration-150 group-hover:bg-indigo-950/15 dark:group-hover:bg-white/20 group-hover:text-indigo-950 dark:group-hover:text-white group-hover:translate-x-0.5"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#dfdfe2] dark:bg-white/15 text-[#334155] dark:text-white transition-all duration-150 group-hover:bg-[#d5d5d9] dark:group-hover:bg-white/20 group-hover:translate-x-0.5"
             aria-hidden="true"
           >
             <ArrowRightIcon />
