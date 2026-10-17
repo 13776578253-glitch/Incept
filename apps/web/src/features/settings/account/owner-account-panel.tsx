@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { OwnerSecurityPanel } from './owner-security-panel';
+import { SyncDevicesPanel } from './sync-devices-panel';
 import { CustomSelect } from './custom-select';
 import { PasswordInput } from './password-input';
 import { RecoveryCodesDialog } from './recovery-codes-dialog';
@@ -710,6 +711,7 @@ export function OwnerAccountPanel({
                 }
                 onRecoveryCodes={setRecoveryCodes}
               />
+              <SyncDevicesPanel language={language} />
             </div>
           </div>
 

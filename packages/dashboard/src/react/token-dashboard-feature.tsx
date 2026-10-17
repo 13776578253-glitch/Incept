@@ -40,6 +40,7 @@ export function TokenDashboardFeature({
     isPollingPaused,
     hasSnapshot,
     showingHistory,
+    remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval,lastPageUpdatedAt,
   } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport, canViewDetails });
 
   return (
@@ -60,6 +61,7 @@ export function TokenDashboardFeature({
         onOpenImport={canImport ? () => setImportOpen(true) : undefined}
         hasSnapshot={hasSnapshot}
         showingHistory={showingHistory}
+        remoteInfo={remoteInfo} remoteDevice={remoteDevice} setRemoteDevice={setRemoteDevice} remoteState={remoteState} refreshInterval={refreshInterval} lastPageUpdatedAt={lastPageUpdatedAt}
       />
       {canImport && importOpen ? <ImportDialog onClose={() => setImportOpen(false)} onImported={refresh} /> : null}
 

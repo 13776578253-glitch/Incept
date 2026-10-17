@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/__tests__/sync-agent-phase0.test.ts",
+    "src/__tests__/fixtures/sync-agent-phase0*.ts"
+  ]
+}

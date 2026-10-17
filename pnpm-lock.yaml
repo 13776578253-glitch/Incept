@@ -20,6 +20,18 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  apps/sync-gateway:
+    dependencies:
+      next:
+        specifier: 16.4.0
+        version: 16.4.0(@babel/core@7.29.7)(@types/node@24.12.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+
+  apps/sync-agent:
+    dependencies:
+      '@incept/dashboard':
+        specifier: workspace:*
+        version: link:../../packages/dashboard
+
   apps/web:
     dependencies:
       '@incept/dashboard':

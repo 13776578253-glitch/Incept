@@ -1,0 +1,1399 @@
+{
+  "measuredAt": "2026-10-16T15:21:25.874Z",
+  "node": "v24.21.0",
+  "platform": "win32",
+  "logicalCpus": 16,
+  "budgetMiB": 768,
+  "notes": [
+    "Synthetic data only; separate process per operation.",
+    "Writes/migrations n=1; warm reads n=3. Preparation excluded from operation wall/CPU.",
+    "Peak RSS is kernel maxRSS for the entire child including startup and synthetic write payload.",
+    "CPU is user+system milliseconds; averageCorePercent uses one logical core as 100%.",
+    "New children use --max-old-space-size=512 and SQLite cache_size=32MiB; RSS guard is 768MiB.",
+    "Disk includes normalized DB; source v1 copy is reported separately."
+  ],
+  "results": [
+    {
+      "scenario": "v2",
+      "mode": "write",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 1,
+      "wallMs": 137.53020000000015,
+      "cpuMs": 188,
+      "averageCorePercent": 136.6972490405742,
+      "peakRssMiB": 63.8984375,
+      "rssMiB": 64,
+      "dbBytes": 2007040,
+      "totalBytes": 2039808,
+      "beforeCheckpointBytes": 2990936,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 1,
+      "wallMs": 107.0008,
+      "cpuMs": 78,
+      "averageCorePercent": 72.89665123999073,
+      "peakRssMiB": 62.1875,
+      "rssMiB": 61.91796875,
+      "dbBytes": 2007040,
+      "totalBytes": 2039808,
+      "beforeCheckpointBytes": 2039808,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 1,
+      "wallMs": 100.5149,
+      "cpuMs": 79,
+      "averageCorePercent": 78.59531273472888,
+      "peakRssMiB": 62.015625,
+      "rssMiB": 61.9921875,
+      "dbBytes": 2007040,
+      "totalBytes": 2039808,
+      "beforeCheckpointBytes": 2039808,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 2
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 1,
+      "wallMs": 86.86,
+      "cpuMs": 110,
+      "averageCorePercent": 126.64057103384758,
+      "peakRssMiB": 62.30859375,
+      "rssMiB": 62.47265625,
+      "dbBytes": 2007040,
+      "totalBytes": 2039808,
+      "beforeCheckpointBytes": 2039808,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 3
+    },
+    {
+      "scenario": "v2",
+      "mode": "write",
+      "size": 7000,
+      "batches": 1,
+      "count": 7000,
+      "revision": 1,
+      "wallMs": 1377.3655999999996,
+      "cpuMs": 938,
+      "averageCorePercent": 68.10101834981215,
+      "peakRssMiB": 101.9453125,
+      "rssMiB": 102.0703125,
+      "dbBytes": 17924096,
+      "totalBytes": 17989632,
+      "beforeCheckpointBytes": 38025224,
+      "observationRows": 7000,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 7000,
+      "batches": 1,
+      "count": 7000,
+      "revision": 1,
+      "wallMs": 560.9782,
+      "cpuMs": 579,
+      "averageCorePercent": 103.21256690545194,
+      "peakRssMiB": 89.734375,
+      "rssMiB": 89.87890625,
+      "dbBytes": 17924096,
+      "totalBytes": 17956864,
+      "beforeCheckpointBytes": 17956864,
+      "observationRows": 7000,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 7000,
+      "batches": 1,
+      "count": 7000,
+      "revision": 1,
+      "wallMs": 567.7067000000001,
+      "cpuMs": 469,
+      "averageCorePercent": 82.61308171983877,
+      "peakRssMiB": 89.60546875,
+      "rssMiB": 89.76171875,
+      "dbBytes": 17924096,
+      "totalBytes": 17956864,
+      "beforeCheckpointBytes": 17956864,
+      "observationRows": 7000,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 2
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 7000,
+      "batches": 1,
+      "count": 7000,
+      "revision": 1,
+      "wallMs": 634.9984000000001,
+      "cpuMs": 469,
+      "averageCorePercent": 73.85845381657654,
+      "peakRssMiB": 89.73046875,
+      "rssMiB": 88.93359375,
+      "dbBytes": 17924096,
+      "totalBytes": 17956864,
+      "beforeCheckpointBytes": 17956864,
+      "observationRows": 7000,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 3
+    },
+    {
+      "scenario": "v2",
+      "mode": "write",
+      "size": 15700,
+      "batches": 1,
+      "count": 15700,
+      "revision": 1,
+      "wallMs": 2123.1344,
+      "cpuMs": 1751,
+      "averageCorePercent": 82.47240494996456,
+      "peakRssMiB": 142.890625,
+      "rssMiB": 143.0234375,
+      "dbBytes": 39923712,
+      "totalBytes": 40022016,
+      "beforeCheckpointBytes": 81094328,
+      "observationRows": 15700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 15700,
+      "batches": 1,
+      "count": 15700,
+      "revision": 1,
+      "wallMs": 946.4941,
+      "cpuMs": 1016,
+      "averageCorePercent": 107.3435111745546,
+      "peakRssMiB": 125.3984375,
+      "rssMiB": 125.55859375,
+      "dbBytes": 39923712,
+      "totalBytes": 39956480,
+      "beforeCheckpointBytes": 39956480,
+      "observationRows": 15700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 15700,
+      "batches": 1,
+      "count": 15700,
+      "revision": 1,
+      "wallMs": 1083.9217,
+      "cpuMs": 1000,
+      "averageCorePercent": 92.2575865027889,
+      "peakRssMiB": 125.68359375,
+      "rssMiB": 125.80078125,
+      "dbBytes": 39923712,
+      "totalBytes": 39956480,
+      "beforeCheckpointBytes": 39956480,
+      "observationRows": 15700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 2
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 15700,
+      "batches": 1,
+      "count": 15700,
+      "revision": 1,
+      "wallMs": 759.9284,
+      "cpuMs": 1016,
+      "averageCorePercent": 133.69680617279207,
+      "peakRssMiB": 125.00390625,
+      "rssMiB": 125.09375,
+      "dbBytes": 39923712,
+      "totalBytes": 39956480,
+      "beforeCheckpointBytes": 39956480,
+      "observationRows": 15700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 3
+    },
+    {
+      "scenario": "v2",
+      "mode": "write",
+      "size": 70000,
+      "batches": 1,
+      "count": 70000,
+      "revision": 1,
+      "wallMs": 8044.5862,
+      "cpuMs": 7079,
+      "averageCorePercent": 87.9970681400617,
+      "peakRssMiB": 302.72265625,
+      "rssMiB": 302.296875,
+      "dbBytes": 177680384,
+      "totalBytes": 178040832,
+      "beforeCheckpointBytes": 357001304,
+      "observationRows": 70000,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 70000,
+      "batches": 1,
+      "count": 70000,
+      "revision": 1,
+      "wallMs": 2714.887,
+      "cpuMs": 2844,
+      "averageCorePercent": 104.7557412150119,
+      "peakRssMiB": 294.16015625,
+      "rssMiB": 292.43359375,
+      "dbBytes": 177680384,
+      "totalBytes": 177713152,
+      "beforeCheckpointBytes": 177713152,
+      "observationRows": 70000,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 70000,
+      "batches": 1,
+      "count": 70000,
+      "revision": 1,
+      "wallMs": 2716.4033999999997,
+      "cpuMs": 2844,
+      "averageCorePercent": 104.6972625641685,
+      "peakRssMiB": 293.72265625,
+      "rssMiB": 292.52734375,
+      "dbBytes": 177680384,
+      "totalBytes": 177713152,
+      "beforeCheckpointBytes": 177713152,
+      "observationRows": 70000,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 2
+    },
+    {
+      "scenario": "v2",
+      "mode": "read",
+      "size": 70000,
+      "batches": 1,
+      "count": 70000,
+      "revision": 1,
+      "wallMs": 3142.1411,
+      "cpuMs": 3281,
+      "averageCorePercent": 104.41924457179852,
+      "peakRssMiB": 292.91796875,
+      "rssMiB": 291.26953125,
+      "dbBytes": 177680384,
+      "totalBytes": 177713152,
+      "beforeCheckpointBytes": 177713152,
+      "observationRows": 70000,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 3
+    },
+    {
+      "scenario": "legacy",
+      "mode": "migrate",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 1,
+      "wallMs": 51.40950000000001,
+      "cpuMs": 62,
+      "averageCorePercent": 120.60027815870606,
+      "peakRssMiB": 63.62109375,
+      "rssMiB": 62.328125,
+      "dbBytes": 1380352,
+      "totalBytes": 1413120,
+      "beforeCheckpointBytes": 1693136,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "old-read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 0,
+      "wallMs": 58.296400000000006,
+      "cpuMs": 46,
+      "averageCorePercent": 78.907102325358,
+      "peakRssMiB": 59.85546875,
+      "rssMiB": 59.59765625,
+      "dbBytes": 274432,
+      "totalBytes": 274432,
+      "beforeCheckpointBytes": 274432,
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "old-read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 0,
+      "wallMs": 52.837500000000006,
+      "cpuMs": 46,
+      "averageCorePercent": 87.05938017506504,
+      "peakRssMiB": 59.484375,
+      "rssMiB": 59.06640625,
+      "dbBytes": 274432,
+      "totalBytes": 274432,
+      "beforeCheckpointBytes": 274432,
+      "repeat": 2
+    },
+    {
+      "scenario": "legacy",
+      "mode": "old-read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 0,
+      "wallMs": 58.59140000000001,
+      "cpuMs": 62,
+      "averageCorePercent": 105.81757732363451,
+      "peakRssMiB": 59.97265625,
+      "rssMiB": 59.66796875,
+      "dbBytes": 274432,
+      "totalBytes": 274432,
+      "beforeCheckpointBytes": 274432,
+      "repeat": 3
+    },
+    {
+      "scenario": "legacy",
+      "mode": "read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 1,
+      "wallMs": 54.2043,
+      "cpuMs": 62,
+      "averageCorePercent": 114.38206931922375,
+      "peakRssMiB": 62.9140625,
+      "rssMiB": 62.4296875,
+      "dbBytes": 1380352,
+      "totalBytes": 1413120,
+      "beforeCheckpointBytes": 1413120,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 1,
+      "wallMs": 50.1409,
+      "cpuMs": 63,
+      "averageCorePercent": 125.64592976990838,
+      "peakRssMiB": 62.96875,
+      "rssMiB": 62.74609375,
+      "dbBytes": 1380352,
+      "totalBytes": 1413120,
+      "beforeCheckpointBytes": 1413120,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 2
+    },
+    {
+      "scenario": "legacy",
+      "mode": "read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 1,
+      "wallMs": 67.6303,
+      "cpuMs": 94,
+      "averageCorePercent": 138.99095523751927,
+      "peakRssMiB": 63.10546875,
+      "rssMiB": 62.4609375,
+      "dbBytes": 1380352,
+      "totalBytes": 1413120,
+      "beforeCheckpointBytes": 1413120,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 3
+    },
+    {
+      "scenario": "legacy",
+      "mode": "adopt-legacy",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 2,
+      "wallMs": 155.17040000000003,
+      "cpuMs": 202,
+      "averageCorePercent": 130.17946721797452,
+      "peakRssMiB": 72.85546875,
+      "rssMiB": 72.71875,
+      "dbBytes": 3874816,
+      "totalBytes": 3907584,
+      "beforeCheckpointBytes": 5475472,
+      "observationRows": 1400,
+      "provenanceRows": 700,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "mixed-read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 2,
+      "wallMs": 54.513,
+      "cpuMs": 78,
+      "averageCorePercent": 143.08513565571513,
+      "peakRssMiB": 61.8828125,
+      "rssMiB": 61.7109375,
+      "dbBytes": 3874816,
+      "totalBytes": 3907584,
+      "beforeCheckpointBytes": 3907584,
+      "observationRows": 1400,
+      "provenanceRows": 700,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "mixed-read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 2,
+      "wallMs": 47.340900000000005,
+      "cpuMs": 62,
+      "averageCorePercent": 130.96497954200277,
+      "peakRssMiB": 62.05078125,
+      "rssMiB": 61.58984375,
+      "dbBytes": 3874816,
+      "totalBytes": 3907584,
+      "beforeCheckpointBytes": 3907584,
+      "observationRows": 1400,
+      "provenanceRows": 700,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 2
+    },
+    {
+      "scenario": "legacy",
+      "mode": "mixed-read",
+      "size": 700,
+      "batches": 1,
+      "count": 700,
+      "revision": 2,
+      "wallMs": 47.818400000000004,
+      "cpuMs": 46,
+      "averageCorePercent": 96.19727970822946,
+      "peakRssMiB": 62.08984375,
+      "rssMiB": 62.0390625,
+      "dbBytes": 3874816,
+      "totalBytes": 3907584,
+      "beforeCheckpointBytes": 3907584,
+      "observationRows": 1400,
+      "provenanceRows": 700,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 3
+    },
+    {
+      "scenario": "legacy",
+      "mode": "migrate",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 288,
+      "wallMs": 33483.514500000005,
+      "cpuMs": 20922,
+      "averageCorePercent": 62.484480235788865,
+      "peakRssMiB": 259.03125,
+      "rssMiB": 257.21875,
+      "dbBytes": 111529984,
+      "totalBytes": 111562752,
+      "beforeCheckpointBytes": 122151184,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "old-read",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 0,
+      "wallMs": 4127.3894,
+      "cpuMs": 4531,
+      "averageCorePercent": 109.77883501857131,
+      "peakRssMiB": 438.86328125,
+      "rssMiB": 423.53515625,
+      "dbBytes": 74354688,
+      "totalBytes": 74354688,
+      "beforeCheckpointBytes": 74354688,
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "old-read",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 0,
+      "wallMs": 4172.505099999999,
+      "cpuMs": 4531,
+      "averageCorePercent": 108.59183850967614,
+      "peakRssMiB": 438.578125,
+      "rssMiB": 420.265625,
+      "dbBytes": 74354688,
+      "totalBytes": 74354688,
+      "beforeCheckpointBytes": 74354688,
+      "repeat": 2
+    },
+    {
+      "scenario": "legacy",
+      "mode": "old-read",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 0,
+      "wallMs": 4333.6165,
+      "cpuMs": 4702,
+      "averageCorePercent": 108.50060221064786,
+      "peakRssMiB": 433.71875,
+      "rssMiB": 423.171875,
+      "dbBytes": 74354688,
+      "totalBytes": 74354688,
+      "beforeCheckpointBytes": 74354688,
+      "repeat": 3
+    },
+    {
+      "scenario": "legacy",
+      "mode": "read",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 288,
+      "wallMs": 46.5943,
+      "cpuMs": 46,
+      "averageCorePercent": 98.72452209819656,
+      "peakRssMiB": 65.7578125,
+      "rssMiB": 65.6796875,
+      "dbBytes": 111529984,
+      "totalBytes": 111562752,
+      "beforeCheckpointBytes": 111562752,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "read",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 288,
+      "wallMs": 48.2521,
+      "cpuMs": 46,
+      "averageCorePercent": 95.33263837221592,
+      "peakRssMiB": 65.76953125,
+      "rssMiB": 65.75,
+      "dbBytes": 111529984,
+      "totalBytes": 111562752,
+      "beforeCheckpointBytes": 111562752,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 2
+    },
+    {
+      "scenario": "legacy",
+      "mode": "read",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 288,
+      "wallMs": 48.2792,
+      "cpuMs": 79,
+      "averageCorePercent": 163.63154319044224,
+      "peakRssMiB": 65.68359375,
+      "rssMiB": 65.421875,
+      "dbBytes": 111529984,
+      "totalBytes": 111562752,
+      "beforeCheckpointBytes": 111562752,
+      "observationRows": 700,
+      "provenanceRows": 0,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 3
+    },
+    {
+      "scenario": "legacy",
+      "mode": "adopt-legacy",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 289,
+      "wallMs": 12108.5137,
+      "cpuMs": 11250,
+      "averageCorePercent": 92.90983417725332,
+      "peakRssMiB": 285.62890625,
+      "rssMiB": 255.10546875,
+      "dbBytes": 342687744,
+      "totalBytes": 343146496,
+      "beforeCheckpointBytes": 564617128,
+      "observationRows": 1400,
+      "provenanceRows": 700,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "mixed-read",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 289,
+      "wallMs": 44.7889,
+      "cpuMs": 47,
+      "averageCorePercent": 104.93671423053482,
+      "peakRssMiB": 64.7734375,
+      "rssMiB": 65.109375,
+      "dbBytes": 342687744,
+      "totalBytes": 342720512,
+      "beforeCheckpointBytes": 342720512,
+      "observationRows": 1400,
+      "provenanceRows": 700,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 1
+    },
+    {
+      "scenario": "legacy",
+      "mode": "mixed-read",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 289,
+      "wallMs": 45.9114,
+      "cpuMs": 62,
+      "averageCorePercent": 135.04271270316303,
+      "peakRssMiB": 64.58984375,
+      "rssMiB": 64.6953125,
+      "dbBytes": 342687744,
+      "totalBytes": 342720512,
+      "beforeCheckpointBytes": 342720512,
+      "observationRows": 1400,
+      "provenanceRows": 700,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 2
+    },
+    {
+      "scenario": "legacy",
+      "mode": "mixed-read",
+      "size": 700,
+      "batches": 288,
+      "count": 700,
+      "revision": 289,
+      "wallMs": 44.19839999999999,
+      "cpuMs": 47,
+      "averageCorePercent": 106.33869099333914,
+      "peakRssMiB": 64.86328125,
+      "rssMiB": 64.86328125,
+      "dbBytes": 342687744,
+      "totalBytes": 342720512,
+      "beforeCheckpointBytes": 342720512,
+      "observationRows": 1400,
+      "provenanceRows": 700,
+      "plans": {
+        "legacy": [
+          "SCAN p",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH a USING INDEX sqlite_autoindex_sync_adoptions_1 (batch_id=? AND position=?) LEFT-JOIN",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ],
+        "current": [
+          "SCAN c USING INDEX sqlite_autoindex_sync_current_1",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "SEARCH o USING INDEX sqlite_autoindex_sync_observations_1 (id=?)",
+          "SEARCH g USING INDEX sqlite_autoindex_sync_generations_1 (id=?)",
+          "SEARCH r USING INDEX sqlite_autoindex_sync_origins_2 (scope_id=?)"
+        ],
+        "provenance": [
+          "SCAN p",
+          "SEARCH s USING INDEX sqlite_autoindex_sync_scopes_1 (scope_id=?)",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "repeat": 3
+    }
+  ]
+}

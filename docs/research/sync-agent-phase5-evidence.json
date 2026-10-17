@@ -1,0 +1,801 @@
+{
+  "phase": "5",
+  "date": "2026-10-17",
+  "productionTouched": false,
+  "environment": {
+    "host": "Windows; Docker Desktop Linux cgroup v2",
+    "node": "24.21.0",
+    "pnpm": "10.30.3",
+    "appLimitBytes": 805306368,
+    "gatewayLimitBytes": 134217728,
+    "pgLimitBytes": 402653184,
+    "proxyLimitBytes": 100663296
+  },
+  "syntheticScale": {
+    "initialRecords": 15702,
+    "finalVisibleRecords": 15804,
+    "initialTokens": 2041260,
+    "finalTokens": 2054520,
+    "finalRevision": 5,
+    "receipts": 6,
+    "committedReceipts": 5,
+    "reviewReceipts": 1
+  },
+  "browserJobs": [
+    {
+      "id": "d8a85d0a-c89d-4e6e-9f36-13e40730da1a",
+      "status": "completed",
+      "revision": 3,
+      "tokens": 2041390
+    },
+    {
+      "id": "d075bfde-ae79-4791-af3a-66dfdb7181aa",
+      "status": "completed",
+      "revision": 4,
+      "tokens": 2054390,
+      "restartedAtStagedOffset": 3000
+    },
+    {
+      "id": "16990291-1811-4aa6-b018-33632bb46aa5",
+      "status": "review_required",
+      "revision": 4,
+      "code": "PREFIX_LOST",
+      "oldDataRetained": true
+    },
+    {
+      "id": "f9f9182e-f533-4fc0-886f-63a411b0eba8",
+      "status": "review_required",
+      "revision": 5,
+      "tokens": 2054520,
+      "createdAt": "2026-10-17T13:35:49.633Z",
+      "startedAt": "2026-10-17T13:35:51.449Z",
+      "finishedAt": "2026-10-17T13:36:12.356Z"
+    }
+  ],
+  "concurrentPages": {
+    "startedAt": "2026-10-17T13:35:49.377Z",
+    "endedAt": "2026-10-17T13:35:58.624Z",
+    "samples": 45,
+    "errors": 0,
+    "p50Ms": 17.122800000000097,
+    "p95Ms": 44.533800000000156,
+    "rows": [
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 343.9612
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 319.8759
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 26.162500000000023
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 20.876400000000103
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 41.55119999999988
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 16.22869999999989
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 16.03110000000015
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 44.533800000000156
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 15.641100000000051
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 19.302799999999934
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 42.07450000000017
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 13.501500000000306
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 17.122800000000097
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 38.564800000000105
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 10.724300000000312
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 15.300500000000284
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 37.783300000000054
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 11.649400000000242
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 16.543099999999868
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 35.01980000000003
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 10.214399999999841
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 23.948999999999614
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 36.8103000000001
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 11.91399999999976
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 14.447100000000319
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 34.21980000000076
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 9.742400000000089
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 17.33980000000065
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 39.46299999999974
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 14.30749999999989
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 17.137899999999718
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 34.79239999999936
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 11.192000000000007
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 14.85819999999967
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 37.222999999999956
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 10.72229999999945
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 16.918499999999767
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 29.324999999999818
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 10.829400000000533
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 14.523799999999937
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 35.304700000000594
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 9.642399999998815
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "ms": 15.086500000001251
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "ms": 33.73599999999897
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "ms": 10.804000000000087
+      }
+    ]
+  },
+  "cgroupIntervals": {
+    "beforeRestart": [
+      {
+        "service": "app",
+        "currentBytes": 231145472,
+        "peakBytes": 248209408,
+        "maxBytes": 805306368,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      },
+      {
+        "service": "sync-gateway",
+        "currentBytes": 35975168,
+        "peakBytes": 52543488,
+        "maxBytes": 134217728,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      },
+      {
+        "service": "postgres",
+        "currentBytes": 95645696,
+        "peakBytes": 101261312,
+        "maxBytes": 402653184,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      },
+      {
+        "service": "proxy",
+        "currentBytes": 14102528,
+        "peakBytes": 18591744,
+        "maxBytes": 100663296,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      }
+    ],
+    "afterRestart": [
+      {
+        "service": "app",
+        "currentBytes": 205860864,
+        "peakBytes": 235757568,
+        "maxBytes": 805306368,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      },
+      {
+        "service": "sync-gateway",
+        "currentBytes": 36806656,
+        "peakBytes": 54575104,
+        "maxBytes": 134217728,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      },
+      {
+        "service": "postgres",
+        "currentBytes": 103088128,
+        "peakBytes": 113573888,
+        "maxBytes": 402653184,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      },
+      {
+        "service": "proxy",
+        "currentBytes": 14381056,
+        "peakBytes": 18591744,
+        "maxBytes": 100663296,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      }
+    ]
+  },
+  "sqlite": {
+    "dbBytes": 44945408,
+    "walBytes": 0,
+    "shmBytes": 32768,
+    "freeBytes": 3052851220480,
+    "freeDiskScope": "Docker Desktop virtual backing; verify real host independently",
+    "liveBackup": {
+      "source": "/data/sync/v2.db",
+      "out": "/tmp/phase5-v2-backup.db",
+      "bytes": 44945408,
+      "sha256": "ef834fc803bc1b42ede907d10a1ddd589182121f9542a2a793eeec074717c57c",
+      "integrity": "ok",
+      "pageCount": 10973
+    },
+    "restoredCountsEqual": true
+  },
+  "shadow": {
+    "first": {
+      "ok": true,
+      "ranges": [
+        {
+          "range": "7d",
+          "equal": true,
+          "difference": null,
+          "tokens": {
+            "baseline": 910,
+            "actual": 910
+          },
+          "cost": {
+            "baseline": 0.0010149999999999998,
+            "actual": 0.0010149999999999998
+          },
+          "dateRange": {
+            "baseline": {
+              "from": "2026-10-11",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 7
+            },
+            "actual": {
+              "from": "2026-10-11",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 7
+            }
+          }
+        },
+        {
+          "range": "30d",
+          "equal": true,
+          "difference": null,
+          "tokens": {
+            "baseline": 910,
+            "actual": 910
+          },
+          "cost": {
+            "baseline": 0.0010149999999999998,
+            "actual": 0.0010149999999999998
+          },
+          "dateRange": {
+            "baseline": {
+              "from": "2026-09-18",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 30
+            },
+            "actual": {
+              "from": "2026-09-18",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 30
+            }
+          }
+        },
+        {
+          "range": "all",
+          "equal": true,
+          "difference": null,
+          "tokens": {
+            "baseline": 910,
+            "actual": 910
+          },
+          "cost": {
+            "baseline": 0.0010149999999999998,
+            "actual": 0.0010149999999999998
+          },
+          "dateRange": {
+            "baseline": {
+              "from": "2026-10-15",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 3
+            },
+            "actual": {
+              "from": "2026-10-15",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 3
+            }
+          }
+        }
+      ],
+      "revision": 1
+    },
+    "second": {
+      "ok": true,
+      "ranges": [
+        {
+          "range": "7d",
+          "equal": true,
+          "difference": null,
+          "tokens": {
+            "baseline": 910,
+            "actual": 910
+          },
+          "cost": {
+            "baseline": 0.0010149999999999998,
+            "actual": 0.0010149999999999998
+          },
+          "dateRange": {
+            "baseline": {
+              "from": "2026-10-11",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 7
+            },
+            "actual": {
+              "from": "2026-10-11",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 7
+            }
+          }
+        },
+        {
+          "range": "30d",
+          "equal": true,
+          "difference": null,
+          "tokens": {
+            "baseline": 910,
+            "actual": 910
+          },
+          "cost": {
+            "baseline": 0.0010149999999999998,
+            "actual": 0.0010149999999999998
+          },
+          "dateRange": {
+            "baseline": {
+              "from": "2026-09-18",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 30
+            },
+            "actual": {
+              "from": "2026-09-18",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 30
+            }
+          }
+        },
+        {
+          "range": "all",
+          "equal": true,
+          "difference": null,
+          "tokens": {
+            "baseline": 910,
+            "actual": 910
+          },
+          "cost": {
+            "baseline": 0.0010149999999999998,
+            "actual": 0.0010149999999999998
+          },
+          "dateRange": {
+            "baseline": {
+              "from": "2026-10-15",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 3
+            },
+            "actual": {
+              "from": "2026-10-15",
+              "to": "2026-10-17",
+              "activeDays": 1,
+              "calendarDays": 3
+            }
+          }
+        }
+      ],
+      "revision": 1
+    }
+  },
+  "security": {
+    "publicJob": 403,
+    "internalCheck": 404,
+    "privateRpc": 404,
+    "nonCanaryDevice": 403,
+    "managementStaleSession": 428
+  },
+  "windowsPackage": {
+    "sha256": "bd13c46ba070dc7ec4047c2f041f9d4cb70ef73289cac11c33ee5eb52df7eb67",
+    "files": [
+      "dist/agent.mjs",
+      "dist/collect-worker.mjs",
+      "windows/*.ps1",
+      "README.md"
+    ]
+  },
+  "limits": {
+    "devices": 1,
+    "maxNewBatchRecords": 20000,
+    "newLargeBatch": {
+      "status": 429,
+      "retryAfter": 300
+    },
+    "appQueue": 4,
+    "perDeviceQueue": 2,
+    "newUploadMemoryPercent": 85,
+    "minFreeDiskBytes": 2147483648,
+    "maxStoreBytes": 4294967296
+  },
+  "notes": [
+    "One representative normal-scale concurrent/restart run; no new 70k benchmark.",
+    "Process helper memory may be included in container cgroup peaks.",
+    "Comparison omits checkedAt and transport sync envelope only; all statistics/provenance/order and updatedAt compared."
+  ],
+  "release": {
+    "image": "incept-sync-phase5:release-01a1447b",
+    "imageId": "sha256:e653e45103b2981a09f99b27a000f862915e1ca9f0b5ca738ea3f1a65af358cd",
+    "bytes": 369937767,
+    "buildExit": 0,
+    "browser": {
+      "tokens": 2054520,
+      "revision": 5,
+      "threeTimes": true,
+      "anchors": 0
+    },
+    "sourceParity": {
+      "files": 806,
+      "differences": [
+        "apps/web/next-env.d.ts"
+      ]
+    },
+    "sourceParityNote": "805 code/config files equal; next-env.d.ts regenerated by Next production build.",
+    "productionDevDependenciesRemoved": true,
+    "prismaEngineCacheRemoved": true
+  },
+  "cleanup": {
+    "syntheticSessionsRevoked": 1,
+    "syntheticDevicesRevoked": 2,
+    "containersStopped": true,
+    "persistentVolumesRetained": true,
+    "agentStopped": true,
+    "autostartInstalled": false
+  },
+  "types": {
+    "baseline": [],
+    "final": [],
+    "added": [],
+    "removed": [],
+    "workspaceExit": 0,
+    "dedicatedExit": 0
+  },
+  "tests": {
+    "dashboard": 473,
+    "webPass": 120,
+    "webGatedSkip": 55,
+    "ownerPg": 28,
+    "uploadPg": 15,
+    "remoteWindowsPg": 7,
+    "agentHttpPgPass": 3,
+    "agentHttpFiveMinuteSkip": 1,
+    "agentWindows": 15,
+    "gateway": 2,
+    "musicVitest": 195,
+    "musicCore": 73,
+    "roadmap": 71,
+    "opsWindowsPass": 9,
+    "opsWindowsLinuxOnlySkip": 1,
+    "opsLinux": 10
+  },
+  "changedFiles": [
+    ".gitignore",
+    "AGENTS.md",
+    "Dockerfile",
+    "apps/sync-agent/README.md",
+    "apps/sync-agent/package.json",
+    "apps/sync-agent/src/cli.ts",
+    "apps/sync-agent/src/engine.ts",
+    "apps/sync-agent/src/remote.ts",
+    "apps/sync-agent/src/review.ts",
+    "apps/sync-agent/tests/agent.test.mjs",
+    "apps/sync-agent/tools/package-windows.mjs",
+    "apps/sync-gateway/README.md",
+    "apps/sync-gateway/src/gateway.ts",
+    "apps/sync-gateway/src/main.ts",
+    "apps/web/src/app/[locale]/docs/page.tsx",
+    "apps/web/src/app/[locale]/operations/page.tsx",
+    "apps/web/src/app/[locale]/roadmap/page.tsx",
+    "apps/web/src/app/globals.css",
+    "apps/web/src/components/base/app-providers.tsx",
+    "apps/web/src/components/base/scrollbar-controller.tsx",
+    "apps/web/src/features/docs/home/__tests__/docs-home-feature.test.tsx",
+    "apps/web/src/features/docs/home/components/docs-home-add-card.tsx",
+    "apps/web/src/features/docs/home/components/docs-home-card.tsx",
+    "apps/web/src/features/docs/home/components/docs-home-empty.tsx",
+    "apps/web/src/features/docs/home/components/docs-home-list-item.tsx",
+    "apps/web/src/features/docs/home/components/docs-home-row.tsx",
+    "apps/web/src/features/docs/home/components/docs-home-stats.tsx",
+    "apps/web/src/features/docs/home/components/docs-home-toolbar.tsx",
+    "apps/web/src/features/docs/home/index.tsx",
+    "apps/web/src/features/docs/shared/types.ts",
+    "apps/web/src/features/notes/index.tsx",
+    "apps/web/src/features/operations/__tests__/operations-dashboard.test.tsx",
+    "apps/web/src/features/operations/components/data-sync-card.tsx",
+    "apps/web/src/features/operations/components/deploy-backup-card.tsx",
+    "apps/web/src/features/operations/components/event-logs-card.tsx",
+    "apps/web/src/features/operations/components/modals/event-detail-modal.tsx",
+    "apps/web/src/features/operations/components/modals/ssh-config-modal.tsx",
+    "apps/web/src/features/operations/components/modals/sync-detail-modal.tsx",
+    "apps/web/src/features/operations/components/operations-header.tsx",
+    "apps/web/src/features/operations/components/resource-overview.tsx",
+    "apps/web/src/features/operations/components/service-heartbeat-card.tsx",
+    "apps/web/src/features/operations/components/ssh-connection-card.tsx",
+    "apps/web/src/features/operations/index.ts",
+    "apps/web/src/features/operations/mock-data.ts",
+    "apps/web/src/features/operations/operations-dashboard.tsx",
+    "apps/web/src/features/operations/types.ts",
+    "apps/web/src/features/settings/account/sync-devices-panel.tsx",
+    "apps/web/src/messages/en/docs.json",
+    "apps/web/src/messages/zh/docs.json",
+    "apps/web/src/server/docs/access.ts",
+    "apps/web/src/server/sync/__tests__/review-route.test.ts",
+    "apps/web/src/server/sync/controller.ts",
+    "apps/web/src/server/sync/next.ts",
+    "apps/web/src/server/sync/remote.ts",
+    "apps/web/src/styles/layout.css",
+    "apps/web/src/styles/theme.css",
+    "deployment/.env.production.example",
+    "deployment/compose.production.yml",
+    "deployment/compose.sh",
+    "deployment/nginx.conf.template",
+    "docs/NEXT.md",
+    "docs/current-task/2026-10-17-docs-redesign-and-agent-handoff.md",
+    "docs/research/sync-agent-phase5-evidence.json",
+    "docs/research/sync-agent-phase5-rollout-proof.md",
+    "docs/runbooks/sync-agent-phase5-owner-authorization.md",
+    "docs/runbooks/sync-agent-production-rollout.md",
+    "packages/dashboard/package.json",
+    "packages/dashboard/src/__tests__/dashboard-page.test.tsx",
+    "packages/dashboard/src/__tests__/dashboard-visibility.test.tsx",
+    "packages/dashboard/src/__tests__/phase2/capacity-phase5.test.ts",
+    "packages/dashboard/src/__tests__/phase2/secrets-phase5.test.ts",
+    "packages/dashboard/src/__tests__/phase5/maintenance.test.ts",
+    "packages/dashboard/src/__tests__/phase5/rollout.test.ts",
+    "packages/dashboard/src/__tests__/remote-refresh.test.tsx",
+    "packages/dashboard/src/__tests__/remote-toolbar-phase5.test.tsx",
+    "packages/dashboard/src/adapters/local/imports/sync/reviews.ts",
+    "packages/dashboard/src/adapters/local/imports/sync/store.ts",
+    "packages/dashboard/src/messages/en.json",
+    "packages/dashboard/src/messages/zh.json",
+    "packages/dashboard/src/react/components/dashboard-toolbar.tsx",
+    "packages/dashboard/src/react/dashboard.css",
+    "packages/dashboard/src/react/hooks/remote-refresh.ts",
+    "packages/dashboard/src/react/hooks/use-dashboard-window.ts",
+    "packages/dashboard/src/react/token-dashboard-feature.tsx",
+    "packages/dashboard/src/sync/admission.ts",
+    "packages/dashboard/src/sync/capacity.ts",
+    "packages/dashboard/src/sync/executor.ts",
+    "packages/dashboard/src/sync/index.ts",
+    "packages/dashboard/src/sync/maintenance-cli.ts",
+    "packages/dashboard/src/sync/protocol.ts",
+    "packages/dashboard/src/sync/secrets.ts",
+    "packages/dashboard/src/sync/worker-entry.ts",
+    "packages/dashboard/tools/phase5/browser-setup.mjs",
+    "packages/dashboard/tools/phase5/build-seed.mjs",
+    "packages/dashboard/tools/phase5/build.mjs",
+    "packages/dashboard/tools/phase5/fullsite-build.sh",
+    "packages/dashboard/tools/phase5/maintenance.ts",
+    "packages/dashboard/tools/phase5/seed.ts",
+    "packages/dashboard/tools/phase5/snapshot.py",
+    "packages/db/src/agent/index.ts",
+    "scripts/production-start.mjs",
+    "scripts/production-sync-backup.mjs",
+    "scripts/production-sync-backup.test.mjs",
+    "scripts/production-sync-compose.test.mjs",
+    "scripts/production-sync-config.test.mjs",
+    "scripts/production-sync-secret.test.mjs",
+    "scripts/production-sync-stage.test.mjs",
+    "scripts/sync-config.mjs",
+    "scripts/sync-secret.mjs",
+    "scripts/sync-stage.mjs"
+  ]
+}

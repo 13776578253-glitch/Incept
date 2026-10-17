@@ -1,0 +1,7 @@
+import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
+const {build}=createRequire(new URL('../../../packages/dashboard/package.json',import.meta.url))('esbuild');
+const web=createRequire(new URL('../../../apps/web/package.json',import.meta.url));
+await build({entryPoints:[fileURLToPath(new URL('../src/main.ts',import.meta.url))],outfile:fileURLToPath(new URL('../dist/gateway.mjs',import.meta.url)),bundle:true,platform:'node',format:'esm',target:'node24',banner:{js:"import {createRequire as createNodeRequire} from 'node:module';const require=createNodeRequire(import.meta.url);const __dirname=require('node:path').dirname(require('node:url').fileURLToPath(import.meta.url));"},plugins:[{name:'locked-websocket-implementation',setup(b){b.onResolve({filter:/^next\/dist\/compiled\/ws$/},()=>({path:web.resolve('next/dist/compiled/ws')}));}}]});
+await build({entryPoints:[fileURLToPath(new URL('../src/gateway.ts',import.meta.url))],outfile:fileURLToPath(new URL('../dist/library.mjs',import.meta.url)),bundle:true,platform:'node',format:'esm',target:'node24',banner:{js:"import {createRequire as createNodeRequire} from 'node:module';const require=createNodeRequire(import.meta.url);const __dirname=require('node:path').dirname(require('node:url').fileURLToPath(import.meta.url));"},plugins:[{name:'locked-websocket-implementation',setup(b){b.onResolve({filter:/^next\/dist\/compiled\/ws$/},()=>({path:web.resolve('next/dist/compiled/ws')}));}}]});
+console.log('Sync gateway built with the existing locked Next WebSocket implementation');

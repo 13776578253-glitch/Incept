@@ -1,0 +1,37 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { afterEach, beforeEach, expect, it } from 'vitest';
+import { TRANSFER_SOURCES } from '../../domain';
+import { hash } from '../../adapters/local/imports/identity';
+import { validateBundle } from '../../adapters/local/imports/validation';
+import { validateHeader, validateRecords, qualifyRanges, qualifyRecords, syncEntityId } from '../../adapters/local/imports/sync/contract';
+import { writePhase0Source, writePhase0Index, PHASE0_DEVICE, PHASE0_MODEL, PHASE0_PRICE, phase0Export, writePhase0Pricing } from '../fixtures/sync-agent-phase0';
+import { scan } from '../phase0c/phase0c-evidence';
+import { fromCapture } from './fixtures';
+let home: string;
+beforeEach(() => { home = mkdtempSync(join(tmpdir(), 'sync-agent-phase1-')); writePhase0Pricing(home); });
+afterEach(() => rmSync(home, { recursive: true, force: true }));
+const basis = { rates: { [PHASE0_MODEL]: PHASE0_PRICE }, aliases: {}, schedule: 'commandcode-peak-v1' as const, provenance: 'fixture' };
+it.each([...TRANSFER_SOURCES, 'aiusage'] as const)('%s derived protocol accepts observed baseline and evidence-backed append', async reader => {
+  const source = reader === 'aiusage' ? 'claudeCode' : reader;
+  const scope = { deviceId: PHASE0_DEVICE, source, sessionId: source === 'commandcode' ? 'cc-phase0-commandcode' : 'phase0-' + source, originId: 'registered:' + reader };
+  if (reader === 'aiusage') writePhase0Index(home, source); else writePhase0Source(home, source);
+  const capsule = await scan(home, scope, basis, null, reader === 'aiusage' ? { reader } : {}), first = fromCapture(capsule);
+  validateHeader(first.header); validateRecords(first.records, first.header); qualifyRanges(undefined, first.header.manifest); qualifyRecords([], first.records, first.header.manifest);
+  if (reader === 'aiusage') return;
+  writePhase0Source(home, source, { count: 2 }); const nextCapsule = await scan(home, scope, basis, { id: capsule.manifestHash, hash: capsule.manifestHash });
+  const next = fromCapture(nextCapsule, { capsule, header: first.header }); validateHeader(next.header); validateRecords(next.records, next.header);
+  qualifyRanges(first.header.manifest, next.header.manifest); qualifyRecords(first.records, next.records, next.header.manifest);
+  if (source === 'codex') expect(syncEntityId(scope, first.records[0])).toBe(syncEntityId(scope, next.records[1]));
+});
+it('v1 validation remains v1 and does not accept a v2 header; incomplete/unknown source evidence fails closed', async () => {
+  writePhase0Source(home, 'geminiCli'); expect(validateBundle(phase0Export(home)).version).toBe(1);
+  const scope = { deviceId: PHASE0_DEVICE, source: 'geminiCli' as const, sessionId: 'phase0-geminiCli', originId: 'g' };
+  const first = fromCapture(await scan(home, scope, basis));
+  expect(() => validateBundle(first.header)).toThrow();
+  expect(() => validateHeader({ ...first.header, complete: true })).toThrow('UNEXPECTED_FIELD');
+  expect(() => qualifyRanges(undefined, { ...first.header.manifest, read: { ...first.header.manifest.read, status: 'partial' } })).toThrow('INCOMPLETE_READ');
+  const forged = structuredClone(first.records); forged[0].nativeKey = { source: 'codex', keyHash: hash('fake') };
+  expect(() => validateRecords(forged, first.header)).toThrow('INVALID_NATIVE_KEY');
+});

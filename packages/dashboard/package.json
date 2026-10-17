@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./sync": {"types":"./src/sync/index.ts","default":"./src/sync/index.ts"},
     "./endpoints": {
       "types": "./src/endpoints.ts",
       "default": "./src/endpoints.ts"
@@ -28,6 +29,7 @@
   },
   "scripts": {
     "build:runtime": "node tools/build-runtime.mjs",
+    "build:sync-maintenance": "node tools/phase5/build.mjs",
     "pretest": "node tools/build-runtime.mjs",
     "build:tools": "node tools/build-transfer.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.src.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.json",

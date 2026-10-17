@@ -26,4 +26,6 @@ case "$proxy" in
   nginx) ;;
   *) echo 'INCEPT_PROXY must be caddy or nginx.' >&2; exit 2 ;;
 esac
+remote=$(awk -F= '/^INCEPT_SYNC_REMOTE_ENABLED=/{sub(/\r$/, "", $2); print $2}' "$env_file")
+if test "$remote" = 1; then set -- --profile sync "$@"; fi
 exec docker compose --project-name "$project" --env-file "$env_file" -f "$repo/deployment/compose.production.yml" "$@"

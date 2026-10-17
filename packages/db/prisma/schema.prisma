@@ -152,9 +152,31 @@ model OwnerAccount {
   challenges OwnerChallenge[]
   permits OwnerPermit[]
   recoveryCodes OwnerRecoveryCode[]
+  agentDevices AgentDevice[]
+  syncJobs SyncJob[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@map("owner_accounts")
+}
+
+// Independent high-entropy upload credentials; never an Owner browser session.
+model AgentDevice {
+  syncJobs SyncJob[]
+  id String @id @default(uuid())
+  ownerAccountId String
+  ownerAccount OwnerAccount @relation(fields: [ownerAccountId], references: [id], onDelete: Restrict)
+  name String
+  tokenHash String @unique
+  tokenHint String
+  credentialVersion Int @default(1)
+  allowedSources String[]
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+  revokedAt DateTime?
+  rotatedAt DateTime?
+  updatedAt DateTime @updatedAt
+  @@index([ownerAccountId, revokedAt])
+  @@map("agent_devices")
 }
 
 model OwnerChallenge {
@@ -569,4 +591,30 @@ model RoadmapEntryLink {
 
   @@index([entryId, position])
   @@map("roadmap_entry_links")
+}
+model SyncJob {
+  id                String   @id @default(uuid()) @db.Uuid
+  ownerAccountId    String
+  ownerAccount      OwnerAccount @relation(fields:[ownerAccountId],references:[id],onDelete:Cascade,onUpdate:NoAction)
+  deviceId          String
+  device            AgentDevice @relation(fields:[deviceId],references:[id],onDelete:Restrict,onUpdate:NoAction)
+  activeKey         String?  @unique
+  idempotencyKey    String   @db.Uuid
+  status            String
+  credentialVersion Int
+  policyHash        String
+  createdAt         DateTime @default(now())
+  dispatchedAt      DateTime?
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  expiresAt         DateTime
+  startRevision     BigInt?
+  dataRevision      BigInt?
+  completionHash    String?
+  result            Json?
+  errorCode         String?
+  @@unique([ownerAccountId,idempotencyKey],map:"sync_jobs_owner_idempotency_key")
+  @@index([deviceId,createdAt],map:"sync_jobs_device_created")
+  @@index([status,expiresAt],map:"sync_jobs_status_expires")
+  @@map("sync_jobs")
 }

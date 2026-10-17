@@ -1,0 +1,77 @@
+# Local acceptance only. Production deployment files remain unchanged.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: incept_sync_phase4
+      POSTGRES_USER: phase4_test
+      POSTGRES_PASSWORD: ${INCEPT_PHASE4_PG_PASSWORD:?isolated password required}
+    volumes: [phase4-postgres:/var/lib/postgresql/data]
+    healthcheck: {test: [CMD-SHELL, 'pg_isready -U phase4_test -d incept_sync_phase4'], interval: 2s, timeout: 2s, retries: 30}
+    mem_limit: 256m
+  migrate:
+    image: ${INCEPT_PHASE4_IMAGE:?local build image required}
+    entrypoint: []
+    working_dir: /phase4
+    command: [pnpm, db:deploy]
+    environment:
+      DATABASE_URL: postgresql://phase4_test:${INCEPT_PHASE4_PG_PASSWORD}@postgres:5432/incept_sync_phase4
+    depends_on: {postgres: {condition: service_healthy}}
+    profiles: [ops]
+  app:
+    image: ${INCEPT_PHASE4_IMAGE}
+    entrypoint: []
+    working_dir: /phase4
+    command: [pnpm, --filter, web, start]
+    environment:
+      DATABASE_URL: postgresql://phase4_test:${INCEPT_PHASE4_PG_PASSWORD}@postgres:5432/incept_sync_phase4
+      INCEPT_AUTH_ENCRYPTION_KEY: ${INCEPT_PHASE4_AUTH_KEY:?isolated Owner key required}
+      INCEPT_SYNC_ENABLED: '1'
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      NODE_USE_ENV_PROXY: '0'
+      INCEPT_TRUST_PROXY: '1'
+      INCEPT_SYNC_REMOTE_ENABLED: '1'
+      INCEPT_SYNC_READ_MODE: ${INCEPT_PHASE4_READ_MODE:-v1}
+      INCEPT_SYNC_DATABASE_FILE: /data/v2.db
+      INCEPT_DASHBOARD_IMPORTS_FILE: /data/v1.db
+      INCEPT_DASHBOARD_HOME: /data/home
+      INCEPT_DASHBOARD_OVERRIDES_FILE: /data/overrides.json
+      INCEPT_SYNC_GATEWAY_INTERNAL_URL: http://gateway:3101
+      INCEPT_SYNC_RPC_KEY: ${INCEPT_PHASE4_RPC_KEY:?independent RPC key required}
+      NODE_OPTIONS: --max-old-space-size=384
+    volumes:
+      - phase4-data:/data
+      - ../../packages/dashboard/tools/phase4/seed.mjs:/phase4/packages/dashboard/tools/phase4/seed.mjs:ro
+    depends_on: {postgres: {condition: service_healthy}}
+    mem_limit: 768m
+  gateway:
+    image: ${INCEPT_PHASE4_IMAGE}
+    entrypoint: []
+    working_dir: /phase4
+    command: [node, apps/sync-gateway/dist/gateway.mjs]
+    environment:
+      INCEPT_GATEWAY_HOST: 0.0.0.0
+      NODE_ENV: production
+      INCEPT_GATEWAY_PORT: '3101'
+      NODE_USE_ENV_PROXY: '0'
+      INCEPT_SYNC_WEB_INTERNAL_URL: http://app:3000
+      INCEPT_SYNC_RPC_KEY: ${INCEPT_PHASE4_RPC_KEY}
+      NODE_OPTIONS: --max-old-space-size=64
+    mem_limit: 128m
+  proxy:
+    image: nginx:1.28-alpine
+    networks: [default, ingress]
+    ports: ['127.0.0.1:${INCEPT_PHASE4_TLS_PORT:-8444}:443']
+    volumes:
+      - ./nginx.isolated.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${INCEPT_PHASE4_TLS_DIRECTORY:?isolated TLS directory required}:/etc/incept/tls:ro
+    depends_on: [app, gateway]
+    mem_limit: 64m
+volumes:
+  phase4-data:
+  phase4-postgres:
+networks:
+  default:
+    internal: true
+  ingress: {}

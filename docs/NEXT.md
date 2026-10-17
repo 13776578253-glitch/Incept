@@ -39,3 +39,9 @@ Agent A completed the DeepWiki-aligned redesign of Docs Home (`DocsHomeAddCard` 
 - **Current Progress & Handoff Record:** See [2026-10-17 Docs Redesign and Agent Handoff](./current-task/2026-10-17-docs-redesign-and-agent-handoff.md) and [.scratch/handoff-2026-10-17-branch-split.md](../.scratch/handoff-2026-10-17-branch-split.md).
 - **Next Stage Plan (Agent B):** Merge `feature/sync-agent-v2` resolving the 3 expected conflicts in `messages` and `dashboard-toolbar.tsx`, followed by `pnpm install` and full verification gates.
 - **Subsequent Waves:** Agent C (disk and artifact cleanup), Agent D (`feature/sync-agent-phase5` implementation), and Agent E (`feature/operations-console` integration).
+
+## 2026-10-17 Phase 5 Release
+
+Owner approved the single-device gray rollout and selected **Plan A**: migrate v1 to v2, run the 7d/30d/all shadow comparison to zero, switch v2 reads, then start the one Windows Agent. The first Agent upload must be treated as new data when it is truly new; an overlap with unclaimed v1 history must enter `review_required` and keep the old statistics. Historical adoption stays explicit (Owner-given device UUID/source/manifest/legacy batches); no automatic bulk claim.
+
+The release is rebuilt from `codex/production-readiness` `1a44da2` rather than copied partially from the development worktree. Operations routes and mock data are **excluded** from this release; no Operations authentication work is included. See [the rollout runbook](./runbooks/sync-agent-production-rollout.md), [the authorization](./runbooks/sync-agent-phase5-owner-authorization.md), and [the Phase 5 proof](./research/sync-agent-phase5-rollout-proof.md).

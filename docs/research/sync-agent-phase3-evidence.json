@@ -1,0 +1,205 @@
+{
+  "date": "2026-10-17",
+  "platform": "Windows",
+  "node": "v24.21.0",
+  "scope": "isolated local Phase 3",
+  "sourceCount": 7,
+  "upload": {
+    "transport": "HTTPS with verified test CA",
+    "sources": [
+      "codex",
+      "commandcode",
+      "antigravity",
+      "claudeCode",
+      "opencode",
+      "zcode",
+      "geminiCli"
+    ],
+    "initialAndAppendReceipts": [
+      {
+        "batchId": "35a68b8c-4227-4b08-b87a-2804e885bb2d",
+        "payloadHash": "63c9c6b5275c5c89b0c0288e6d2f062765b2aaee4001326ba63d397292519cd5",
+        "generationId": "2f1eb49aa729b8b19de132e3c279227495cc8065a675342c4d2f1c98982e68d6",
+        "manifestHash": "7e00fd27a77d1af5c406bd171b223dde69b29be2f6df362b1f2f4058a29565c1",
+        "dataRevision": 12,
+        "status": "committed",
+        "outcome": "updated",
+        "code": "since-enrollment"
+      },
+      {
+        "batchId": "36ede31a-0a13-4768-976e-76bc33bff863",
+        "payloadHash": "d044fbc7eb22f215a878cfc57535aacd13c3b39b123c51c5a90dff27dd92ad20",
+        "generationId": "4fca43926c52a7355e0a16b298467a9fa3538e3f9230112a17c31e0f05159197",
+        "manifestHash": "31aebaa385aade37cc39b447315ccf2f5556aad44f0eefad7c549ba863b25a9a",
+        "dataRevision": 4,
+        "status": "committed",
+        "outcome": "inserted",
+        "code": "baseline-observed"
+      },
+      {
+        "batchId": "4d6bd1d2-4b3e-40a1-a95f-f59b3f33e673",
+        "payloadHash": "4d198d69309d791331f969743137106dda292ca30cca8990a70805f25af59bd9",
+        "generationId": "ff48b3a0221969026f8ddbc911d6a0b986646b591599f3263fa58285640a51ca",
+        "manifestHash": "f91eb26b1454cf403702251bad1b54e4a56c5ebdecf8de8b264f149878faf3e4",
+        "dataRevision": 6,
+        "status": "committed",
+        "outcome": "inserted",
+        "code": "baseline-observed"
+      },
+      {
+        "batchId": "5c673ec6-ff6b-4708-80a3-4b171d373a88",
+        "payloadHash": "81f7a89e26dce7831f69855a181cdfc1fabd28178a742dd53a2b8574715d1ce5",
+        "generationId": "e7a2fe6a912c84eb0d949541338a87d559caaa6924458b74ca04b3c74411478c",
+        "manifestHash": "f65398698465d9efec5cc14ab80b3c8ee45a9f0772828682480168f20cf0668d",
+        "dataRevision": 1,
+        "status": "committed",
+        "outcome": "inserted",
+        "code": "baseline-observed"
+      },
+      {
+        "batchId": "6021e02e-798f-40aa-bb88-2bbe00681b1a",
+        "payloadHash": "ff8c319d9f080f47bf69721543e20060a01a0ddb0dec5a48edc577ba2948cd3d",
+        "generationId": "aadbf8f8a8f5bc3ea41d54c50d4dd9a453c1ccc84ece900128e204fb1e1b7f42",
+        "manifestHash": "f865635a151c3774af6cd983592015c2e393beca9c3d1b339a9e9df013c7d85d",
+        "dataRevision": 3,
+        "status": "committed",
+        "outcome": "inserted",
+        "code": "baseline-observed"
+      },
+      {
+        "batchId": "a104b753-568e-4a4f-b3fe-15ec620d7370",
+        "payloadHash": "c051f20eeda23616355de5f386fa9fe0b0d8651f93e8c07c141b5e9e2bffb9ed",
+        "generationId": "8c5f9f8bb13d208d4a4f60951a1439928ab76038593a985d741affb7124db50d",
+        "manifestHash": "91ca766de3516e00f03c8d16e3f23802c368025a7e9368025d3d23172bc8d605",
+        "dataRevision": 13,
+        "status": "committed",
+        "outcome": "updated",
+        "code": "since-enrollment"
+      },
+      {
+        "batchId": "aaca5cbf-bd63-4edb-8765-632b009283cd",
+        "payloadHash": "df54fdad63eb328ff386185d3a37f3c06219749ae257dc9619430a3e5375b85a",
+        "generationId": "f4a80800889ea8c2175185a7fbf77beb9201230f8c41b9e8f8aa6467918269b2",
+        "manifestHash": "545516fa7d27a02471d997d3093a6b9ed0b8f692448abce8168fb7b87d07e96e",
+        "dataRevision": 11,
+        "status": "committed",
+        "outcome": "updated",
+        "code": "since-enrollment"
+      },
+      {
+        "batchId": "b75a22f4-127d-4142-bbd2-ecdf5b11a2ac",
+        "payloadHash": "c7f27c13276d5ecd96c1806181417ad97613e7cac1d582fc9e823aa22157fe80",
+        "generationId": "12946dc0cc3c617843debd1cea17cd791e15234c90296bc3008641d2221aa12e",
+        "manifestHash": "911e4fa0c095d2901c63f8d495d6a60bb9a6508be25e592bcc7f8349ba521201",
+        "dataRevision": 10,
+        "status": "committed",
+        "outcome": "updated",
+        "code": "since-enrollment"
+      },
+      {
+        "batchId": "d2b3a753-9d4b-4391-a653-836e4c7b094b",
+        "payloadHash": "f4d932217350b528245cf9b4cc4e3b5214c9a7177e68ffa91ac080852af1b281",
+        "generationId": "a35f42810fc450a47e7fbeda2901c9bcb5a2430c3a3bf0ae03a2d0e44de09b7e",
+        "manifestHash": "f664636cb607d4f0d61b9baea6c1237ebfb3ccd7c8ddbc68a9cf94a7add28817",
+        "dataRevision": 8,
+        "status": "committed",
+        "outcome": "updated",
+        "code": "since-enrollment"
+      },
+      {
+        "batchId": "e884de01-9afc-49f5-819c-2951c720cc93",
+        "payloadHash": "708c06519c8f6ed7b6e07bd2a1e66df660ce163f9ae7c3c209f0192a76ceff93",
+        "generationId": "0171240b401c301a3959aef1a2f5d7968ef66ae551d0ef3931b0403ef1ba32fb",
+        "manifestHash": "34f73f9d51bb9872a2339cbe59c1e816b6c82af1f2d0c192cf2add5f8da45c03",
+        "dataRevision": 2,
+        "status": "committed",
+        "outcome": "inserted",
+        "code": "baseline-observed"
+      },
+      {
+        "batchId": "eeb2ca6b-23b1-45a2-895f-89e2b2af4b8a",
+        "payloadHash": "00e70368e619461c2796a23ef62defc27ab5413771cc8b2ba1c8a64558117543",
+        "generationId": "0189f3476e29b61d77b23d873fac4fd4298abb42416724af92476f3434ffd069",
+        "manifestHash": "2d3120b8f65385faea0d0e7b0c8b85316248f9f6f01d3425e9ed6f00599deafd",
+        "dataRevision": 9,
+        "status": "committed",
+        "outcome": "updated",
+        "code": "since-enrollment"
+      },
+      {
+        "batchId": "ef4f5b78-b22a-4a87-99e7-440f319d4c53",
+        "payloadHash": "cdf0bb73bce50daf713e16c88aed836744b93689358e41343de4d901cdd81068",
+        "generationId": "3292845b2f367b164fde337d56ea17ff8b65f4294f961e6c32bb82901bb4af32",
+        "manifestHash": "9c7543ab07f96221b653607c7eb125892ea81d21c3df68ac572b0db2733bb989",
+        "dataRevision": 14,
+        "status": "committed",
+        "outcome": "updated",
+        "code": "since-enrollment"
+      },
+      {
+        "batchId": "f36f98e9-1f7c-4e01-af8e-5c9c7c84f4f0",
+        "payloadHash": "6c4569f3a4099382dbc56d791eff200ff718a1003ce0a34150c101c0e3c622c0",
+        "generationId": "834dd8211d6ee410cb2844a967985004d9303dad81cb984cfa54010874f404f5",
+        "manifestHash": "6798b578a4c1abd114d36d3be26880047f1d8625c3e1117afe90629f21df4962",
+        "dataRevision": 5,
+        "status": "committed",
+        "outcome": "inserted",
+        "code": "baseline-observed"
+      },
+      {
+        "batchId": "fdf8fc17-7ae3-42cb-93ca-27fe1362edb8",
+        "payloadHash": "247172e1031363094c5ccee35b098d383db5cc2f9d3522a96dbe820782e2c883",
+        "generationId": "edc98d6c43eb7ab22312311c53e6f28d4fb6316d7945e57ee729c0283b865bdf",
+        "manifestHash": "d401b8f5f2b598a7504e910533c90e852908daeb2a4520a35f122acc19254c18",
+        "dataRevision": 7,
+        "status": "committed",
+        "outcome": "inserted",
+        "code": "baseline-observed"
+      }
+    ],
+    "cloudVisibleRecords": 14,
+    "confirmedScopes": 7,
+    "pending": [],
+    "ackLostRecovered": true,
+    "stagingWorkerRestartRecovered": true
+  },
+  "timer": {
+    "automaticIntervalMs": 300832,
+    "receiptCount": 2,
+    "confirmedScopes": 1,
+    "idleRssBytes": 77615104,
+    "tls": true,
+    "deviceAuth": "real PostgreSQL token hash",
+    "startupTaskInstalled": false
+  },
+  "builds": [
+    {
+      "file": "agent.mjs",
+      "bytes": 50634,
+      "sha256": "f05022e0594c7ce85727fbded5e042302ac6ccb0a3ff5cab8b03e7860eefc1dd"
+    },
+    {
+      "file": "collect-worker.mjs",
+      "bytes": 82573,
+      "sha256": "25b55680df833f39a0992558039895fc5633f8479ebcab1d3f7e14f41fa40bf3"
+    }
+  ],
+  "checks": {
+    "roadmap": 71,
+    "fiveMinuteDistinctTest": 1,
+    "web": 160,
+    "dashboard": 449,
+    "httpsIntegration": 3,
+    "musicCore": 73,
+    "operations": 3,
+    "agentUnit": 11,
+    "dashboardWindowDifferences": {
+      "7d": 0,
+      "all": 0,
+      "30d": 0
+    },
+    "music": 195
+  },
+  "productionTouched": false,
+  "startupTaskInstalled": false
+}

@@ -6,6 +6,7 @@ import { formatDateTimeShort } from '../formatters';
 import { DASHBOARD_REFRESH_INTERVAL } from '../hooks/use-dashboard-window';
 import type { DashboardWindow } from '../hooks/use-dashboard-window';
 import { ImportIcon } from '../imports/import-icons';
+import type {RemoteStatus} from '../hooks/remote-refresh';
 
 type DashboardToolbarProps = {
   rangePreset: DashboardWindow['rangePreset'];
@@ -20,11 +21,15 @@ type DashboardToolbarProps = {
   onOpenImport?: () => void;
   hasSnapshot?: boolean;
   showingHistory?: boolean;
+  remoteInfo?:RemoteStatus|null;remoteDevice?:string;setRemoteDevice?:(id:string)=>void;remoteState?:string;refreshInterval?:number;
+  lastPageUpdatedAt?:string;
 };
 
 export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrendIndex,
-  data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport, hasSnapshot = true, showingHistory = false }: DashboardToolbarProps) {
+  data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport, hasSnapshot = true, showingHistory = false,remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval=DASHBOARD_REFRESH_INTERVAL,lastPageUpdatedAt }: DashboardToolbarProps) {
   const t = useTranslations('dashboard');
+  const selectedDevice=remoteInfo?.devices.find(d=>d.id===remoteDevice);
+  const remoteText=remoteInfo?[t(selectedDevice?.online?'remote.online':'remote.offline'),t('remote.'+(remoteState||'idle'))].join(' · '):'';
 
   return (
     <header className="pb-4 md:pb-5">
@@ -49,7 +54,7 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
             <div className="dashboard-refresh-short-track">
               <div role="progressbar" aria-label={t(isRefreshing ? 'page.refreshing' : 'page.autoRefresh')}
                 aria-busy={isRefreshing} className="dashboard-refresh-track" data-running={isRefreshing} data-paused={isPollingPaused}
-                style={{ animationDuration: DASHBOARD_REFRESH_INTERVAL + 'ms' }}>
+                style={{ animationDuration: refreshInterval + 'ms' }}>
                 <span key={refreshCycle} />
               </div>
             </div>
@@ -59,17 +64,27 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
               </span>
             ) : null}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {remoteInfo&&<select aria-label={t('remote.device')} className="dashboard-refresh-button" value={remoteDevice} disabled={isRefreshing} onChange={e=>setRemoteDevice?.(e.target.value)}>{remoteInfo.devices.map(d=><option key={d.id} value={d.id}>{d.name} · {t(d.online?'remote.online':'remote.offline')}</option>)}</select>}
             {onOpenImport ? <button type="button" onClick={onOpenImport} className="dashboard-import-button">
               <span className="text-[var(--color-text-muted)]"><ImportIcon /></span>{t('imports.open')}
             </button> : null}
             <button type="button" onClick={onRefresh} disabled={isRefreshing}
               className="dashboard-refresh-button">
-              {t(isRefreshing ? 'page.refreshing' : 'page.refresh')}
+              {isRefreshing&&remoteInfo&&remoteState?t('remote.'+remoteState):t(isRefreshing ? 'page.refreshing' : 'page.refresh')}
             </button>
           </div>
         </div>
       </div>
+      <p role="status" aria-atomic="true" data-remote-phase={remoteInfo?(remoteState||'idle'):undefined}
+        data-remote-online={remoteInfo?String(!!selectedDevice?.online):undefined}
+        title={remoteText} className="h-5 truncate text-[0.72rem] leading-5 text-[var(--color-nav-muted)]">{remoteText}</p>
+        {remoteInfo?<div data-testid="sync-timeline" className="flex flex-wrap gap-x-4 gap-y-1 text-[0.68rem] tabular-nums text-[var(--color-nav-muted)]">
+          <span>{t('remote.collected')}: {selectedDevice?.lastCollectedAt?formatDateTimeShort(selectedDevice.lastCollectedAt):'—'}</span>
+          <span>{t('remote.cloudCommitted')}: {selectedDevice?.lastCommittedAt?formatDateTimeShort(selectedDevice.lastCommittedAt):'—'}</span>
+          <span>{t('remote.webUpdated')}: {lastPageUpdatedAt?formatDateTimeShort(lastPageUpdatedAt):'—'}</span>
+        </div>:null}
+
     </header>
   );
 }

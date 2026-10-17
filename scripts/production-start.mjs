@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import {validateSyncConfiguration} from './sync-config.mjs';
 
 // Fail before accepting traffic when the production runtime contract is incomplete.
 function requireConfiguration() {
+  validateSyncConfiguration();
   const [major, minor] = process.versions.node.split('.').map(Number);
   if (major !== 24 || minor < 15) throw new Error('Node 24.15 or later on the 24 line is required.');
   if (process.env.NODE_ENV !== 'production') throw new Error('NODE_ENV must be production.');
@@ -20,6 +22,7 @@ function requireConfiguration() {
   for (const key of ['INCEPT_DASHBOARD_IMPORTS_FILE', 'INCEPT_DASHBOARD_CACHE_FILE']) {
     if (!process.env[key] || !path.isAbsolute(process.env[key])) throw new Error(`Configure an absolute ${key}.`);
   }
+  if (process.env.INCEPT_SYNC_ENABLED === '1') fs.mkdirSync(path.dirname(process.env.INCEPT_SYNC_DATABASE_FILE), { recursive: true, mode: 0o700 });
 }
 
 try { requireConfiguration(); }

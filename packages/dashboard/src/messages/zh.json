@@ -1,4 +1,5 @@
 {
+  "remote":{"online":"设备在线","offline":"设备离线","reading":"已提交，读取统计中","idle":"就绪","device":"同步设备","collected":"Agent 最后采集","reported":"上传","cloudCommitted":"云端最后提交","webUpdated":"网页最后更新","requesting":"正在请求采集","collecting":"正在采集","uploading":"正在上传","committed":"已提交，图表已更新","committing":"正在核验回执","no_change":"数据无变化","partial":"部分同步","review":"需要审阅","review_required":"有冲突，需审阅","failed":"失败","expired":"已过期","cancelled":"已取消","stored_v2":"已同步到 v2，当前仍显示旧视图","queued":"排队中","dispatched":"已通知设备","running":"同步中","completed":"已提交，图表已更新","completed_no_change":"数据无变化"},
   "imports": {
     "open": "导入", "title": "跨机器数据导入", "close": "关闭",
     "intro": "导入其他电脑的 Token 数据，校验后确认，可按批次回退",
@@ -39,7 +40,7 @@
     "range7d": "近 7 天",
     "refresh": "立即刷新",
     "refreshing": "刷新中…",
-    "autoRefresh": "每 60 秒检查更新",
+    "autoRefresh": "自动刷新",
     "refreshFailed": "刷新失败，保留上次数据；可重试",
     "updatedAt": "源数据更新：{time}",
     "noUsage": "当前时间范围内没有使用记录"

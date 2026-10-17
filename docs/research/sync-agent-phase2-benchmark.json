@@ -1,0 +1,206 @@
+{
+  "measuredAt": "2026-10-17T01:09:56.603Z",
+  "node": "v24.21.0",
+  "server": "Next 16.4.0 API harness; real Owner Cookie, PG and Worker; ordinary page is a harness fixture",
+  "containerBudgetMiB": 768,
+  "proxyBodyLimit": {
+    "bytes": 1048576,
+    "probeBytes": 1048577,
+    "status": 413
+  },
+  "notes": [
+    "Client fixture construction excluded from upload wall.",
+    "Thread RSS is shared process RSS; workerHeapBytes measures the Worker isolate.",
+    "cgroupPeakBytes sampled at 250ms across runtime; includes file cache.",
+    "Entire Incept Web build blocked by absent cached build dependencies; not a full-site container acceptance."
+  ],
+  "cases": [
+    {
+      "size": 700,
+      "wallMs": 178.30039999999997,
+      "commitWallMs": 49.33549999999991,
+      "pageCount": 2,
+      "pageBodyBytes": 387826,
+      "pageP50Ms": 49.058700000000044,
+      "pageP95Ms": 49.058700000000044,
+      "revision": 1,
+      "processCpuMs": 173.143,
+      "mainLoopMaxMs": 114.098175,
+      "mainLoopP99Ms": 10.625023,
+      "cgroupPeakBytes": 142565376,
+      "processRssBytes": 147374080,
+      "workerHeapBytes": 9023768,
+      "dbBytes": 4096,
+      "walBytes": 2945832,
+      "shmBytes": 32768,
+      "stagingBytes": 0
+    },
+    {
+      "size": 7000,
+      "wallMs": 894.0918999999999,
+      "commitWallMs": 312.0952000000002,
+      "pageCount": 14,
+      "pageBodyBytes": 3885182,
+      "pageP50Ms": 35.408100000000104,
+      "pageP95Ms": 57.46320000000014,
+      "revision": 2,
+      "processCpuMs": 774.515,
+      "mainLoopMaxMs": 114.098175,
+      "mainLoopP99Ms": 10.633215,
+      "cgroupPeakBytes": 238673920,
+      "processRssBytes": 206974976,
+      "workerHeapBytes": 7493688,
+      "dbBytes": 19181568,
+      "walBytes": 18548272,
+      "shmBytes": 65536,
+      "stagingBytes": 0
+    },
+    {
+      "size": 15700,
+      "wallMs": 1832.3537999999999,
+      "commitWallMs": 648.9612000000006,
+      "pageCount": 32,
+      "pageBodyBytes": 8729616,
+      "pageP50Ms": 35.86499999999978,
+      "pageP95Ms": 41.69970000000012,
+      "revision": 3,
+      "processCpuMs": 1445.689,
+      "mainLoopMaxMs": 114.098175,
+      "mainLoopP99Ms": 10.641407,
+      "cgroupPeakBytes": 324456448,
+      "processRssBytes": 231792640,
+      "workerHeapBytes": 14567216,
+      "dbBytes": 53481472,
+      "walBytes": 42674992,
+      "shmBytes": 98304,
+      "stagingBytes": 0
+    },
+    {
+      "size": 70000,
+      "wallMs": 8189.1947,
+      "commitWallMs": 3253.728800000001,
+      "pageCount": 140,
+      "pageBodyBytes": 38921820,
+      "pageP50Ms": 33.11819999999989,
+      "pageP95Ms": 42.41440000000057,
+      "revision": 4,
+      "processCpuMs": 6610.28,
+      "mainLoopMaxMs": 114.098175,
+      "mainLoopP99Ms": 10.706943,
+      "cgroupPeakBytes": 665542656,
+      "processRssBytes": 255123456,
+      "workerHeapBytes": 7584352,
+      "dbBytes": 219201536,
+      "walBytes": 184967432,
+      "shmBytes": 360448,
+      "stagingBytes": 0
+    }
+  ],
+  "concurrent": {
+    "sizes": [
+      15700,
+      15700
+    ],
+    "wallMs": 3224.7886999999973,
+    "uploads": [
+      {
+        "size": 15700,
+        "wallMs": 3121.8395999999993,
+        "commitWallMs": 743.4822999999997,
+        "pageCount": 32,
+        "pageBodyBytes": 8761016,
+        "pageP50Ms": 42.7567999999992,
+        "pageP95Ms": 62.10979999999836,
+        "revision": 5
+      },
+      {
+        "size": 15700,
+        "wallMs": 3128.7261999999973,
+        "commitWallMs": 1532.4508999999998,
+        "pageCount": 32,
+        "pageBodyBytes": 8761016,
+        "pageP50Ms": 45.813500000000204,
+        "pageP95Ms": 54.08240000000296,
+        "revision": 6
+      }
+    ],
+    "pageSamples": 29,
+    "pageFailures": 0,
+    "pageP50Ms": 4.343600000000151,
+    "pageP95Ms": 11.46900000000096,
+    "metrics": {
+      "maxDelayMs": 114.098175,
+      "p99DelayMs": 10.723327,
+      "meanDelayMs": 10.161734115367679,
+      "eventLoopUtilization": 0.019094147388422928,
+      "cgroupBytes": 690356224,
+      "cgroupPeakBytes": 690356224,
+      "processRssBytes": 264785920,
+      "cpu": {
+        "user": 11738238,
+        "system": 2110245
+      }
+    }
+  },
+  "capacity": {
+    "capacity": {
+      "dbBytes": 233656320,
+      "walBytes": 184967432,
+      "shmBytes": 360448,
+      "usedBytes": 418984200,
+      "stagingLogicalBytes": 0,
+      "incompleteBatches": 0,
+      "freeBytes": 932396519424,
+      "usage": "ok",
+      "disk": "ok",
+      "dataRevision": 6,
+      "busyRetries": 0,
+      "recent": [
+        {
+          "device_id": "3756fb08-ff6c-4ed2-a8cb-e256e88d666f",
+          "receipts": 1
+        },
+        {
+          "device_id": "5c40c2af-7bc7-4ecb-927f-e2ee19838494",
+          "receipts": 1
+        },
+        {
+          "device_id": "9757c1cb-ba54-47e0-bb2e-cc6a95e8825a",
+          "receipts": 1
+        },
+        {
+          "device_id": "bb2d4b61-8131-4dc2-97df-bf61496a4eb0",
+          "receipts": 1
+        },
+        {
+          "device_id": "d8d41829-9a86-48d5-9242-26f70e6d70b6",
+          "receipts": 1
+        },
+        {
+          "device_id": "f6a9a75f-102c-420e-b410-f7e972322573",
+          "receipts": 1
+        }
+      ]
+    },
+    "executor": {
+      "queueLength": 0,
+      "running": false,
+      "completed": 281,
+      "failed": 0,
+      "lastFailure": null,
+      "lastWallMs": 0.3322689999768045,
+      "lastWriteWallMs": 797.040731999994,
+      "lastCommitWallMs": 797.040731999994,
+      "processRssBytes": 263462912,
+      "workerHeapBytes": 5600216,
+      "busyRetries": 0
+    },
+    "requestId": "f05c7420-469b-450e-afa3-086cecae9f6c"
+  },
+  "runtimeLimits": {
+    "memoryBytes": 805306368,
+    "memorySwapBytes": 805306368,
+    "oomKilled": false,
+    "testContainersStopped": true
+  }
+}

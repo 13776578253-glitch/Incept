@@ -82,8 +82,25 @@ services:
       INCEPT_DASHBOARD_IMPORTS_FILE: /data/dashboard/imports.db
       INCEPT_DASHBOARD_CACHE_FILE: /data/dashboard/snapshots.json
       INCEPT_DASHBOARD_OVERRIDES_FILE: /data/dashboard/overrides.json
+      INCEPT_SYNC_ENABLED: ${INCEPT_SYNC_ENABLED:-0}
+      INCEPT_SYNC_REMOTE_ENABLED: ${INCEPT_SYNC_REMOTE_ENABLED:-0}
+      INCEPT_SYNC_READ_MODE: ${INCEPT_SYNC_READ_MODE:-v1}
+      INCEPT_SYNC_DATABASE_FILE: ${INCEPT_SYNC_DATABASE_FILE:-/data/sync/v2.db}
+      INCEPT_SYNC_RPC_KEY_FILE: /run/incept-secrets/sync-rpc.key
+      INCEPT_SYNC_GATEWAY_INTERNAL_URL: http://sync-gateway:3101
+      INCEPT_SYNC_DEVICE_ALLOWLIST: ${INCEPT_SYNC_DEVICE_ALLOWLIST:-}
+      INCEPT_SYNC_POLL_MS: ${INCEPT_SYNC_POLL_MS:-300000}
+      INCEPT_SYNC_MAX_QUEUE: '4'
+      INCEPT_SYNC_MAX_BATCH_RECORDS: '20000'
+      INCEPT_SYNC_MEMORY_PERCENT: '85'
+      INCEPT_SYNC_WARN_BYTES: '1073741824'
+      INCEPT_SYNC_REVIEW_BYTES: '2147483648'
+      INCEPT_SYNC_MAX_STORE_BYTES: '4294967296'
+      INCEPT_SYNC_WARN_FREE_BYTES: '5368709120'
+      INCEPT_SYNC_REJECT_FREE_BYTES: '2147483648'
     volumes:
       - ${INCEPT_DATA_DIR:?Configure persistent data directory}:/data
+      - ${INCEPT_SECRET_DIR:-/srv/incept/secrets}:/run/incept-secrets:ro
     tmpfs:
       - /tmp:uid=1000,gid=1000,mode=1777,size=64m
       - /app/apps/web/.next/cache:uid=1000,gid=1000,mode=0700,size=64m
@@ -98,6 +115,40 @@ services:
     cpus: 2
     mem_limit: 768m
     memswap_limit: 1024m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+  sync-gateway:
+    image: ${INCEPT_APP_IMAGE:?Configure release image}
+    profiles: [sync]
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 20s
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    entrypoint: ["node", "apps/sync-gateway/dist/gateway.mjs"]
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=64 --max-semi-space-size=4"
+      INCEPT_GATEWAY_HOST: 0.0.0.0
+      INCEPT_GATEWAY_PORT: "3101"
+      INCEPT_SYNC_WEB_INTERNAL_URL: http://app:3000
+      INCEPT_SYNC_RPC_KEY_FILE: /run/incept-secrets/sync-rpc.key
+    volumes:
+      - ${INCEPT_SECRET_DIR:-/srv/incept/secrets}:/run/incept-secrets:ro
+    tmpfs:
+      - /tmp:size=8m,mode=1777
+    expose: ["3101"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3101/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    cpus: 0.5
+    mem_limit: 128m
+    memswap_limit: 128m
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }

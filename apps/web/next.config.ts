@@ -13,7 +13,11 @@ const nextConfig: NextConfig = {
       { source: '/_music-media/:fileName', destination: '/api/music/media/:fileName' },
     ], afterFiles: [], fallback: [] };
   },
-  outputFileTracingIncludes: { '/api/dashboard/usage': ['../../packages/dashboard/dist/dashboard-usage-worker.mjs'] },
+  outputFileTracingIncludes: {
+    '/api/dashboard/usage': ['../../packages/dashboard/dist/dashboard-usage-worker.mjs','../../packages/dashboard/dist/dashboard-sync-worker.mjs'],
+    '/api/dashboard/sync/*': ['../../packages/dashboard/dist/dashboard-sync-worker.mjs'],
+    '/api/internal/sync/*': ['../../packages/dashboard/dist/dashboard-sync-worker.mjs'],
+  },
   serverExternalPackages: ['ccusage'],
   transpilePackages: ['@incept/db', '@incept/music', '@incept/roadmap', '@incept/dashboard'],
 };

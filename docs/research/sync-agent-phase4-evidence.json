@@ -1,0 +1,321 @@
+{
+  "phase": "4",
+  "date": "2026-10-17",
+  "functionalStatus": "PASS",
+  "productionAdmission": "SEPARATE_REVIEW_REQUIRED",
+  "productionTouched": false,
+  "startupTaskInstalled": false,
+  "environment": {
+    "host": "Windows",
+    "node": "v24.21.0",
+    "linuxNode": "v24.21.0",
+    "pnpm": "10.30.3",
+    "next": "16.4.0",
+    "lockSha256": "240858d8599a922a6f252cd0783e0b8c1337a26ef40c8667a5ec8c5012143a01",
+    "install": "offline frozen-lockfile",
+    "packagesReused": 559,
+    "packagesDownloaded": 0
+  },
+  "tests": {
+    "dashboard": 455,
+    "web": 160,
+    "webExplicitSkipped": 12,
+    "remoteWindows": 7,
+    "productionFullsite": 1,
+    "agent": 12,
+    "gateway": 2,
+    "phase3Http": 3,
+    "phase3FiveMinuteSkipped": 1,
+    "music": 195,
+    "musicCore": 73,
+    "roadmap": 71,
+    "operations": 3
+  },
+  "statistics": {
+    "windows": [
+      "7d",
+      "30d",
+      "all"
+    ],
+    "dtoDifferences": 0,
+    "excludedComparisonFields": [
+      "checkedAt",
+      "sync"
+    ],
+    "duplicateV1Batches": "exact adoption; no double count",
+    "nativePriority": true
+  },
+  "types": {
+    "webBefore": 111,
+    "webAfter": 111,
+    "webNewLocations": 0,
+    "webRemovedLocations": 0,
+    "dashboardDiagnostics": 36,
+    "dashboardRawDifferenceLines": 0,
+    "webRawDifferenceLines": 0
+  },
+  "remote": {
+    "transport": "real TLS WSS and HTTPS, PostgreSQL authentication",
+    "startupTaskInstalled": false,
+    "productionTouched": false,
+    "closedLoop": {
+      "job": {
+        "id": "a568ede1-7a8c-415c-bf6c-21ef3fe68f48",
+        "ownerAccountId": "owner",
+        "deviceId": "4182bdbc-2350-4fff-a37d-89cc09251de7",
+        "activeKey": null,
+        "idempotencyKey": "6a2523a1-c69a-403a-9569-1ce8eced9e08",
+        "status": "completed",
+        "credentialVersion": 1,
+        "policyHash": "705ee6f6698c9edb29fccdff26007f3f21e0b4b43314d7269e5737fda917afd9",
+        "createdAt": "2026-10-17T08:27:22.1Z",
+        "dispatchedAt": "2026-10-17T08:27:22.109Z",
+        "startedAt": "2026-10-17T08:27:22.258Z",
+        "finishedAt": "2026-10-17T08:27:38.356Z",
+        "expiresAt": "2026-10-17T08:30:22.099Z",
+        "startRevision": 7,
+        "dataRevision": 14,
+        "completionHash": "6310722cfd9373976388292bb13b9b2660985ce19be42890a361b0030d0c4ad6",
+        "result": {
+          "issues": 0,
+          "review": 0,
+          "scanId": "d48b1f44-7f72-4c4f-8a53-c8c552dd64cb",
+          "batches": [
+            "0a53e7e8-969e-4ee9-861c-53b98b9f0aea",
+            "e4cee3da-abfa-438b-ad36-12ee1e55332e",
+            "a9124e2d-d626-4552-85a8-040dc2a62fba",
+            "07d0a09c-7140-4542-a2c5-3c654dd8e266",
+            "cbe2bbd1-122b-41ef-a520-9329c58c645b",
+            "223ee4b0-097f-4f0c-944f-cfa6f38ddc71",
+            "8cc43893-67a8-4864-9622-95912ea741f8"
+          ],
+          "pending": 0,
+          "collectedAt": "2026-10-17T08:27:22.401Z",
+          "lineageHash": "3304e133d1bb02ad8dc5209dde75ae69d917b7ff1a2f493f3e2f448f9a8fbf6e"
+        },
+        "errorCode": null
+      },
+      "windows": {
+        "outbox": [],
+        "confirmedScopes": 7,
+        "receiptCount": 14,
+        "lastCollectedAt": "2026-10-17T08:27:22.401Z",
+        "lastReportAt": "2026-10-17T08:27:37.982Z",
+        "lastSuccessfulSyncAt": "2026-10-17T08:27:37.978Z",
+        "dataRevision": 14,
+        "lastErrorCode": null,
+        "issues": [],
+        "heartbeat": {
+          "pid": 67196,
+          "at": 1792225658413,
+          "rssBytes": 75874304,
+          "cpu": {
+            "user": 453000,
+            "system": 359000
+          }
+        },
+        "remoteOnline": true,
+        "lastRemoteJob": {
+          "id": "a568ede1-7a8c-415c-bf6c-21ef3fe68f48",
+          "status": "completed",
+          "dataRevision": 14
+        }
+      },
+      "summaries": [
+        {
+          "range": "7d",
+          "tokens": 1820,
+          "revision": 14
+        },
+        {
+          "range": "30d",
+          "tokens": 1820,
+          "revision": 14
+        },
+        {
+          "range": "all",
+          "tokens": 1820,
+          "revision": 14
+        }
+      ],
+      "gateway": {
+        "connections": 1,
+        "unauthenticated": 0,
+        "rssBytes": 73232384
+      }
+    },
+    "noChange": {
+      "id": "a8701a7c-c273-4e79-97b7-6fb2e26f4acf",
+      "status": "completed_no_change"
+    },
+    "ackRecovery": {
+      "job": "3ccb50dd-27a3-4f88-a87d-3d47f22a3022",
+      "revision": 21
+    },
+    "restartRecovery": true,
+    "conflicts": {
+      "partial": "partial",
+      "review": "review_required",
+      "retainedTokens": 2730
+    },
+    "security": {
+      "ownerGate": true,
+      "csrf": true,
+      "internalReplayRejected": true,
+      "expired": true,
+      "revocation": true,
+      "rotation": true
+    }
+  },
+  "fullsite": {
+    "jobId": "a574bb7d-5f66-4b85-9079-62c695eba9ea",
+    "status": "completed",
+    "dataRevision": 9,
+    "windows": [
+      {
+        "range": "7d",
+        "baseline": 910,
+        "tokens": 1170,
+        "revision": 9
+      },
+      {
+        "range": "30d",
+        "baseline": 910,
+        "tokens": 1170,
+        "revision": 9
+      },
+      {
+        "range": "all",
+        "baseline": 910,
+        "tokens": 1170,
+        "revision": 9
+      }
+    ],
+    "pages": [
+      {
+        "path": "/en/dashboard",
+        "status": 200,
+        "bytes": 46689
+      },
+      {
+        "path": "/zh/dashboard",
+        "status": 200,
+        "bytes": 46199
+      },
+      {
+        "path": "/en/settings",
+        "status": 200,
+        "bytes": 88760
+      },
+      {
+        "path": "/en/operations",
+        "status": 200,
+        "bytes": 81119
+      },
+      {
+        "path": "/en/docs",
+        "status": 200,
+        "bytes": 39592
+      },
+      {
+        "path": "/en/tools/playback",
+        "status": 200,
+        "bytes": 99325
+      }
+    ],
+    "restart": {
+      "jobId": "e8f850cd-891e-463e-8135-92a85e622b40",
+      "status": "completed",
+      "dataRevision": 10,
+      "tokens": 1300,
+      "baseline": 910
+    },
+    "privateRpcBlocked": true,
+    "unauthorizedOwnerRejected": true,
+    "transport": "Windows → Nginx TLS/WSS → standalone Gateway/Next production build"
+  },
+  "resourceMeasurement": {
+    "kind": "light functional acceptance; not a capacity benchmark",
+    "source": "cgroup v2",
+    "appPeakScope": "after explicit Next container restart",
+    "containers": [
+      {
+        "service": "gateway",
+        "currentBytes": 32604160,
+        "peakBytes": 41684992,
+        "maximumBytes": 134217728,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      },
+      {
+        "service": "app",
+        "currentBytes": 167399424,
+        "peakBytes": 201228288,
+        "maximumBytes": 805306368,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      },
+      {
+        "service": "postgres",
+        "currentBytes": 43544576,
+        "peakBytes": 48197632,
+        "maximumBytes": 268435456,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      },
+      {
+        "service": "proxy",
+        "currentBytes": 11337728,
+        "peakBytes": 15810560,
+        "maximumBytes": 67108864,
+        "events": [
+          "low 0",
+          "high 0",
+          "max 0",
+          "oom 0",
+          "oom_kill 0",
+          "oom_group_kill 0"
+        ]
+      }
+    ]
+  },
+  "cleanup": {
+    "testAgentProcessesRemaining": 0,
+    "phase4ContainersStopped": true,
+    "imagesAndVolumesRetained": true
+  },
+  "artifact": {
+    "path": ".scratch/sync-agent-phase4/incept-sync-agent-win-node24.zip",
+    "sha256": "95725adffae0bb643e89d427352a63861f9b9a7ac72c8bc224cb7f98b2d15e60",
+    "contains": [
+      "dist/agent.mjs",
+      "dist/collect-worker.mjs",
+      "windows/*.ps1",
+      "README.md"
+    ]
+  },
+  "lint": {
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "completeBuildRuntimeDifferences": 0
+}

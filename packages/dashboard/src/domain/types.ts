@@ -154,6 +154,7 @@ export type SessionUsageItem = TokenBreakdown & {
 };
 
 export type TokenDashboardData = {
+  sync?:{remote?:boolean;readMode:'v1'|'shadow'|'v2';dataRevision?:number;intervalMs?:number;shadowEqual?:boolean};
   collectionIssues?: string[];
   updatedAt: string;
   checkedAt?: string;

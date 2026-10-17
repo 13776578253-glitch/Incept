@@ -18,3 +18,11 @@ try {
   await rename(temporary, output);
 } finally { await unlink(temporary).catch(() => {}); }
 console.log('Dashboard collection worker built');
+const syncOutput=join(root,'dist/dashboard-sync-worker.mjs');
+const syncResult=await build({entryPoints:[join(root,'src/sync/worker-entry.ts')],outfile:syncOutput,write:false,
+  bundle:true,platform:'node',format:'esm',target:'node22',plugins:[{name:'sync-node-only-entry',setup(b){b.onResolve({filter:/^server-only$/},()=>({path:'marker',namespace:'empty'}));b.onLoad({filter:/.*/,namespace:'empty'},()=>({contents:'',loader:'js'}));}}]});
+const syncTemporary=syncOutput+'.'+randomUUID()+'.tmp';
+try {await writeFile(syncTemporary,syncResult.outputFiles[0].contents,{flag:'wx'});await rename(syncTemporary,syncOutput);}
+finally {await unlink(syncTemporary).catch(()=>{});}
+console.log('Dashboard sync worker built');
+await build({entryPoints:[join(root,'src/sync/index.ts')],outfile:join(root,'dist/sync-executor.mjs'),bundle:true,platform:'node',format:'esm',target:'node22'});

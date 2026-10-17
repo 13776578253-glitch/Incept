@@ -1,0 +1,45 @@
+import 'server-only';
+import {isAbsolute,resolve} from 'node:path';
+import {SyncExecutor,SyncTransportError,DEFAULT_CAPACITY,importStorePath,readRpcSecret} from '@incept/dashboard/sync';
+import {requireRecentOwnerSession,writeSecurityAudit,finishSecurityAudit} from '@incept/db/owner';
+import {getCurrentViewer} from '../auth/viewer';
+import {hasSameOrigin} from '../auth/request-origin';
+import {createSyncHandler} from './controller';
+import {response,DeviceRequestLimiter} from './http';
+import {RemoteSync} from './remote';
+const limiter=new DeviceRequestLimiter();
+
+declare global {var __inceptSyncExecutor: {path:string;executor:SyncExecutor}|undefined;}
+declare global {var __inceptRemoteSync:RemoteSync|undefined;}
+export function syncExecutor() {
+  const path=process.env.INCEPT_SYNC_DATABASE_FILE;
+  const legacyPath=importStorePath(process.env.INCEPT_DASHBOARD_HOME);
+  if(!path||!isAbsolute(path)||resolve(path)===resolve(legacyPath))throw new SyncTransportError('SYNC_NOT_CONFIGURED');
+  if(globalThis.__inceptSyncExecutor&&globalThis.__inceptSyncExecutor.path!==path)throw new SyncTransportError('SYNC_CONFIG_CHANGED');
+  if(!globalThis.__inceptSyncExecutor) {
+    const configured=(name:string,fallback:number)=>process.env[name]===undefined?fallback:Number(process.env[name]);
+    const policy={warnBytes:configured('INCEPT_SYNC_WARN_BYTES',DEFAULT_CAPACITY.warnBytes),reviewBytes:configured('INCEPT_SYNC_REVIEW_BYTES',DEFAULT_CAPACITY.reviewBytes),
+      warnFreeBytes:configured('INCEPT_SYNC_WARN_FREE_BYTES',DEFAULT_CAPACITY.warnFreeBytes),rejectFreeBytes:configured('INCEPT_SYNC_REJECT_FREE_BYTES',DEFAULT_CAPACITY.rejectFreeBytes),
+      maxStoreBytes:configured('INCEPT_SYNC_MAX_STORE_BYTES',DEFAULT_CAPACITY.maxStoreBytes!),memoryPercent:configured('INCEPT_SYNC_MEMORY_PERCENT',85),maxBatchRecords:configured('INCEPT_SYNC_MAX_BATCH_RECORDS',20000)};
+    globalThis.__inceptSyncExecutor={path,executor:new SyncExecutor(path,{legacyPath,policy,maxQueue:configured('INCEPT_SYNC_MAX_QUEUE',16),timeoutMs:configured('INCEPT_SYNC_TIMEOUT_MS',30_000)})};
+  }
+  return globalThis.__inceptSyncExecutor.executor;
+}
+export async function handleSyncRequest(request:Request) {
+  if(process.env.INCEPT_SYNC_ENABLED!=='1')return response({error:'SYNC_DISABLED'},404);
+  let auditId:string|undefined;
+  try {
+    const owner=async(req:Request,mutating:boolean)=>{
+      if(mutating&&!hasSameOrigin(req))throw new SyncTransportError('FORBIDDEN',403,0);
+      const viewer=await getCurrentViewer();if(viewer.role!=='owner')throw new SyncTransportError('FORBIDDEN',403,0);
+      await requireRecentOwnerSession(viewer.sessionId);
+      if(mutating)auditId=(await writeSecurityAudit('sync.owner.manage','started',undefined,viewer.sessionId)).id;
+      return {sessionId:viewer.sessionId,ownerId:'owner'};
+    };
+    const handler=createSyncHandler({enabled:()=>true,executor:syncExecutor(),limiter,owner,remote:remoteSync()});
+    const result=await handler(request);
+    if(auditId)await finishSecurityAudit(auditId,result.ok?'success':'failure').catch(()=>{});
+    return result;
+  }catch{if(auditId)await finishSecurityAudit(auditId,'failure').catch(()=>{});return response({error:'BACKEND_UNAVAILABLE'},503,undefined,2);}
+}
+export function remoteSync(){if(process.env.INCEPT_SYNC_REMOTE_ENABLED!=='1')return undefined;return globalThis.__inceptRemoteSync??=(new RemoteSync({executor:syncExecutor(),secret:readRpcSecret(),gatewayBase:process.env.INCEPT_SYNC_GATEWAY_INTERNAL_URL??'',readMode:()=>process.env.INCEPT_SYNC_READ_MODE??'v1',pollMs:Number(process.env.INCEPT_SYNC_POLL_MS??300000),owner:async(req,mutating)=>{if(mutating&&!hasSameOrigin(req))throw new SyncTransportError('FORBIDDEN',403);const viewer=await getCurrentViewer();if(viewer.role!=='owner')throw new SyncTransportError('FORBIDDEN',403);return {sessionId:viewer.sessionId,ownerId:'owner'};}}));}
