@@ -71,27 +71,24 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
   return (
     <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-20 md:pt-8 md:pb-24 lg:px-10 lg:pt-9 lg:pb-28">
       {/* Header section */}
-      <header className="space-y-2 md:space-y-2.5">
+      <header className="space-y-1 md:space-y-1.5">
         <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
           {t('home.eyebrow')}
         </p>
         <h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[2.45rem] md:leading-[1.08]">
           {t('home.title')}
         </h1>
-        <p className="max-w-[46rem] text-[0.875rem] leading-relaxed text-[var(--color-text-muted)]">
-          {t('home.description')}
-        </p>
       </header>
 
-      {/* KPI Stats Overview */}
+      {/* KPI Stats Overview (Simplified Ribbon) */}
       {page.stats ? (
-        <div className="mt-7 md:mt-8">
+        <div className="mt-5">
           <DocsHomeStats stats={page.stats} />
         </div>
       ) : null}
 
       {/* Toolbar Controls */}
-      <div className="mt-8 mb-6 md:mt-10 md:mb-8">
+      <div className="mt-6 mb-6 md:mt-7 md:mb-7">
         <DocsHomeToolbar
           categoryFilter={categoryFilter}
           onCategoryChange={setCategoryFilter}
