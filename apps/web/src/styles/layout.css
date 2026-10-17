@@ -64,7 +64,7 @@
   min-width: 0;
   position: fixed;
   top: calc(var(--navbar-height) + 32px);
-  right: max(32px, calc((100vw - var(--docs-shell-max-width)) / 2));
+  right: max(32px, calc((100% - var(--docs-shell-max-width)) / 2));
   width: var(--docs-right-rail-width);
   z-index: 20;
 }
@@ -75,7 +75,7 @@
 
 .page-shell-docs-reference[data-layout-mode='contentOnly'] .page-shell-docs-reference-aside {
   /* Match collection articles: the outline rail shares one viewport anchor. */
-  right: max(32px, calc((100vw - var(--docs-shell-max-width)) / 2));
+  right: max(32px, calc((100% - var(--docs-shell-max-width)) / 2));
 }
 
 /* Single articles use a separate two-column frame; collection articles keep the three-column frame above. */
@@ -134,7 +134,7 @@
   min-width: 0;
   position: fixed;
   top: calc(var(--navbar-height) + 32px);
-  left: max(24px, calc((100vw - 1160px) / 2 + 24px));
+  left: max(24px, calc((100% - 1160px) / 2 + 24px));
   width: 188px;
   z-index: 20;
 }

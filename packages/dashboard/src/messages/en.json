@@ -60,7 +60,7 @@
     "projects": "04 Projects"
   },
   "overview": {
-    "eyebrow": "01 / OVERVIEW",
+    "eyebrow": "OVERVIEW",
     "title": "Usage overview",
     "description": "Usage trends and model distribution",
     "kpi": {
@@ -127,7 +127,7 @@
     }
   },
   "models": {
-    "eyebrow": "02 / MODELS & SOURCES",
+    "eyebrow": "MODELS & SOURCES",
     "title": "Breakdown by Model, Client Source & Token Type",
     "description": "Breaks down actual session model identifiers; unused configured models appear only as slots.",
     "tokenTypes": {
@@ -186,7 +186,7 @@
     }
   },
   "costs": {
-    "eyebrow": "03 / COSTS & COVERAGE",
+    "eyebrow": "COSTS & COVERAGE",
     "title": "API Equivalent Costs & Price Coverage",
     "description": "Recorded known costs and costs estimated using local rates, with explicit unpriced-request coverage gaps.",
     "cards": {
@@ -227,7 +227,7 @@
   },
   "projects": {
     "noAccess": "You do not have permission to view this data",
-    "eyebrow": "04 / PROJECTS & SESSIONS",
+    "eyebrow": "PROJECTS & SESSIONS",
     "title": "Project Attribution Ranking & Session Explorer",
     "description": "Project usage and sessions in the selected window; select a project to filter sessions.",
     "attribution": {

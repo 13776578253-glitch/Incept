@@ -2,6 +2,35 @@
   "archive": {
     "title": "最近文档"
   },
+  "home": {
+    "eyebrow": "文档",
+    "title": "技术文档与知识库",
+    "description": "浏览项目中已发布的系统架构指南、工程规范备忘与专题系列知识库。",
+    "stats": {
+      "total": "全库文档",
+      "totalDesc": "已发布的技术篇目",
+      "collections": "专题系列",
+      "collectionsDesc": "成体系的专栏合集",
+      "standalone": "独立指南",
+      "standaloneDesc": "聚焦单点的工程指南",
+      "recent": "近30天更新",
+      "recentDesc": "近期处于活跃维护的内容"
+    },
+    "filter": {
+      "all": "全部",
+      "collections": "专题系列",
+      "standalone": "独立指南",
+      "searchPlaceholder": "搜索文档标题、摘要或标签…",
+      "empty": "当前筛选条件下没有匹配的文档条目。",
+      "clearSearch": "清除搜索",
+      "viewGrid": "网格视图",
+      "viewList": "列表视图",
+      "readAction": "阅读文档",
+      "viewSeriesAction": "查看专栏"
+    },
+    "addDoc": "添加文档",
+    "addDocDesc": "撰写或管理知识库条目"
+  },
   "access": {
     "requiresRole": "需要 {role} 权限"
   },

@@ -60,7 +60,7 @@
     "projects": "04 项目与会话"
   },
   "overview": {
-    "eyebrow": "01 / OVERVIEW",
+    "eyebrow": "OVERVIEW",
     "title": "用量概览",
     "description": "使用趋势与模型分布",
     "kpi": {
@@ -127,7 +127,7 @@
     }
   },
   "models": {
-    "eyebrow": "02 / MODELS & SOURCES",
+    "eyebrow": "MODELS & SOURCES",
     "title": "按模型、客户端来源与 Token 类型拆解",
     "description": "按实际会话中的模型标识拆解用量",
     "tokenTypes": {
@@ -186,7 +186,7 @@
     }
   },
   "costs": {
-    "eyebrow": "03 / COSTS & COVERAGE",
+    "eyebrow": "COSTS & COVERAGE",
     "title": "API 等效费用与价格覆盖率",
     "description": "汇总记录中的已知费用及本地价格表折算费用",
     "cards": {
@@ -227,7 +227,7 @@
   },
   "projects": {
     "noAccess": "无权限查看",
-    "eyebrow": "04 / PROJECTS & SESSIONS",
+    "eyebrow": "PROJECTS & SESSIONS",
     "title": "项目归属排行与会话消耗明细",
     "description": "项目用量与会话记录",
     "attribution": {

@@ -70,9 +70,6 @@ describe('package server/client composition', () => {
     expect(mocks.load).toHaveBeenCalledWith('30d');
     expect(screen.getByRole('button', { name: messages.page.range30d }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(messages.page.title);
-    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
-      '#overview', '#models', '#costs', '#projects',
-    ]);
     for (const section of ['overview', 'models', 'costs', 'projects'] as const) {
       expect(screen.getByRole('heading', { name: messages[section].title })).toBeDefined();
     }

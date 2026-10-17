@@ -82,10 +82,10 @@ export function DocsHomeListItem({ article }: DocsHomeListItemProps) {
             }`}
           >
             <span className="inline-flex items-center gap-2">
-              <span className="inline-flex shrink-0 text-[var(--color-nav-muted)] transition-colors duration-300 group-hover:text-[#0284c7] group-focus-visible:text-[#0284c7] dark:group-hover:text-[#38bdf8] dark:group-focus-visible:text-[#38bdf8]">
+              <span className="inline-flex shrink-0 text-[var(--color-nav-muted)] transition-colors duration-200 group-hover:text-[var(--badge-sky-icon)] group-focus-visible:text-[var(--badge-sky-icon)]">
                 {article.entryType === 'collection' ? <CollectionIcon /> : <ArticleIcon />}
               </span>
-              <span className="bg-gradient-to-r from-[var(--color-text)] to-[var(--color-text)] bg-clip-text transition-all duration-300 group-hover:from-[#1d4ed8] group-hover:via-[#2563eb] group-hover:to-[#0ea5e9] group-hover:text-transparent group-focus-visible:from-[#1d4ed8] group-focus-visible:via-[#2563eb] group-focus-visible:to-[#0ea5e9] group-focus-visible:text-transparent dark:group-hover:from-[#93c5fd] dark:group-hover:via-[#60a5fa] dark:group-hover:to-[#38bdf8] dark:group-focus-visible:from-[#93c5fd] dark:group-focus-visible:via-[#60a5fa] dark:group-focus-visible:to-[#38bdf8]">
+              <span className="text-[var(--color-text)] transition-colors duration-200 group-hover:text-[var(--badge-sky-icon)] group-focus-visible:text-[var(--badge-sky-icon)]">
                 {article.title}
               </span>
             </span>

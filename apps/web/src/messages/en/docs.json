@@ -2,6 +2,35 @@
   "archive": {
     "title": "Documentation and references"
   },
+  "home": {
+    "eyebrow": "Docs",
+    "title": "Technical Documentation",
+    "description": "Guides, architecture references, and topic collections across the project.",
+    "stats": {
+      "total": "Total Documents",
+      "totalDesc": "Published technical entries",
+      "collections": "Topic Collections",
+      "collectionsDesc": "Structured series & guides",
+      "standalone": "Standalone Guides",
+      "standaloneDesc": "Focused technical notes",
+      "recent": "Updated in 30d",
+      "recentDesc": "Recently maintained records"
+    },
+    "filter": {
+      "all": "All",
+      "collections": "Collections",
+      "standalone": "Guides",
+      "searchPlaceholder": "Search articles, topics or tags…",
+      "empty": "No documents match the current filter.",
+      "clearSearch": "Clear search",
+      "viewGrid": "Grid view",
+      "viewList": "List view",
+      "readAction": "Read",
+      "viewSeriesAction": "View series"
+    },
+    "addDoc": "Add doc",
+    "addDocDesc": "Create or manage documents"
+  },
   "access": {
     "requiresRole": "Requires {role} access"
   },

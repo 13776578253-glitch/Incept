@@ -4,6 +4,7 @@ import {
   findPublishedDocsArticleBySlug,
   findPublishedUnlistedDocsArticleByDocumentKey,
   findPublishedDocsCollectionArticleBySlugs,
+  getDocsLibraryStats,
 } from '@incept/db/docs';
 import type { DbDocsLocale } from '@incept/db/docs';
 import type {
@@ -144,10 +145,23 @@ export async function getDocsHomePage({
   locale: AppLocale;
   viewerRole: DocsAccessRole;
 }): Promise<DocsHomePageModel> {
-  const entries = await preferredHomeEntries(locale, listPublishedDocsHomeEntries);
+  const [entries, rawStats] = await Promise.all([
+    preferredHomeEntries(locale, listPublishedDocsHomeEntries),
+    getDocsLibraryStats({ locale: locale as DbDocsLocale }).catch(() => null),
+  ]);
+
+  const stats = rawStats
+    ? {
+        totalArticles: rawStats.totalArticles,
+        standalone: rawStats.standaloneArticleCount,
+        collections: rawStats.collectionCount,
+        recentlyUpdated: rawStats.recentlyUpdatedCount,
+      }
+    : undefined;
 
   return {
     intro: docsHomeIntro,
+    stats,
     groups: mapDocsHomeEntriesToPageGroups(
       entries,
       viewerRole,
