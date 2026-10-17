@@ -32,7 +32,7 @@ export function DocsHomeAddCard() {
       className="group relative block h-[116px] w-full rounded-[14px] outline-none focus-visible:ring-1 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
     >
       <article
-        className="relative flex h-[116px] w-full flex-col justify-between rounded-[14px] border border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-br from-[#ccd4dd] via-[#cad2dc] to-[#d6d5e2] dark:from-[#202530] dark:via-[#1c212a] dark:to-[#262436] p-3.5 transition-all duration-150 hover:from-[#c5cdd6] hover:to-[#cfcee0] dark:hover:from-[#262c39] dark:hover:to-[#2d2b40]"
+        className="relative flex h-[116px] w-full flex-col justify-between rounded-[14px] border border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-br from-[#c6ced8] via-[#cad2dc] to-[#d4d4d9] dark:from-[#1e232b] dark:via-[#1c2027] dark:to-[#23252a] p-3.5 transition-all duration-150 hover:from-[#bfc8d3] hover:to-[#cdced3] dark:hover:from-[#252a35] dark:hover:to-[#2c2d33]"
         aria-label={t('home.addDoc')}
       >
         <div className="min-w-0">
@@ -48,7 +48,7 @@ export function DocsHomeAddCard() {
         {/* Footer: Circular arrow button on bottom-right matching DocsHomeCard baseline */}
         <div className="flex items-center justify-end pt-1">
           <div
-            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#dfdfe2] dark:bg-white/15 text-[#334155] dark:text-white transition-all duration-150 group-hover:bg-[#d5d5d9] dark:group-hover:bg-white/20 group-hover:translate-x-0.5"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#d5d5d9] dark:bg-white/12 text-[#334155] dark:text-[#e2e8f0] transition-all duration-150 group-hover:bg-[#cbccd1] dark:group-hover:bg-white/20 group-hover:translate-x-0.5"
             aria-hidden="true"
           >
             <ArrowRightIcon />
