@@ -18,19 +18,19 @@ export function NotesHomeFeature({ page }: NotesHomeFeatureProps) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[920px] px-5 md:px-8">
-        <h1 className="sr-only">{intro.title}</h1>
+    <div className="mx-auto w-full max-w-[920px] px-5 pt-6 pb-16 md:px-8 md:pt-8 md:pb-20">
+      <h1 className="sr-only">{intro.title}</h1>
 
-        <div className="space-y-10 md:space-y-12">
-          {page.groups.map((group) => (
-            <DocsHomeGroupSection
-              key={group.id}
-              group={group}
-              sectionId={`notes-home-group-${group.id}`}
-              entriesLabel={t('groups.entries', { count: group.entries.length })}
-            />
-          ))}
-        </div>
+      <div className="space-y-10 md:space-y-12">
+        {page.groups.map((group) => (
+          <DocsHomeGroupSection
+            key={group.id}
+            group={group}
+            sectionId={`notes-home-group-${group.id}`}
+            entriesLabel={t('groups.entries', { count: group.entries.length })}
+          />
+        ))}
       </div>
+    </div>
   );
 }

@@ -38,7 +38,7 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
   }, []);
 
   return (
-    <header className="space-y-4 pb-4 md:space-y-5 md:pb-5">
+    <header className="pb-4 md:pb-5">
       <h1 className="sr-only">{t('page.title')}</h1>
       <p role="status" aria-atomic="true" className="sr-only">
         {!hasSnapshot || showingHistory ? t(hasSnapshot ? 'page.showingHistory' : 'page.loadingFirst') : ''}
