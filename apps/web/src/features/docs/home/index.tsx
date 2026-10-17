@@ -69,7 +69,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
   }, [filteredGroups]);
 
   return (
-    <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-20 md:pt-8 md:pb-24 lg:px-10 lg:pt-9 lg:pb-28">
+    <div className="mx-auto w-full max-w-[1020px] px-5 sm:px-6 pt-6 pb-20 md:pt-8 md:pb-24 lg:pt-9 lg:pb-28">
       {/* Header section */}
       <header className="space-y-1 md:space-y-1.5">
         <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
