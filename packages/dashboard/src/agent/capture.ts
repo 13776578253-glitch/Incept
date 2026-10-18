@@ -120,7 +120,7 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
       const rates=Object.fromEntries([...new Set(records.map(r=>r.event.modelName))].flatMap(name=>pricing.has(name)?[[name,pricing.get(name)!]]:[]));
       const prefixes:Record<string,string>={};for(const parent of parents.filter(p=>p.header.manifest.scope.source===source&&p.header.manifest.scope.sessionId===sessionId))for(const old of parent.proofs){const file=selected.find(f=>hash(f.locator)===old.range.locatorHash);if(file?.bytes&&file.bytes.length>=old.range.byteLength)prefixes[old.range.locatorHash+':'+old.range.byteLength]=hash(file.bytes.subarray(0,old.range.byteLength).toString('base64'));}
       captures.push({source,sessionId,reader,records,proofs:selected.map(file=>fileProof(file,{source,sessionId},reader)),rates,prefixes});
-    }catch{issues.push(source+':SOURCE_REVIEW_REQUIRED');}
+    }catch(error){if(process.env.INCEPT_CAPTURE_DEBUG)console.error('CAPTURE_GROUP_FAILED',source,sessionId,String(error));issues.push(source+':SOURCE_REVIEW_REQUIRED');}
   }
   return {captures,issues:[...new Set(issues)]};
 }

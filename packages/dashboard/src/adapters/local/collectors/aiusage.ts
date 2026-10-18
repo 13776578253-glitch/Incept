@@ -120,11 +120,12 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
         const tokens = {
           inputTokens: uncachedInput, outputTokens, cacheReadTokens, cacheCreationTokens, reasoningTokens,
         };
-        const priced = canPriceUsage(pricing, tokens);
+        const freeReview = sourceId === 'codex' && /^codex-auto-review$/i.test(modelName);
+        const priced = freeReview || canPriceUsage(pricing, tokens);
         // Codex indexed cost charges cached input twice. Recalculate when rates
         // are complete; otherwise exclude its cost while retaining unpriced tokens.
         const useRecorded = recordedCost > 0 && sourceId !== 'codex';
-        const cost = useRecorded ? recordedCost : computeCostFromPricing(pricing, tokens);
+        const cost = freeReview ? 0 : useRecorded ? recordedCost : computeCostFromPricing(pricing, tokens);
         const eventKey = hash([timestampMs, sourceId, modelName, rawInput, cacheReadTokens,
           cacheCreationTokens, rawOutput, reasoningTokens, sessionId,
           sessionId === 'default' ? normalizeFile(sourceFile).replace(/\.zst$/, '') : undefined]);
@@ -162,7 +163,7 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
           reasoningTokens,
           cost,
           costSource: useRecorded ? 'recorded' : 'calculated',
-          missingPricing: (sourceId === 'codex' || !useRecorded) && !priced,
+          missingPricing: !freeReview && (sourceId === 'codex' || !useRecorded) && !priced,
         });
         seen.set(eventKey, events.at(-1)!);
       }
