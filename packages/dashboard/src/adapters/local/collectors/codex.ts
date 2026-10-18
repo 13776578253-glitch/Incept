@@ -123,7 +123,7 @@ export function collectCodexEvents(home: string, pricingMap: Map<string, UnitPri
     // An unlocated cumulative prefix is not usage attributable to this event's day.
     const omitted = opening && sample.hasLast ? Math.max(0,
       (total.input_tokens ?? 0) + (total.output_tokens ?? 0) - (last.input_tokens ?? 0) - (last.output_tokens ?? 0)) : 0;
-    if (omitted) { incompleteStarts++; unlocatedTokens += omitted; }
+    if (omitted) { incompleteStarts++; unlocatedTokens += omitted; if(process.env.INCEPT_CAPTURE_DEBUG)console.error('CODEX_OPENING_OMITTED',sessionId,omitted,filePath); }
     if (opening && !sample.hasLast) uncertainStarts++;
     const historyIncomplete = watermark.historyIncomplete || omitted > 0 || !!(opening && !sample.hasLast);
     const usage = opening && sample.hasLast ? last : total ? Object.fromEntries(Object.keys(total).map(key => [key,

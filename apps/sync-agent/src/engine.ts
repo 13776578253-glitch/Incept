@@ -22,7 +22,7 @@ export type Collector=(home:string,allowed:TransferSource[],parents:ParentCaptur
 export function workerCollector(stateDirectory:string):Collector{return async(home,allowed,parents,signal,options)=>{
   const snapshot=resolve(stateDirectory,'capture-'+randomUUID());
   const worker=new Worker(fileURLToPath(new URL('./collect-worker.mjs',import.meta.url)),{workerData:{home,allowed,parents,snapshot,tolerantIncomplete:options?.tolerantIncomplete===true},resourceLimits:{maxOldGenerationSizeMb:1024}});
-  try{return await new Promise((yes,no)=>{const abort=()=>{clearTimeout(timer);void worker.terminate();no(Error('CAPTURE_STOPPED'));};const timer=setTimeout(abort,45_000);signal?.addEventListener('abort',abort,{once:true});
+  try{return await new Promise((yes,no)=>{const abort=()=>{clearTimeout(timer);void worker.terminate();no(Error('CAPTURE_STOPPED'));};const timer=setTimeout(abort,120_000);signal?.addEventListener('abort',abort,{once:true});
     const finish=(error?:Error,result?:{captures:Capture[];issues:string[]})=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);if(error)no(error);else yes(result!);};
     worker.once('message',message=>message.error?finish(Error('SOURCE_CAPTURE_FAILED')):finish(undefined,message.result));worker.once('error',()=>finish(Error('SOURCE_CAPTURE_FAILED')));worker.once('exit',code=>{if(code)finish(Error('SOURCE_CAPTURE_FAILED'));});});
   }finally{await worker.terminate();if(snapshot.startsWith(resolve(stateDirectory)+ '/capture-')||snapshot.startsWith(resolve(stateDirectory)+'\\capture-'))rmSync(snapshot,{recursive:true,force:true});}
@@ -62,6 +62,12 @@ export class SyncEngine {
     if(missing.length)this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),'MISSING_ORIGIN_RETAINED']);
     // Offline captures above are durable BEFORE any network operation. Planned
     // outbox parents do not advance the separate confirmed lineage table.
+    const {sent,newTokens}=await this.upload(signal);
+    const issues=this.state.get<string[]>('issues')??[],classified=classifyIssues(issues,this.config.allowedSources);
+    const reviewTotal=this.state.reviewCount(),reviewNew=this.state.reviewBatches().filter(batch=>!reviewBefore.has(batch)).length;
+    return {sent,newTokens,reviewTotal,reviewNew,held:this.state.heldCount(),warnings:classified.warnings.length,blockingIssues:classified.blocking.length,...this.state.status()};
+  }
+  private async upload(signal?:AbortSignal){
     this.state.set('activity','uploading');let sent=0,newTokens=0;for(let round=0;round<100&&!signal?.aborted;round++){
       const pending=this.state.pending();if(!pending.length)break;let progress=false;
       for(const row of pending){const header=JSON.parse(String(row.header_json)),batch=String(row.batch),base='/batches/'+batch;
@@ -86,8 +92,11 @@ export class SyncEngine {
         }
       }if(!progress)break;
     }
-    const issues=this.state.get<string[]>('issues')??[],classified=classifyIssues(issues,this.config.allowedSources);
-    const reviewTotal=this.state.reviewCount(),reviewNew=this.state.reviewBatches().filter(batch=>!reviewBefore.has(batch)).length;
-    return {sent,newTokens,reviewTotal,reviewNew,held:this.state.heldCount(),warnings:classified.warnings.length,blockingIssues:classified.blocking.length,...this.state.status()};
+    return {sent,newTokens};
+  }
+  async flush(signal?:AbortSignal){
+    if(this.running)return this.running;
+    this.running=this.upload(signal).finally(()=>{this.running=undefined;this.state.set('activity','idle');});
+    return this.running;
   }
 }

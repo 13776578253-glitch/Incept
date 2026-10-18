@@ -58,7 +58,7 @@ async function main(){
     while(!stopped){const start=Date.now();const code=await new Promise<number>(yes=>{const child=spawn(process.execPath,[fileURLToPath(import.meta.url),'daemon','--state',directory],{windowsHide:true,stdio:'ignore',env:{...process.env,INCEPT_AGENT_SUPERVISOR_PID:String(process.pid)}});child.once('exit',code=>yes(code??1));child.once('error',()=>yes(1));});
       if(code===0)break;attempt=Date.now()-start>300000?0:attempt+1;await new Promise(r=>setTimeout(r,Math.min(60000,1000*2**Math.min(attempt,6))));}return;
   }
-  if(!['run-once','daemon'].includes(command))throw Error('COMMAND_REQUIRED');
+  if(!['run-once','daemon','flush'].includes(command))throw Error('COMMAND_REQUIRED');
   const [major,minor]=process.versions.node.split('.').map(Number);if(major!==24||minor<15)throw Error('NODE_24_15_REQUIRED');
   protectDirectory(directory);const lock=await acquireInstance(directory);lock.unref();
   const state=new AgentState(directory);let config=readConfig<Config>(directory);const abort=new AbortController();
@@ -83,7 +83,8 @@ async function main(){
     state.db.prepare("DELETE FROM commands WHERE state IN ('done','failed') AND at<?").run(Date.now()-86400000);state.db.prepare("UPDATE commands SET state='running' WHERE state='pending' AND kind='sync'").run();
     next=Date.now()+300000;log('COLLECTING');job=(remote?.hasPending()?remote.execute(()=>engine.run(abort.signal)):engine.run(abort.signal)).then(()=>{log('CYCLE_FINISHED');state.db.prepare("UPDATE commands SET state='done' WHERE state='running'").run();}).catch(()=>{state.set('lastErrorCode','CYCLE_FAILED');state.set('lastErrorAt',new Date().toISOString());log('CYCLE_FAILED');state.db.prepare("UPDATE commands SET state='failed' WHERE state='running'").run();}).finally(()=>{job=undefined;});};
   try{
-    if(command==='run-once'){const result=await engine.run(abort.signal);output(result);if(state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
+    if(command==='flush'){const result=await engine.flush(abort.signal);output(result);if(state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
+    else if(command==='run-once'){const result=await engine.run(abort.signal);output(result);if(state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
     else {if(config.remote){remote=new RemoteLink(state,config,http,token,()=>{next=0;});remote.start();}timer=setInterval(tick,1000);tick();while(!stopping)await new Promise(r=>setTimeout(r,100));await job;}
   }finally{remote?.stop();if(timer)clearInterval(timer);await job;state.set('heartbeat',null);state.close();await new Promise<void>(yes=>lock.close(()=>yes()));}
 }
