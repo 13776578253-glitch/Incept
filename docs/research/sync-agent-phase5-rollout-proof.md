@@ -7,11 +7,13 @@
 | 阶段 | 结论 | 已交付与边界 |
 |---|---|---|
 | P5-A 产品体验 | PASS | 真实 Edge 两个独立上下文点击 Refresh；持久 Job、真实上传、committed receipt、revision 和页面统计变化；离线、冲突入口、三个时间及原进度条 |
-| P5-B 部署配方 | PASS（隔离） | 正式 Dockerfile 全站构建及生产依赖裁剪；正式 Compose/Nginx 路由、内部 Gateway、文件秘密、默认关闭、单设备 canary、Windows ZIP；生产目标待批准后核对 |
+| P5-B 部署配方 | PASS（隔离） | 正式 Dockerfile 全站构建及生产依赖裁剪；正式 Compose/Caddy 路由（Nginx 仅保留为非生产可选模板）、内部 Gateway、文件秘密、默认关闭、单设备 canary、Windows ZIP；生产目标待批准后核对 |
 | P5-C 迁移与灰度 | PASS（合成数据） | 一致性 SQLite backup、PG dump/restore；真实旧 loader 对照、三窗口全对象零差异、二次重放；实际生产数据对账是 v2 切换硬门槛 |
 | P5-D 容量保护 | PASS（首批单设备范围） | 20k 准入、队列/磁盘/内存/DB 容量保护、有界 checkpoint；一次普通规模并发+重启，零 OOM；70k/多设备不纳入首批 |
 
 整体：**CONDITIONAL**。本地功能与隔离发布验收完成；上线需 Owner 批准、封存最终 release、核对生产资源与备份、完成真实 v1 对账及历史认领授权。v2 对账门槛失败时保持 v1 读取，独立上传按来源审阅契约处理。
+
+> 2026-10-18 Caddy 修订：生产实际 proxy 是 Caddy；新增 `/api/sync/ws` → `sync-gateway:3101`，公网 internal/RPC/health 404；Nginx 仅保留为非生产可选模板。生产部署前以新的修订 Release 为准。
 
 ## 工作树与版本
 
@@ -28,7 +30,7 @@ Operations 路由/feature 原样取自 `feature/operations-console`，用于完�
 - Owner Settings 提供脱敏冲突列表：source、session 摘要、code、旧结果保留及维护步骤；未开放 Shell 或解除 rollback 栅栏。
 - 单一维护 CLI `dist/sync-maintenance.mjs`：backup/status/reviews/review/migrate-v1/shadow-check/compare/adopt-exact/adopt-reviewed/resolve-review/maintain。写操作要求 Owner 明确确认及 reason，历史认领须固定 device/manifest/legacy-batch；恢复重试验证当前 head 和 committed receipt。
 - 默认 `INCEPT_SYNC_ENABLED=0`、`INCEPT_SYNC_REMOTE_ENABLED=0`、`READ_MODE=v1`。独立 `/data/sync/v2.db`，v1 imports 保留。无 Phase 5 PG 新迁移；runbook 包含尚待生产执行的 AgentDevice/SyncJob 两项迁移。
-- HMAC 文件注入、单 UUID canary、内部网络 Gateway，无宿主端口；Nginx 443 WSS Upgrade、超时/连接限额，公开 internal/RPC/health 路径 404。
+- HMAC 文件注入、单 UUID canary、内部网络 Gateway，无宿主端口；Caddy 443 WSS Upgrade、公开 internal/RPC/health 路径 404；Nginx 模板仅作为非当前生产的可选备份。
 - 新 upload begin/stage 受 20,000 记录/队列4/per-device2、2GiB free disk、4GiB DB+WAL+SHM、85% cgroup memory 限制；429/503+Retry-After，receipt 查询及已持久 commit 恢复保留。Worker old heap256MiB、SQLite cache8MiB/mmap0；操作间隙 checkpoint，busy_timeout0，busy 退避30秒。
 - Windows ZIP 固定 dist/windows 目录；保留 DPAPI+DACL 凭据、outbox、5分钟调度。`export-review`/`resume-reviewed` 只能停机维护；不越过 head/rollback 栅栏。未安装登录任务。
 
@@ -61,7 +63,7 @@ Operations 路由/feature 原样取自 `feature/operations-console`，用于完�
 
 ## 真实浏览器、HTTP 与恢复
 
-实际完整 Next production 产物、正式 production-start、生产 Compose/Nginx 模板。专用 project `incept-phase5-01a1447b`，TLS `https://localhost:18555`，独立 PG/v1/v2，App hard limit768MiB。实际 Edge 两个独立 Owner 上下文，第三个无 Cookie 公开上下文；仅钉住测试证书 SPKI，不改系统信任或关闭应用 TLS。
+实际完整 Next production 产物、正式 production-start、生产 Compose/Caddy 模板（Nginx 仅保留为非生产可选模板）。专用 project `incept-phase5-01a1447b`，TLS `https://localhost:18555`，独立 PG/v1/v2，App hard limit768MiB。实际 Edge 两个独立 Owner 上下文，第三个无 Cookie 公开上下文；仅钉住测试证书 SPKI，不改系统信任或关闭应用 TLS。
 
 1. Windows真实采集 Claude15,700+Gemini2，初始 rev2/2,041,260 Token。浏览器点击按钮，Job `d8a85d0a...` 经采集/分页/receipt→rev3，网页2,041,390，三个时间更新。
 2. 第二浏览器追加100条，Job `d075bfde...`；在 SQLite staging offset3000 时重启真实 Next App，恢复原批次提交→rev4/2,054,390，页面从2.04M变2.05M。
@@ -109,7 +111,7 @@ Owner 选择方案 A：**先迁移 v1 到 v2、shadow 全窗口零差异、切�
 
 功能：Dashboard hook/helper/toolbar/messages；Owner SyncDevicesPanel和sync controller/remote；Agent cli/engine/remote/review/package工具；Gateway gateway/main；db agent鉴权canary；SQLite store/审阅摘要；capacity/protocol/executor/worker/secrets/admission；维护runner/CLI/build和fixtures；对应测试。
 
-部署：Dockerfile、gitignore、Compose/Nginx/env模板、compose.sh、production-start、sync-config/secret/stage/backup及测试。从主干 `1a44da2` 重建 Release 时保留主干 Docs/样式；**Operations 路由/mock 已按 Owner 决定排除，不在发布产物中**，本阶段不开发 Operations 鉴权。
+部署：Dockerfile、gitignore、Compose/Caddy/env模板（Nginx 可选模板保留但不启用）、compose.sh、production-start、sync-config/secret/stage/backup及测试。从主干 `1a44da2` 重建 Release 时保留主干 Docs/样式；**Operations 路由/mock 已按 Owner 决定排除，不在发布产物中**，本阶段不开发 Operations 鉴权。
 
 回滚优先 `sync-stage --stage=disabled --apply --owner-confirm`，停止Gateway和WindowsAgent，重建App读取v1；保留PG新表、v2/receipt/audit/outbox。镜像回到批准前digest，不覆盖其他env；灾难恢复先在新库验证一致备份。完整命令见runbook。
 

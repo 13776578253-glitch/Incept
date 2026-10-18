@@ -78,9 +78,32 @@ https://{$INCEPT_DOMAIN} {
 	@auth path /api/auth/owner/login /api/access/shared-code/redeem
 	@music path /api/internal/music/tracks
 	@imports path /api/dashboard/imports/preview
+	@sync path /api/sync/ws
+	@internal path /api/internal/sync /api/internal/sync/* /rpc /rpc/* /healthz /healthz/*
 	route {
 		import incept-request
 		header >Strict-Transport-Security "max-age=31536000"
+		handle @internal {
+			respond 404
+		}
+		handle @sync {
+			request_body {
+				max_size 4096
+			}
+			reverse_proxy sync-gateway:3101 {
+				header_up Host {http.request.hostport}
+				header_up X-Forwarded-Host {http.request.hostport}
+				header_up X-Forwarded-Proto {http.request.scheme}
+				header_up X-Forwarded-Port 443
+				header_up X-Forwarded-For {http.request.remote.host}
+				header_up -Forwarded
+				flush_interval -1
+				transport http {
+					dial_timeout 5s
+					response_header_timeout 90s
+				}
+			}
+		}
 		handle @auth {
 			request_body {
 				max_size 4096

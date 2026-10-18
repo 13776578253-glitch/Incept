@@ -2,7 +2,7 @@
 
 本手册准备完毕后由 Owner **一次批准**执行范围。批准前只在本地/隔离环境执行。本轮尚未连接生产；下列生产命令目前均未执行。`--owner-confirm` / `I_AM_THE_OWNER` 用于记录这一次批准，不要求每一步重新申请。
 
-范围：现有 Incept 实例、既有 Nginx 443、单台明确授权 Windows 设备。保持 v1 人工 Import 和默认读取；先迁移 v1 到 v2，shadow 对账零差异后切 v2，再启动单台 Windows Agent。Windows 登录任务默认不安装；仅在授权单包含自启时运行 `-ConfirmInstall`。
+范围：现有 Incept 实例、既有 Caddy 443、单台明确授权 Windows 设备。保持 v1 人工 Import 和默认读取；先迁移 v1 到 v2，shadow 对账零差异后切 v2，再启动单台 Windows Agent。Windows 登录任务默认不安装；仅在授权单包含自启时运行 `-ConfirmInstall`。Nginx 的 compose/配置模板仅作为非当前生产的可选备份保留，不启动。
 
 ## 0. 封存与执行前只读核对
 
@@ -12,7 +12,7 @@
 
 固定 Node 24.15–24.x、pnpm 10.30.3；源/锁文件 sha256 与验收清单一致。最终集成源码有变化时重新运行完整构建、相关回归和浏览器 smoke；不重跑 70k 大型基准。
 
-批准后先核对 SSH Host、域名、当前 release/image、`INCEPT_PROXY=nginx`、数据目录、PG 角色、卷空间；若目标与授权单不符即停止。不要打印 `.env`、`docker compose config` 的展开值、设备 Token 或 Cookie。
+批准后先核对 SSH Host、域名、当前 release/image、`INCEPT_PROXY=caddy`、数据目录、PG 角色、卷空间；若目标与授权单不符即停止。不要打印 `.env`、`docker compose config` 的展开值、设备 Token 或 Cookie。
 
 ```sh
 cd /srv/incept/current
@@ -23,8 +23,9 @@ export ENV_FILE=$INCEPT_ENV_FILE
 export RELEASE_IMAGE=incept:OWNER_APPROVED_RELEASE
 export CANARY_UUID=OWNER_APPROVED_DEVICE_UUID
 export DOMAIN=OWNER_CONFIRMED_DOMAIN
-export DATA=/srv/incept/shared
+export DATA=/srv/incept/import-20261014/shared
 export SECRET_DIR=/srv/incept/secrets
+# 当前生产实际 DATA 以 INCEPT_DATA_DIR 为准；不要把示例 /srv/incept/shared 当成生产数据目录。
 export BACKUP=/srv/incept/backups/sync-$(date -u +%Y%m%dT%H%M%SZ)
 umask 077
 sh deployment/compose.sh ps
@@ -111,14 +112,18 @@ docker run --rm --user 0 -v /srv/incept:/ops -v "$DATA:/data" --entrypoint node 
 docker run --rm --user 0 -v /srv/incept:/ops -v "$DATA:/data" --entrypoint node "$RELEASE_IMAGE" \
   scripts/sync-stage.mjs --env-file=/ops/.env.production --stage=upload --device="$CANARY_UUID" --apply --owner-confirm
 sh deployment/compose.sh --profile sync up -d --wait --wait-timeout 120 app sync-gateway proxy
-sh deployment/compose.sh exec -T proxy nginx -t
-sh deployment/compose.sh exec -T proxy nginx -s reload
+sh deployment/compose.sh exec -T proxy caddy validate --config /etc/caddy/Caddyfile
+sh deployment/compose.sh exec -T proxy caddy reload --config /etc/caddy/Caddyfile
 curl --fail --silent --show-error "https://$DOMAIN/api/health/ready"
+test "$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/api/internal/sync")" = 404
 test "$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/api/internal/sync/check")" = 404
+test "$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/rpc")" = 404
 test "$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/rpc/status")" = 404
+test "$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/healthz")" = 404
+test "$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/healthz/")" = 404
 ```
 
-Nginx 使用既有 443，只有 `/api/sync/ws` Upgrade 到内部 `sync-gateway:3101`，无新增公网端口。私有 RPC 公网 404，Gateway 健康检查 `/healthz` 也被公网屏蔽。Nginx 可在默认关闭的 Gateway profile 不存在时正常启动；Gateway/Web 都通过独立 HMAC 验证。
+Caddy 使用既有 443；只有 `/api/sync/ws` 反向代理到内部 `sync-gateway:3101`（Caddy 自动处理 WebSocket Upgrade），无新增公网端口。`/api/internal/sync*`、`/rpc*`、`/healthz*` 由 Caddy 直接返回 404。Caddy 可在 Gateway profile 不存在时正常启动；Gateway/Web 仍通过独立 HMAC 验证。Nginx 模板仅作为非当前生产的可选备份保留。
 
 ## 5. Windows 一次授权与绑定（Agent 保持停止）
 
@@ -183,8 +188,8 @@ docker run --rm --user 0 -v /srv/incept:/ops -v "$DATA:/data" -v "$BACKUP:/revie
   scripts/sync-stage.mjs --env-file=/ops/.env.production --stage=v2 --device="$CANARY_UUID" \
   --report=/review/compare.json --v1=/data/dashboard/imports.db --v2=/data/sync/v2.db --apply --owner-confirm
 sh deployment/compose.sh --profile sync up -d --wait --wait-timeout 120 app sync-gateway proxy
-sh deployment/compose.sh exec -T proxy nginx -t
-sh deployment/compose.sh exec -T proxy nginx -s reload
+sh deployment/compose.sh exec -T proxy caddy validate --config /etc/caddy/Caddyfile
+sh deployment/compose.sh exec -T proxy caddy reload --config /etc/caddy/Caddyfile
 ```
 
 切换脚本再次核对 v1 批次 checksum/rollback 状态、报告新鲜度和 **env 中的 v1/v2 路径与 `--v1`/`--v2` 一致**；报告陈旧、缺窗口、非零、路径不一致或源变动均拒绝。完成切换后 App 读取 v2，但 Agent 仍保持停止；先用 Owner Dashboard 确认迁移后的图表与 v1 对账结果一致，再进入第 7 节。
@@ -254,19 +259,20 @@ sh deployment/compose.sh run --rm --no-deps --entrypoint node app \
 
 上线初期限额：单设备；单新 batch 不超过 20,000 记录，超出 429/Retry-After=300；页面仍最多 500 条/512 KiB。App 队列 4/per-device 2，DB+WAL+SHM 4 GiB、磁盘余量 2 GiB、cgroup 85% 触发新上传 503/Retry-After。已提交回执查询/commit 恢复路径保留；outbox 持久等待，不截历史、不丢包、不扩大容器上限。
 
-容器限制：App 768 MiB、PG 384 MiB、Gateway 128 MiB、Nginx 96 MiB，合计上限 1376 MiB；2 GiB 主机另留 672 MiB 给 OS/Docker/其他服务。该预算还须在真实主机核对。部署前可用磁盘应覆盖镜像、PG dump、v1/v2 两份副本及至少 2 GiB 工作余量，推荐 5 GiB 警戒余量。
+容器限制：App 768 MiB、PG 384 MiB、Gateway 128 MiB、Caddy 96 MiB，合计上限 1376 MiB；2 GiB 主机另留 672 MiB 给 OS/Docker/其他服务。该预算还须在真实主机核对。部署前可用磁盘应覆盖镜像、PG dump、v1/v2 两份副本及至少 2 GiB 工作余量，推荐 5 GiB 警戒余量。
 
 任何 OOM、反复 `memory.events.max`、长时间 SQLITE_BUSY、磁盘不足、队列/Job/outbox 无法消费：立即退回 v1 并关闭新 sync；保留状态排查。70k 自动延期，多设备高负载不在首批批准范围；Phase 2E 极端压力余量仍为后续容量事项。
 
 ## 9. 密钥轮换与回滚
 
-RPC key 轮换：停止 Agent/新 Job，等在途任务结束；受控备份旧 key，停止 Gateway/app，执行下述原子轮换，再以同一个 key 重建 Web/Gateway。Nginx 重载，确认两边健康后 Start Agent。中断期间 outbox/Job 持久保留；不接受两个不同服务 key 混用。
+RPC key 轮换：停止 Agent/新 Job，等在途任务结束；受控备份旧 key，停止 Gateway/app，执行下述原子轮换，再以同一个 key 重建 Web/Gateway。Caddy reload，确认两边健康后 Start Agent。中断期间 outbox/Job 持久保留；不接受两个不同服务 key 混用。
 
 ```sh
 docker run --rm --user 0 -v "$SECRET_DIR:/secrets" --entrypoint node "$RELEASE_IMAGE" \
   scripts/sync-secret.mjs --confirm-owner --rotate --output=/secrets/sync-rpc.key --uid=1000 --gid=1000
 sh deployment/compose.sh --profile sync up -d --force-recreate --wait app sync-gateway
-sh deployment/compose.sh exec -T proxy nginx -s reload
+sh deployment/compose.sh exec -T proxy caddy validate --config /etc/caddy/Caddyfile
+sh deployment/compose.sh exec -T proxy caddy reload --config /etc/caddy/Caddyfile
 ```
 
 设备 Token 轮换/吊销继续 Owner 近期验证和审计，不输出 Token；重新 Bind 保留原 outbox。紧急软件回滚优先**关同步、读 v1**，不恢复覆盖已产生的新提交：
@@ -276,7 +282,8 @@ docker run --rm --user 0 -v /srv/incept:/ops --entrypoint node "$RELEASE_IMAGE" 
   scripts/sync-stage.mjs --env-file=/ops/.env.production --stage=disabled --apply --owner-confirm
 sh deployment/compose.sh --profile sync stop sync-gateway
 sh deployment/compose.sh up -d --force-recreate --wait app proxy
-sh deployment/compose.sh exec -T proxy nginx -s reload
+sh deployment/compose.sh exec -T proxy caddy validate --config /etc/caddy/Caddyfile
+sh deployment/compose.sh exec -T proxy caddy reload --config /etc/caddy/Caddyfile
 ```
 
 然后停止 Windows Agent。保留 PG 新表、v2、审计和本地 outbox，验证旧 Import、Owner/TOTP、Docs/Music。回到前一镜像时使用备份记录的 digest；**不要把整份旧 env 覆盖新配置来遗失其他并行配置**，只回退批准的 image 与上述 sync flags。

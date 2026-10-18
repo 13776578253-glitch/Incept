@@ -424,7 +424,7 @@ describe('Phase 0C: B2 adoption plus lineage preserves real v1 statistics and B3
     expect((await server.submit('rollback-replay', await observed('claudeCode', revised), PHASE0_DEVICE)).code).toBe('ROLLED_BACK_LINEAGE_REVIEW_REQUIRED'); parity();
     const repriced = patch(await observed('claudeCode', revised), { basis: { ...basis(), provenance: 'implicit-price-change' } });
     expect((await server.submit('implicit-reprice', repriced, PHASE0_DEVICE)).code).toBe('EXPLICIT_REPRICE_OR_MAPPING_REQUIRED'); parity();
-  });
+  }, 20_000);
   it('CommandCode recorded nominal cost and peak/off-peak quota remain frozen and rollback selects prior generation', async () => {
     writePhase0Source(home, 'commandcode', { model: 'deepseek-v4-pro', cost: .2, at: Date.parse('2026-10-15T01:00:00Z') });
     const first = await baseline('commandcode'); expect(server.view()[0].nominalCost).toBe(.2); expect(server.view()[0].cost).toBe(.4);

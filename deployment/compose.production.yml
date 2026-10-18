@@ -128,6 +128,8 @@ services:
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     entrypoint: ["node", "apps/sync-gateway/dist/gateway.mjs"]
+    depends_on:
+      app: { condition: service_healthy }
     environment:
       NODE_ENV: production
       NODE_OPTIONS: "--max-old-space-size=64 --max-semi-space-size=4"
@@ -152,6 +154,7 @@ services:
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
+  # Optional non-production proxy; production uses compose.caddy.yml + Caddyfile.
   proxy:
     image: nginx:1.28-alpine
     restart: unless-stopped

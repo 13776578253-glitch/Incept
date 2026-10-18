@@ -1,3 +1,6 @@
+# Optional non-production proxy template. Current production uses Caddy via
+# deployment/compose.caddy.yml and deployment/Caddyfile; this Nginx template is
+# retained only as a reviewed fallback and is not started by the production env.
 map $uri $safe_uri {
   ~^/(?:en/|zh/)?settings/access/ /invitation/redacted;
   default $uri;
