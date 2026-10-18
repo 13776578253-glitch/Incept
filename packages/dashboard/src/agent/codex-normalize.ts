@@ -7,7 +7,6 @@ const regresses=(total:Record<string,number>,previous:Record<string,number>)=>Ob
 const count=(total:Record<string,number>):SyncCounters=>({input:total.input_tokens??0,cache:total.cached_input_tokens??0,output:total.output_tokens??0,reasoning:total.reasoning_output_tokens??0});
 const eventCount=(event:SyncRecord['event']):SyncCounters=>({input:event.inputTokens+event.cacheReadTokens,cache:event.cacheReadTokens,output:event.outputTokens+event.reasoningTokens,reasoning:event.reasoningTokens});
 const add=(left:SyncCounters,right:SyncCounters):SyncCounters=>({input:left.input+right.input,cache:left.cache+right.cache,output:left.output+right.output,reasoning:left.reasoning+right.reasoning});
-const same=(a:SyncCounters,b:SyncCounters)=>a.input===b.input&&a.cache===b.cache&&a.output===b.output&&a.reasoning===b.reasoning;
 
 // Rebuild Codex counters as a monotonic local epoch. The raw total is used as
 // evidence and for duplicate detection, but never copied when it contradicts
@@ -27,12 +26,12 @@ export function normalizeCodexRecords(records:SyncRecord[],raw:RawCodexCounter[]
     // the sample is a late duplicate/fork snapshot. Include its measured event
     // once on the local timeline instead of copying the regressed cumulative.
     const delta=eventCount(event);
-    const transient=!!(rawTotal&&previousRaw&&regresses(rawTotal as unknown as Record<string,number>,previousRaw as unknown as Record<string,number>)
-      && raw.slice(index+1).some(next=>next.total&&!regresses(next.total,{input_tokens:previousRaw!.input,cached_input_tokens:previousRaw!.cache,output_tokens:previousRaw!.output,reasoning_output_tokens:previousRaw!.reasoning})));
+    if(rawTotal&&previousRaw&&regresses(rawTotal as unknown as Record<string,number>,previousRaw as unknown as Record<string,number>)){
+      const laterReturns=raw.slice(index+1).some(next=>next.total&&!regresses(next.total,{input_tokens:previousRaw!.input,cached_input_tokens:previousRaw!.cache,output_tokens:previousRaw!.output,reasoning_output_tokens:previousRaw!.reasoning}));
+      if(!laterReturns)throw Error('CODEX_RESET_REVIEW');
+    }
     synthetic=synthetic?add(synthetic,delta):delta;
-    if(!transient){record.cumulative=synthetic;}
-    else record.cumulative=synthetic;
-    if(!same(record.cumulative!,delta)&&!previousRaw)record.cumulative=delta;
+    record.cumulative=synthetic;
     out.push(record);
     if(rawTotal)previousRaw=rawTotal;
   }
@@ -48,3 +47,4 @@ export function normalizeCodexRecords(records:SyncRecord[],raw:RawCodexCounter[]
   }
   return out;
 }
+
