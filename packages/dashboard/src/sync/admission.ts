@@ -19,10 +19,12 @@ export function resolveScope(service:CompatibleSyncService,input:Pick<SyncScope,
     requireSync(matches.every(row=>JSON.parse(String(row.scope_json)).deviceId===actor.deviceId),'ORIGIN_OWNERSHIP_CONFLICT');
     const prior=matches[0];requireSync(!prior?.fenced,'ROLLED_BACK_LINEAGE');
     const scope:SyncScope=prior?JSON.parse(String(prior.scope_json)):{deviceId:actor.deviceId,source:input.source,sessionId:input.sessionId,originId:originId(input.source,input.sessionId)};
+    const head=prior?.head_manifest?service.db.prepare('SELECT header_json FROM sync_manifests WHERE id=?').get(String(prior.head_manifest)):undefined;
+    const headHeader=head?JSON.parse(String(head.header_json)):null;
     const id=hash(['admission/1',scope]),saved=service.db.prepare('SELECT receipt_json FROM sync_admissions WHERE id=?').get(id);
-    if(saved)return {...JSON.parse(String(saved.receipt_json)),headManifest:prior?.head_manifest??null};
+    if(saved)return {...JSON.parse(String(saved.receipt_json)),headManifest:prior?.head_manifest??null,head:headHeader};
     const overlap=legacyOverlap(service,legacyPath,input.source,input.sessionId);
-    if(overlap.overlap){
+    if(overlap.overlap&&!prior?.head_manifest){
       const inserted=service.db.prepare('INSERT OR IGNORE INTO sync_admission_reviews VALUES(?,?,?,?,?,?)').run(id,actor.deviceId,input.source,input.sessionId,'V1_ADOPTION_REVIEW_REQUIRED',now);
       if(inserted.changes)service.audit('device-scope-review',syncScopeId(scope),id,actor);
       return {scope,status:'review-required' as const,code:'V1_ADOPTION_REVIEW_REQUIRED'};
@@ -35,7 +37,7 @@ export function resolveScope(service:CompatibleSyncService,input:Pick<SyncScope,
     const receipt={scope,status:'registered' as const,admissionId:id};
     service.db.prepare('INSERT INTO sync_admissions VALUES(?,?,?,?,?,?)').run(id,actor.deviceId,scope.source,scope.sessionId,JSON.stringify(receipt),now);
     service.audit('device-scope-admit',syncScopeId(scope),id,actor);
-    return {...receipt,headManifest:prior?.head_manifest??null};
+    return {...receipt,headManifest:prior?.head_manifest??null,head:headHeader};
   });
 }
 function legacyOverlap(service:CompatibleSyncService,path:string|undefined,source:string,session:string) {

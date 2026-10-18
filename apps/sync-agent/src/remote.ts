@@ -5,7 +5,9 @@ import type {Config} from './engine';
 import {hash} from '../../../packages/dashboard/src/adapters/local/imports/identity';
 import {syncScopeId} from '../../../packages/dashboard/src/adapters/local/imports/sync/contract';
 type Command={jobId:string;expiresAt:string;connectionId:string};
-type Completion={scanId:string;collectedAt:string;issues:number;pending:number;review:number;batches:string[];lineageHash:string};
+type Completion={scanId:string;collectedAt:string;issues:number;pending:number;review:number;batches:string[];lineageHash:string;
+  reviewTotal?:number;reviewNew?:number;held?:number;warnings?:number;blockingIssues?:number;newTokens?:number};
+type RunSummary={newTokens?:number;reviewTotal?:number;reviewNew?:number;held?:number;warnings?:number;blockingIssues?:number};
 export class RemoteLink {
   private socket?:WebSocket;private retry?:ReturnType<typeof setTimeout>;private heartbeat?:ReturnType<typeof setTimeout>;private attempts=0;private stopped=false;private connection='';private lastDiscovery=0;
   constructor(readonly state:AgentState,readonly config:Config,readonly http:AgentHttp,private token:string,readonly notify:()=>void){}
@@ -34,12 +36,18 @@ export class RemoteLink {
     try{let completion:Completion|undefined=row.result_json?JSON.parse(String(row.result_json)):undefined;
       if(!completion){await this.http.request('/agent/jobs/'+id+'/start','POST',{});const cursor=row.cursor===null?Number(this.state.db.prepare('SELECT COALESCE(MAX(rowid),0) n FROM receipts').get()!.n):Number(row.cursor);
         this.state.db.prepare("UPDATE remote_jobs SET state='running',cursor=? WHERE id=?").run(cursor,id);
-        await run();const batches=this.state.db.prepare('SELECT batch FROM receipts WHERE rowid>? ORDER BY rowid LIMIT 257').all(cursor).map(r=>String(r.batch));if(batches.length>256)throw Error('JOB_RECEIPT_LIMIT');
+        const runResult=await run() as RunSummary|undefined;
+        const summary=runResult??{};
+        const batches=this.state.db.prepare('SELECT batch FROM receipts WHERE rowid>? ORDER BY rowid LIMIT 257').all(cursor).map(r=>String(r.batch));if(batches.length>256)throw Error('JOB_RECEIPT_LIMIT');
         // A transient upload interruption is recoverable within this durable
         // Job. Keep its receipt cursor and retry before freezing a completion.
         if(this.state.db.prepare("SELECT 1 FROM outbox WHERE state='pending' LIMIT 1").get())throw new RemoteError('UPLOAD_PENDING',503,5000);
         const heads=this.state.db.prepare('SELECT parent_json FROM lineage').all().map(row=>{const m=JSON.parse(String(row.parent_json)).header.manifest;return [syncScopeId(m.scope),m.manifestHash,m.generationId,0];}).sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
-        const counts=this.state.db.prepare('SELECT state,COUNT(*) n FROM outbox GROUP BY state').all();completion={scanId:randomUUID(),collectedAt:this.state.get<string>('lastCollectedAt')??new Date(0).toISOString(),issues:(this.state.get<string[]>('issues')??[]).length,pending:counts.filter(r=>r.state==='pending').reduce((n,r)=>n+Number(r.n),0),review:counts.filter(r=>r.state==='review').reduce((n,r)=>n+Number(r.n),0),batches,lineageHash:hash(heads)};
+        const counts=this.state.db.prepare('SELECT state,COUNT(*) n FROM outbox GROUP BY state').all();
+        const total=(state:string)=>counts.filter(r=>r.state===state).reduce((n,r)=>n+Number(r.n),0);
+        const issues=this.state.get<string[]>('issues')??[];
+        completion={scanId:randomUUID(),collectedAt:this.state.get<string>('lastCollectedAt')??new Date(0).toISOString(),issues:issues.length,pending:total('pending'),review:total('review'),batches,lineageHash:hash(heads),
+          reviewTotal:total('review'),reviewNew:summary.reviewNew??0,held:total('held'),warnings:summary.warnings??0,blockingIssues:summary.blockingIssues??issues.length,newTokens:summary.newTokens??0};
         this.state.db.prepare("UPDATE remote_jobs SET state='reporting',result_json=? WHERE id=?").run(JSON.stringify(completion),id);
       }
       const result=await this.http.request<{job:{status:string;dataRevision:number}}>('/agent/jobs/'+id+'/complete','POST',completion);this.state.db.prepare('UPDATE remote_jobs SET state=? WHERE id=?').run(result.job.status,id);this.state.set('lastRemoteJob',{id,status:result.job.status,dataRevision:result.job.dataRevision});

@@ -8,11 +8,14 @@ import {buildCandidate,type Capture,type ParentCapture} from '../../../packages/
 import type {TransferSource} from '../../../packages/dashboard/src/domain';
 import {AgentState,scopeKey} from './state';
 import {AgentHttp,RemoteError} from './transport';
+import {classifyIssues} from './issues';
 export {AgentState,scopeKey} from './state';
 export {AgentHttp,RemoteError,validateEndpoint} from './transport';
 export {storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
 export {RemoteLink} from './remote';
 export {resumeReviewed} from './review';
+export {resumeHeld} from './resume';
+export {classifyIssues} from './issues';
 export {captureHome,buildCandidate} from '../../../packages/dashboard/src/agent/capture';
 export type Config={version:1;endpoint:string;deviceId:string;home:string;allowedSources:TransferSource[];allowLoopbackHttp?:boolean;remote?:boolean};
 export type Collector=(home:string,allowed:TransferSource[],parents:ParentCapture[],signal?:AbortSignal)=>Promise<{captures:Capture[];issues:string[]}>;
@@ -30,10 +33,20 @@ export class SyncEngine {
   run(signal?:AbortSignal){if(this.running)return this.running;this.state.set('activity','collecting');this.running=this.cycle(signal).finally(()=>{this.running=undefined;this.state.set('activity','idle');});return this.running;}
   private async cycle(signal?:AbortSignal){
     const captured=await this.collect(this.config.home,this.config.allowedSources,this.state.parents(),signal);this.state.set('lastCollectedAt',new Date().toISOString());this.state.set('issues',captured.issues);
+    const reviewBefore=new Set(this.state.reviewBatches());
     const seen=new Set<string>(),allSeen=new Set(captured.captures.map(c=>scopeKey(c.source,c.sessionId))),oldParents=this.state.parents();
-    for(const capture of captured.captures){const key=scopeKey(capture.source,capture.sessionId);seen.add(key);if(this.state.blocked(key))continue;const previous=this.state.tail(key);
-      if(!previous&&oldParents.some(p=>p.header.manifest.scope.source===capture.source&&!allSeen.has(scopeKey(capture.source,p.header.manifest.scope.sessionId)))){this.state.set('issues',[...captured.issues,capture.source+':ROTATION_UNVERIFIED']);continue;}
-      const signature=hash([capture.reader,capture.records,capture.proofs.map(p=>[p.range.locatorHash,p.range.identityHash,p.range.root])]);if(previous?.signature===signature)continue;
+    for(const capture of captured.captures){const key=scopeKey(capture.source,capture.sessionId);seen.add(key);const previous=this.state.tail(key);
+      const signature=hash([capture.reader,capture.records,capture.proofs.map(p=>[p.range.locatorHash,p.range.identityHash,p.range.root])]);
+      if(previous?.signature===signature)continue;
+      if(this.state.blocked(key)){
+        // A reviewed scope must never advance its committed lineage. Keep the
+        // new observation as a durable successor, but do not upload it.
+        try{const scope=previous?.parent.header.manifest.scope??{deviceId:this.config.deviceId,source:capture.source,sessionId:capture.sessionId,originId:hash(['incept-origin/1',capture.source,capture.sessionId])};
+          this.state.hold(buildCandidate(capture,scope,previous?.parent,randomUUID()),signature);}
+        catch(error){const code=error instanceof Error&&error.message==='OUTBOX_CAPACITY'?'HELD_CAPACITY':'HELD_WRITE_FAILED';this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),code]);}
+        continue;
+      }
+      if(!previous&&oldParents.some(p=>p.header.manifest.scope.source===capture.source&&!allSeen.has(scopeKey(capture.source,p.header.manifest.scope.sessionId)))){this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),capture.source+':ROTATION_UNVERIFIED']);continue;}
       const scope=previous?.parent.header.manifest.scope??{deviceId:this.config.deviceId,source:capture.source,sessionId:capture.sessionId,originId:hash(['incept-origin/1',capture.source,capture.sessionId])};
       this.state.enqueue(buildCandidate(capture,scope,previous?.parent,randomUUID()),signature);
     }
@@ -41,7 +54,7 @@ export class SyncEngine {
     if(missing.length)this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),'MISSING_ORIGIN_RETAINED']);
     // Offline captures above are durable BEFORE any network operation. Planned
     // outbox parents do not advance the separate confirmed lineage table.
-    this.state.set('activity','uploading');let sent=0;for(let round=0;round<100&&!signal?.aborted;round++){
+    this.state.set('activity','uploading');let sent=0,newTokens=0;for(let round=0;round<100&&!signal?.aborted;round++){
       const pending=this.state.pending();if(!pending.length)break;let progress=false;
       for(const row of pending){const header=JSON.parse(String(row.header_json)),batch=String(row.batch),base='/batches/'+batch;
         try{
@@ -58,13 +71,15 @@ export class SyncEngine {
             status=await this.http.request(base+'/commit','POST');
           }
           const confirmed=await this.http.request(base);if(!confirmed.receipt||hash(confirmed.receipt)!==hash(status.receipt))throw Error('RECEIPT_MISMATCH');
-          this.state.acknowledge(batch,confirmed.receipt);this.state.set('lastReportAt',new Date().toISOString());this.state.set('lastErrorCode',null);sent++;progress=true;
+          const tokens=this.state.batchTokens(batch);this.state.acknowledge(batch,confirmed.receipt);newTokens+=tokens;this.state.set('lastReportAt',new Date().toISOString());this.state.set('lastErrorCode',null);sent++;progress=true;
         }catch(error){const remote=error instanceof RemoteError?error:undefined,code=remote?.code??'LOCAL_SYNC_FAILED';
           const permanent=!!remote&&[400,403,409,413].includes(remote.status);const retry=Math.max(remote?.retryMs??0,Math.min(300000,1000*2**Math.min(Number(row.attempts),8))*(1+Math.random()*.2));
           this.state.fail(batch,code,permanent,retry);if(remote?.status===401||remote?.status===429||remote?.status===503)break;
         }
       }if(!progress)break;
     }
-    return {sent,...this.state.status()};
+    const issues=this.state.get<string[]>('issues')??[],classified=classifyIssues(issues,this.config.allowedSources);
+    const reviewTotal=this.state.reviewCount(),reviewNew=this.state.reviewBatches().filter(batch=>!reviewBefore.has(batch)).length;
+    return {sent,newTokens,reviewTotal,reviewNew,held:this.state.heldCount(),warnings:classified.warnings.length,blockingIssues:classified.blocking.length,...this.state.status()};
   }
 }

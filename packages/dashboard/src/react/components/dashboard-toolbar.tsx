@@ -29,7 +29,11 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
   data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport, hasSnapshot = true, showingHistory = false,remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval=DASHBOARD_REFRESH_INTERVAL,lastPageUpdatedAt }: DashboardToolbarProps) {
   const t = useTranslations('dashboard');
   const selectedDevice=remoteInfo?.devices.find(d=>d.id===remoteDevice);
+  const job=selectedDevice?.lastJob;
   const remoteText=remoteInfo?[t(selectedDevice?.online?'remote.online':'remote.offline'),t('remote.'+(remoteState||'idle'))].join(' · '):'';
+  const refreshState=t('remote.'+(remoteState||job?.phase||'idle'));
+  const historyReviews=job?.reviewTotal??0;
+  const legacyImportedAt=data.sync?.readMode==='v2'?data.sync.legacyImportedAt:undefined;
 
   return (
     <header className="pb-4 md:pb-5">
@@ -83,6 +87,9 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
           <span>{t('remote.collected')}: {selectedDevice?.lastCollectedAt?formatDateTimeShort(selectedDevice.lastCollectedAt):'—'}</span>
           <span>{t('remote.cloudCommitted')}: {selectedDevice?.lastCommittedAt?formatDateTimeShort(selectedDevice.lastCommittedAt):'—'}</span>
           <span>{t('remote.webUpdated')}: {lastPageUpdatedAt?formatDateTimeShort(lastPageUpdatedAt):'—'}</span>
+          <span>{t('remote.thisRefresh')}: {refreshState}{job?.dataRevision!==null&&job?.dataRevision!==undefined?` · rev ${job.dataRevision}`:''}{job?.newTokens?` · +${job.newTokens} tokens`:''}</span>
+          <span>{t('remote.historyReviews')}: {historyReviews}</span>
+          {legacyImportedAt?<span>{t('remote.v1Imported')}: {formatDateTimeShort(legacyImportedAt)}</span>:null}
         </div>:null}
 
     </header>

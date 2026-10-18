@@ -1,6 +1,6 @@
 export type RemoteActivity='idle'|'collecting'|'uploading';
 export type RemotePhase='requesting'|'collecting'|'uploading'|'committed'|'no_change'|'partial'|'review'|'failed'|'offline'|'expired'|'cancelled';
-export type RemoteDevice={id:string;name:string;online:boolean;activity?:RemoteActivity;lastCollectedAt?:string;lastReportAt?:string;lastCommittedAt?:string;lastJob?:{status:string;phase?:RemotePhase}|null};
+export type RemoteDevice={id:string;name:string;online:boolean;activity?:RemoteActivity;lastCollectedAt?:string;lastReportAt?:string;lastCommittedAt?:string;lastJob?:{status:string;phase?:RemotePhase;dataRevision?:number|null;reviewTotal?:number;reviewNew?:number;held?:number;warnings?:number;blockingIssues?:number;newTokens?:number}|null};
 export type RemoteStatus={remoteEnabled:boolean;readMode:string;intervalMs:number;devices:RemoteDevice[]};
 export type RemoteJob={id:string;status:string;phase?:RemotePhase;online?:boolean;dataRevision:number|null;errorCode:string|null};
 export async function remoteStatus(signal?:AbortSignal):Promise<RemoteStatus>{const res=await fetch('/api/dashboard/sync/devices/status',{cache:'no-store',signal});if(!res.ok)throw Error('REMOTE_STATUS_FAILED');return res.json();}

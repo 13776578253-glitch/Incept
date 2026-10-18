@@ -9,6 +9,7 @@ import {readConfig,storeToken,loadToken,protectDirectory,atomicJson} from './cre
 import {acquireInstance,isRunning} from './lifecycle';
 import {RemoteLink} from './remote';
 import {resumeReviewed} from './review';
+import {resumeHeld} from './resume';
 const argv=process.argv.slice(2),command=argv[0],option=(key:string)=>{const i=argv.indexOf('--'+key);return i<0?undefined:argv[i+1];};
 const directory=resolve(option('state')??join(process.env.LOCALAPPDATA??homedir(),'Incept','sync-agent'));
 const output=(v:unknown)=>console.log(JSON.stringify(v));
@@ -23,6 +24,13 @@ async function main(){
     const batch=option('batch');if(!batch||!/^[a-zA-Z0-9_-]{1,128}$/.test(batch))throw Error('BATCH_REQUIRED');
     const state=new AgentState(directory),config=readConfig<Config>(directory);
     try{output(await resumeReviewed(state,new AgentHttp(config.endpoint,loadToken(directory),{allowLoopbackHttp:config.allowLoopbackHttp}),batch));}finally{state.close();}return;
+  }
+  if(command==='resume-held'){
+    if(!argv.includes('--confirm-reviewed'))throw Error('OWNER_REVIEW_CONFIRMATION_REQUIRED');
+    if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
+    const batch=option('batch');if(!batch||!/^[a-zA-Z0-9_-]{1,128}$/.test(batch))throw Error('BATCH_REQUIRED');
+    const state=new AgentState(directory),config=readConfig<Config>(directory);
+    try{output(await resumeHeld(state,new AgentHttp(config.endpoint,loadToken(directory),{allowLoopbackHttp:config.allowLoopbackHttp}),config,batch));}finally{state.close();}return;
   }
   if(command==='export-review'){
     if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');

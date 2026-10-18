@@ -31,9 +31,12 @@ export function projection(service:CompatibleSyncService,home:string,range:Usage
   const order=(event:typeof view.events[number],index:number):[number,number]=>event.importBatchId?(positions.get(JSON.stringify([event.importBatchId,event.eventId]))??sessionPositions.get(JSON.stringify([event.importBatchId,event.sourceId,event.sessionId]))??[Number.MAX_SAFE_INTEGER,index]):[0,index];
   const eligible=view.events.map((event,index)=>({event,order:order(event,index)})).sort((a,b)=>a.order[0]-b.order[0]||a.order[1]-b.order[1]).map(r=>r.event).filter(r=>r.timestampMs<=now),first=eligible.map(r=>r.dateKey).sort()[0],window=dateWindow(range,now,first);
   const selected=eligible.filter(r=>r.dateKey>=window.from&&r.dateKey<=window.to).map(applyCommandCodeQuota);
-  let updatedAt=Math.max(view.updatedAt,overrides.updatedAt,cc.latestMtimeMs,agents.latestMtimeMs);
-  for(const path of [['.aiusage','config.json'],['.aiusage','cache.db-wal'],['.commandcode','config.json'],['.codex','models_cache.json']])try{updatedAt=Math.max(updatedAt,statSync(join(home,...path)).mtimeMs);}catch{ /* Optional source metadata. */ }
+  const lastCommitted=Number(service.db.prepare('SELECT MAX(committed_at) at FROM sync_receipt_clock').get()?.at??0);
+  const legacyImported=service.db.prepare("SELECT MAX(json_extract(receipt_json,'$.importedAt')) at FROM sync_legacy_batches WHERE status='active'").get()?.at;
+  let updatedAt=lastCommitted||Math.max(view.updatedAt,cc.latestMtimeMs,agents.latestMtimeMs);
+  if(!lastCommitted)for(const path of [['.aiusage','config.json'],['.aiusage','cache.db-wal'],['.commandcode','config.json'],['.codex','models_cache.json']])try{updatedAt=Math.max(updatedAt,statSync(join(home,...path)).mtimeMs);}catch{ /* Optional source metadata. */ }
   const data=summarizeUsageEvents(selected,home,view.pricing,updatedAt,window);
   for(const source of data.sources){const modes=new Set(selected.filter(e=>e.sourceId===source.sourceId).map(e=>e.deviceId?'imported' as const:agents.fallbackEvents.includes(e)?'indexed' as const:'native' as const));source.collectionMode=modes.size>1?'mixed':[...modes][0];}
-  return {...data,range,checkedAt:new Date(now).toISOString(),collectionIssues:[...view.issues,...(cc.errors.length||agents.errors.length?['NATIVE_COLLECTION_INCOMPLETE']:[])],sync:{readMode:'v2' as const,dataRevision:view.dataRevision}};
+  return {...data,range,checkedAt:new Date(now).toISOString(),collectionIssues:[...view.issues,...(cc.errors.length||agents.errors.length?['NATIVE_COLLECTION_INCOMPLETE']:[])],sync:{readMode:'v2' as const,dataRevision:view.dataRevision,
+    ...(lastCommitted?{lastCommittedAt:new Date(lastCommitted).toISOString()}:{}),...(legacyImported?{legacyImportedAt:new Date(String(legacyImported)).toISOString()}:{})}};
 }

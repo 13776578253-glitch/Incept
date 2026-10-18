@@ -1,5 +1,5 @@
 {
-  "remote":{"online":"Online","offline":"Offline","reading":"Committed; reading statistics","idle":"Ready","device":"Sync device","collected":"Agent collected","reported":"Uploaded","cloudCommitted":"Cloud commit","webUpdated":"Web updated","requesting":"Requesting collection","collecting":"Collecting","uploading":"Uploading","committed":"Committed; charts updated","committing":"Validating receipt","no_change":"No change","partial":"Partial sync","review":"Needs review","review_required":"Conflict: review required","failed":"Failed","expired":"Expired","cancelled":"Cancelled","stored_v2":"Synced to v2; showing the legacy view","queued":"Queued","dispatched":"Sent","running":"Syncing","completed":"Committed; charts updated","completed_no_change":"No change"},
+  "remote":{"online":"Online","offline":"Offline","reading":"Committed; reading statistics","idle":"Ready","device":"Sync device","collected":"Agent collected","reported":"Uploaded","cloudCommitted":"Cloud commit","webUpdated":"Dashboard read","thisRefresh":"This refresh","historyReviews":"History reviews","v1Imported":"v1 last import","requesting":"Requesting collection","collecting":"Collecting","uploading":"Uploading","committed":"Committed; charts updated","committing":"Validating receipt","no_change":"No change","partial":"Partial sync","review":"Needs review","review_required":"Conflict: review required","failed":"Failed","expired":"Expired","cancelled":"Cancelled","stored_v2":"Synced to v2; showing the legacy view","queued":"Queued","dispatched":"Sent","running":"Syncing","completed":"Committed; charts updated","completed_no_change":"No change"},
   "imports": {
     "open": "Import", "title": "Cross-device import", "close": "Close",
     "intro": "Import Token data from another computer. Validate before confirming; each batch can be rolled back.",
@@ -42,7 +42,7 @@
     "refreshing": "Refreshing…",
     "autoRefresh": "Automatic refresh",
     "refreshFailed": "Refresh failed; showing the previous data. Retry available.",
-    "updatedAt": "Source updated: {time}",
+    "updatedAt": "Data updated: {time}",
     "noUsage": "No usage in the selected window"
   },
   "rules": {

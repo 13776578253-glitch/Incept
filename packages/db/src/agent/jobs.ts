@@ -29,7 +29,19 @@ export async function deviceJob(id:string,identity:AgentIdentity,tx:Prisma.Trans
   ensure(job!.credentialVersion===identity.version&&job!.policyHash===policyHash(identity.allowedSources),'JOB_AUTH_CHANGED',403);return job!;
 }
 export async function beginSyncJob(id:string,identity:AgentIdentity,revision:number){await expireJobs(identity.deviceId);return prisma.$transaction(async tx=>{await tx.$queryRaw`SELECT id FROM sync_jobs WHERE id=${id}::uuid FOR UPDATE`;const job=await deviceJob(id,identity,tx);ensure(activeJobStates.includes(job.status)&&job.expiresAt>new Date(),'JOB_TERMINAL');if(job.status==='running')return publicJob(job);return publicJob(await tx.syncJob.update({where:{id},data:{status:'running',startedAt:new Date(),startRevision:BigInt(revision)}}));});}
-export type JobCompletion={scanId:string;collectedAt:string;issues:number;pending:number;review:number;batches:string[];lineageHash:string};
+export type JobCompletion={scanId:string;collectedAt:string;issues:number;pending:number;review:number;batches:string[];lineageHash:string;
+  reviewTotal?:number;reviewNew?:number;held?:number;warnings?:number;blockingIssues?:number;newTokens?:number};
+export type NormalizedJobStatus={status:'completed'|'completed_no_change'|'partial'|'review_required';reviewTotal:number;reviewNew:number;held:number;warnings:number;blockingIssues:number;newTokens:number};
+export function jobStatus(completion:JobCompletion,verified:{changed:boolean;lineageHash:string},priorReviewTotal=0):NormalizedJobStatus{
+  const reviewTotal=completion.reviewTotal??completion.review;
+  const reviewNew=Math.min(reviewTotal,completion.reviewNew??Math.max(0,reviewTotal-priorReviewTotal));
+  const held=completion.held??0,warnings=completion.warnings??0,newTokens=completion.newTokens??0;
+  // Old Agents only sent total collector issues. Preserve their safety semantics
+  // by treating those as blocking; new Agents send the split explicitly.
+  const blockingIssues=completion.blockingIssues??completion.issues;
+  const status=completion.lineageHash!==verified.lineageHash||reviewNew>0||held>0?'review_required':blockingIssues>0||completion.pending>0?'partial':verified.changed?'completed':'completed_no_change';
+  return {status,reviewTotal,reviewNew,held,warnings,blockingIssues,newTokens};
+}
 export async function finishSyncJob(id:string,identity:AgentIdentity,completion:JobCompletion,verified:{dataRevision:number;changed:boolean;lineageHash:string},completionHash:string){
   return prisma.$transaction(async tx=>{
     await tx.$queryRaw`SELECT id FROM sync_jobs WHERE id=${id}::uuid FOR UPDATE`;const job=await deviceJob(id,identity,tx),device=await tx.agentDevice.findUnique({where:{id:identity.deviceId}});
@@ -37,8 +49,12 @@ export async function finishSyncJob(id:string,identity:AgentIdentity,completion:
     if(job.completionHash){ensure(job.completionHash===completionHash,'COMPLETION_REPLAY_CONFLICT');return publicJob(job);}
     ensure(job.status==='running'&&job.expiresAt>new Date(),'JOB_TERMINAL');
     ensure(Date.parse(completion.collectedAt)>=job.startedAt!.getTime()-1000&&Date.parse(completion.collectedAt)<=Date.now()+30000,'INVALID_SCAN_TIME',400);
-    const status=completion.review||completion.lineageHash!==verified.lineageHash?'review_required':completion.issues||completion.pending?'partial':verified.changed?'completed':'completed_no_change';
-    const updated=await tx.syncJob.update({where:{id},data:{status,activeKey:null,finishedAt:new Date(),dataRevision:BigInt(verified.dataRevision),completionHash,result:completion as unknown as Prisma.InputJsonValue,errorCode:status==='partial'?'SOURCE_OR_UPLOAD_INCOMPLETE':status==='review_required'?'REVIEW_REQUIRED':null}});
+    const prior=await tx.syncJob.findFirst({where:{deviceId:identity.deviceId,ownerAccountId:identity.ownerAccountId,finishedAt:{lt:job.startedAt!},status:{notIn:activeJobStates}},orderBy:{finishedAt:'desc'},select:{result:true}});
+    const priorResult=prior?.result as Partial<JobCompletion>|null|undefined;
+    const normalized=jobStatus(completion,verified,Number(priorResult?.reviewTotal??priorResult?.review??0));
+    const result={...completion,...normalized};
+    const status=normalized.status;
+    const updated=await tx.syncJob.update({where:{id},data:{status,activeKey:null,finishedAt:new Date(),dataRevision:BigInt(verified.dataRevision),completionHash,result:result as unknown as Prisma.InputJsonValue,errorCode:status==='partial'?'SOURCE_OR_UPLOAD_INCOMPLETE':status==='review_required'?'REVIEW_REQUIRED':null}});
     await tx.securityAudit.create({data:{actorId:identity.deviceId,action:'sync.job.complete',targetId:id,result:status}});return publicJob(updated);
   });
 }

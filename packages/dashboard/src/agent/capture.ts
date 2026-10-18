@@ -85,7 +85,7 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
   const cc=collectCommandCodeEvents(snapshot,pricing),agents=collectAiusageAndRawAgentEvents(snapshot,pricing),commandFiles=new Set(cc.events.flatMap(r=>r.sourceFile?[normalizeFile(r.sourceFile)]:[]));
   if(cc.errors.length)failed.add('commandcode');for(const error of agents.errors){
     const source=Object.entries({codex:/codex/i,geminiCli:/gemini/i,antigravity:/antigravity/i,claudeCode:/claude/i,opencode:/opencode/i,zcode:/zcode/i,aiusage:/indexed|aiusage/i}).find(([,pattern])=>pattern.test(error))?.[0];
-    if(source){failed.add(source);issues.push(source+':COLLECTOR_INCOMPLETE');}else{issues.push('sources:COLLECTOR_INCOMPLETE');for(const item of allowed)failed.add(item);}
+    if(source&&allowed.includes(source as TransferSource)){failed.add(source);issues.push(source+':COLLECTOR_INCOMPLETE');}else if(!source){issues.push('sources:COLLECTOR_INCOMPLETE');for(const item of allowed)failed.add(item);}
   }
   const rows=[...cc.events,...agents.events.filter(r=>r.sourceId!=='commandcode'||!r.sourceFile||!commandFiles.has(normalizeFile(r.sourceFile)))];
   const groups=new Map<string,typeof rows>();for(const row of rows){if(!allowed.includes(row.sourceId as TransferSource))continue;const key=JSON.stringify([row.sourceId,row.sessionId]),group=groups.get(key)??[];group.push(row);groups.set(key,group);}

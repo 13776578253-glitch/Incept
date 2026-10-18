@@ -58,6 +58,8 @@ test('a real collector candidate retains v1 review until an explicit Owner appro
     const receipt=service.commit(historical.deviceId,candidate.header.batchId,historical);
     assert.equal(receipt.status,'committed');assert.equal(f.readSyncView(service).events.length,1);
     assert.equal(service.db.prepare('SELECT COUNT(*) n FROM sync_adoptions').get().n,1);
+    const resumed=f.resolveScope(service,{source:capture.source,sessionId:capture.sessionId},historical,legacy);
+    assert.equal(resumed.status,'registered');assert.equal(resumed.headManifest,receipt.manifestHash);assert.equal(resumed.head?.manifest?.manifestHash,receipt.manifestHash);
   }finally{service.close();}
 }));
 test('Gemini deletion returns review, preserving the old200; half JSONL is incomplete',()=>sandbox(async dir=>{

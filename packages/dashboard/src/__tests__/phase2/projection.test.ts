@@ -15,7 +15,7 @@ let directory:string,home:string,legacy:string,service:CompatibleSyncService;
 const owner={role:'owner' as const,subject:'owner',reason:'isolated projection acceptance'};
 beforeEach(()=>{directory=mkdtempSync(join(tmpdir(),'phase4-projection-'));home=join(directory,'receiver');mkdirSync(home);legacy=join(directory,'legacy.db');writeFileSync(join(directory,'overrides.json'),'{}');vi.stubEnv('INCEPT_DASHBOARD_OVERRIDES_FILE',join(directory,'overrides.json'));vi.stubEnv('INCEPT_DASHBOARD_IMPORTS_FILE',legacy);vi.useFakeTimers();vi.setSystemTime(PHASE0_NOW);service=new CompatibleSyncService(join(directory,'sync.db'));});
 afterEach(()=>{service.close();rmSync(directory,{recursive:true,force:true});vi.useRealTimers();vi.restoreAllMocks();vi.unstubAllEnvs();});
-const comparable=(data:TokenDashboardData)=>({...data,sync:undefined,checkedAt:undefined});
+const comparable=(data:TokenDashboardData)=>({...data,updatedAt:undefined,sync:undefined,checkedAt:undefined});
 it('controlled projection has zero complete DTO differences in 7d/30d/all, before and after exact adoption of overlapping v1 batches',async()=>{
   const source=join(directory,'source');writePhase0Home(source);const original=phase0Export(source);
   const bundle=phase0Rehash({...original,events:[PHASE0_NOW-45*86400000,PHASE0_NOW-15*86400000,PHASE0_AT].flatMap((timestampMs,i)=>original.events.map(e=>({...e,eventId:hash([e.eventId,i]),timestampMs})))});
