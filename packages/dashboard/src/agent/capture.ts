@@ -99,7 +99,10 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
       if(!selected.length)throw Error('MISSING_ORIGIN');
       const commandHasIds=source!=='commandcode'||selected.every(file=>file.bytes!.toString('utf8').split('\n').filter(r=>r.trim()).every(line=>!!JSON.parse(line).id));
       const points=source==='codex'&&reader==='codex'?selected.flatMap(file=>file.bytes!.toString('utf8').split('\n').filter(r=>r.trim()).map(r=>JSON.parse(r))).filter(r=>r.payload?.type==='token_count'):[];
-      const records:SyncRecord[]=group.sort((a,b)=>a.timestampMs-b.timestampMs).map(raw=>{
+      const usable=group.filter(raw=>(raw.inputTokens??0)+(raw.outputTokens??0)+(raw.cacheReadTokens??0)+(raw.cacheCreationTokens??0)+(raw.reasoningTokens??0)>0);
+      if(usable.length!==group.length)issues.push(source+':EMPTY_USAGE_SKIPPED');
+      if(!usable.length)continue;
+      const records:SyncRecord[]=usable.sort((a,b)=>a.timestampMs-b.timestampMs).map(raw=>{
         const event:TransferEvent={eventId:nativeEventId(raw),source,sessionId,timestampMs:raw.timestampMs,modelName:raw.modelName,projectKey:raw.projectKey+':'+hash(raw.workspacePath??raw.projectKey).slice(0,16),projectName:raw.projectName,
           ...(raw.workspacePath?{workspacePath:raw.workspacePath}:{}),...(raw.sessionTitle?{sessionTitle:raw.sessionTitle}:{}),inputTokens:raw.inputTokens,outputTokens:raw.outputTokens,cacheReadTokens:raw.cacheReadTokens,cacheCreationTokens:raw.cacheCreationTokens,reasoningTokens:raw.reasoningTokens,
           ...(raw.costSource==='recorded'&&source!=='codex'?{recordedCost:raw.nominalCost??raw.cost}:{})};event.eventId=canonicalTransferId(event);
