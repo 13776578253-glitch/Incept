@@ -9,6 +9,7 @@ import {collectAiusageAndRawAgentEvents} from '../adapters/local/collectors/agen
 import {loadLocalPricingMap} from '../adapters/local/pricing';
 import {normalizeFile} from '../adapters/local/collectors/common';
 import {hash,nativeEventId} from '../adapters/local/imports/identity';
+import {normalizeCodexRecords} from './codex-normalize';
 import {canonicalTransferId} from '../adapters/local/imports/matching';
 import {makeManifest,sequenceHash,syncEnvelope,SYNC_LIMITS,validateHeader,validateRecords} from '../adapters/local/imports/sync/contract';
 import type {SyncScope,SyncHeader,SyncRecord,SyncRange} from '../domain/sync';
@@ -119,10 +120,12 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
         return record;
       });
       const records=mapped.filter((record):record is SyncRecord=>record!==null);
-      if(records.length>SYNC_LIMITS.records||new Set(records.map(r=>r.event.eventId)).size!==records.length)throw Error('AMBIGUOUS_RECORD');
-      const rates=Object.fromEntries([...new Set(records.map(r=>r.event.modelName))].flatMap(name=>pricing.has(name)?[[name,pricing.get(name)!]]:[]));
+      const counters=points.map(p=>({timestampMs:Date.parse(p.timestamp),total:p.payload?.info?.total_token_usage,last:p.payload?.info?.last_token_usage}));
+      const normalized=source==='codex'&&reader==='codex'?normalizeCodexRecords(records,counters):records;
+      if(normalized.length>SYNC_LIMITS.records||new Set(normalized.map(r=>r.event.eventId)).size!==normalized.length)throw Error('AMBIGUOUS_RECORD');
+      const rates=Object.fromEntries([...new Set(normalized.map(r=>r.event.modelName))].flatMap(name=>pricing.has(name)?[[name,pricing.get(name)!]]:[]));
       const prefixes:Record<string,string>={};for(const parent of parents.filter(p=>p.header.manifest.scope.source===source&&p.header.manifest.scope.sessionId===sessionId))for(const old of parent.proofs){const file=selected.find(f=>hash(f.locator)===old.range.locatorHash);if(file?.bytes&&file.bytes.length>=old.range.byteLength)prefixes[old.range.locatorHash+':'+old.range.byteLength]=hash(file.bytes.subarray(0,old.range.byteLength).toString('base64'));}
-      captures.push({source,sessionId,reader,records,proofs:selected.map(file=>fileProof(file,{source,sessionId},reader)),rates,prefixes});
+      captures.push({source,sessionId,reader,records:normalized,proofs:selected.map(file=>fileProof(file,{source,sessionId},reader)),rates,prefixes});
     }catch(error){if(process.env.INCEPT_CAPTURE_DEBUG)console.error('CAPTURE_GROUP_FAILED',source,sessionId,error instanceof Error?error.stack:String(error));issues.push(source+':SOURCE_REVIEW_REQUIRED');}
   }
   return {captures,issues:[...new Set(issues)]};

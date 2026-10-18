@@ -44,6 +44,8 @@ export class SyncEngine {
     const reviewBefore=new Set(this.state.reviewBatches());
     const seen=new Set<string>(),allSeen=new Set(captured.captures.map(c=>scopeKey(c.source,c.sessionId))),oldParents=this.state.parents();
     for(const capture of captured.captures){const key=scopeKey(capture.source,capture.sessionId);seen.add(key);const previous=this.state.tail(key);
+      // An unavailable/empty source is not a zero baseline and must not create a scope.
+      if(!capture.records.length)continue;
       const signature=hash([capture.reader,capture.records,capture.proofs.map(p=>[p.range.locatorHash,p.range.identityHash,p.range.root])]);
       if(previous?.signature===signature)continue;
       if(this.state.blocked(key)){
