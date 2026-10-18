@@ -78,7 +78,11 @@ export function readSyncView(service: CompatibleSyncService, native: RawUsageEve
       if(match.matches.length&&!match.ambiguous) {const indexed=match.matches.filter(item=>!item.raw.eventId&&['codex','commandcode'].includes(item.raw.sourceId));
         if(indexed.length!==match.matches.length) continue;for(const item of indexed)replacedIndexed.add(item.raw);}
       else if(match.ambiguous)issues.push('Ambiguous native/import identity; review the affected batches before updating data.');
-      const event=priceSyncRecord(scope,record,JSON.parse(String(row.basis_json)) as SyncBasis,JSON.parse(String(row.mappings_json)),String(row.label));
+      const storedBasis=JSON.parse(String(row.basis_json)) as SyncBasis;
+      // New trusted generations carry their own rates. Fall back to the live
+      // pricing map only for legacy/partial bases that predate a model entry.
+      const basis:SyncBasis={...storedBasis,rates:{...Object.fromEntries(pricing),...storedBasis.rates}};
+      const event=priceSyncRecord(scope,record,basis,JSON.parse(String(row.mappings_json)),String(row.label));
       const kind=record.nativeKey?'native':record.pointKey?'point':'retained',key=record.nativeKey?.keyHash??record.pointKey??hash(record);
       const supports=ancestors.get(JSON.stringify([row.scope_id,kind,key]))??ancestors.get(JSON.stringify([row.scope_id,'session',row.scope_id]))??[];
       const ancestor=(supports.find(item=>item.legacyEventId===record.event.eventId)??supports[0])?.batchId,target=targets.get(event.projectKey);
