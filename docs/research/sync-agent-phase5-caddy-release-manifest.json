@@ -1,0 +1,60 @@
+{
+  "release": "phase5-caddy-20261018",
+  "date": "2026-10-18",
+  "sourceCommit": "17592df7a2a3a682a74b896299a98213266eb58a",
+  "sourceTag": "phase5-caddy-release-20261018",
+  "baseSourceCommit": "e569555e498e7d5454c3a2b9163c3f6683af880e",
+  "reason": "Production uses Caddy, not Nginx. Add /api/sync/ws to sync-gateway:3101, block public internal/RPC/health paths, update env template and runbook. Nginx remains an optional non-production template.",
+  "image": {
+    "tag": "incept-sync-phase5:caddy-17592df",
+    "id": "sha256:f45bff2864f02a7c899180d852aecba51886563001737aa90f844c5751d1d866",
+    "digest": "sha256:f45bff2864f02a7c899180d852aecba51886563001737aa90f844c5751d1d866",
+    "bytes": 368999618,
+    "createdAt": "2026-10-18T00:43:24.853143479Z",
+    "buildTarget": "runtime"
+  },
+  "windowsZip": {
+    "path": "apps/sync-agent/dist/package/incept-sync-agent-win-node24.zip",
+    "bytes": 45305,
+    "sha256": "b0e453c5985823d55167c77280d465023bb51a4593406084a567880b12159077"
+  },
+  "caddyValidation": {
+    "config": "deployment/Caddyfile",
+    "caddyVersion": "2.11.7",
+    "validate": "Valid configuration",
+    "internal404": {
+      "/api/internal/sync": 404,
+      "/api/internal/sync/": 404,
+      "/api/internal/sync/check": 404,
+      "/rpc": 404,
+      "/rpc/": 404,
+      "/rpc/status": 404,
+      "/healthz": 404,
+      "/healthz/": 404
+    },
+    "wssUpgrade": {
+      "url": "wss://localhost:18443/api/sync/ws",
+      "opened": true,
+      "closeCode": 4003,
+      "gateway": "real apps/sync-gateway gateway.mjs"
+    }
+  },
+  "tests": {
+    "dockerBuild": "exit 0",
+    "dashboard": "41 files / 479 passed (phase0c long test given 20s timeout)",
+    "web": "26 passed files + 5 skipped; 115 passed + 55 gated skipped",
+    "agent": "15 passed (Linux gate 13 passed, 2 Windows-only skipped)",
+    "gateway": "2 passed",
+    "ops": "9 passed + 1 Linux-only skipped",
+    "typecheck": "workspace + sync-agent + sync-gateway: 0 diagnostics"
+  },
+  "productionTarget": {
+    "host": "43.155.136.83",
+    "domain": "43-155-136-83.sslip.io",
+    "proxy": "caddy",
+    "canaryUuid": "02421821-b6f6-4292-8271-9546f7d65ddd",
+    "allowedSources": ["commandcode", "claudeCode", "zcode"],
+    "dataDir": "/srv/incept/import-20261014/shared",
+    "rollbackImage": "sha256:1c72587851fa47faf8c40745b2d252c84edeef57a86113a412282e326dca401a"
+  }
+}
