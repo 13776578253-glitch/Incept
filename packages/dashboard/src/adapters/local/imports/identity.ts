@@ -3,7 +3,7 @@ import type { TransferEvent } from '../../../domain';
 import type { RawUsageEvent } from '../types';
 
 export function stableJson(value: unknown, depth = 0): string {
-  if (depth > 16) throw new Error('Data nesting is too deep');
+  if (depth > 64) throw new Error('Data nesting is too deep');
   if (Array.isArray(value)) return '[' + value.map(item => stableJson(item, depth + 1)).join(',') + ']';
   if (value && typeof value === 'object') return '{' + Object.entries(value).filter(([, item]) => item !== undefined)
     .sort(([a], [b]) => a.localeCompare(b, 'en')).map(([key, item]) => JSON.stringify(key) + ':' + stableJson(item, depth + 1)).join(',') + '}';

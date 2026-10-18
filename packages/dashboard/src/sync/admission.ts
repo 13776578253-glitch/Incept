@@ -15,8 +15,11 @@ export function resolveScope(service:CompatibleSyncService,input:Pick<SyncScope,
     CREATE INDEX IF NOT EXISTS sync_admissions_device ON sync_admissions(device_id,created_at);
     CREATE TABLE IF NOT EXISTS sync_admission_reviews(id TEXT PRIMARY KEY,device_id TEXT NOT NULL,source TEXT NOT NULL,session_id TEXT NOT NULL,code TEXT NOT NULL,created_at INTEGER NOT NULL);`);
   return service.transaction(()=>{
-    const matches=service.db.prepare("SELECT o.scope_json,s.head_manifest,s.fenced FROM sync_origins o JOIN sync_scopes s ON s.scope_id=o.scope_id WHERE json_extract(o.scope_json,'$.source')=? AND json_extract(o.scope_json,'$.sessionId')=?").all(input.source,input.sessionId);
-    requireSync(matches.every(row=>JSON.parse(String(row.scope_json)).deviceId===actor.deviceId),'ORIGIN_OWNERSHIP_CONFLICT');
+    const rows=service.db.prepare("SELECT o.scope_json,s.head_manifest,s.fenced FROM sync_origins o JOIN sync_scopes s ON s.scope_id=o.scope_id WHERE json_extract(o.scope_json,'$.source')=? AND json_extract(o.scope_json,'$.sessionId')=?").all(input.source,input.sessionId);
+    const matches=rows.filter(row=>JSON.parse(String(row.scope_json)).deviceId===actor.deviceId);
+    // An existing claim by another device needs one explicit Owner binding. A
+    // bound device keeps its own lineage and resolves normally afterwards.
+    requireSync(rows.length===0||matches.length>0,'ORIGIN_OWNERSHIP_CONFLICT');
     const prior=matches[0];requireSync(!prior?.fenced,'ROLLED_BACK_LINEAGE');
     const scope:SyncScope=prior?JSON.parse(String(prior.scope_json)):{deviceId:actor.deviceId,source:input.source,sessionId:input.sessionId,originId:originId(input.source,input.sessionId)};
     const head=prior?.head_manifest?service.db.prepare('SELECT header_json FROM sync_manifests WHERE id=?').get(String(prior.head_manifest)):undefined;

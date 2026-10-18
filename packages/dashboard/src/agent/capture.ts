@@ -105,22 +105,25 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
       const usable=group.filter(raw=>(raw.inputTokens??0)+(raw.outputTokens??0)+(raw.cacheReadTokens??0)+(raw.cacheCreationTokens??0)+(raw.reasoningTokens??0)>0);
       if(usable.length!==group.length)issues.push(source+':EMPTY_USAGE_SKIPPED');
       if(!usable.length)continue;
-      const records:SyncRecord[]=usable.sort((a,b)=>a.timestampMs-b.timestampMs).map(raw=>{
+      const mapped=usable.sort((a,b)=>a.timestampMs-b.timestampMs).map((raw):SyncRecord|null=>{
         const event:TransferEvent={eventId:nativeEventId(raw),source,sessionId,timestampMs:raw.timestampMs,modelName:raw.modelName,projectKey:raw.projectKey+':'+hash(raw.workspacePath??raw.projectKey).slice(0,16),projectName:raw.projectName,
           ...(raw.workspacePath?{workspacePath:raw.workspacePath}:{}),...(raw.sessionTitle?{sessionTitle:raw.sessionTitle}:{}),inputTokens:raw.inputTokens,outputTokens:raw.outputTokens,cacheReadTokens:raw.cacheReadTokens,cacheCreationTokens:raw.cacheCreationTokens,reasoningTokens:raw.reasoningTokens,
           ...(raw.costSource==='recorded'&&source!=='codex'?{recordedCost:raw.nominalCost??raw.cost}:{})};event.eventId=canonicalTransferId(event);
         const record:SyncRecord={event,envelopeHash:''};record.envelopeHash=syncEnvelope(record);
         if(source==='codex'&&reader==='codex'){
-          const candidates=points.filter(p=>Date.parse(p.timestamp)===event.timestampMs),unique=new Map(candidates.map(p=>[hash(p.payload.info.total_token_usage),p]));if(unique.size!==1)throw Error('CODEX_COUNTER_INVALID');
-          const total=unique.values().next().value?.payload.info.total_token_usage;if(!total)throw Error('CODEX_COUNTER_INVALID');record.pointKey=hash([sessionId,event.timestampMs]);record.cumulative={input:total.input_tokens??0,cache:total.cached_input_tokens??0,output:total.output_tokens??0,reasoning:total.reasoning_output_tokens??0};
+          const candidates=points.filter(p=>Date.parse(p.timestamp)===event.timestampMs&&p.payload?.info?.total_token_usage),unique=new Map(candidates.map(p=>[hash(p.payload.info.total_token_usage),p]));
+          if(unique.size===0)return null;
+          if(unique.size!==1)return null;
+          const total=unique.values().next().value?.payload.info.total_token_usage;if(!total)return null;record.pointKey=hash([sessionId,event.timestampMs]);record.cumulative={input:total.input_tokens??0,cache:total.cached_input_tokens??0,output:total.output_tokens??0,reasoning:total.reasoning_output_tokens??0};
         }else if(reader!=='aiusage'&&raw.eventId&&commandHasIds)record.nativeKey={source,keyHash:hash(raw.eventId)};
         return record;
       });
+      const records=mapped.filter((record):record is SyncRecord=>record!==null);
       if(records.length>SYNC_LIMITS.records||new Set(records.map(r=>r.event.eventId)).size!==records.length)throw Error('AMBIGUOUS_RECORD');
       const rates=Object.fromEntries([...new Set(records.map(r=>r.event.modelName))].flatMap(name=>pricing.has(name)?[[name,pricing.get(name)!]]:[]));
       const prefixes:Record<string,string>={};for(const parent of parents.filter(p=>p.header.manifest.scope.source===source&&p.header.manifest.scope.sessionId===sessionId))for(const old of parent.proofs){const file=selected.find(f=>hash(f.locator)===old.range.locatorHash);if(file?.bytes&&file.bytes.length>=old.range.byteLength)prefixes[old.range.locatorHash+':'+old.range.byteLength]=hash(file.bytes.subarray(0,old.range.byteLength).toString('base64'));}
       captures.push({source,sessionId,reader,records,proofs:selected.map(file=>fileProof(file,{source,sessionId},reader)),rates,prefixes});
-    }catch(error){if(process.env.INCEPT_CAPTURE_DEBUG)console.error('CAPTURE_GROUP_FAILED',source,sessionId,String(error));issues.push(source+':SOURCE_REVIEW_REQUIRED');}
+    }catch(error){if(process.env.INCEPT_CAPTURE_DEBUG)console.error('CAPTURE_GROUP_FAILED',source,sessionId,error instanceof Error?error.stack:String(error));issues.push(source+':SOURCE_REVIEW_REQUIRED');}
   }
   return {captures,issues:[...new Set(issues)]};
 }
