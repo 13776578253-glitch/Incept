@@ -8,6 +8,7 @@ export function SyncDevicesPanel({language}:{language:'zh'|'en'}) {
   const [binding,setBinding]=useState(''),[source,setSource]=useState('codex'),[session,setSession]=useState(''),[origin,setOrigin]=useState('');
   const [legacyId,setLegacyId]=useState('');
   const [reviews,setReviews]=useState<SyncReview[]|null>(null);
+  const [editingSources,setEditingSources]=useState(''),[sourceDraft,setSourceDraft]=useState<string[]>([]);
   const sources=['codex','commandcode','claudeCode','geminiCli','antigravity','opencode','zcode'];
   const [allowedSources,setAllowedSources]=useState(sources);
   useEffect(()=>{const clear=()=>{if(document.visibilityState!=='visible')setSecret(null);};document.addEventListener('visibilitychange',clear);return()=>document.removeEventListener('visibilitychange',clear);},[]);
@@ -38,7 +39,12 @@ export function SyncDevicesPanel({language}:{language:'zh'|'en'}) {
           <button className={button} disabled={busy||!!device.revokedAt} onClick={()=>void run(async()=>{await request('/'+device.id,'DELETE');await load();})}>{t('吊销','Revoke')}</button>
           <button className={button} disabled={busy} onClick={()=>{const value=window.prompt(t('新设备名称','New device name'),device.name);if(value)void run(async()=>{await request('/'+device.id,'PATCH',{name:value});await load();});}}>{t('改名','Rename')}</button>
           <button className={button} disabled={busy||!!device.revokedAt} onClick={()=>setBinding(binding===device.id?'':device.id)}>{t('绑定来源范围','Bind source scope')}</button>
+          <button className={button} disabled={busy||!!device.revokedAt} onClick={()=>{setEditingSources(editingSources===device.id?'':device.id);setSourceDraft(device.allowedSources);}}>{t('编辑来源','Edit sources')}</button>
         </div>
+        {editingSources===device.id&&<form className="space-y-2" onSubmit={e=>{e.preventDefault();void run(async()=>{await request('/'+device.id,'PATCH',{allowedSources:sourceDraft});setEditingSources('');await load();});}}>
+          <fieldset className="flex flex-wrap gap-3"><legend className="text-xs">{t('允许自动同步的数据源','Sources allowed to sync automatically')}</legend>{sources.map(item=><label key={item} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={sourceDraft.includes(item)} onChange={e=>setSourceDraft(current=>e.target.checked?[...current,item]:current.filter(source=>source!==item))}/>{item}</label>)}</fieldset>
+          <button className={button} disabled={busy||!sourceDraft.length}>{t('保存来源','Save sources')}</button>
+        </form>}
         {binding===device.id&&<form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();void run(async()=>{await request('/'+device.id+'/scopes','POST',{source,sessionId:session,originId:origin});setBinding('');setSession('');setOrigin('');});}}>
           <select aria-label={t('来源','Source')} className={input} value={source} onChange={e=>setSource(e.target.value)}>{device.allowedSources.map(item=><option key={item}>{item}</option>)}</select>
           <input aria-label="Session ID" className={input} value={session} onChange={e=>setSession(e.target.value)} required maxLength={512}/>

@@ -4,7 +4,7 @@ import { dirname,isAbsolute,join,resolve } from 'node:path';
 import { DEFAULT_CAPACITY,SyncTransportError,type CapacityPolicy,type SyncWork } from './protocol';
 
 type Job={id:number;work:SyncWork;device:string;resolve:(v:unknown)=>void;reject:(e:unknown)=>void;verify:()=>Promise<void>;signal?:AbortSignal;abort:()=>void;timer?:ReturnType<typeof setTimeout>;active:boolean};
-export type ExecutorOptions={workerFile?:string;legacyPath?:string;maxQueue?:number;perDevice?:number;timeoutMs?:number;policy?:CapacityPolicy};
+export type ExecutorOptions={workerFile?:string;legacyPath?:string;trusted?:boolean;maxQueue?:number;perDevice?:number;timeoutMs?:number;policy?:CapacityPolicy};
 export function findSyncWorker() {
   if(process.env.INCEPT_SYNC_WORKER_FILE&&isAbsolute(process.env.INCEPT_SYNC_WORKER_FILE))return process.env.INCEPT_SYNC_WORKER_FILE;
   let current=process.cwd();
@@ -14,10 +14,10 @@ export function findSyncWorker() {
 export class SyncExecutor {
   private worker?:Worker;private queue:Job[]=[];private running?:Job;private serial=0;private closed=false;
   readonly metrics={completed:0,failed:0,lastFailure:null as string|null,lastWallMs:0,lastWriteWallMs:0,lastCommitWallMs:0,processRssBytes:0,workerHeapBytes:0,busyRetries:0};
-  readonly options:Required<Omit<ExecutorOptions,'workerFile'|'legacyPath'>>&{workerFile:string;legacyPath?:string};
+  readonly options:Required<Omit<ExecutorOptions,'workerFile'|'legacyPath'|'trusted'>>&{workerFile:string;legacyPath?:string;trusted:boolean};
   constructor(readonly path:string,options:ExecutorOptions={}) {
     if(!isAbsolute(path))throw new SyncTransportError('EXPLICIT_ABSOLUTE_STORE_PATH_REQUIRED');
-    this.options={workerFile:options.workerFile??findSyncWorker(),legacyPath:options.legacyPath,maxQueue:options.maxQueue??16,perDevice:options.perDevice??2,timeoutMs:options.timeoutMs??30_000,policy:options.policy??DEFAULT_CAPACITY};
+    this.options={workerFile:options.workerFile??findSyncWorker(),legacyPath:options.legacyPath,trusted:options.trusted===true,maxQueue:options.maxQueue??16,perDevice:options.perDevice??2,timeoutMs:options.timeoutMs??30_000,policy:options.policy??DEFAULT_CAPACITY};
     if(!Number.isInteger(this.options.maxQueue)||this.options.maxQueue<1||this.options.maxQueue>64||!Number.isInteger(this.options.perDevice)||this.options.perDevice<1||this.options.perDevice>4
       ||!Number.isInteger(this.options.timeoutMs)||this.options.timeoutMs<100||this.options.timeoutMs>120_000)throw new SyncTransportError('INVALID_EXECUTOR_CONFIG');
     for(const value of Object.values(this.options.policy))if(!Number.isSafeInteger(value)||value<0)throw new SyncTransportError('INVALID_CAPACITY_CONFIG');
@@ -54,7 +54,7 @@ export class SyncExecutor {
     try {
       await job.verify();if(this.running!==job)return;job.active=true;
       if(!this.worker) {
-        const instance=Reflect.construct(Worker,[resolve(this.options.workerFile),{workerData:{path:this.path,policy:this.options.policy,legacyPath:this.options.legacyPath},resourceLimits:{maxOldGenerationSizeMb:256}}]) as Worker;
+        const instance=Reflect.construct(Worker,[resolve(this.options.workerFile),{workerData:{path:this.path,policy:this.options.policy,legacyPath:this.options.legacyPath,trusted:this.options.trusted},resourceLimits:{maxOldGenerationSizeMb:256}}]) as Worker;
         this.worker=instance;
         instance.on('message',message=>{
           const current=this.running;if(this.worker!==instance||!current||current.id!==message.id)return;this.running=undefined;

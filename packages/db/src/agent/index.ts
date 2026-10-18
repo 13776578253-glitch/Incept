@@ -24,8 +24,8 @@ function sources(value:unknown):string[] {
 // Session gate rechecks current credential version, TOTP enrollment and recent auth.
 // This also makes direct service callers obey the same Owner gate as HTTP.
 export function manageAgentDevices(sessionId:string,action:'list',input?:Record<string,unknown>):Promise<DeviceList>;
-export function manageAgentDevices(sessionId:string,action:'create'|'rename'|'revoke'|'rotate',input?:Record<string,unknown>):Promise<DeviceResult>;
-export async function manageAgentDevices(sessionId:string, action:'list'|'create'|'rename'|'revoke'|'rotate', input:Record<string,unknown>={}):Promise<DeviceList|DeviceResult> {
+export function manageAgentDevices(sessionId:string,action:'create'|'rename'|'revoke'|'rotate'|'sources',input?:Record<string,unknown>):Promise<DeviceResult>;
+export async function manageAgentDevices(sessionId:string, action:'list'|'create'|'rename'|'revoke'|'rotate'|'sources', input:Record<string,unknown>={}):Promise<DeviceList|DeviceResult> {
   await requireRecentOwnerSession(sessionId);
   return prisma.$transaction(async tx=>{
     await tx.$queryRaw`SELECT id FROM owner_accounts WHERE id='owner' FOR UPDATE`;
@@ -47,6 +47,14 @@ export async function manageAgentDevices(sessionId:string, action:'list'|'create
     if(typeof input.id!=='string'||input.id.length>128)throw new AgentAuthError(400,'INVALID_DEVICE_ID');
     const previous=await tx.agentDevice.findFirst({where:{id:input.id,ownerAccountId}});
     if(!previous)throw new AgentAuthError(404,'DEVICE_NOT_FOUND');
+    if(action==='sources'){
+      if(previous.revokedAt)throw new AgentAuthError(409,'DEVICE_REVOKED');
+      const next=sources(input.allowedSources);
+      const device=await tx.agentDevice.update({where:{id:previous.id},data:{allowedSources:next},select:publicFields});
+      if(JSON.stringify([...previous.allowedSources].sort())!==JSON.stringify([...next].sort()))await tx.syncJob.updateMany({where:{deviceId:previous.id,status:{in:['queued','dispatched','running']}},data:{status:'cancelled',activeKey:null,finishedAt:now,errorCode:'SOURCES_CHANGED'}});
+      await tx.securityAudit.create({data:{actorId:ownerAccountId,sessionId,action:'sync.device.sources',targetId:device.id,result:'success'}});
+      return {device};
+    }
     if(action==='rotate'&&previous.revokedAt)throw new AgentAuthError(409,'DEVICE_REVOKED');
     const secret=action==='rotate'?credential():undefined;
     const data=action==='rename'?{name:name(input.name)}:action==='revoke'?{revokedAt:previous.revokedAt??now}

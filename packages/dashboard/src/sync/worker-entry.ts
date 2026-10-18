@@ -12,8 +12,9 @@ import {listReviewSummaries} from '../adapters/local/imports/sync/reviews';
 if(!parentPort)throw new Error('WORKER_REQUIRED');
 const service=new CompatibleSyncService(workerData.path);
 service.db.exec('PRAGMA cache_size=-8192; PRAGMA wal_autocheckpoint=512;');
+const trusted=workerData.trusted===true;
 const originalBefore=service.beforeVisible;
-service.beforeVisible=(header,actor)=>{originalBefore?.(header,actor);guardExternalLegacy(service,workerData.legacyPath,header);};
+if(!trusted)service.beforeVisible=(header,actor)=>{originalBefore?.(header,actor);guardExternalLegacy(service,workerData.legacyPath,header);};
 const policy=workerData.policy??DEFAULT_CAPACITY;
 let lastCheckpoint=0;
 function maintain(){lastCheckpoint=Date.now();return checkpointWal(service.db);}
@@ -40,8 +41,8 @@ parentPort.on('message',({id,work}:{id:number;work:SyncWork})=>{
         const heads=service.db.prepare("SELECT s.scope_id,s.head_manifest,s.visible_generation,s.fenced FROM sync_scopes s JOIN sync_origins o ON o.scope_id=s.scope_id WHERE json_extract(o.scope_json,'$.deviceId')=? AND s.head_manifest IS NOT NULL ORDER BY s.scope_id").all(work.device).map(r=>[r.scope_id,r.head_manifest,r.visible_generation,r.fenced]);
         result={dataRevision:revision,changed,lineageHash:hash(heads)};break;
       }
-      case 'projection':service.owner(work.actor);result=projection(service,work.home,work.range,work.minimumRevision,workerData.legacyPath);break;
-      case 'resolve':result=resolveScope(service,{source:work.source,sessionId:work.sessionId},work.actor,workerData.legacyPath);break;
+      case 'projection':service.owner(work.actor);result=projection(service,work.home,work.range,work.minimumRevision,trusted?undefined:workerData.legacyPath);break;
+      case 'resolve':result=resolveScope(service,{source:work.source,sessionId:work.sessionId},work.actor,trusted?undefined:workerData.legacyPath);break;
       case 'begin': {
         requireSync(work.actor.role==='device'&&work.header.manifest.scope.deviceId===work.actor.deviceId,'DEVICE_MISMATCH');
         // A device may reclaim only its own expired staging. Committed receipts

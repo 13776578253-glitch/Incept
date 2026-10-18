@@ -50,7 +50,7 @@ async function main(){
     const identity=await new AgentHttp(endpoint,token,{allowLoopbackHttp:argv.includes('--allow-loopback-http')}).request('/agent');
     if(typeof identity.deviceId!=='string'||!Array.isArray(identity.allowedSources))throw Error('INVALID_DEVICE_IDENTITY');
     if(existsSync(join(directory,'config.json'))){const old=readConfig<Config>(directory);if(old.deviceId!==identity.deviceId||old.endpoint!==endpoint||old.home!==home)throw Error('BINDING_CHANGE_REQUIRES_NEW_STATE');}
-    protectDirectory(directory);storeToken(directory,token);const config:Config={version:1,endpoint,home,deviceId:identity.deviceId,allowedSources:identity.allowedSources,...(argv.includes('--allow-loopback-http')?{allowLoopbackHttp:true}:{})};
+    protectDirectory(directory);storeToken(directory,token);const config:Config={version:1,endpoint,home,deviceId:identity.deviceId,allowedSources:identity.allowedSources,...(argv.includes('--allow-loopback-http')?{allowLoopbackHttp:true}:{}),...(argv.includes('--allow-incomplete')?{allowIncomplete:true}:{})};
     if(argv.includes('--remote'))config.remote=true;atomicJson(join(directory,'config.json'),config);const state=new AgentState(directory);state.close();output({bound:true,deviceId:config.deviceId,allowedSources:config.allowedSources,remote:!!config.remote});return;
   }
   if(command==='supervise'){
@@ -61,10 +61,18 @@ async function main(){
   if(!['run-once','daemon'].includes(command))throw Error('COMMAND_REQUIRED');
   const [major,minor]=process.versions.node.split('.').map(Number);if(major!==24||minor<15)throw Error('NODE_24_15_REQUIRED');
   protectDirectory(directory);const lock=await acquireInstance(directory);lock.unref();
-  const state=new AgentState(directory),config=readConfig<Config>(directory),abort=new AbortController();
+  const state=new AgentState(directory);let config=readConfig<Config>(directory);const abort=new AbortController();
   // Only our own disposable local snapshots are removed. Source HOME is read-only.
   for(const item of readdirSync(directory))if(/^capture-[a-f0-9-]{36}$/.test(item))rmSync(join(directory,item),{recursive:true,force:true});
-  const token=loadToken(directory),http=new AgentHttp(config.endpoint,token,{allowLoopbackHttp:config.allowLoopbackHttp,signal:abort.signal}),engine=new SyncEngine(state,config,http);
+  const token=loadToken(directory),http=new AgentHttp(config.endpoint,token,{allowLoopbackHttp:config.allowLoopbackHttp,signal:abort.signal});
+  // Owner may widen/narrow sources without rotating the device token. Refresh the
+  // cached policy at startup; a running Agent picks it up on its next restart.
+  try{const identity=await http.request<{deviceId:string;allowedSources:string[]}>('/agent');
+    if(identity.deviceId===config.deviceId&&Array.isArray(identity.allowedSources)&&JSON.stringify([...identity.allowedSources].sort())!==JSON.stringify([...config.allowedSources].sort())){
+      config={...config,allowedSources:identity.allowedSources as Config['allowedSources']};atomicJson(join(directory,'config.json'),config);
+    }
+  }catch{/* Keep the last verified local policy while offline. */}
+  const engine=new SyncEngine(state,config,http);
   let remote:RemoteLink|undefined;
   let timer:NodeJS.Timeout|undefined,job:Promise<unknown>|undefined,stopping=false,next=0;
   const stop=()=>{stopping=true;remote?.stop();abort.abort();if(timer)clearInterval(timer);};process.once('SIGINT',stop);process.once('SIGTERM',stop);

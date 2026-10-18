@@ -17,11 +17,11 @@ export {resumeReviewed} from './review';
 export {resumeHeld} from './resume';
 export {classifyIssues} from './issues';
 export {captureHome,buildCandidate} from '../../../packages/dashboard/src/agent/capture';
-export type Config={version:1;endpoint:string;deviceId:string;home:string;allowedSources:TransferSource[];allowLoopbackHttp?:boolean;remote?:boolean};
-export type Collector=(home:string,allowed:TransferSource[],parents:ParentCapture[],signal?:AbortSignal)=>Promise<{captures:Capture[];issues:string[]}>;
-export function workerCollector(stateDirectory:string):Collector{return async(home,allowed,parents,signal)=>{
+export type Config={version:1;endpoint:string;deviceId:string;home:string;allowedSources:TransferSource[];allowLoopbackHttp?:boolean;remote?:boolean;allowIncomplete?:boolean};
+export type Collector=(home:string,allowed:TransferSource[],parents:ParentCapture[],signal?:AbortSignal,options?:{tolerantIncomplete?:boolean})=>Promise<{captures:Capture[];issues:string[]}>;
+export function workerCollector(stateDirectory:string):Collector{return async(home,allowed,parents,signal,options)=>{
   const snapshot=resolve(stateDirectory,'capture-'+randomUUID());
-  const worker=new Worker(fileURLToPath(new URL('./collect-worker.mjs',import.meta.url)),{workerData:{home,allowed,parents,snapshot},resourceLimits:{maxOldGenerationSizeMb:256}});
+  const worker=new Worker(fileURLToPath(new URL('./collect-worker.mjs',import.meta.url)),{workerData:{home,allowed,parents,snapshot,tolerantIncomplete:options?.tolerantIncomplete===true},resourceLimits:{maxOldGenerationSizeMb:1024}});
   try{return await new Promise((yes,no)=>{const abort=()=>{clearTimeout(timer);void worker.terminate();no(Error('CAPTURE_STOPPED'));};const timer=setTimeout(abort,45_000);signal?.addEventListener('abort',abort,{once:true});
     const finish=(error?:Error,result?:{captures:Capture[];issues:string[]})=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);if(error)no(error);else yes(result!);};
     worker.once('message',message=>message.error?finish(Error('SOURCE_CAPTURE_FAILED')):finish(undefined,message.result));worker.once('error',()=>finish(Error('SOURCE_CAPTURE_FAILED')));worker.once('exit',code=>{if(code)finish(Error('SOURCE_CAPTURE_FAILED'));});});
@@ -32,7 +32,15 @@ export class SyncEngine {
   constructor(readonly state:AgentState,readonly config:Config,readonly http:AgentHttp,readonly collect:Collector=workerCollector(state.directory)){}
   run(signal?:AbortSignal){if(this.running)return this.running;this.state.set('activity','collecting');this.running=this.cycle(signal).finally(()=>{this.running=undefined;this.state.set('activity','idle');});return this.running;}
   private async cycle(signal?:AbortSignal){
-    const captured=await this.collect(this.config.home,this.config.allowedSources,this.state.parents(),signal);this.state.set('lastCollectedAt',new Date().toISOString());this.state.set('issues',captured.issues);
+    // Capture one source at a time. This bounds the worker/snapshot to the
+    // per-source limits and keeps one large source from marking all others
+    // incomplete merely because an aggregate cap was reached.
+    const captured={captures:[] as Capture[],issues:[] as string[]};
+    for(const source of this.config.allowedSources){
+      try{const part=await this.collect(this.config.home,[source],this.state.parents(),signal,{tolerantIncomplete:this.config.allowIncomplete===true});captured.captures.push(...part.captures);captured.issues.push(...part.issues);}
+      catch{if(signal?.aborted)break;captured.issues.push(source+':COLLECTOR_FAILED');}
+    }
+    this.state.set('lastCollectedAt',new Date().toISOString());this.state.set('issues',[...new Set(captured.issues)]);
     const reviewBefore=new Set(this.state.reviewBatches());
     const seen=new Set<string>(),allSeen=new Set(captured.captures.map(c=>scopeKey(c.source,c.sessionId))),oldParents=this.state.parents();
     for(const capture of captured.captures){const key=scopeKey(capture.source,capture.sessionId);seen.add(key);const previous=this.state.tail(key);

@@ -2,6 +2,7 @@
 // snapshot. The wire contract contains normalized usage and bounded digests.
 import {backup,DatabaseSync} from 'node:sqlite';
 import {readFileSync,writeFileSync,lstatSync,readdirSync,mkdirSync,existsSync,rmSync} from 'node:fs';
+import {zstdDecompressSync} from 'node:zlib';
 import {join,relative,dirname,basename} from 'node:path';
 import {collectCommandCodeEvents} from '../adapters/local/collectors/commandcode';
 import {collectAiusageAndRawAgentEvents} from '../adapters/local/collectors/agents';
@@ -21,7 +22,7 @@ const roots:Record<string,string[]>={codex:['.codex/sessions','.codex/archived_s
 const binary=(value:unknown):unknown=>value instanceof Uint8Array?{blobHash:hash(Buffer.from(value).toString('base64'))}:value;
 const quote=(s:string)=>'"'+s.replaceAll('"','""')+'"';
 function inventory(home:string){return Object.entries(roots).flatMap(([source,dirs])=>dirs.flatMap(dir=>existsSync(join(home,dir))?readdirSync(join(home,dir),{recursive:true,withFileTypes:true}).filter(r=>r.isFile()).map(r=>({source,locator:relative(home,join(r.parentPath,r.name)).replaceAll('\\','/')})):[]))
-  .filter(r=>r.source==='aiusage'?r.locator.endsWith('cache.db'):/\.(jsonl|json|db|sqlite|jsonl\.zst)$/.test(r.locator)).sort((a,b)=>a.locator.localeCompare(b.locator));}
+  .filter(r=>r.source==='aiusage'?r.locator.endsWith('cache.db'):r.source==='antigravity'?r.locator.endsWith('.db'):/\.(jsonl|json|db|sqlite|jsonl\.zst)$/.test(r.locator)).sort((a,b)=>a.locator.localeCompare(b.locator));}
 function dbRows(path:string,scope?:{source:TransferSource;sessionId:string},reader?:string,mask=false){
   const db=new DatabaseSync(path,{readOnly:true});
   try{db.exec('BEGIN');return db.prepare("SELECT name,sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(table=>{
@@ -59,7 +60,7 @@ function fileProof(file:File,scope:{source:TransferSource;sessionId:string},read
     if(messages.some((r:{tokens?:unknown;timestamp?:string})=>r.tokens&&(!r.timestamp||!Number.isFinite(Date.parse(r.timestamp)))))throw Error('ESTIMATED_TIMESTAMP');
     parts=[{schema:hash(meta),rows:messages.map(hash),envelopes:messages.map((r:Record<string,unknown>)=>hash(maskUsage(r,scope.source)))}];
     root=hash(parts.map(p=>[p.schema,p.rows]));envelopeRoot=hash(parts.map(p=>[p.schema,p.envelopes]));if(obj.sessionId===scope.sessionId)anchor=hash(scope.sessionId);
-  }else if(text&&file.locator.endsWith('.jsonl')){
+  }else if(text&&(file.locator.endsWith('.jsonl')||file.locator.endsWith('.jsonl.zst'))){
     const rows=text.split('\n').filter(r=>r.trim()).map(r=>JSON.parse(r));envelopeRoot=hash(rows.map(r=>hash(maskUsage(r,scope.source))));
     if(scope.source==='codex'&&rows.some(r=>r.type==='session_meta'&&r.payload?.id===scope.sessionId)||scope.source==='claudeCode'&&rows.every(r=>!r.sessionId||r.sessionId===scope.sessionId)&&rows.some(r=>r.sessionId===scope.sessionId)
       ||scope.source==='commandcode'&&'cc-'+basename(file.locator,'.jsonl')===scope.sessionId)anchor=hash(scope.sessionId);
@@ -67,32 +68,34 @@ function fileProof(file:File,scope:{source:TransferSource;sessionId:string},read
   return {range:{locatorHash:hash(file.locator),identityHash:file.identity,root,envelopeRoot,byteLength:file.byteLength,kind:parts?(reader==='geminiCli'?'json':'sqlite'):'jsonl',...(anchor?{sessionAnchorHash:anchor}:{})},...(parts?{parts}:{})};
 }
 // Caller supplies a private disposable snapshot directory and cleans it even on worker termination.
-export async function captureHome(home:string,snapshot:string,allowed:TransferSource[],parents:ParentCapture[]=[]):Promise<{captures:Capture[];issues:string[]}>{
+export async function captureHome(home:string,snapshot:string,allowed:TransferSource[],parents:ParentCapture[]=[],options:{tolerantIncomplete?:boolean}={}):Promise<{captures:Capture[];issues:string[]}>{
   mkdirSync(snapshot,{recursive:true,mode:0o700});const files:File[]=[],issues:string[]=[],failed=new Set<string>();let bytes=0;
   const list=inventory(home);
   for(const item of list){if(item.source!=='aiusage'&&!allowed.includes(item.source as TransferSource))continue;
-    try{const input=join(home,item.locator),st=lstatSync(input);if(st.isSymbolicLink()||st.size>256*1024**2||(bytes+=st.size)>512*1024**2)throw Error('CAPTURE_LIMIT');
+    try{const input=join(home,item.locator),st=lstatSync(input);if(st.isSymbolicLink()||st.size>256*1024**2||(bytes+=st.size)>1536*1024**2)throw Error('CAPTURE_LIMIT');
       const path=join(snapshot,item.locator);mkdirSync(dirname(path),{recursive:true,mode:0o700});
-      let data:Buffer|undefined,root:string;
+      let data:Buffer|undefined,root:string,filePath=path;
       if(/\.(db|sqlite)$/.test(input)){const before=hash(dbRows(input));const db=new DatabaseSync(input,{readOnly:true});try{await backup(db,path);}finally{db.close();}root=hash(dbRows(path));if(before!==root||root!==hash(dbRows(input)))throw Error('CHANGED_DURING_READ');}
-      else {if(input.endsWith('.zst'))throw Error('COMPRESSED_ARCHIVE_REVIEW');data=readFileSync(input);root=hash(data.toString('base64'));writeFileSync(path,data,{mode:0o600});if(root!==hash(readFileSync(input).toString('base64')))throw Error('CHANGED_DURING_READ');
-        if(input.endsWith('.jsonl'))data.toString('utf8').split('\n').filter(r=>r.trim()).forEach(r=>JSON.parse(r));else JSON.parse(data.toString('utf8'));}
-      files.push({...item,path,identity:hash([String(st.dev),String(st.ino),st.birthtimeMs]),byteLength:st.size,root,bytes:data});
-    }catch{rmSync(join(snapshot,item.locator),{force:true});failed.add(item.source);issues.push(item.source+':INCOMPLETE_READ');}}
+      else {if(input.endsWith('.jsonl.zst')){const compressed=readFileSync(input);data=zstdDecompressSync(compressed);filePath=path.replace(/\.zst$/,'');writeFileSync(filePath,data,{mode:0o600});root=hash(data.toString('base64'));}
+        else {if(input.endsWith('.zst'))throw Error('COMPRESSED_ARCHIVE_REVIEW');data=readFileSync(input);root=hash(data.toString('base64'));writeFileSync(path,data,{mode:0o600});if(root!==hash(readFileSync(input).toString('base64')))throw Error('CHANGED_DURING_READ');}
+        if(filePath.endsWith('.jsonl'))data.toString('utf8').split('\n').filter(r=>r.trim()).forEach(r=>JSON.parse(r));else JSON.parse(data.toString('utf8'));}
+      files.push({...item,path:filePath,identity:hash([String(st.dev),String(st.ino),st.birthtimeMs]),byteLength:data?.length??st.size,root,bytes:data});
+    }catch(error){if(process.env.INCEPT_CAPTURE_DEBUG)console.error('CAPTURE_FILE_FAILED',item.locator,String(error));rmSync(join(snapshot,item.locator),{force:true});failed.add(item.source);issues.push(item.source+':INCOMPLETE_READ');}}
   if(hash(list)!==hash(inventory(home)))throw Error('CHANGED_DURING_READ');
   // Pricing configuration is read-only. It is never part of the uploaded raw snapshot.
   const pricing=loadLocalPricingMap(home,{aliases:{},prices:{},updatedAt:0});
   const cc=collectCommandCodeEvents(snapshot,pricing),agents=collectAiusageAndRawAgentEvents(snapshot,pricing),commandFiles=new Set(cc.events.flatMap(r=>r.sourceFile?[normalizeFile(r.sourceFile)]:[]));
   if(cc.errors.length)failed.add('commandcode');for(const error of agents.errors){
+    if(process.env.INCEPT_CAPTURE_DEBUG)console.error('COLLECTOR_FAILED',error);
     const source=Object.entries({codex:/codex/i,geminiCli:/gemini/i,antigravity:/antigravity/i,claudeCode:/claude/i,opencode:/opencode/i,zcode:/zcode/i,aiusage:/indexed|aiusage/i}).find(([,pattern])=>pattern.test(error))?.[0];
-    if(source&&allowed.includes(source as TransferSource)){failed.add(source);issues.push(source+':COLLECTOR_INCOMPLETE');}else if(!source){issues.push('sources:COLLECTOR_INCOMPLETE');for(const item of allowed)failed.add(item);}
+    if(source&&allowed.includes(source as TransferSource)){if(options.tolerantIncomplete)issues.push(source+':INCOMPLETE_DATA');else failed.add(source);issues.push(source+':COLLECTOR_INCOMPLETE');}else if(!source){issues.push('sources:COLLECTOR_INCOMPLETE');for(const item of allowed)failed.add(item);}
   }
   const rows=[...cc.events,...agents.events.filter(r=>r.sourceId!=='commandcode'||!r.sourceFile||!commandFiles.has(normalizeFile(r.sourceFile)))];
   const groups=new Map<string,typeof rows>();for(const row of rows){if(!allowed.includes(row.sourceId as TransferSource))continue;const key=JSON.stringify([row.sourceId,row.sessionId]),group=groups.get(key)??[];group.push(row);groups.set(key,group);}
   const captures:Capture[]=[];
   for(const group of groups.values()){
     const source=group[0].sourceId as TransferSource,sessionId=group[0].sessionId,reader=group.some(r=>agents.fallbackEvents.includes(r))?'aiusage':source;
-    if(failed.has(source)||reader==='aiusage'&&failed.has('aiusage')||group.some(r=>r.historyIncomplete)){issues.push(source+':COLLECTOR_INCOMPLETE');continue;}
+    if(failed.has(source)||reader==='aiusage'&&failed.has('aiusage')||(!options.tolerantIncomplete&&group.some(r=>r.historyIncomplete))){issues.push(source+':COLLECTOR_INCOMPLETE');continue;}
     try{
       const referenced=new Set(group.flatMap(r=>[...(r.sourceFiles??[]),...(r.sourceFile?[r.sourceFile]:[])]).map(normalizeFile));
       const selected=files.filter(file=>reader==='aiusage'?file.source==='aiusage':file.source===source&&referenced.has(normalizeFile(file.path)));
