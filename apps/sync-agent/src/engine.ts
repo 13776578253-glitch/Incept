@@ -16,6 +16,7 @@ export {RemoteLink} from './remote';
 export {resumeReviewed} from './review';
 export {resumeHeld} from './resume';
 export {classifyIssues} from './issues';
+export {verifyLineage,V4_BASELINE} from './verify-lineage';
 export {captureHome,buildCandidate} from '../../../packages/dashboard/src/agent/capture';
 export type Config={version:1;endpoint:string;deviceId:string;home:string;allowedSources:TransferSource[];allowLoopbackHttp?:boolean;remote?:boolean;allowIncomplete?:boolean};
 export type Collector=(home:string,allowed:TransferSource[],parents:ParentCapture[],signal?:AbortSignal,options?:{tolerantIncomplete?:boolean})=>Promise<{captures:Capture[];issues:string[]}>;

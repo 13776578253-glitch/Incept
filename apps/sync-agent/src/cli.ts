@@ -1,6 +1,7 @@
 import {join,resolve} from 'node:path';
 import {homedir} from 'node:os';
-import {existsSync,readdirSync,rmSync,appendFileSync,statSync,renameSync} from 'node:fs';
+import {existsSync,readdirSync,rmSync,appendFileSync,statSync,renameSync,readFileSync} from 'node:fs';
+import {DatabaseSync} from 'node:sqlite';
 import {spawn} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
@@ -10,6 +11,7 @@ import {acquireInstance,isRunning} from './lifecycle';
 import {RemoteLink} from './remote';
 import {resumeReviewed} from './review';
 import {resumeHeld} from './resume';
+import {verifyLineage} from './verify-lineage';
 const argv=process.argv.slice(2),command=argv[0],option=(key:string)=>{const i=argv.indexOf('--'+key);return i<0?undefined:argv[i+1];};
 const directory=resolve(option('state')??join(process.env.LOCALAPPDATA??homedir(),'Incept','sync-agent'));
 const output=(v:unknown)=>console.log(JSON.stringify(v));
@@ -58,6 +60,18 @@ async function main(){
     while(!stopped){const start=Date.now();const code=await new Promise<number>(yes=>{const child=spawn(process.execPath,[fileURLToPath(import.meta.url),'daemon','--state',directory],{windowsHide:true,stdio:'ignore',env:{...process.env,INCEPT_AGENT_SUPERVISOR_PID:String(process.pid)}});child.once('exit',code=>yes(code??1));child.once('error',()=>yes(1));});
       if(code===0)break;attempt=Date.now()-start>300000?0:attempt+1;await new Promise(r=>setTimeout(r,Math.min(60000,1000*2**Math.min(attempt,6))));}return;
   }
+  if(command==='verify-lineage'){
+    const snapshot=option('snapshot');if(!snapshot)throw Error('REMOTE_SNAPSHOT_REQUIRED');
+    if(argv.includes('--online')===argv.includes('--snapshot-only'))throw Error('VERIFICATION_MODE_REQUIRED');
+    if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
+    const config=readConfig<Config>(directory),lock=await acquireInstance(directory);lock.unref();
+    try{const db=new DatabaseSync(join(directory,'state.db'),{readOnly:true});
+      try{db.exec('BEGIN');const http=argv.includes('--snapshot-only')?undefined:new AgentHttp(config.endpoint,loadToken(directory),{allowLoopbackHttp:config.allowLoopbackHttp});
+        const result=await verifyLineage(db,JSON.parse(readFileSync(resolve(snapshot),'utf8')),config,http?(path,method,body)=>http.request(path,method,body):undefined);
+        output(result);if(!result.passed)process.exitCode=2;return;
+      }finally{db.close();}
+    }finally{await new Promise<void>(yes=>lock.close(()=>yes()));}
+  }
   if(!['run-once','daemon','flush'].includes(command))throw Error('COMMAND_REQUIRED');
   const [major,minor]=process.versions.node.split('.').map(Number);if(major!==24||minor<15)throw Error('NODE_24_15_REQUIRED');
   protectDirectory(directory);const lock=await acquireInstance(directory);lock.unref();
@@ -88,4 +102,4 @@ async function main(){
     else {if(config.remote){remote=new RemoteLink(state,config,http,token,()=>{next=0;});remote.start();}timer=setInterval(tick,1000);tick();while(!stopping)await new Promise(r=>setTimeout(r,100));await job;}
   }finally{remote?.stop();if(timer)clearInterval(timer);await job;state.set('heartbeat',null);state.close();await new Promise<void>(yes=>lock.close(()=>yes()));}
 }
-main().catch(error=>{const code=typeof error?.message==='string'&&/^[A-Z][A-Z0-9_]{0,80}$/.test(error.message)?error.message:'AGENT_COMMAND_FAILED';if(command==='daemon')log(code);output({error:code});process.exitCode=code==='ALREADY_RUNNING'?0:1;});
+main().catch(error=>{const code=typeof error?.message==='string'&&/^[A-Z][A-Z0-9_]{0,80}$/.test(error.message)?error.message:'AGENT_COMMAND_FAILED';if(command==='daemon')log(code);output({error:code});process.exitCode=code==='ALREADY_RUNNING'&&command!=='verify-lineage'?0:1;});
