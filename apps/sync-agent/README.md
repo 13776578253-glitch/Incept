@@ -88,3 +88,11 @@ Phase 4 已接入 Gateway/WSS、持久远程 Job、吊销连接及网页 Refresh
 Agent 停止后，可用 `node dist/agent.mjs export-review --batch BATCH --state STATE` 导出仅含派生用量的私有审阅文件，交给 Owner。Owner 核对设备、来源、manifest 和 legacy 批次后执行维护 CLI 的 `adopt-exact` 或 `adopt-reviewed`。随后用 `node dist/agent.mjs resume-reviewed --batch BATCH --confirm-reviewed --state STATE` 恢复：只有服务器当前 head 与 committed receipt 都匹配，才推进 lineage。回滚栅栏和不匹配 head 继续阻止恢复。审阅文件属于私有数据，用后妥善清理。
 
 ZIP 含 `dist/`、`windows/` 和本说明；目标 Windows 需 Node 24.15–24.x，不需 npm 安装。解压至固定用户目录后运行 `windows/Bind.ps1 -EnableRemote`、`windows/Start.ps1`，以 `node dist/agent.mjs status` 核查。登录自启仅在用户明确执行 `windows/Install.ps1 -ConfirmInstall` 时安装。
+
+## Desktop tray contract
+
+The independent Windows tray reads an atomic, bounded `status.json` projection; it never reads the ledger or credentials. Display changes publish immediately and unchanged liveness refreshes every five seconds.
+
+`pause` / `resume` persist the automatic-sync preference. Pausing skips scheduled and remote collection; explicit `sync-now` remains available. These commands do not start the Agent. Packaged Windows scripts also support the `../agent/agent.mjs` layout.
+
+This interface is additive to the trusted sync implementation. Ledger maintenance, review recovery and source authorization retain their existing checks.

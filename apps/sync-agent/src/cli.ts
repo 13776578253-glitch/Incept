@@ -9,6 +9,7 @@ import {AgentState,SyncEngine,AgentHttp,validateEndpoint,scopeKey,type Config} f
 import {readConfig,storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
 import {acquireInstance,isRunning} from './lifecycle';
 import {RemoteLink} from './remote';
+import {publishStatus} from './snapshot';
 import {resumeReviewed} from './review';
 import {resumeHeld} from './resume';
 import {verifyLineage} from './verify-lineage';
@@ -19,7 +20,11 @@ function log(code:string){const file=join(directory,'agent.log');try{if(existsSy
 async function stdinToken(){let value='';for await(const chunk of process.stdin){value+=chunk.toString();if(value.length>256)throw Error('TOKEN_INPUT_LIMIT');}return value.trim();}
 async function main(){
   if(command==='version'){output({version:'0.1.0',node:process.version});return;}
-  if(command==='status'){if(!existsSync(join(directory,'config.json'))){output({configured:false,running:false});return;}const state=new AgentState(directory);try{const running=await isRunning(directory);output({configured:true,...state.status(),running,remoteOnline:running&&state.get('remoteOnline')===true});}finally{state.close();}return;}
+  if(command==='status'){if(!existsSync(join(directory,'config.json'))){output({configured:false,running:false,paused:false});return;}const state=new AgentState(directory);try{const running=await isRunning(directory);output({configured:true,...state.status(),running,paused:state.get('paused')===true,remoteOnline:running&&state.get('remoteOnline')===true});}finally{state.close();}return;}
+  if(command==='pause'||command==='resume'){
+    if(!existsSync(join(directory,'config.json')))throw Error('AGENT_NOT_CONFIGURED');
+    const state=new AgentState(directory);try{const paused=command==='pause';state.set('paused',paused);publishStatus(state,await isRunning(directory),true);output({paused});}finally{state.close();}return;
+  }
   if(command==='quarantine-status'){
     if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
     const state=new AgentState(directory);try{output({isolations:state.sessionIsolations()});}finally{state.close();}return;
@@ -110,15 +115,15 @@ async function main(){
   let timer:NodeJS.Timeout|undefined,job:Promise<unknown>|undefined,stopping=false,next=0;
   const stop=()=>{stopping=true;remote?.stop();abort.abort();if(timer)clearInterval(timer);};process.once('SIGINT',stop);process.once('SIGTERM',stop);
   state.db.exec("UPDATE commands SET state='pending' WHERE state='running'");
-  const tick=()=>{const parent=Number(process.env.INCEPT_AGENT_SUPERVISOR_PID);if(Number.isSafeInteger(parent)&&parent>0){try{process.kill(parent,0);}catch{stop();return;}}state.set('heartbeat',{pid:process.pid,at:Date.now(),rssBytes:process.memoryUsage().rss,cpu:process.cpuUsage()});const commands=state.db.prepare("SELECT id,kind FROM commands WHERE state='pending'").all();
+  const tick=()=>{const parent=Number(process.env.INCEPT_AGENT_SUPERVISOR_PID);if(Number.isSafeInteger(parent)&&parent>0){try{process.kill(parent,0);}catch{stop();return;}}state.set('heartbeat',{pid:process.pid,at:Date.now(),rssBytes:process.memoryUsage().rss,cpu:process.cpuUsage()});publishStatus(state);const commands=state.db.prepare("SELECT id,kind FROM commands WHERE state='pending'").all();
     if(commands.some(c=>c.kind==='stop')){state.db.prepare("UPDATE commands SET state='done' WHERE kind='stop'").run();stop();return;}
-    if(job||stopping)return;void remote?.discover();if(Date.now()<next&&!commands.length&&!remote?.hasPending())return;
+    if(job||stopping)return;const paused=state.get<boolean>('paused')===true;if(paused&&!commands.some(c=>c.kind==='sync'))return;void remote?.discover();if(Date.now()<next&&!commands.length&&!remote?.hasPending())return;
     state.db.prepare("DELETE FROM commands WHERE state IN ('done','failed') AND at<?").run(Date.now()-86400000);state.db.prepare("UPDATE commands SET state='running' WHERE state='pending' AND kind='sync'").run();
     next=Date.now()+300000;log('COLLECTING');job=(remote?.hasPending()?remote.execute(()=>engine.run(abort.signal)):engine.run(abort.signal)).then(()=>{log('CYCLE_FINISHED');state.db.prepare("UPDATE commands SET state='done' WHERE state='running'").run();}).catch(()=>{state.set('lastErrorCode','CYCLE_FAILED');state.set('lastErrorAt',new Date().toISOString());log('CYCLE_FAILED');state.db.prepare("UPDATE commands SET state='failed' WHERE state='running'").run();}).finally(()=>{job=undefined;});};
   try{
     if(command==='flush'){const result=await engine.flush(abort.signal);output(result);if(state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
     else if(command==='run-once'){const result=await engine.run(abort.signal);output(result);if(result&&typeof result==='object'&&'outcome' in result&&result.outcome==='source_failed'||state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
     else {if(config.remote){remote=new RemoteLink(state,config,http,token,()=>{next=0;});remote.start();}timer=setInterval(tick,1000);tick();while(!stopping)await new Promise(r=>setTimeout(r,100));await job;}
-  }finally{remote?.stop();if(timer)clearInterval(timer);await job;state.set('heartbeat',null);state.close();await new Promise<void>(yes=>lock.close(()=>yes()));}
+  }finally{remote?.stop();if(timer)clearInterval(timer);await job;state.set('heartbeat',null);publishStatus(state,false,true);state.close();await new Promise<void>(yes=>lock.close(()=>yes()));}
 }
 main().catch(error=>{const code=typeof error?.message==='string'&&/^[A-Z][A-Z0-9_]{0,80}$/.test(error.message)?error.message:'AGENT_COMMAND_FAILED';if(command==='daemon')log(code);output({error:code});process.exitCode=code==='ALREADY_RUNNING'&&command!=='verify-lineage'?0:1;});

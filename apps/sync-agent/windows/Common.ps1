@@ -5,7 +5,13 @@ function Quote-AgentArgument([string]$Value) {
   return '"'+[regex]::Replace($Value,'(\\+)$','$1$1')+'"'
 }
 function Get-AgentNode { return (Get-Command node.exe -ErrorAction Stop).Source }
-function Get-AgentCli { return [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../dist/agent.mjs')) }
+function Get-AgentCli {
+  $source=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../dist/agent.mjs'))
+  if(Test-Path -LiteralPath $source){return $source}
+  $packaged=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../agent/agent.mjs'))
+  if(Test-Path -LiteralPath $packaged){return $packaged}
+  return $source
+}
 function Get-AgentState([string]$StateDirectory) {if($StateDirectory){return [IO.Path]::GetFullPath($StateDirectory)};return Join-Path $env:LOCALAPPDATA 'Incept/sync-agent'}
 function Get-AgentTaskName([string]$StateDirectory) {
   $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
