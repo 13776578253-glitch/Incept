@@ -90,7 +90,11 @@ test('scope admission is device-only, idempotent, global ownership and quota con
   }finally{service.close();}
 }));
 test('Windows current-user DPAPI and protected directory round trip', {skip:process.platform!=='win32'},()=>sandbox(async dir=>{
-  protectDirectory(dir);const token='isync_'+randomBytes(32).toString('base64url');storeToken(dir,token);assert.equal(loadToken(dir),token);assert(!readFileSync(join(dir,'credential.dpapi')).includes(Buffer.from(token)));
+  protectDirectory(dir);
+  const script=`$sid=[Security.Principal.WindowsIdentity]::GetCurrent().User;$acl=[IO.Directory]::GetAccessControl($env:INCEPT_TEST_ACL_DIRECTORY);$rules=@($acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier]));[pscustomobject]@{ownerMatches=($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -eq $sid.Value);protected=$acl.AreAccessRulesProtected;ruleCount=$rules.Count;onlyCurrentUser=($rules[0].IdentityReference.Value -eq $sid.Value);fullControl=($rules[0].FileSystemRights -eq [Security.AccessControl.FileSystemRights]::FullControl)}|ConvertTo-Json -Compress`;
+  const acl=JSON.parse(execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')],{encoding:'utf8',windowsHide:true,env:{...process.env,INCEPT_TEST_ACL_DIRECTORY:dir}}));
+  assert.deepEqual(acl,{ownerMatches:true,protected:true,ruleCount:1,onlyCurrentUser:true,fullControl:true});
+  const token='isync_'+randomBytes(32).toString('base64url');storeToken(dir,token);assert.equal(loadToken(dir),token);assert(!readFileSync(join(dir,'credential.dpapi')).includes(Buffer.from(token)));
 }));
 test('HTTPS required; only explicit loopback HTTP is accepted; URL credentials rejected',()=>{
   assert.equal(validateEndpoint('https://example.test'),'https://example.test');assert.throws(()=>new AgentHttp('http://example.test','unused'));assert.throws(()=>validateEndpoint('https://user:secret@example.test'));

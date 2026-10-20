@@ -50,10 +50,11 @@ reintroduced. Operations-console remains a separate mock prototype.
 - Dashboard: 352 existing targeted regressions passed.
 - HTTP/executor error semantics: 7 passed.
 - Native tray: 44 reflection regressions passed; no executable entry point run.
-- Agent: 97 passed, 1 failed. The unchanged Windows ACL/DPAPI round-trip test
-  receives `UnauthorizedAccessException` from `SetAccessControl` in its temporary
-  directory. A separate Windows-process retry reproduced it. Credential protection
-  checks were retained; no test was disabled or loosened.
+- Agent: 98 passed, zero failed after the ACL closure. The original failure was
+  unnecessary owner reassignment on an already-owned Windows directory. The fix
+  verifies current ownership, writes only the private DACL, and verifies its
+  effective owner/rules afterward. DPAPI encryption and the self-only FullControl
+  assertion both pass; no test was disabled or loosened.
 - Ten TypeScript configurations passed; the final Agent typecheck also passed.
 - Web ESLint: zero errors and nine existing warnings in unchanged files.
 - Dashboard workers, Agent/ZIP, native tray and Next production App built.
@@ -90,6 +91,13 @@ current behavior; the statistics window waiver is not a general new-ledger
 slicing implementation. No baseline rebuild, pending replay or state transition
 was performed here.
 
-Review the ACL test failure before treating validation as entirely green.
+The ACL test is closed. The complete recorded regression result is 501 passed, zero failed.
 Push, main advancement, branch/worktree cleanup, deployment and Agent startup
 remain separate actions requiring Owner authorization.
+
+## Authorized publication follow-up
+
+Owner authorized ACL closure, integration branch push and main fast-forward,
+followed by local baseline preparation. Production/data/Agent startup remain
+separate from this Git publication. All commands and remote results are recorded
+in the private publication evidence directory.

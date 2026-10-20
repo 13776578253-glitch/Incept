@@ -6,8 +6,12 @@ const run=(script:string,input?:unknown)=>execFileSync('powershell.exe',['-NoPro
 export function protectDirectory(directory:string){let parent=resolve(directory);while(!existsSync(parent)&&dirname(parent)!==parent)parent=dirname(parent);parent=realpathSync(parent);while(true){if(existsSync(join(parent,'.git')))throw Error('STATE_IN_REPOSITORY');if(dirname(parent)===parent)break;parent=dirname(parent);}
   mkdirSync(directory,{recursive:true,mode:0o700});if(lstatSync(directory).isSymbolicLink())throw Error('UNSAFE_STATE_DIRECTORY');
   if(process.platform==='win32')run(`$ErrorActionPreference='Stop'; $v=[Console]::In.ReadToEnd()|ConvertFrom-Json; $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User;
-    $acl=New-Object Security.AccessControl.DirectorySecurity; $acl.SetOwner($sid);$acl.SetAccessRuleProtection($true,$false);
-    $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow');$acl.AddAccessRule($rule);[IO.Directory]::SetAccessControl($v.path,$acl)`,{path:directory});}
+    $owner=[IO.Directory]::GetAccessControl($v.path).GetOwner([Security.Principal.SecurityIdentifier]);
+    if($owner.Value -ne $sid.Value){throw 'STATE_DIRECTORY_OWNER_MISMATCH'}
+    $acl=New-Object Security.AccessControl.DirectorySecurity; $acl.SetAccessRuleProtection($true,$false);
+    $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow');$acl.AddAccessRule($rule);[IO.Directory]::SetAccessControl($v.path,$acl);
+    $verified=[IO.Directory]::GetAccessControl($v.path);$rules=@($verified.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier]));
+    if($verified.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $sid.Value -or -not $verified.AreAccessRulesProtected -or $rules.Count -ne 1 -or $rules[0].IdentityReference.Value -ne $sid.Value -or $rules[0].AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow -or $rules[0].FileSystemRights -ne [Security.AccessControl.FileSystemRights]::FullControl){throw 'STATE_DIRECTORY_ACL_NOT_PRIVATE'}`,{path:directory});}
 export function atomicJson(path:string,value:unknown){const temp=path+'.'+randomUUID()+'.tmp';writeFileSync(temp,JSON.stringify(value)+'\n',{mode:0o600,flag:'wx'});const fd=openSync(temp,'r+');try{fsyncSync(fd);}finally{closeSync(fd);}renameSync(temp,path);}
 const dpapi=`$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.Security; $v=[Console]::In.ReadToEnd()|ConvertFrom-Json; $e=[Text.Encoding]::UTF8.GetBytes('Incept Sync Agent v1');
 if($v.op -eq 'protect'){$b=[Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes($v.token),$e,[Security.Cryptography.DataProtectionScope]::CurrentUser);[IO.File]::WriteAllBytes($v.path,$b);$s=[IO.File]::Open($v.path,'Open','ReadWrite','None');try{$s.Flush($true)}finally{$s.Dispose()};[Console]::Write('OK')}
