@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {spawn} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {AgentState,SyncEngine,AgentHttp,validateEndpoint,type Config} from './engine';
+import {AgentState,SyncEngine,AgentHttp,validateEndpoint,scopeKey,type Config} from './engine';
 import {readConfig,storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
 import {acquireInstance,isRunning} from './lifecycle';
 import {RemoteLink} from './remote';
@@ -20,6 +20,25 @@ async function stdinToken(){let value='';for await(const chunk of process.stdin)
 async function main(){
   if(command==='version'){output({version:'0.1.0',node:process.version});return;}
   if(command==='status'){if(!existsSync(join(directory,'config.json'))){output({configured:false,running:false});return;}const state=new AgentState(directory);try{const running=await isRunning(directory);output({configured:true,...state.status(),running,remoteOnline:running&&state.get('remoteOnline')===true});}finally{state.close();}return;}
+  if(command==='quarantine-status'){
+    if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
+    const state=new AgentState(directory);try{output({isolations:state.sessionIsolations()});}finally{state.close();}return;
+  }
+  if(command==='recover-session'){
+    if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
+    const source=option('source'),sessionId=option('session'),afterTimestampMs=Date.parse(option('after')??'');
+    if(source!=='codex'||!sessionId||!Number.isSafeInteger(afterTimestampMs)||afterTimestampMs<=0)throw Error('RECOVERY_SESSION_AND_ANCHOR_REQUIRED');
+    const config=readConfig<Config>(directory);if(!config.allowedSources.includes(source))throw Error('SOURCE_NOT_AUTHORIZED');
+    const state=new AgentState(directory);try{
+      const problems=state.sessionIsolations().filter(item=>item.active&&item.source===source&&item.sessionId===sessionId);
+      if(!problems.length||problems.some(item=>!['OPENING_PREFIX_MISSING','OPENING_USAGE_UNCERTAIN'].includes(item.reason)
+        ||item.recoveryAfterTimestampMs===undefined||afterTimestampMs<item.recoveryAfterTimestampMs))throw Error('RECOVERY_ANCHOR_NOT_VERIFIED');
+      const parent=state.tail(scopeKey(source,sessionId))?.parent;
+      if(parent&&!parent.proofs.every(proof=>proof.recoveryAfterTimestampMs===afterTimestampMs))throw Error('EXISTING_LINEAGE_RECOVERY_REQUIRES_REVIEW');
+      state.set('recoveryRanges',[...state.recoveryRanges().filter(item=>item.source!==source||item.sessionId!==sessionId),{source,sessionId,afterTimestampMs}]);
+      output({recoveryConfigured:true,source,sessionId,afterTimestampMs,historicalGapRetained:true});
+    }finally{state.close();}return;
+  }
   if(command==='resume-reviewed'){
     if(!argv.includes('--confirm-reviewed'))throw Error('OWNER_REVIEW_CONFIRMATION_REQUIRED');
     if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
@@ -98,7 +117,7 @@ async function main(){
     next=Date.now()+300000;log('COLLECTING');job=(remote?.hasPending()?remote.execute(()=>engine.run(abort.signal)):engine.run(abort.signal)).then(()=>{log('CYCLE_FINISHED');state.db.prepare("UPDATE commands SET state='done' WHERE state='running'").run();}).catch(()=>{state.set('lastErrorCode','CYCLE_FAILED');state.set('lastErrorAt',new Date().toISOString());log('CYCLE_FAILED');state.db.prepare("UPDATE commands SET state='failed' WHERE state='running'").run();}).finally(()=>{job=undefined;});};
   try{
     if(command==='flush'){const result=await engine.flush(abort.signal);output(result);if(state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
-    else if(command==='run-once'){const result=await engine.run(abort.signal);output(result);if(state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
+    else if(command==='run-once'){const result=await engine.run(abort.signal);output(result);if(result&&typeof result==='object'&&'outcome' in result&&result.outcome==='source_failed'||state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
     else {if(config.remote){remote=new RemoteLink(state,config,http,token,()=>{next=0;});remote.start();}timer=setInterval(tick,1000);tick();while(!stopping)await new Promise(r=>setTimeout(r,100));await job;}
   }finally{remote?.stop();if(timer)clearInterval(timer);await job;state.set('heartbeat',null);state.close();await new Promise<void>(yes=>lock.close(()=>yes()));}
 }

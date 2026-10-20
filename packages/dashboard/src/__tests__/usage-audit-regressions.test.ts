@@ -39,7 +39,7 @@ const total = (events: RawUsageEvent[]) => events.reduce((sum, event) => sum + e
 const collect = () => collectCodexEvents(home, pricing, new Set());
 
 it('shares cumulative watermarks across resumed files regardless of scan order and repeated collection', () => {
-  rollout('z-parent', [count(0, usage(100, 20, 60, 5))]);
+  rollout('z-parent', [count(0, usage(100, 20, 60, 5), usage(100, 20, 60, 5))]);
   rollout('a-resume_original-id_new-rollout-id', [count(1, usage(150, 30, 90, 8)), count(2, usage(170, 34, 100, 9))]);
   const first = collect();
   expect(first.events.map(event => total([event]))).toEqual([120, 60, 24]);
@@ -51,7 +51,7 @@ it('shares cumulative watermarks across resumed files regardless of scan order a
 });
 
 it('orders overlapping file histories by event time and removes archive copies before differencing', () => {
-  const parent = [count(0, usage(100, 20)), count(2, usage(200, 40))];
+  const parent = [count(0, usage(100, 20), usage(100, 20)), count(2, usage(200, 40))];
   rollout('parent', parent);
   rollout('copy', parent, true);
   rollout('resume', [count(1, usage(150, 30)), count(3, usage(210, 42))]);
@@ -61,30 +61,40 @@ it('orders overlapping file histories by event time and removes archive copies b
 });
 
 it('uses only available last usage on reset and resumes differences from the new epoch', () => {
-  rollout('reset', [count(0, usage(100, 20, 60, 5)), count(1, usage(40, 8, 20, 2), { input_tokens: 7, output_tokens: 3 }),
+  rollout('reset', [count(0, usage(100, 20, 60, 5), usage(100, 20, 60, 5)), count(1, usage(40, 8, 20, 2), { input_tokens: 7, output_tokens: 3 }),
     count(2, usage(50, 10, 25, 3))]);
   const events = collect().events;
   expect(events[1]).toMatchObject({ inputTokens: 7, outputTokens: 3, cacheReadTokens: 0, reasoningTokens: 0 });
   expect(total(events)).toBe(142);
-  rollout('missing-last', [count(0, usage(100, 20)), count(1, usage(40, 8)), count(2, usage(50, 10))], false, 'another-session');
+  expect(events.every(event => event.modelName === 'priced-model')).toBe(true);
+  rollout('missing-last', [count(0, usage(100, 20), usage(100, 20)), count(1, usage(40, 8)), count(2, usage(50, 10))], false, 'another-session');
   expect(total(collect().events.filter(event => event.sessionId === 'another-session'))).toBe(132);
 });
 
 it('does not subtract an unrelated session or invent a missing parent baseline', () => {
-  rollout('parent', [count(0, usage(100, 20))]);
-  rollout('fork', [count(1, usage(150, 30))], false, 'new-session');
-  expect(total(collect().events)).toBe(300);
+  rollout('parent', [count(0, usage(100, 20), usage(100, 20))]);
+  const later = { ...count(2, usage(160, 32)), timestamp: '2026-10-15T10:02:00Z' };
+  rollout('fork', [count(1, usage(150, 30)), later], false, 'new-session');
+  const result = collect();
+  expect(total(result.events)).toBe(132);
+  const recovered = result.events.filter(event => event.sessionId === 'new-session');
+  expect(recovered).toHaveLength(1);
+  expect(recovered[0]).toMatchObject({ timestampMs: Date.parse(later.timestamp), historyIncomplete: true,
+    usageInterval: { kind: 'cumulative-delta', afterTimestampMs: Date.parse('2026-10-14T10:01:00Z') } });
+  expect(total(recovered)).toBe(12);
+  expect(result.sessionIntegrity).toContainEqual(expect.objectContaining({ sessionId: 'new-session',
+    reason: 'OPENING_USAGE_UNCERTAIN', unattributedTokens: 180, affectedRecords: 1 }));
 });
 
 it('keeps interleaved reset streams in separate counter epochs instead of rebilling large totals', () => {
-  rollout('parent', [count(0, usage(1000, 200)), count(2, usage(1010, 202)), count(4, usage(1020, 204))]);
+  rollout('parent', [count(0, usage(1000, 200), usage(1000, 200)), count(2, usage(1010, 202)), count(4, usage(1020, 204))]);
   rollout('reset-resume', [count(1, usage(40, 8), usage(5, 1)), count(3, usage(50, 10)), count(5, usage(60, 12))]);
   expect(collect().events.map(event => total([event]))).toEqual([1200, 6, 12, 12, 12, 12]);
   expect(total(collect().events)).toBe(1254);
 });
 
 it('resumes the matching counter epoch even while another reset stream is active', () => {
-  rollout('parent', [count(0, usage(1000, 200)), count(2, usage(1010, 202))]);
+  rollout('parent', [count(0, usage(1000, 200), usage(1000, 200)), count(2, usage(1010, 202))]);
   rollout('reset', [count(1, usage(40, 8), usage(5, 1)), count(3, usage(50, 10))]);
   rollout('parent-resume', [count(4, usage(1020, 204))]);
   rollout('reset-resume', [count(5, usage(60, 12))]);
@@ -94,11 +104,19 @@ it('resumes the matching counter epoch even while another reset stream is active
 it('still deduplicates archive copies without event timestamps', () => {
   const entry = { type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: usage(100, 20) } } };
   rollout('original', [entry]); rollout('archived-copy', [entry], true);
-  expect(total(collect().events)).toBe(120);
+  const result = collect();
+  expect(result.events).toEqual([]);
+  expect(result.parsedFiles.size).toBe(2);
+  expect(result.sessionIntegrity).toContainEqual(expect.objectContaining({ sessionId: 'shared-session',
+    reason: 'INVALID_TIMESTAMP', sourceFiles: expect.any(Array) }));
+  expect(result.sessionIntegrity.find(issue => issue.reason === 'INVALID_TIMESTAMP')?.sourceFiles).toHaveLength(2);
+  // Diagnose both raw files, but anchor their identical cumulative prefix only once.
+  expect(result.sessionIntegrity).toContainEqual(expect.objectContaining({ sessionId: 'shared-session',
+    reason: 'OPENING_USAGE_UNCERTAIN', affectedRecords: 1, unattributedTokens: 120 }));
 });
 
 it('keeps distinct same-millisecond increments exportable without eventId conflicts', () => {
-  rollout('same-time', [count(0, usage(100, 20)), count(0, usage(150, 30))]);
+  rollout('same-time', [count(0, usage(100, 20), usage(100, 20)), count(0, usage(150, 30))]);
   const events = collect().events;
   expect(total(events)).toBe(180);
   expect(new Set(events.map(event => event.eventId)).size).toBe(2);

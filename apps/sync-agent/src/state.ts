@@ -2,9 +2,12 @@ import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync} from 'node:fs';
 import {join} from 'node:path';
 import {hash} from '../../../packages/dashboard/src/adapters/local/imports/identity';
+import {validateHeader} from '../../../packages/dashboard/src/adapters/local/imports/sync/contract';
 import type {SyncReceipt} from '../../../packages/dashboard/src/domain/sync';
-import type {ParentCapture,buildCandidate} from '../../../packages/dashboard/src/agent/capture';
+import type {ParentCapture,SessionIsolation,RecoveryRange,buildCandidate} from '../../../packages/dashboard/src/agent/capture';
 export type Candidate=ReturnType<typeof buildCandidate>;
+export type HistoricalSealDecision={deviceId:string;manifestHash:string;generationId:string;receipt:SyncReceipt;reason:string;owner:{subject:string;decisionId:string};disposition?:'sealed'|'isolated'};
+export type HistoricalSeal=HistoricalSealDecision&{scope:string;source:ParentCapture['header']['manifest']['scope']['source'];sessionId:string;parentHash:string;proofHash:string;signature:string};
 export const scopeKey=(source:string,sessionId:string)=>hash([source,sessionId]);
 export class AgentState {
   readonly db:DatabaseSync;
@@ -18,11 +21,72 @@ export class AgentState {
     CREATE TABLE IF NOT EXISTS receipts(batch TEXT PRIMARY KEY,json TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS commands(id TEXT PRIMARY KEY,kind TEXT NOT NULL,state TEXT NOT NULL,at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS remote_jobs(id TEXT PRIMARY KEY,expires_at INTEGER NOT NULL,state TEXT NOT NULL,cursor INTEGER,result_json TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_retry INTEGER NOT NULL DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS session_isolations(id TEXT PRIMARY KEY,source TEXT NOT NULL,session_id TEXT NOT NULL,reason TEXT NOT NULL,detail_json TEXT NOT NULL,
+      first_seen TEXT NOT NULL,last_seen TEXT NOT NULL,occurrences INTEGER NOT NULL,active INTEGER NOT NULL DEFAULT 1);
+    CREATE TABLE IF NOT EXISTS lineage_tokens(scope TEXT PRIMARY KEY,token_total INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS historical_seals(scope TEXT PRIMARY KEY,seal_json TEXT NOT NULL,created_at TEXT NOT NULL);
   `);}
   close(){this.db.close();}
   tx<T>(fn:()=>T):T{this.db.exec('BEGIN IMMEDIATE');try{const v=fn();this.db.exec('COMMIT');return v;}catch(e){this.db.exec('ROLLBACK');throw e;}}
   set(key:string,value:unknown){this.db.prepare('INSERT INTO meta VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key,JSON.stringify(value));}
   get<T>(key:string):T|undefined{const r=this.db.prepare('SELECT value FROM meta WHERE key=?').get(key);return r?JSON.parse(String(r.value)):undefined;}
+  sessionIsolations(){return this.db.prepare('SELECT * FROM session_isolations ORDER BY source,session_id,reason').all().map(row=>({
+    ...JSON.parse(String(row.detail_json)) as SessionIsolation,id:String(row.id),firstSeen:String(row.first_seen),lastSeen:String(row.last_seen),
+    occurrences:Number(row.occurrences),active:row.active===1}));}
+  observeSessionIsolations(source:string,items:SessionIsolation[],healthySessions:string[]){return this.tx(()=>{
+    const now=new Date().toISOString();let added=0;
+    for(const session of healthySessions)if(!items.some(item=>item.sessionId===session))this.db.prepare('UPDATE session_isolations SET active=0 WHERE source=? AND session_id=?').run(source,session);
+    // One notification per issue identity. Changed counters do not create another alarm.
+    const unique=new Map(items.map(item=>[hash([item.source,item.sessionId,item.reason]),item]));
+    for(const [id,item]of unique){const previous=this.db.prepare('SELECT active FROM session_isolations WHERE id=?').get(id);
+      if(!previous)added++;
+      this.db.prepare(`INSERT INTO session_isolations VALUES(?,?,?,?,?,?,?,1,1)
+        ON CONFLICT(id) DO UPDATE SET detail_json=excluded.detail_json,last_seen=excluded.last_seen,occurrences=occurrences+1,active=1`)
+        .run(id,item.source,item.sessionId,item.reason,JSON.stringify(item),now,now);
+    }
+    return added;
+  });}
+  recoveryRanges(){return this.get<RecoveryRange[]>('recoveryRanges')??[];}
+  confirmedTokenTotal(scope:string){const row=this.db.prepare('SELECT token_total FROM lineage_tokens WHERE scope=?').get(scope);return row?Number(row.token_total):undefined;}
+  historicalPolicies():HistoricalSeal[]{return this.db.prepare('SELECT seal_json FROM historical_seals ORDER BY scope').all().map(row=>JSON.parse(String(row.seal_json)));}
+  historicalSeals(){return this.historicalPolicies().filter(policy=>policy.disposition!=='isolated');}
+  historicalHolds(){return this.historicalPolicies().filter(policy=>policy.disposition==='isolated');}
+  private historicalEvidence(scope:string){
+    const row=this.db.prepare('SELECT * FROM lineage WHERE scope=?').get(scope);
+    if(!row)throw Error('HISTORICAL_CONFIRMED_HEAD_REQUIRED');
+    if(this.db.prepare('SELECT 1 FROM heads WHERE scope=?').get(scope)||this.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state IN ('pending','review','held')").get(scope))throw Error('HISTORICAL_SCOPE_HAS_UNRESOLVED_WORK');
+    const parent:ParentCapture=JSON.parse(String(row.parent_json)),header=validateHeader(parent.header),manifest=header.manifest,receipt:SyncReceipt=JSON.parse(String(row.receipt_json));
+    const stored=this.db.prepare('SELECT json FROM receipts WHERE batch=?').get(receipt.batchId);
+    if(scopeKey(manifest.scope.source,manifest.scope.sessionId)!==scope||!Array.isArray(parent.proofs)||hash(parent.proofs.map(proof=>proof.range))!==hash(manifest.ranges)
+      ||receipt.status!=='committed'||receipt.batchId!==header.batchId||receipt.payloadHash!==hash(header)||receipt.manifestHash!==manifest.manifestHash||receipt.generationId!==manifest.generationId
+      ||!Number.isSafeInteger(receipt.dataRevision)||receipt.dataRevision<0||!stored||hash(JSON.parse(String(stored.json)))!==hash(receipt))throw Error('HISTORICAL_EVIDENCE_MISMATCH');
+    return {parent,receipt,signature:String(row.signature)};
+  }
+  sealHistorical(scope:string,decision:HistoricalSealDecision):HistoricalSeal{return this.tx(()=>{
+    const text=(value:unknown)=>typeof value==='string'&&value.trim().length>0&&value.length<=2000;
+    if(decision.disposition!==undefined&&!['sealed','isolated'].includes(decision.disposition))throw Error('HISTORICAL_DISPOSITION_INVALID');
+    if(!text(decision.reason)||!text(decision.owner?.subject)||!text(decision.owner?.decisionId))throw Error('HISTORICAL_OWNER_DECISION_REQUIRED');
+    const evidence=this.historicalEvidence(scope),manifest=evidence.parent.header.manifest;
+    if(decision.deviceId!==manifest.scope.deviceId||decision.manifestHash!==manifest.manifestHash||decision.generationId!==manifest.generationId||hash(decision.receipt)!==hash(evidence.receipt))throw Error('HISTORICAL_EVIDENCE_MISMATCH');
+    const seal:HistoricalSeal={...decision,scope,source:manifest.scope.source,sessionId:manifest.scope.sessionId,parentHash:hash(evidence.parent),proofHash:hash(evidence.parent.proofs),signature:evidence.signature};
+    const previous=this.db.prepare('SELECT seal_json FROM historical_seals WHERE scope=?').get(scope);
+    if(previous){if(hash(JSON.parse(String(previous.seal_json)))!==hash(seal))throw Error('HISTORICAL_SEAL_CONFLICT');return JSON.parse(String(previous.seal_json));}
+    this.db.prepare('INSERT INTO historical_seals VALUES(?,?,?)').run(scope,JSON.stringify(seal),new Date().toISOString());return seal;
+  });}
+  quarantineHistorical(scope:string,decision:Omit<HistoricalSealDecision,'disposition'>){return this.sealHistorical(scope,{...decision,disposition:'isolated'});}
+  isHistoricalSealCurrent(parent:ParentCapture,deviceId:string){
+    const key=scopeKey(parent.header.manifest.scope.source,parent.header.manifest.scope.sessionId);
+    return this.historicalSeals().some(seal=>seal.scope===key)&&this.isHistoricalPolicyCurrent(parent,deviceId);
+  }
+  isHistoricalPolicyCurrent(parent:ParentCapture,deviceId:string){
+    const manifest=parent.header.manifest,key=scopeKey(manifest.scope.source,manifest.scope.sessionId),row=this.db.prepare('SELECT seal_json FROM historical_seals WHERE scope=?').get(key);
+    if(!row)return false;
+    try{const seal:HistoricalSeal=JSON.parse(String(row.seal_json)),evidence=this.historicalEvidence(key);
+      return ['sealed','isolated'].includes(seal.disposition??'sealed')&&seal.scope===key&&seal.deviceId===deviceId&&manifest.scope.deviceId===deviceId&&seal.source===manifest.scope.source&&seal.sessionId===manifest.scope.sessionId
+        &&seal.manifestHash===manifest.manifestHash&&seal.generationId===manifest.generationId&&seal.parentHash===hash(parent)&&seal.parentHash===hash(evidence.parent)
+        &&seal.proofHash===hash(evidence.parent.proofs)&&seal.signature===evidence.signature&&hash(seal.receipt)===hash(evidence.receipt);
+    }catch{return false;}
+  }
   parents():ParentCapture[]{const all=new Map<string,ParentCapture>();for(const row of this.db.prepare('SELECT scope,parent_json FROM lineage').all())all.set(String(row.scope),JSON.parse(String(row.parent_json)));
     for(const row of this.db.prepare('SELECT scope,parent_json FROM heads').all())all.set(String(row.scope),JSON.parse(String(row.parent_json)));
     for(const row of this.db.prepare("SELECT scope,header_json,proof_json FROM outbox WHERE state IN ('pending','review','held') ORDER BY serial").all())all.set(String(row.scope),{header:JSON.parse(String(row.header_json)),proofs:JSON.parse(String(row.proof_json))});return [...all.values()];}
@@ -38,6 +102,8 @@ export class AgentState {
     const used=exclude?.length?this.db.prepare(`SELECT COALESCE(SUM(length(CAST(json AS BLOB))),0) bytes FROM records WHERE batch NOT IN (${slots})`).get(...exclude):this.db.prepare('SELECT COALESCE(SUM(length(CAST(json AS BLOB))),0) bytes FROM records').get();
     return size<=128*1024**2&&size+Number(used!.bytes)<=256*1024**2;}
   private put(c:Candidate,signature:string,state:'pending'|'held'){const scope=scopeKey(c.header.manifest.scope.source,c.header.manifest.scope.sessionId);
+    const policy=this.db.prepare('SELECT seal_json FROM historical_seals WHERE scope=?').get(scope);
+    if(policy)throw Error(JSON.parse(String(policy.seal_json)).disposition==='isolated'?'HISTORICAL_CONTINUATION_UNVERIFIED':'HISTORICAL_SCOPE_SEALED');
     if(!this.fits(c))throw Error('OUTBOX_CAPACITY');
     this.db.prepare("INSERT INTO outbox(batch,scope,header_json,proof_json,signature,state) VALUES(?,?,?,?,?,?)").run(c.header.batchId,scope,JSON.stringify(c.header),JSON.stringify(c.proofs),signature,state);
     const insert=this.db.prepare('INSERT INTO records VALUES(?,?,?)');for(const [i,row] of c.records.entries())insert.run(c.header.batchId,i,JSON.stringify(row));}
@@ -58,17 +124,22 @@ export class AgentState {
     this.db.prepare('UPDATE records SET batch=? WHERE batch=?').run(newBatch,batch);this.db.prepare('UPDATE outbox SET batch=?,header_json=?,next_retry=0 WHERE batch=?').run(newBatch,JSON.stringify(header),batch);});}
   page(batch:string,offset:number){const page=[];let bytes=2;for(const row of this.db.prepare('SELECT json FROM records WHERE batch=? AND position>=? ORDER BY position LIMIT 500').iterate(batch,offset)){
     const text=String(row.json),size=Buffer.byteLength(text)+(page.length?1:0);if(bytes+size>512*1024)break;bytes+=size;page.push(JSON.parse(text));}if(!page.length)throw Error('EMPTY_PAGE');return page;}
-  acknowledge(batch:string,receipt:SyncReceipt){this.tx(()=>{const row=this.db.prepare('SELECT * FROM outbox WHERE batch=?').get(batch);if(!row)throw Error('OUTBOX_MISSING');
+  acknowledge(batch:string,receipt:SyncReceipt){const tokenTotal=this.batchTokens(batch);this.tx(()=>{const row=this.db.prepare('SELECT * FROM outbox WHERE batch=?').get(batch);if(!row)throw Error('OUTBOX_MISSING');
     const header=JSON.parse(String(row.header_json));if(receipt.status!=='committed'||receipt.batchId!==batch||receipt.payloadHash!==hash(header)||receipt.generationId!==header.manifest.generationId||receipt.manifestHash!==header.manifest.manifestHash||!Number.isSafeInteger(receipt.dataRevision)||receipt.dataRevision<0)throw Error('RECEIPT_MISMATCH');
     const current=this.db.prepare('SELECT parent_json FROM lineage WHERE scope=?').get(row.scope as string)??this.db.prepare('SELECT parent_json FROM heads WHERE scope=?').get(row.scope as string);const old=current?JSON.parse(String(current.parent_json)).header.manifest:undefined;
     if(header.manifest.parent&&(header.manifest.parent.manifestHash!==old?.manifestHash||header.manifest.parent.generationId!==old?.generationId)||!header.manifest.parent&&old)throw Error('LOCAL_PARENT_MISMATCH');
     this.db.prepare('INSERT INTO lineage VALUES(?,?,?,?) ON CONFLICT(scope) DO UPDATE SET parent_json=excluded.parent_json,signature=excluded.signature,receipt_json=excluded.receipt_json').run(row.scope,JSON.stringify({header,proofs:JSON.parse(String(row.proof_json))}),row.signature,JSON.stringify(receipt));
     this.db.prepare('DELETE FROM heads WHERE scope=?').run(row.scope);
+    this.db.prepare('INSERT INTO lineage_tokens VALUES(?,?) ON CONFLICT(scope) DO UPDATE SET token_total=excluded.token_total').run(row.scope,tokenTotal);
     this.db.prepare('INSERT OR IGNORE INTO receipts VALUES(?,?)').run(batch,JSON.stringify(receipt));this.db.prepare('DELETE FROM records WHERE batch=?').run(batch);this.db.prepare('DELETE FROM outbox WHERE batch=?').run(batch);
     this.set('lastSuccessfulSyncAt',new Date().toISOString());this.set('dataRevision',receipt.dataRevision);
   });}
   fail(batch:string,code:string,permanent=false,retryMs=1000){this.tx(()=>{const row=this.db.prepare('SELECT scope FROM outbox WHERE batch=?').get(batch);this.db.prepare("UPDATE outbox SET attempts=attempts+1,next_retry=?,error=?,state=? WHERE batch=?").run(Date.now()+retryMs,code,permanent?'review':'pending',batch);
     if(permanent&&row)this.db.prepare("UPDATE outbox SET state='review',error=COALESCE(error,'PARENT_REVIEW_REQUIRED') WHERE scope=? AND serial>(SELECT serial FROM outbox WHERE batch=?)").run(row.scope,batch);this.set('lastErrorCode',code);this.set('lastErrorAt',new Date().toISOString());});}
   status(){return {outbox:this.db.prepare('SELECT state,COUNT(*) count FROM outbox GROUP BY state').all(),confirmedScopes:Number(this.db.prepare('SELECT COUNT(*) n FROM lineage').get()!.n),receiptCount:Number(this.db.prepare('SELECT COUNT(*) n FROM receipts').get()!.n),
+    historicalSealedScopes:Number(this.db.prepare("SELECT COUNT(*) n FROM historical_seals WHERE COALESCE(json_extract(seal_json,'$.disposition'),'sealed')='sealed'").get()!.n),
+    historicalHeldScopes:Number(this.db.prepare("SELECT COUNT(*) n FROM historical_seals WHERE json_extract(seal_json,'$.disposition')='isolated'").get()!.n),
+    quarantineActive:Number(this.db.prepare('SELECT COUNT(*) n FROM session_isolations WHERE active=1').get()!.n),
+    lastCollectionReport:this.get('lastCollectionReport'),
     lastCollectedAt:this.get('lastCollectedAt'),lastReportAt:this.get('lastReportAt'),lastSuccessfulSyncAt:this.get('lastSuccessfulSyncAt'),dataRevision:this.get('dataRevision'),lastErrorCode:this.get('lastErrorCode'),lastErrorAt:this.get('lastErrorAt'),issues:this.get('issues'),heartbeat:this.get('heartbeat'),remoteOnline:this.get('remoteOnline'),lastRemoteJob:this.get('lastRemoteJob'),remoteError:this.get('remoteError')};}
 }

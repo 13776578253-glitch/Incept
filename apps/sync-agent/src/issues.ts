@@ -1,6 +1,6 @@
 import {TRANSFER_SOURCES,type TransferSource} from '../../../packages/dashboard/src/domain';
 
-const warningCodes = new Set(['EMPTY_USAGE_SKIPPED','UNKNOWN_OPENING']);
+const warningCodes = new Set(['EMPTY_USAGE_SKIPPED','UNKNOWN_OPENING','SESSION_ISOLATED','INTERVAL_ISOLATED','ISOLATED_ORIGIN_RETAINED','SEALED_ORIGIN_RETAINED','HELD_ORIGIN_RETAINED']);
 
 export type ClassifiedIssues = {warnings: string[]; blocking: string[]};
 

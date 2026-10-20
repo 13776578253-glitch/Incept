@@ -10,6 +10,7 @@ import { loadAntigravityWorkspaces } from './antigravity';
 import { loadOpenCodeSessions } from './opencode';
 import { hash } from '../imports/identity';
 import { normalizeFile } from './common';
+import { CODEX_AUTO_REVIEW_MODEL, isCodexAutoReviewModel } from './codex-purpose';
 
 export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, UnitPricing>) {
   const events: RawUsageEvent[] = [];
@@ -51,7 +52,7 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
         || Number(a.cost ?? 0) - Number(b.cost ?? 0));
       for(const row of rows) {
         const rawTool = String(row.tool ?? '').trim().toLowerCase();
-        const modelName = String(row.model ?? '').trim();
+        let modelName = String(row.model ?? '').trim();
         if(!modelName) continue;
 
         const sourceFile = String(row.source_file ?? '').trim();
@@ -62,6 +63,8 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
         const toolSources: Record<string, SourceDescriptionKey> = { codex: 'codex', 'codex-cli': 'codex', antigravity: 'antigravity', claude: 'claudeCode', 'claude-code': 'claudeCode', opencode: 'opencode', zcode: 'zcode', gemini: 'geminiCli', 'gemini-cli': 'geminiCli', commandcode: 'commandcode' };
         let sourceId: SourceDescriptionKey = toolSources[rawTool];
         if (!sourceId) continue;
+        const autoReview = sourceId === 'codex' && isCodexAutoReviewModel(modelName);
+        if (autoReview) modelName = CODEX_AUTO_REVIEW_MODEL;
         let sourceLabel = sourceId === 'geminiCli' ? 'Gemini CLI' : sourceId === 'commandcode' ? 'CommandCode' : 'Codex CLI';
         if(rawTool === 'antigravity') {
           sourceId = 'antigravity';
@@ -120,12 +123,11 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
         const tokens = {
           inputTokens: uncachedInput, outputTokens, cacheReadTokens, cacheCreationTokens, reasoningTokens,
         };
-        const freeReview = sourceId === 'codex' && /^codex-auto-review$/i.test(modelName);
-        const priced = freeReview || canPriceUsage(pricing, tokens);
+        const priced = !autoReview && canPriceUsage(pricing, tokens);
         // Codex indexed cost charges cached input twice. Recalculate when rates
         // are complete; otherwise exclude its cost while retaining unpriced tokens.
         const useRecorded = recordedCost > 0 && sourceId !== 'codex';
-        const cost = freeReview ? 0 : useRecorded ? recordedCost : computeCostFromPricing(pricing, tokens);
+        const cost = autoReview ? 0 : useRecorded ? recordedCost : computeCostFromPricing(pricing, tokens);
         const eventKey = hash([timestampMs, sourceId, modelName, rawInput, cacheReadTokens,
           cacheCreationTokens, rawOutput, reasoningTokens, sessionId,
           sessionId === 'default' ? normalizeFile(sourceFile).replace(/\.zst$/, '') : undefined]);
@@ -139,7 +141,8 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
           }
           continue;
         }
-        if (sourceId === 'codex' && !priced) unpricedCodex++;
+        // Auto-review pricing is deliberately unknown, not a collector failure.
+        if (sourceId === 'codex' && !autoReview && !priced) unpricedCodex++;
 
         events.push({
           eventId: eventKey,
@@ -163,7 +166,7 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
           reasoningTokens,
           cost,
           costSource: useRecorded ? 'recorded' : 'calculated',
-          missingPricing: !freeReview && (sourceId === 'codex' || !useRecorded) && !priced,
+          missingPricing: autoReview || (sourceId === 'codex' || !useRecorded) && !priced,
         });
         seen.set(eventKey, events.at(-1)!);
       }

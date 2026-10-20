@@ -1,7 +1,7 @@
 import 'server-only';
 import { type UnitPricing } from '../types';
 import { collectIndexedAgentEvents } from './aiusage';
-import { collectCodexEvents } from './codex';
+import { collectCodexEvents, type CodexSourcePolicy } from './codex';
 import { collectGeminiEvents } from './gemini';
 import { collectAntigravityEvents } from './antigravity';
 import { collectClaudeEvents } from './claude';
@@ -9,9 +9,9 @@ import { collectOpenCodeEvents } from './opencode-usage';
 import { collectZCodeEvents } from './zcode';
 import { normalizeFile } from './common';
 
-export function collectAiusageAndRawAgentEvents(home: string, pricingMap: Map<string, UnitPricing>) {
+export function collectAiusageAndRawAgentEvents(home: string, pricingMap: Map<string, UnitPricing>, codexPolicy:CodexSourcePolicy={}) {
   const indexed = collectIndexedAgentEvents(home, pricingMap);
-  const codex = collectCodexEvents(home, pricingMap, indexed.ingestedFiles);
+  const codex = collectCodexEvents(home, pricingMap, indexed.ingestedFiles,codexPolicy);
   const gemini = collectGeminiEvents(home, pricingMap);
   const native = [collectAntigravityEvents(home, pricingMap), collectClaudeEvents(home, pricingMap),
     collectOpenCodeEvents(home, pricingMap), collectZCodeEvents(home, pricingMap)];
@@ -29,6 +29,7 @@ export function collectAiusageAndRawAgentEvents(home: string, pricingMap: Map<st
     fallbackEvents,
     coveredSessions,
     parsedFiles,
+    sessionIntegrity: codex.sessionIntegrity,
     errors: [...indexed.errors, ...codex.errors, ...gemini.errors, ...native.flatMap(result => result.errors)],
     fallbackSources: [...new Set([...fallbackEvents.map(event => event.sourceId),
       ...native.flatMap((result, index) => result.errors.length ? [(['antigravity', 'claudeCode', 'opencode', 'zcode'] as const)[index]] : [])])],

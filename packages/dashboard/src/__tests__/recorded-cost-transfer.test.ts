@@ -94,7 +94,10 @@ describe('native recorded-cost transfer', () => {
     const directory = join(home, '.codex', 'sessions'); mkdirSync(directory, { recursive: true });
     const rows = [{ type: 'session_meta', payload: { id: 'codex-fixture', cwd: 'D:/fixture/project' } },
       { type: 'turn_context', payload: { model } }, { type: 'event_msg', timestamp: new Date(at).toISOString(), costUSD: .2,
-        payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 100, output_tokens: 20 } } } }];
+        payload: { type: 'token_count', info: {
+          total_token_usage: { input_tokens: 100, output_tokens: 20 },
+          last_token_usage: { input_tokens: 100, output_tokens: 20 },
+        } } }];
     writeFileSync(join(directory, 'rollout.jsonl'), rows.map(row => JSON.stringify(row)).join('\n'));
     const bundle = exportTokenData({ home });
     expect(bundle.events).toHaveLength(1);

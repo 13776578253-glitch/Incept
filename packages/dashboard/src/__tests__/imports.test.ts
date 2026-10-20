@@ -170,7 +170,10 @@ describe('validated cross-device imports', () => {
     mkdirSync(codex, { recursive: true }); mkdirSync(cc, { recursive: true });
     const codexRows = [ { type: 'session_meta', payload: { id: 'native-session', cwd: 'E:/Shared' } },
       { type: 'turn_context', payload: { model: 'raw-model' } }, { timestamp: new Date(at).toISOString(), type: 'event_msg',
-        payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 100, cached_input_tokens: 60, output_tokens: 20, reasoning_output_tokens: 5 } } } } ];
+        payload: { type: 'token_count', info: {
+          total_token_usage: { input_tokens: 100, cached_input_tokens: 60, output_tokens: 20, reasoning_output_tokens: 5 },
+          last_token_usage: { input_tokens: 100, cached_input_tokens: 60, output_tokens: 20, reasoning_output_tokens: 5 },
+        } } } ];
     writeFileSync(join(codex, 'rollout.jsonl'), codexRows.map(row => JSON.stringify(row)).join('\n'));
     const row = (id: string) => JSON.stringify({ id, timestamp: at, model: 'raw-cc', usage: { inputTokens: 100, cacheReadTokens: 50, outputTokens: 10, costUsd: .2 }, message: { content: 'PRIVATE BODY' } });
     const ccFile = join(cc, 'cc-session.jsonl'); writeFileSync(ccFile, row('cc-one') + '\n');

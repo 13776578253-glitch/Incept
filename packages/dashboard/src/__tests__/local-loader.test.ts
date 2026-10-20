@@ -72,7 +72,7 @@ describe('package local usage adapter', () => {
     for (const path of [original, archive, index]) mkdirSync(path, { recursive: true });
     const lines = [JSON.stringify({ type: 'session_meta', payload: { id: 'parent' } }),
       JSON.stringify({ type: 'turn_context', payload: { model: 'from-native' } }),
-      JSON.stringify({ timestamp: '2026-10-01T00:00:00Z', type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 100, output_tokens: 20 } } } })].join('\n');
+      JSON.stringify({ timestamp: '2026-10-01T00:00:00Z', type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 100, output_tokens: 20 }, last_token_usage: { input_tokens: 100, output_tokens: 20 } } } })].join('\n');
     writeFileSync(join(original, 'parent.jsonl'), lines); writeFileSync(join(archive, 'fork.jsonl'), lines);
     const db = new DatabaseSync(join(index, 'cache.db'));
     db.exec('CREATE TABLE records (ts INTEGER, tool TEXT, model TEXT, input_tokens INTEGER, output_tokens INTEGER, cache_read_tokens INTEGER, cache_write_tokens INTEGER, thinking_tokens INTEGER, cost REAL, session_id TEXT, source_file TEXT, cwd TEXT)');

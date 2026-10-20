@@ -8,6 +8,19 @@ export type UnitPricing = {
   cacheWritePerMillion?: number;
 };
 
+export type SessionIntegrity = {
+  source: 'codex';
+  sessionId: string;
+  reason: 'OPENING_PREFIX_MISSING' | 'OPENING_USAGE_UNCERTAIN' | 'INVALID_TIMESTAMP' | 'MALFORMED_RECORD' | 'INVALID_COUNTER' | 'INDEPENDENT_USAGE_MISSING';
+  firstAffectedAtMs?: number;
+  lastAffectedAtMs?: number;
+  unattributedTokens: number;
+  affectedRecords: number;
+  sourceFiles: string[];
+  /** Reliable original timestamp of a cumulative counter anchor, never a file mtime. */
+  recoveryAfterTimestampMs?: number;
+};
+
 export type RawUsageEvent = {
   nominalCost?: number;
   isPeak?: boolean;
@@ -25,6 +38,8 @@ export type RawUsageEvent = {
   sourceFile?: string;
   sourceFiles?: string[];
   historyIncomplete?: boolean;
+  /** Adjacent valid cumulative counters bound this usage to a reliable interval. */
+  usageInterval?: { kind: 'cumulative-delta'; afterTimestampMs: number };
   projectKey: string;
   projectName: string;
   workspacePath?: string;

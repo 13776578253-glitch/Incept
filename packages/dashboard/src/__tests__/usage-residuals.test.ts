@@ -35,20 +35,28 @@ it('counts only the last turn without a parent, labels missing history, and keep
   const result=collect();
   expect(sum(result.events)).toBe(295_137);
   expect(result.events.every(e=>e.historyIncomplete)).toBe(true);
-  expect(result.errors.some(e=>e.includes('28322710 prior cumulative tokens'))).toBe(true);
+  expect(result.sessionIntegrity).toEqual([expect.objectContaining({
+    sessionId:'session',reason:'OPENING_PREFIX_MISSING',unattributedTokens:28_322_710,affectedRecords:1,
+  })]);
+  expect(result.errors).toHaveLength(0);
   const data=summarizeUsageEvents(result.events,home,prices,Date.now());
   expect(data.sessions[0].historyIncomplete).toBe(true);
   expect(publicDashboardSummary(data,true).sessions[0].historyIncomplete).toBe(true);
   expect(collect().events).toEqual(result.events);
 });
 
-it('marks an opening without last-turn data as uncertain and removes uncertainty when earlier history is present', () => {
+it('uses an opening without last-turn data only as an undated anchor and removes uncertainty when earlier history is present', () => {
   rollout('tail',[entry(1,110)]);
-  expect(collect().events[0]).toMatchObject({inputTokens:110,historyIncomplete:true});
-  expect(collect().errors.some(e=>e.includes('uncertain date attribution'))).toBe(true);
+  const incomplete=collect();
+  expect(incomplete.events).toHaveLength(0);
+  expect(incomplete.sessionIntegrity).toEqual([expect.objectContaining({
+    sessionId:'session',reason:'OPENING_USAGE_UNCERTAIN',unattributedTokens:110,affectedRecords:1,
+  })]);
+  expect(incomplete.errors).toHaveLength(0);
   rollout('parent',[entry(0,100,100)]);
   expect(sum(collect().events)).toBe(110);
   expect(collect().events.every(e=>!e.historyIncomplete)).toBe(true);
+  expect(collect().sessionIntegrity).toHaveLength(0);
 });
 
 it('keeps event identity, date, totals and costs unchanged when a normal rollout becomes a compressed archive', () => {
