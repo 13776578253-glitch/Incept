@@ -12,8 +12,13 @@ import sqlite3
 import subprocess
 
 
-def export_snapshot(container, endpoint, device_id):
+def export_snapshot(container, endpoint, device_id, image_evidence=None):
     inspected = json.loads(subprocess.check_output(["docker", "inspect", container]))[0]
+    image_identity = None
+    if image_evidence is not None:
+        image_identity = json.loads(json.dumps(image_evidence))
+        image = json.loads(subprocess.check_output(["docker", "image", "inspect", "--platform", "linux/amd64", inspected["Image"]]))[0]
+        image_identity["observed"] = {"id": inspected["Image"], "os": image["Os"], "architecture": image["Architecture"], "rootfsDiffIds": image["RootFS"]["Layers"]}
     env = dict(item.split("=", 1) for item in inspected["Config"]["Env"] if "=" in item)
     database_file = env.get("INCEPT_SYNC_DATABASE_FILE")
     if database_file != "/data/sync/v4.db" or env.get("INCEPT_SYNC_TRUSTED_MODE") != "1":
@@ -43,7 +48,7 @@ def export_snapshot(container, endpoint, device_id):
         revision = db.execute("SELECT data_revision FROM sync_meta WHERE id=1").fetchone()[0]
         reviews = db.execute("SELECT COUNT(*) FROM sync_reviews").fetchone()[0]
         return {"version": 1, "capturedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "service": {"deviceId": device_id, "endpoint": endpoint, "databaseFile": database_file, "imageId": inspected["Image"]},
+                "service": {"deviceId": device_id, "endpoint": endpoint, "databaseFile": database_file, "imageId": inspected["Image"], "imageIdentity": image_identity},
                 "evidence": {"container": container, "hostDatabaseFile": str(database_path), "reviewCount": reviews,
                              "trustedMode": env.get("INCEPT_SYNC_TRUSTED_MODE"), "readMode": env.get("INCEPT_SYNC_READ_MODE")},
                 "dataRevision": revision, "tokenTotal": sum(row["tokenTotal"] for row in scopes),
@@ -55,5 +60,7 @@ if __name__ == "__main__":
     parser.add_argument("--container", required=True)
     parser.add_argument("--endpoint", required=True)
     parser.add_argument("--device-id", required=True)
+    parser.add_argument("--image-evidence", required=True, help="Validated r5 OCI graph evidence JSON; runtime observation is refreshed from Docker")
     args = parser.parse_args()
-    print(json.dumps(export_snapshot(args.container, args.endpoint, args.device_id), separators=(",", ":")))
+    evidence = json.loads(Path(args.image_evidence).read_text(encoding="utf-8"))
+    print(json.dumps(export_snapshot(args.container, args.endpoint, args.device_id, evidence), separators=(",", ":")))

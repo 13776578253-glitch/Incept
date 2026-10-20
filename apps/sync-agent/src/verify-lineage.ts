@@ -1,17 +1,18 @@
 import type {DatabaseSync} from 'node:sqlite';
 import {hash} from '../../../packages/dashboard/src/adapters/local/imports/identity';
 import type {SyncScope,SyncReceipt,SyncHeader} from '../../../packages/dashboard/src/domain/sync';
+import {R5_IMAGE,verifyR5ImageIdentity} from './image-identity';
 
 export const V4_BASELINE = {
   scopes: 359,
   receipts: 359,
   tokenTotal: 4_480_530_511,
   databaseFile: '/data/sync/v4.db',
-  imageId: 'sha256:cc705ce22cea38b1a8c01cea28fe1e1dd2ca6cbae500516f00eaee6c497d6685',
+  image: R5_IMAGE,
 };
 export type LineageSnapshot = {
   version: 1;
-  service: {deviceId: string; endpoint: string; databaseFile: string; imageId: string};
+  service: {deviceId: string; endpoint: string; databaseFile: string; imageIdentity: unknown};
   dataRevision: number;
   tokenTotal: number;
   scopes: Array<{scope: SyncScope; manifestHash: string; generationId: string; tokenTotal: number}>;
@@ -37,7 +38,9 @@ export async function verifyLineage(db: DatabaseSync, raw: unknown, identity: Id
   }
   const snapshot = raw as unknown as LineageSnapshot;
   if (snapshot.service.deviceId !== identity.deviceId || snapshot.service.endpoint !== identity.endpoint ||
-    snapshot.service.databaseFile !== V4_BASELINE.databaseFile || snapshot.service.imageId !== V4_BASELINE.imageId) errors.push('SERVICE_IDENTITY_MISMATCH');
+    snapshot.service.databaseFile !== V4_BASELINE.databaseFile) errors.push('SERVICE_IDENTITY_MISMATCH');
+  const image = verifyR5ImageIdentity(snapshot.service.imageIdentity);
+  errors.push(...image.errors);
   if (snapshot.scopes.length !== V4_BASELINE.scopes) errors.push('REMOTE_SCOPE_COUNT_MISMATCH');
   if (snapshot.receipts.length !== V4_BASELINE.receipts) errors.push('REMOTE_RECEIPT_COUNT_MISMATCH');
   if (snapshot.tokenTotal !== V4_BASELINE.tokenTotal) errors.push('REMOTE_TOKEN_TOTAL_MISMATCH');

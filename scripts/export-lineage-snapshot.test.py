@@ -80,6 +80,20 @@ class ExportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "REMOTE_RECEIPT_DEVICE_MISMATCH"):
             self.export()
 
+    def test_refreshes_observed_identity_instead_of_trusting_supplied_runtime_id(self):
+        supplied = {"indexJson": "{}", "manifestJson": "{}", "configJson": "{}", "observed": {"id": "stale-r5-assertion"}}
+        image = {"Os": "linux", "Architecture": "amd64", "RootFS": {"Layers": ["actual-layer"]}}
+        with patch.object(module.subprocess, "check_output", side_effect=[json.dumps([self.container]).encode(), json.dumps([image]).encode()]) as docker:
+            result = module.export_snapshot("synthetic-container", "http://127.0.0.1:12345", "test-device", supplied)
+        observed = result["service"]["imageIdentity"]["observed"]
+        self.assertEqual(observed["id"], self.container["Image"])
+        self.assertEqual(observed["rootfsDiffIds"], ["actual-layer"])
+        self.assertEqual(supplied["observed"]["id"], "stale-r5-assertion")
+        self.assertEqual(docker.call_args_list[1].args[0], ["docker", "image", "inspect", "--platform", "linux/amd64", self.container["Image"]])
+
+    def test_without_graph_marks_evidence_missing_for_downstream_gate(self):
+        self.assertIsNone(self.export()["service"]["imageIdentity"])
+
 
 if __name__ == "__main__":
     unittest.main()

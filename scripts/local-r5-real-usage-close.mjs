@@ -1,0 +1,25 @@
+// Finalize read-only diagnostics and pause after a newly isolated reset. No network operations.
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync,readdirSync,statSync} from 'node:fs';
+import {resolve,join} from 'node:path';
+import {createHash} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
+const directory='C:/Users/86139/AppData/Local/Incept/v4-acceptance-20261019';
+assert.equal(resolve(process.env.INCEPT_V4_ACCEPTANCE_DIR??''),resolve(directory));
+const runs=readdirSync(directory).filter(n=>n.startsWith('real-usage-')).map(n=>join(directory,n)).sort((a,b)=>statSync(b).mtimeMs-statSync(a).mtimeMs);
+assert(runs.length>0);const root=runs[0];
+const report=JSON.parse(readFileSync(join(root,'real-usage-report.json'),'utf8'));
+assert.equal(report.sourceResults.codex.status,'passed');assert.equal(report.sourceResults.antigravity.status,'passed');
+const {root:preparation}=JSON.parse(readFileSync(join(directory,'real-source-current.json'),'utf8'));
+const {hash}=await import(pathToFileURL(join(preparation,'rules.mjs')).href);
+const quarantines=JSON.parse(readFileSync(join(root,'codex-isolations.json'),'utf8'));
+const history=JSON.parse(readFileSync('D:/Desktop/code/code/Incept/output/v4-reset-exceptions.json','utf8'));
+const newlyFound=quarantines.filter(q=>q.reason==='CODEX_RESET_REVIEW'&&!history.sessions.some(old=>old.sessionId===q.sessionId&&old.reason===q.reason));
+report.verifiedCanaries='passed';report.status=newlyFound.length?'paused-new-isolated-reset':'passed-with-quarantined-history';
+report.liveUploadsStopped=!!newlyFound.length;
+report.newResetIsolations=newlyFound.map(q=>({sessionHash:hash(q.sessionId),reason:q.reason,affectedRecords:q.affectedRecords,tokenImpact:null,uploaded:false}));
+report.evidenceDirectory=root;report.closedAt=new Date().toISOString();
+report.agentLibrarySha256=createHash('sha256').update(readFileSync('apps/sync-agent/dist/library.mjs')).digest('hex');
+writeFileSync(join(root,'real-usage-report.json'),JSON.stringify(report,null,2));
+writeFileSync('output/r5-real-usage-final.json',JSON.stringify(report,null,2)+'\n');
+console.log(JSON.stringify({status:report.status,verifiedCanaries:report.verifiedCanaries,newResetIsolations:report.newResetIsolations}));

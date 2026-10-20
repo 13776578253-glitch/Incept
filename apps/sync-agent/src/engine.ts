@@ -17,6 +17,7 @@ export {resumeReviewed} from './review';
 export {resumeHeld} from './resume';
 export {classifyIssues} from './issues';
 export {verifyLineage,V4_BASELINE} from './verify-lineage';
+export {verifyR5ImageIdentity,classifyR5Digest,R5_IMAGE} from './image-identity';
 export {captureHome,buildCandidate} from '../../../packages/dashboard/src/agent/capture';
 export type Config={version:1;endpoint:string;deviceId:string;home:string;allowedSources:TransferSource[];allowLoopbackHttp?:boolean;remote?:boolean;allowIncomplete?:boolean;autoReviewSessions?:string[]};
 export type Collector=(home:string,allowed:TransferSource[],parents:ParentCapture[],signal?:AbortSignal,options?:CaptureOptions)=>Promise<CaptureResult>;

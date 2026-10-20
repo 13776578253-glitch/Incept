@@ -1,0 +1,97 @@
+{
+  "name": "incept-v4-acceptance",
+  "services": {
+    "postgres": {
+      "image": "${INCEPT_V4_POSTGRES_IMAGE:?Set immutable postgres 16 registry reference}",
+      "platform": "linux/amd64",
+      "restart": "no",
+      "mem_limit": "384m",
+      "memswap_limit": "384m",
+      "cpus": 1,
+      "command": ["postgres", "-c", "max_connections=20", "-c", "shared_buffers=64MB", "-c", "work_mem=2MB", "-c", "max_parallel_workers=0", "-c", "jit=off"],
+      "environment": {
+        "POSTGRES_DB": "incept_v4_acceptance",
+        "POSTGRES_USER": "incept_v4_restore",
+        "POSTGRES_PASSWORD": "${INCEPT_V4_PG_ADMIN_PASSWORD:?Set independent restore administrator password}"
+      },
+      "volumes": [{ "type": "volume", "source": "pg_data", "target": "/var/lib/postgresql/data", "volume": { "nocopy": true } }],
+      "networks": ["acceptance"],
+      "healthcheck": {
+        "test": ["CMD-SHELL", "pg_isready -U incept_v4_restore -d incept_v4_acceptance"],
+        "interval": "5s", "timeout": "3s", "retries": 20
+      }
+    },
+    "app": {
+      "image": "${INCEPT_V4_APP_IMAGE:?Set verified r5 immutable image reference}",
+      "platform": "linux/amd64",
+      "user": "1000:1000",
+      "init": true,
+      "restart": "no",
+      "mem_limit": "768m",
+      "memswap_limit": "768m",
+      "cpus": 2,
+      "read_only": true,
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "environment": {
+        "NODE_ENV": "production",
+        "NEXT_TELEMETRY_DISABLED": "1",
+        "DATABASE_URL": "postgresql://incept_v4_acceptance:${INCEPT_V4_PG_PASSWORD:?Set independent URI-safe password of at least 32 characters}@postgres:5432/incept_v4_acceptance?connection_limit=5&pool_timeout=10&connect_timeout=5",
+        "INCEPT_AUTH_ENCRYPTION_KEY": "${INCEPT_V4_AUTH_ENCRYPTION_KEY:?Set independent 64 hex authentication encryption key}",
+        "NODE_OPTIONS": "--max-old-space-size=256 --max-semi-space-size=8",
+        "INCEPT_DOCS_MEDIA_DIR": "/data/docs-media",
+        "INCEPT_DOCS_DRAFTS_DIR": "/data/docs-drafts",
+        "INCEPT_MUSIC_MEDIA_DIR": "/data/music-media",
+        "INCEPT_DASHBOARD_HOME": "/data/dashboard",
+        "INCEPT_DASHBOARD_IMPORTS_FILE": "/data/dashboard/imports.db",
+        "INCEPT_DASHBOARD_CACHE_FILE": "/data/dashboard/snapshots.json",
+        "INCEPT_DASHBOARD_OVERRIDES_FILE": "/data/dashboard/overrides.json",
+        "INCEPT_SYNC_ENABLED": "1",
+        "INCEPT_SYNC_TRUSTED_MODE": "1",
+        "INCEPT_SYNC_REMOTE_ENABLED": "0",
+        "INCEPT_SYNC_READ_MODE": "v2",
+        "INCEPT_SYNC_DATABASE_FILE": "/data/sync/v4.db",
+        "INCEPT_SYNC_RPC_KEY_FILE": "/run/incept-v4-secrets/sync-rpc.key",
+        "INCEPT_SYNC_DEVICE_ALLOWLIST": "${INCEPT_V4_DEVICE_ID:?Set reviewed isolated canary device ID}",
+        "INCEPT_SYNC_POLL_MS": "300000",
+        "INCEPT_SYNC_MAX_QUEUE": "4",
+        "INCEPT_SYNC_MAX_BATCH_RECORDS": "20000",
+        "INCEPT_SYNC_MEMORY_PERCENT": "85"
+      },
+      "volumes": [
+        { "type": "volume", "source": "v4_data", "target": "/data", "volume": { "nocopy": true } },
+        { "type": "volume", "source": "acceptance_secrets", "target": "/run/incept-v4-secrets", "read_only": true, "volume": { "nocopy": true } }
+      ],
+      "tmpfs": ["/tmp:uid=1000,gid=1000,mode=1777,size=64m", "/app/apps/web/.next/cache:uid=1000,gid=1000,mode=0700,size=64m"],
+      "networks": ["acceptance", "app_entry"],
+      "depends_on": { "postgres": { "condition": "service_healthy" } },
+      "healthcheck": {
+        "test": ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"],
+        "interval": "15s", "timeout": "5s", "retries": 3, "start_period": "30s"
+      }
+    },
+    "entry": {
+      "image": "node:24.21.0-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20",
+      "platform": "linux/amd64",
+      "user": "1000:1000",
+      "entrypoint": ["node", "/entry/v4-http-entry.mjs"],
+      "init": true,
+      "restart": "no",
+      "read_only": true,
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "mem_limit": "64m",
+      "memswap_limit": "64m",
+      "cpus": 0.25,
+      "pids_limit": 32,
+      "sysctls": {"net.ipv4.ip_forward": "0", "net.ipv6.conf.all.forwarding": "0"},
+      "volumes": [{"type":"bind","source":"./v4-http-entry.mjs","target":"/entry/v4-http-entry.mjs","read_only":true,"bind":{"create_host_path":false}}],
+      "ports": [{"host_ip":"127.0.0.1","published":"3305","target":8080,"protocol":"tcp"}],
+      "networks": {"app_entry":{},"ingress":{"gw_priority":1}},
+      "depends_on": {"app":{"condition":"service_healthy"}},
+      "healthcheck": {"test":["CMD","node","-e","fetch('http://127.0.0.1:8080/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"],"interval":"15s","timeout":"5s","retries":3,"start_period":"10s"}
+    }
+  },
+  "volumes": { "v4_data": {}, "pg_data": {}, "acceptance_secrets": {} },
+  "networks": { "acceptance": { "internal": true }, "app_entry": {"internal":true}, "ingress":{"internal":false,"driver":"bridge"} }
+}

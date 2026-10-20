@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {DatabaseSync} from 'node:sqlite';
 import {createHash} from 'node:crypto';
-import {mkdtempSync, writeFileSync, rmSync} from 'node:fs';
+import {mkdtempSync, writeFileSync, rmSync, readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
@@ -19,10 +19,11 @@ function canonical(value) {
 }
 const hash = value => createHash('sha256').update(canonical(value)).digest('hex');
 const identity = {deviceId: 'synthetic-device', endpoint: 'http://127.0.0.1:1'};
+const imageEvidence = JSON.parse(readFileSync(new URL('./fixtures/r5-image-evidence.json', import.meta.url), 'utf8'));
 function fixture(path = ':memory:') {
   const db = new DatabaseSync(path);
   db.exec('CREATE TABLE lineage(scope TEXT PRIMARY KEY,parent_json TEXT,receipt_json TEXT); CREATE TABLE receipts(batch TEXT PRIMARY KEY,json TEXT); CREATE TABLE heads(scope TEXT); CREATE TABLE outbox(batch TEXT);');
-  const snapshot = {version: 1, service: {...identity, databaseFile: V4_BASELINE.databaseFile, imageId: V4_BASELINE.imageId},
+  const snapshot = {version: 1, service: {...identity, databaseFile: V4_BASELINE.databaseFile, imageIdentity: structuredClone(imageEvidence)},
     dataRevision: 359, tokenTotal: V4_BASELINE.tokenTotal, scopes: [], receipts: []};
   for (let i = 0; i < 359; i++) {
     const scope = {deviceId: identity.deviceId, source: 'codex', sessionId: 'synthetic-' + i, originId: 'origin-' + i};
@@ -95,7 +96,7 @@ for (const [name, mutate, error] of [
   ['duplicate receipt', f => { f.snapshot.receipts[1] = f.snapshot.receipts[0]; }, 'DUPLICATE_REMOTE_RECEIPT'],
   ['device identity', f => { f.snapshot.service.deviceId = 'other'; }, 'SERVICE_IDENTITY_MISMATCH'],
   ['endpoint identity', f => { f.snapshot.service.endpoint = 'https://wrong.invalid'; }, 'SERVICE_IDENTITY_MISMATCH'],
-  ['r5 image identity', f => { f.snapshot.service.imageId = 'old-r3'; }, 'SERVICE_IDENTITY_MISMATCH'],
+  ['r5 image identity', f => { f.snapshot.service.imageIdentity.observed.id = 'old-r3'; }, 'RUNTIME_IMAGE_ID_MISMATCH'],
   ['database identity', f => { f.snapshot.service.databaseFile = '/data/sync/v2.db'; }, 'SERVICE_IDENTITY_MISMATCH'],
   ['scope device identity', f => { f.snapshot.scopes[0].scope.deviceId = 'other'; }, 'REMOTE_DEVICE_MISMATCH'],
   ['malformed remote snapshot', f => { f.snapshot.version = 2; }, 'INVALID_REMOTE_SNAPSHOT'],
@@ -194,8 +195,14 @@ test('actual CLI exits 0 on pass and nonzero on empty, mismatch, missing snapsho
       globalThis.fetch = async () => { throw Error('synthetic transport failure'); };`);
     writeFileSync(snapshotPath, JSON.stringify(f.snapshot));
     child = run(['--snapshot', snapshotPath, '--online'], preload);
-    assert.equal(child.status, 2, JSON.stringify(child));
-    assert.ok(child.result.errors.includes('REMOTE_IDENTITY_REQUEST_FAILED'));
+    if (process.platform === 'win32') {
+      assert.equal(child.status, 2, JSON.stringify(child));
+      assert.ok(child.result.errors.includes('REMOTE_IDENTITY_REQUEST_FAILED'));
+    } else {
+      // Online verification requires Windows DPAPI before attempting transport.
+      assert.equal(child.status, 1, JSON.stringify(child));
+      assert.equal(child.result.error, 'WINDOWS_DPAPI_REQUIRED');
+    }
 
     // Preserve the real isRunning probe but inject the race at lock creation.
     // This simulates a competing process taking the lock between probe/acquire.
