@@ -1,7 +1,7 @@
 import 'server-only';
 import { dashboardDate, type TokenDashboardData, type UsageRange } from '../../domain';
 import { collectInWorker } from './worker-client';
-import { readDashboardSnapshot, saveDashboardSnapshot, snapshotContext } from './snapshot-store';
+import { readDashboardSnapshot, saveDashboardSnapshot, snapshotContext, trustedDashboardEnabled } from './snapshot-store';
 import { statSync } from 'node:fs';
 import { importStorePath } from '../local/imports/store';
 
@@ -14,6 +14,11 @@ function importsUnchanged(home: string, checkedAt: number) {
 
 const pending = new Map<string, { force: boolean; job: Promise<TokenDashboardData> }>();
 export async function refreshDashboardSnapshot({ range = '30d', force = false }: { range?: UsageRange; force?: boolean } = {}) {
+  if (trustedDashboardEnabled()) {
+    const snapshot = await readDashboardSnapshot(range);
+    if (!snapshot) throw Error('TRUSTED_SNAPSHOT_UNAVAILABLE');
+    return snapshot;
+  }
   const context = snapshotContext(), key = context.key + ':' + range;
   const active = pending.get(key);
   if (active) {

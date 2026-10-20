@@ -34,7 +34,7 @@ describe('non-blocking dashboard history', () => {
     const { refreshDashboardSnapshot } = await import('../adapters/runtime/refresh');
     const first = refreshDashboardSnapshot(), second = refreshDashboardSnapshot();
     await vi.waitFor(() => expect(mocked.collect).toHaveBeenCalledTimes(1));
-    expect(await cache.readDashboardSnapshot()).toBe(old);
+    expect(await cache.readDashboardSnapshot()).toEqual(old);
     const next = data(); next.totals.totalTokens = 22; finish(next);
     expect(await first).toBe(next); expect(await second).toBe(next);
     expect(JSON.parse(readFileSync(file, 'utf8')).snapshots['30d'].totals.totalTokens).toBe(22);
@@ -45,7 +45,7 @@ describe('non-blocking dashboard history', () => {
     const { refreshDashboardSnapshot } = await import('../adapters/runtime/refresh');
     mocked.collect.mockRejectedValueOnce(new Error('worker failed')).mockResolvedValue(data());
     await expect(refreshDashboardSnapshot()).rejects.toThrow('worker failed');
-    expect(await cache.readDashboardSnapshot()).toBe(old);
+    expect(await cache.readDashboardSnapshot()).toEqual(old);
     await refreshDashboardSnapshot(); expect(mocked.collect).toHaveBeenCalledTimes(2);
   });
   it('serves a recent same-day snapshot but forces a manual refresh after a normal in-flight job', async () => {

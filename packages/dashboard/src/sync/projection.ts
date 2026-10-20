@@ -19,7 +19,12 @@ export function projection(service:CompatibleSyncService,home:string,range:Usage
     const migrated=service.db.prepare('SELECT checksum,status FROM sync_legacy_batches WHERE id=?').get(row.id as string);requireSync(migrated?.checksum===row.checksum&&migrated.status===JSON.parse(String(row.receipt)).status,'LEGACY_PROJECTION_STALE');
   }}finally{old.close();}}
   const trusted=process.env.INCEPT_SYNC_TRUSTED_MODE==='1';
-  const overrides=readLocalOverrides(),pricing=loadLocalPricingMap(home,overrides),cc=collectCommandCodeEvents(home,pricing),agents=collectAiusageAndRawAgentEvents(home,pricing),covered=new Set(cc.events.flatMap(r=>r.sourceFile?[normalizeFile(r.sourceFile)]:[]));
+  const overrides=readLocalOverrides(),pricing=loadLocalPricingMap(home,overrides);
+  // Public trusted projections use committed records only. Do not even invoke
+  // the native collectors: ignored results would still scan original logs.
+  const cc:Pick<ReturnType<typeof collectCommandCodeEvents>,'events'|'latestMtimeMs'|'errors'>=trusted?{events:[],latestMtimeMs:0,errors:[]}:collectCommandCodeEvents(home,pricing);
+  const agents:Pick<ReturnType<typeof collectAiusageAndRawAgentEvents>,'events'|'latestMtimeMs'|'errors'|'fallbackEvents'>=trusted?{events:[],latestMtimeMs:0,errors:[],fallbackEvents:[]}:collectAiusageAndRawAgentEvents(home,pricing);
+  const covered=new Set(cc.events.flatMap(r=>r.sourceFile?[normalizeFile(r.sourceFile)]:[]));
   const native=trusted?[]:[...cc.events,...agents.events.filter(r=>r.sourceId!=='commandcode'||!r.sourceFile||!covered.has(normalizeFile(r.sourceFile)))];
   const view=readSyncView(service,native,pricing,overrides.aliases);requireSync(view.dataRevision>=minimumRevision,'REVISION_NOT_VISIBLE');
   // Preserve immutable legacy membership order after exact adoption. The old

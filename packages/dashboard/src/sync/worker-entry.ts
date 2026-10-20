@@ -8,9 +8,12 @@ import {resolveScope,guardExternalLegacy} from './admission';
 import {projection} from './projection';
 import {hash} from '../adapters/local/imports/identity';
 import {listReviewSummaries} from '../adapters/local/imports/sync/reviews';
+import {readSyncDatabaseVersion,syncDatabaseFileIdentity} from './database-version';
+import {usageRanges,type TokenDashboardData} from '../domain';
 
 if(!parentPort)throw new Error('WORKER_REQUIRED');
 const service=new CompatibleSyncService(workerData.path);
+const serviceFileIdentity=syncDatabaseFileIdentity(workerData.path);
 service.db.exec('PRAGMA cache_size=-8192; PRAGMA wal_autocheckpoint=512;');
 const trusted=workerData.trusted===true;
 const originalBefore=service.beforeVisible;
@@ -42,6 +45,19 @@ parentPort.on('message',({id,work}:{id:number;work:SyncWork})=>{
         result={dataRevision:revision,changed,lineageHash:hash(heads)};break;
       }
       case 'projection':service.owner(work.actor);result=projection(service,work.home,work.range,work.minimumRevision,trusted?undefined:workerData.legacyPath);break;
+      case 'projection-snapshots': {
+        service.owner(work.actor);requireSync(trusted,'TRUSTED_PROJECTION_REQUIRED');
+        const before=readSyncDatabaseVersion(workerData.path);
+        requireSync(serviceFileIdentity===syncDatabaseFileIdentity(workerData.path)&&before.identity===work.identity&&before.revision===work.revision&&service.revision()===work.revision,'SNAPSHOT_VERSION_CHANGED');
+        const snapshots:Partial<Record<typeof usageRanges[number],TokenDashboardData>>={};
+        for(const range of usageRanges) {
+          const data=projection(service,work.home,range,work.revision,undefined,work.now);
+          requireSync(data.sync.dataRevision===work.revision,'SNAPSHOT_VERSION_CHANGED');snapshots[range]=data;
+        }
+        const after=readSyncDatabaseVersion(workerData.path);
+        requireSync(after.identity===before.identity&&after.revision===before.revision,'SNAPSHOT_VERSION_CHANGED');
+        result=snapshots;break;
+      }
       case 'resolve':result=resolveScope(service,{source:work.source,sessionId:work.sessionId},work.actor,trusted?undefined:workerData.legacyPath);break;
       case 'begin': {
         requireSync(work.actor.role==='device'&&work.header.manifest.scope.deviceId===work.actor.deviceId,'DEVICE_MISMATCH');

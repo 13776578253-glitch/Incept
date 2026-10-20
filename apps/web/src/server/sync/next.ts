@@ -7,6 +7,7 @@ import {hasSameOrigin} from '../auth/request-origin';
 import {createSyncHandler} from './controller';
 import {response,DeviceRequestLimiter} from './http';
 import {RemoteSync} from './remote';
+import {configureTrustedDashboardExecutor, trustedDashboardEnabled} from '@incept/dashboard/adapters';
 const limiter=new DeviceRequestLimiter();
 
 declare global {var __inceptSyncExecutor: {path:string;executor:SyncExecutor}|undefined;}
@@ -24,6 +25,7 @@ export function syncExecutor() {
       maxStoreBytes:configured('INCEPT_SYNC_MAX_STORE_BYTES',DEFAULT_CAPACITY.maxStoreBytes!),memoryPercent:configured('INCEPT_SYNC_MEMORY_PERCENT',85),maxBatchRecords:configured('INCEPT_SYNC_MAX_BATCH_RECORDS',20000)};
     globalThis.__inceptSyncExecutor={path,executor:new SyncExecutor(path,{legacyPath:trusted?undefined:legacyPath,trusted,policy,maxQueue:configured('INCEPT_SYNC_MAX_QUEUE',16),timeoutMs:configured('INCEPT_SYNC_TIMEOUT_MS',30_000)})};
   }
+  if(trustedDashboardEnabled())configureTrustedDashboardExecutor(globalThis.__inceptSyncExecutor.executor);
   return globalThis.__inceptSyncExecutor.executor;
 }
 export async function handleSyncRequest(request:Request) {

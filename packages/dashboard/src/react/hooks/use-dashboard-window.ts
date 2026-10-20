@@ -7,6 +7,18 @@ import {remoteRefresh,remoteStatus,type RemoteStatus} from './remote-refresh';
 
 export const DASHBOARD_REFRESH_INTERVAL = 60_000;
 
+function olderSnapshot(next: TokenDashboardData, previous: TokenDashboardData) {
+  if (next.range !== previous.range) return false;
+  const nextRevision = next.sync?.readMode === 'v2' ? next.sync.dataRevision : undefined;
+  const previousRevision = previous.sync?.readMode === 'v2' ? previous.sync.dataRevision : undefined;
+  if (typeof nextRevision === 'number' && typeof previousRevision === 'number' &&
+    Number.isSafeInteger(nextRevision) && Number.isSafeInteger(previousRevision) && nextRevision !== previousRevision) {
+    return nextRevision < previousRevision;
+  }
+  const nextTime = Date.parse(next.checkedAt ?? ''), previousTime = Date.parse(previous.checkedAt ?? '');
+  return Number.isFinite(previousTime) && (!Number.isFinite(nextTime) || nextTime < previousTime);
+}
+
 export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean; owner?: boolean; canViewDetails?: boolean } = {}) {
   const remoteEnabled=!!options.owner&&!!initialData.sync?.remote;
   const scope = (options.owner ? 'owner' : options.canViewDetails ? 'pro' : 'public')+(remoteEnabled?':remote:'+initialData.sync?.readMode:'');
@@ -15,8 +27,10 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
   const interval=remoteEnabled?Math.max(300000,Math.min(600000,initialData.sync?.intervalMs??300000)):DASHBOARD_REFRESH_INTERVAL;
   const [data, setData] = useState(() => {
     const cached = clientSnapshot(initialData.range ?? '30d', scope);
-    return cached && (Date.parse(cached.checkedAt ?? '') || 0) > (Date.parse(initialData.checkedAt ?? '') || 0) ? cached : initialData;
+    return cached && olderSnapshot(initialData, cached) ? cached : initialData;
   });
+  const dataRef = useRef(data);
+  useEffect(() => { dataRef.current = data; }, [data]);
   const [lastPageUpdatedAt, setLastPageUpdatedAt] = useState(initialData.checkedAt);
   const [hasSnapshot, setHasSnapshot] = useState(options.initialHasSnapshot !== false || !!clientSnapshot(initialData.range ?? '30d', scope));
   const [showingHistory, setShowingHistory] = useState(!!options.refreshOnMount && hasSnapshot);
@@ -79,6 +93,8 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
         if (next.range !== rangePreset) throw new Error('Usage window mismatch');
         if(remoteEnabled&&query.has('minRevision')&&next.sync?.readMode==='v2'&&(next.sync.dataRevision??-1)<Number(query.get('minRevision')))throw Error('REVISION_NOT_VISIBLE');
         if (!disposed && !current.signal.aborted) {
+          if (olderSnapshot(next, dataRef.current)) throw new Error('STALE_USAGE_SNAPSHOT');
+          dataRef.current = next;
           setData(next);
           rememberSnapshot(next, scope);
           setLastPageUpdatedAt(new Date().toISOString());

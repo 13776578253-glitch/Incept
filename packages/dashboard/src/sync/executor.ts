@@ -2,6 +2,7 @@ import { Worker } from 'node:worker_threads';
 import { existsSync } from 'node:fs';
 import { dirname,isAbsolute,join,resolve } from 'node:path';
 import { DEFAULT_CAPACITY,SyncTransportError,type CapacityPolicy,type SyncWork } from './protocol';
+import {syncDatabaseFileIdentity} from './database-version';
 
 type Job={id:number;work:SyncWork;device:string;resolve:(v:unknown)=>void;reject:(e:unknown)=>void;verify:()=>Promise<void>;signal?:AbortSignal;abort:()=>void;timer?:ReturnType<typeof setTimeout>;active:boolean};
 export type ExecutorOptions={workerFile?:string;legacyPath?:string;trusted?:boolean;maxQueue?:number;perDevice?:number;timeoutMs?:number;policy?:CapacityPolicy};
@@ -13,6 +14,8 @@ export function findSyncWorker() {
 }
 export class SyncExecutor {
   private worker?:Worker;private queue:Job[]=[];private running?:Job;private serial=0;private closed=false;
+  private workerIdentity?:string;
+  private readonly commitListeners=new Set<()=>void>();
   readonly metrics={completed:0,failed:0,lastFailure:null as string|null,lastWallMs:0,lastWriteWallMs:0,lastCommitWallMs:0,processRssBytes:0,workerHeapBytes:0,busyRetries:0};
   readonly options:Required<Omit<ExecutorOptions,'workerFile'|'legacyPath'|'trusted'>>&{workerFile:string;legacyPath?:string;trusted:boolean};
   constructor(readonly path:string,options:ExecutorOptions={}) {
@@ -25,6 +28,7 @@ export class SyncExecutor {
     if((this.options.policy.memoryPercent??85)<50||(this.options.policy.memoryPercent??85)>95||(this.options.policy.maxBatchRecords??20000)<1)throw new SyncTransportError('INVALID_CAPACITY_CONFIG');
   }
   state(){return {queueLength:this.queue.length,running:!!this.running,...this.metrics};}
+  onCommitted(listener:()=>void){this.commitListeners.add(listener);return ()=>this.commitListeners.delete(listener);}
   execute<T=unknown>(work:SyncWork,verify:()=>Promise<void>=async()=>{},signal?:AbortSignal):Promise<T> {
     if(this.closed)return Promise.reject(new SyncTransportError('EXECUTOR_CLOSED'));
     if(signal?.aborted)return Promise.reject(new SyncTransportError('REQUEST_CANCELLED',503));
@@ -53,6 +57,11 @@ export class SyncExecutor {
     if(this.running||this.closed)return;const job=this.queue.shift();if(!job)return;this.running=job;
     try {
       await job.verify();if(this.running!==job)return;job.active=true;
+      if(this.worker&&existsSync(this.path)) {
+        const identity=syncDatabaseFileIdentity(this.path);
+        if(this.workerIdentity&&this.workerIdentity!==identity){const previous=this.worker;this.worker=undefined;await previous.terminate();}
+        this.workerIdentity=identity;
+      }
       if(!this.worker) {
         const instance=Reflect.construct(Worker,[resolve(this.options.workerFile),{workerData:{path:this.path,policy:this.options.policy,legacyPath:this.options.legacyPath,trusted:this.options.trusted},resourceLimits:{maxOldGenerationSizeMb:256}}]) as Worker;
         this.worker=instance;
@@ -61,7 +70,13 @@ export class SyncExecutor {
           if(message.metrics){this.metrics.lastWallMs=message.metrics.wallMs;this.metrics.processRssBytes=message.metrics.rssBytes;this.metrics.workerHeapBytes=message.metrics.heapBytes;this.metrics.busyRetries=message.metrics.busyRetries;}
           if(message.metrics&&!['status','capacity'].includes(current.work.op))this.metrics.lastWriteWallMs=message.metrics.wallMs;
           if(message.metrics&&current.work.op==='commit')this.metrics.lastCommitWallMs=message.metrics.wallMs;
-          this.finish(current,message.error?new SyncTransportError(message.error.code,message.error.status??statusForCode(message.error.code),message.error.retryAfter??2):undefined,message.result);void this.pump();
+          if(existsSync(this.path)&&!this.workerIdentity)this.workerIdentity=syncDatabaseFileIdentity(this.path);
+          this.finish(current,message.error?new SyncTransportError(message.error.code,message.error.status??statusForCode(message.error.code),message.error.retryAfter??2):undefined,message.result);
+          if(!message.error&&current.work.op==='commit'&&message.result?.receipt?.status==='committed') {
+            // Receipt delivery never waits for aggregation or publication.
+            for(const listener of this.commitListeners)queueMicrotask(()=>{try{listener();}catch{/* A display refresh cannot reject a committed receipt. */}});
+          }
+          void this.pump();
         });
         const stopped=()=>{if(this.worker===instance){this.worker=undefined;const current=this.running;this.running=undefined;if(current)this.finish(current,new SyncTransportError('RESULT_UNKNOWN'));void this.pump();}};
         instance.on('error',()=>{void instance.terminate();});instance.on('exit',stopped);
