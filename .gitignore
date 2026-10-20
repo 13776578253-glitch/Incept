@@ -73,3 +73,6 @@ dashboard-snapshots.json*
 
 # Temporary scratch space for local development and testing. This is a private
 /.scratch/
+
+# Temporary files created by the build process, which are not needed in source control
+/.tmp/
