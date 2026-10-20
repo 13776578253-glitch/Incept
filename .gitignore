@@ -74,3 +74,6 @@ dashboard-snapshots.json*
 # Temporary scratch space for local development and testing. This is a private
 /.scratch/
 /deployment/.prisma-engine-cache/
+
+# Local build scratch, not release evidence.
+/.tmp/
