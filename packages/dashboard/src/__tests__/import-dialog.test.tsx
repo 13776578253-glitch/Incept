@@ -95,4 +95,94 @@ describe('reviewable import UI', () => {
     expect(screen.getByText('价格未知')).toBeDefined();
     expect((screen.getByRole('button', { name: '确认导入' }) as HTMLButtonElement).disabled).toBe(true);
   });
+  it('verifies inline after 428 and resumes exactly the reviewed import once', async () => {
+    let commits = 0;
+    mockFetch.mockImplementation((url: string) => url.endsWith('/commit') && ++commits === 1
+      ? Promise.resolve({ ok: false, status: 428, json: async () => ({ error: 'reauthentication_required' }) })
+      : response(url.endsWith('/preview') ? preview : url.endsWith('/reauthenticate') ? { authenticated: true }
+        : url.endsWith('/commit') ? receipt : { history: [] }));
+    const refresh = renderDialog(); await upload();
+    fireEvent.click(screen.getByRole('button', { name: '确认导入' }));
+    await screen.findByRole('heading', { name: '验证身份' });
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    expect(screen.queryByText('reauthentication_required')).toBeNull();
+    expect(screen.getByText('tokens.json')).toBeDefined();
+    expect(screen.getByRole('combobox', { name: '匹配项目 外部项目' }).hasAttribute('disabled')).toBe(true);
+    fireEvent.change(screen.getByLabelText('当前密码'), { target: { value: 'test-password' } });
+    fireEvent.change(screen.getByLabelText('当前 TOTP'), { target: { value: '012345' } });
+    fireEvent.click(screen.getByRole('button', { name: '验证并导入' }));
+    await screen.findByRole('button', { name: '已导入' });
+    expect(commits).toBe(2);
+    const commitsSent = mockFetch.mock.calls.filter(([url]) => url.endsWith('/commit'));
+    expect(commitsSent.map(([, options]) => JSON.parse(options.body))).toEqual([{ previewId: 'preview-one' }, { previewId: 'preview-one' }]);
+    expect(mockFetch.mock.calls.filter(([url]) => url.endsWith('/preview'))).toHaveLength(1);
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText('当前密码')).toBeNull();
+  });
+  it('keeps the review after failed verification or cancellation and clears submitted secrets', async () => {
+    mockFetch.mockImplementation((url: string) => url.endsWith('/commit') || url.endsWith('/reauthenticate')
+      ? Promise.resolve({ ok: false, status: url.endsWith('/commit') ? 428 : 401,
+        json: async () => ({ error: url.endsWith('/commit') ? 'reauthentication_required' : 'invalid_credentials' }) })
+      : response(url.endsWith('/preview') ? preview : { history: [] }));
+    renderDialog(); await upload();
+    fireEvent.click(screen.getByRole('button', { name: '确认导入' }));
+    await screen.findByLabelText('当前密码');
+    fireEvent.change(screen.getByLabelText('当前密码'), { target: { value: 'test-password' } });
+    fireEvent.change(screen.getByLabelText('当前 TOTP'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: '验证并导入' }));
+    await screen.findByText('密码或动态码不正确，请重试');
+    expect((screen.getByLabelText('当前密码') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('当前 TOTP') as HTMLInputElement).value).toBe('');
+    expect(mockFetch.mock.calls.filter(([url]) => url.endsWith('/commit'))).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: '取消验证' }));
+    expect(screen.queryByLabelText('当前密码')).toBeNull();
+    expect((screen.getByRole('button', { name: '确认导入' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByText('tokens.json')).toBeDefined();
+  });
+  it('waits for user input if the resumed commit requires verification again', async () => {
+    mockFetch.mockImplementation((url: string) => url.endsWith('/commit')
+      ? Promise.resolve({ ok: false, status: 428, json: async () => ({ error: 'reauthentication_required' }) })
+      : response(url.endsWith('/preview') ? preview : url.endsWith('/reauthenticate') ? { authenticated: true } : { history: [] }));
+    renderDialog(); await upload();
+    fireEvent.click(screen.getByRole('button', { name: '确认导入' }));
+    await screen.findByLabelText('当前密码');
+    fireEvent.change(screen.getByLabelText('当前密码'), { target: { value: 'test-password' } });
+    fireEvent.change(screen.getByLabelText('当前 TOTP'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: '验证并导入' }));
+    await waitFor(() => expect((screen.getByRole('button', { name: '取消验证' }) as HTMLButtonElement).disabled).toBe(false));
+    expect(screen.getByRole('heading', { name: '验证身份' })).toBeDefined();
+    expect(mockFetch.mock.calls.filter(([url]) => url.endsWith('/commit'))).toHaveLength(2);
+    expect(mockFetch.mock.calls.filter(([url]) => url.endsWith('/reauthenticate'))).toHaveLength(1);
+  });
+  it('does not retry a commit with an unknown network outcome', async () => {
+    mockFetch.mockImplementation((url: string) => url.endsWith('/commit') ? Promise.reject(new Error('Network interrupted'))
+      : response(url.endsWith('/preview') ? preview : { history: [] }));
+    const refresh = renderDialog(); await upload();
+    fireEvent.click(screen.getByRole('button', { name: '确认导入' }));
+    await screen.findByText('Network interrupted');
+    expect(mockFetch.mock.calls.filter(([url]) => url.endsWith('/commit'))).toHaveLength(1);
+    expect(mockFetch.mock.calls.filter(([url]) => url.endsWith('/reauthenticate'))).toHaveLength(0);
+    expect(refresh).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '重新校验' })).toBeDefined();
+  });
+  it('only renders the latest ten history records', async () => {
+    mockFetch.mockImplementation(() => response({ history: Array.from({ length: 12 }, (_, index) => ({ ...receipt, id: `batch-${index}` })) }));
+    renderDialog();
+    await screen.findByRole('button', { name: '复制批次 batch-0 的回退命令' });
+    expect(screen.getAllByRole('article')).toHaveLength(10);
+    expect(screen.queryByRole('button', { name: '复制批次 batch-10 的回退命令' })).toBeNull();
+    expect(screen.getByText('仅显示最近 10 次导入')).toBeDefined();
+  });
+  it('keeps a successful receipt if refreshing history fails without submitting again', async () => {
+    let reads = 0;
+    mockFetch.mockImplementation((url: string) => url.endsWith('/preview') ? response(preview)
+      : url.endsWith('/commit') ? response(receipt) : ++reads === 1 ? response({ history: [] }) : Promise.reject(new Error('History unavailable')));
+    const refresh = renderDialog(); await upload();
+    fireEvent.click(screen.getByRole('button', { name: '确认导入' }));
+    await screen.findByText('History unavailable');
+    expect((screen.getByRole('button', { name: '已导入' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: '重新校验' })).toBeNull();
+    expect(mockFetch.mock.calls.filter(([url]) => url.endsWith('/commit'))).toHaveLength(1);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
 });

@@ -112,12 +112,14 @@ describe('mount registry', () => {
     // 回归锁：分区说明文案迁移自内置 music-schema（保持主分支字面量），侧栏依赖它渲染
     expect(mountManifest.settingsSections[0].description?.('zh')).toBe('播放器偏好与曲库');
     expect(mountManifest.settingsSections[0].description?.('en')).toBe(
-      'Player preferences and libraries.',
+      'Player preferences and libraries',
     );
     expect(RESERVED_SETTINGS_SECTION_IDS).toEqual([
       'appearance',
       'language',
       'account',
+      'docs',
+      'projects',
       'ai',
     ]);
   });

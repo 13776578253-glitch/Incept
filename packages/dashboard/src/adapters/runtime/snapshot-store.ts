@@ -13,7 +13,7 @@ const writes = new Map<string, Promise<void>>();
 export function snapshotContext() {
   const home = resolve(process.env.INCEPT_DASHBOARD_HOME ?? homedir());
   const path = resolve(process.env.INCEPT_DASHBOARD_CACHE_FILE ?? join(home, '.incept', 'dashboard-snapshots.json'));
-  const scope = createHash('sha256').update(JSON.stringify([home, process.env.INCEPT_DASHBOARD_IMPORTS_FILE,
+  const scope = createHash('sha256').update(JSON.stringify(['commandcode-peak-v1', home, process.env.INCEPT_DASHBOARD_IMPORTS_FILE,
     overridesPath(), process.env.INCEPT_COMMANDCODE_CATALOG_FILE])).digest('hex');
   return { home, path, scope, key: path + ':' + scope };
 }

@@ -45,6 +45,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 2. **实时同步**：
    - 执行代码修改前，必须在此文档中确认逻辑正确性
    - 代码修改完成后，必须更新 `docs/current-task/` 中的任务记录（即本 `docs` 文件夹下的 `current-task` 区域；`READAI.md` 自身不存放任务记录）
+3. **生成物不入 docs**：禁止把 skill 自动生成的 HTML/SVG/PNG 等产物（讲解页、ER/结构图导出、对照页面、工作区快照页等）写入 `docs/`（含 `current-task/`、`plans/`、`finish-task/`）。
+   - 这类产物一律放仓库根的 `.scratch/`（已被 `.gitignore` 忽略），沿用其子目录命名风格，如 `.scratch/auth-schema-2026-10-14/`。
+   - 需要长期保留的结论必须写成 Markdown，人工确认后再手工放进 `docs/`；禁止把生成目录整体移入，也不得让 `docs/` 内出现指向生成文件的相对链接。
 
 ## 2. Push Rules (推送规则)
 ### 2.1 注释需求
@@ -74,11 +77,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ### 3.2 Commit Type 
 | Type        | Description                                     | Corresponding Scene / Directory |
 |-------------|-------------------------------------------------|---------------------------------|
-| feat        | Add new features                                | New items in roadmap/           |
-| fix         | Bug fixes                                       | Debug records in ai-context/    |
+| feat        | Add new features                                | New features in apps/ or packages/ |
+| fix         | Bug fixes                                       | Bug fixes across workspace      |
 | refactor    | Code structure and logic optimization           | No specific directory           |
-| milestone   | Project milestone                               | Used with roadmap updates       |
-| exp         | Experimental content                            | Recorded in scratchpad.md       |
+| milestone   | Project milestone                               | Milestone releases and reviews  |
+| exp         | Experimental content                            | Temporary records in .scratch/  |
 | anchor      | Snapshot before large-scale refactoring         | No specific directory           |
 
 <!-- END:nextjs-agent-rules -->

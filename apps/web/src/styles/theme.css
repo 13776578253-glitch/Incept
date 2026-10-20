@@ -30,6 +30,9 @@
   --shadow-pill-active: 0 1px 3px rgba(15, 23, 42, 0.06);
   --color-pill-active-bg: #ffffff;
   --color-pill-active-border: rgba(17, 17, 17, 0.06);
+  --color-scrollbar-thumb: rgba(0, 0, 0, 0.25);
+  --color-scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
+  --color-scrollbar-thumb-active: rgba(0, 0, 0, 0.62);
   --color-row-bg: rgba(17, 17, 17, 0.036);
   --color-row-hover-bg: rgba(17, 17, 17, 0.062);
   --surface-recessed-bg: rgba(15, 23, 42, 0.025);
@@ -147,6 +150,9 @@
   --shadow-pill-active: 0 1px 2px rgba(0, 0, 0, 0.35);
   --color-pill-active-bg: rgba(255, 255, 255, 0.065);
   --color-pill-active-border: rgba(255, 255, 255, 0.045);
+  --color-scrollbar-thumb: rgba(255, 255, 255, 0.28);
+  --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.48);
+  --color-scrollbar-thumb-active: rgba(255, 255, 255, 0.65);
   --color-row-bg: rgba(255, 255, 255, 0.042);
   --color-row-hover-bg: rgba(255, 255, 255, 0.072);
   --surface-recessed-bg: rgba(255, 255, 255, 0.025);
@@ -240,6 +246,9 @@ html[data-eye-comfort-filter='warm']:not(.dark) {
   --color-nav-search-hover-bg: rgba(133, 98, 42, 0.06);
   --color-pill-active-bg: #fffdf7;
   --color-pill-active-border: rgba(122, 102, 85, 0.12);
+  --color-scrollbar-thumb: rgba(122, 102, 85, 0.32);
+  --color-scrollbar-thumb-hover: rgba(122, 102, 85, 0.52);
+  --color-scrollbar-thumb-active: rgba(122, 102, 85, 0.72);
   --color-row-bg: rgba(133, 98, 42, 0.075);
   --color-row-hover-bg: rgba(133, 98, 42, 0.12);
   --surface-recessed-bg: rgba(122, 102, 85, 0.045);

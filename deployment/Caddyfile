@@ -1,0 +1,109 @@
+{
+	auto_https disable_redirects
+	servers {
+		protocols h1 h2
+		timeouts {
+			read_body 5m
+			write 6m
+		}
+	}
+	log default {
+		format filter {
+			wrap json
+			request>uri delete
+			request>headers delete
+			resp_headers delete
+			error delete
+			err_trace delete
+		}
+	}
+}
+
+# Keep raw paths, query strings and credentials out of access and runtime logs.
+(incept-log) {
+	log {
+		output stdout
+		format filter {
+			wrap json
+			request>uri delete
+			request>headers delete
+			resp_headers delete
+		}
+	}
+}
+
+(incept-request) {
+	@invitation path_regexp invitation (?i)^/(?:(?:en|zh)/)?settings/access/
+	@ordinary not path_regexp ordinary (?i)^/(?:(?:en|zh)/)?settings/access/
+	vars safe_uri {http.request.uri.path}
+	vars @invitation safe_uri /invitation/redacted
+	log_append <safe_uri {http.vars.safe_uri}
+	header @ordinary >Referrer-Policy same-origin
+	header @invitation >Referrer-Policy no-referrer
+	header {
+		>X-Content-Type-Options nosniff
+		>X-Frame-Options DENY
+	}
+}
+
+# The app port is private; replace forwarding headers rather than accepting client values.
+(incept-upstream) {
+	reverse_proxy app:3000 {
+		header_up Host {http.request.hostport}
+		header_up X-Forwarded-Host {http.request.hostport}
+		header_up X-Forwarded-Proto {http.request.scheme}
+		header_up X-Forwarded-Port 443
+		header_up X-Forwarded-For {http.request.remote.host}
+		header_up X-Request-ID {http.request.uuid}
+		header_up -Forwarded
+		header_down -Referrer-Policy
+		flush_interval -1
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 100s
+		}
+	}
+}
+
+http://{$INCEPT_DOMAIN} {
+	import incept-log
+	route {
+		import incept-request
+		redir https://{host}{uri} 308
+	}
+}
+
+https://{$INCEPT_DOMAIN} {
+	import incept-log
+	@auth path /api/auth/owner/login /api/access/shared-code/redeem
+	@music path /api/internal/music/tracks
+	@imports path /api/dashboard/imports/preview
+	route {
+		import incept-request
+		header >Strict-Transport-Security "max-age=31536000"
+		handle @auth {
+			request_body {
+				max_size 4096
+			}
+			import incept-upstream
+		}
+		handle @music {
+			request_body {
+				max_size 134217728
+			}
+			import incept-upstream
+		}
+		handle @imports {
+			request_body {
+				max_size 67108864
+			}
+			import incept-upstream
+		}
+		handle {
+			request_body {
+				max_size 1048576
+			}
+			import incept-upstream
+		}
+	}
+}

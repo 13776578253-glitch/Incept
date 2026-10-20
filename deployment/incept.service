@@ -1,0 +1,17 @@
+[Unit]
+Description=Incept production containers
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/srv/incept/current
+ExecStart=/bin/sh deployment/compose.sh up -d --wait --wait-timeout 120
+ExecStop=/bin/sh deployment/compose.sh stop
+TimeoutStartSec=180
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target

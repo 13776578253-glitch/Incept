@@ -15,9 +15,12 @@ export function ImportHistory({ history, headingAction }: { history: ImportRecei
     }
   }
   return <section className="space-y-4">
-    <div className="dashboard-import-history-heading flex items-center justify-between gap-2"><h3 className="text-[0.88rem] font-medium">{t('history')}</h3>{headingAction}</div>
+    <div className="dashboard-import-history-heading flex items-start justify-between gap-2"><div className="space-y-1">
+      <h3 className="text-[0.88rem] font-medium">{t('history')}</h3>
+      <p className="text-[0.7rem] leading-5 text-[var(--color-nav-muted)]">{t('historyLimit')}</p>
+    </div>{headingAction}</div>
     {!history.length ? <p className="dashboard-import-empty-history text-[0.78rem] text-[var(--color-text-muted)]">{t('emptyHistory')}</p> :
-      <div className="space-y-3">{history.map(batch =>
+      <div className="space-y-3">{history.slice(0, 10).map(batch =>
         <article key={batch.id} className="dashboard-import-history-card space-y-2 p-3 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-2"><strong>{batch.deviceLabel}</strong>
             <span className="text-[var(--color-nav-muted)]">{t(batch.status === 'active' ? 'active' : 'rolledBack')} · {formatDateTimeShort(batch.importedAt)}</span></div>

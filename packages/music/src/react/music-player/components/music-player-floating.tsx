@@ -115,8 +115,8 @@ export function MusicPlayerFloating({
     sendIntent({ type: 'playbackRateRequested', rate: getNextPlaybackRate(state.playbackRate) });
   };
 
-  /* TODO: nextRequested / previousRequested / seekRequested 已在 core 实现并有测试覆盖，播放器 UI 依然没有入口；
-     repeatModeRequested 由设置里的「默认播放模式」驱动，不走播放器 UI。登记在 BACKLOG B-16。 */
+  /* TODO: nextRequested / previousRequested 已在 core 实现并有测试覆盖，播放器 UI 依然没有入口；
+     seekRequested 已接入展开列表原生进度滑杆；repeatModeRequested 由设置里的「默认播放模式」驱动。登记在 BACKLOG B-16。 */
 
   // 错误码在 adapter 里映射成本地化文案，不外抛浏览器的原始 message
   const errorText =
@@ -150,7 +150,15 @@ export function MusicPlayerFloating({
 
   const surface =
     viewMode === 'orb' ? (
-      <PlayerOrb label={copy.expand} clock={clock} totalClock={totalClock} onClick={() => setMode('compact')} />
+      <PlayerOrb
+        label={copy.expand}
+        clock={clock}
+        totalClock={totalClock}
+        onClick={() => setMode('compact')}
+        isPlaying={isPlaying}
+        currentTime={state.currentTime}
+        duration={state.duration}
+      />
     ) : viewMode === 'compact' ? (
       <PlayerCompact
         title={title}
@@ -174,6 +182,9 @@ export function MusicPlayerFloating({
     ) : (
       <PlayerExpanded
         copy={copy}
+        currentTime={state.currentTime}
+        duration={state.duration}
+        onSeek={seconds => sendIntent({ type: 'seekRequested', seconds })}
         heading={heading}
         items={items}
         title={title}

@@ -76,6 +76,9 @@ export function SessionInspector({
           </div>
 
           {/* Session Token Split */}
+          {inspectedSession.historyIncomplete ? <p className="py-3 text-[0.72rem] text-[var(--color-text-muted)]">
+            {t('projects.sessions.inspector.incompleteHistory')}
+          </p> : null}
           <div className="space-y-2 py-3.5">
             <div className="flex items-center justify-between text-[0.74rem]">
               <span className="font-semibold text-[var(--color-text)]">

@@ -5,23 +5,29 @@ import { contentHash, recordHash, eventTokens, hash, nativeEventId } from './ide
 import { canonicalModelName } from '../overrides';
 import { canPriceUsage, lookupPricing } from '../pricing';
 import { ImportError } from './validation';
+import { canonicalTransferId, identityIndex } from './matching';
+import { capturedPricing, inheritedPricing } from './pricing';
 
 export function externalProject(device: string, key: string) { return 'external:' + device + ':' + key; }
 export function planImport(bundle: TransferBundle, input: ImportMappings, context: ImportContext, batches: StoredBatch[]) {
+  const captured = capturedPricing(bundle, context.aliases), inherited = inheritedPricing(context.pricing, context.aliases, batches);
   const targets = [...new Map(context.events.map(event => [event.projectKey,
     { key: event.projectKey, name: event.projectName, path: event.workspacePath }])).values()];
   const mappings: ImportMappings = Object.create(null);
   const projects = new Map<string, ImportPreview['projects'][number]>();
   const models = new Map<string, ImportPreview['models'][number]>();
-  const local = new Map(context.events.map(event => [nativeEventId(event), recordHash({ ...event, source: event.sourceId } as TransferEvent,
-    canonicalModelName(event.modelName, context.aliases))]));
+  const resolve = (name: string) => canonicalModelName(name, context.aliases);
+  const incoming = identityIndex(bundle.events.map(event => ({ event })), resolve);
+  const local = identityIndex(context.events.map(raw => ({ event: { ...raw, source: raw.sourceId, eventId: nativeEventId(raw) } as TransferEvent,
+    fingerprint: recordHash({ ...raw, source: raw.sourceId } as TransferEvent, resolve(raw.modelName)) })), resolve);
   const indexed = new Set(context.events.filter(event => !event.eventId && (event.sourceId === 'codex' || event.sourceId === 'commandcode'))
     .map(event => contentHash({ ...event, source: event.sourceId } as TransferEvent, canonicalModelName(event.modelName, context.aliases))));
-  const imported = new Map<string, { content: string; project: string }>();
+  const stored: Array<{ event: TransferEvent; content: string; project: string }> = [];
   for (const batch of batches) for (const event of batch.bundle.events) {
-    imported.set(event.eventId, { content: recordHash(event, canonicalModelName(event.modelName, context.aliases)),
+    stored.push({ event, content: recordHash(event, canonicalModelName(event.modelName, context.aliases)),
       project: batch.mappings[event.projectKey] || externalProject(batch.bundle.device.id, event.projectKey) });
   }
+  const imported = identityIndex(stored, resolve);
   for (const event of bundle.events) {
     if (!projects.has(event.projectKey)) {
       const suggestions = targets.filter(target => target.name === event.projectName || target.path && target.path === event.workspacePath);
@@ -33,7 +39,8 @@ export function planImport(bundle: TransferBundle, input: ImportMappings, contex
     }
     projects.get(event.projectKey)!.records++;
     const resolvedName = canonicalModelName(event.modelName, context.aliases);
-    const priced = event.recordedCost !== undefined || canPriceUsage(lookupPricing(context.pricing, resolvedName) ?? bundle.prices[event.modelName], event);
+    const priced = event.recordedCost !== undefined || canPriceUsage(lookupPricing(context.pricing, resolvedName)
+      ?? lookupPricing(captured, event.modelName) ?? lookupPricing(captured, resolvedName) ?? lookupPricing(inherited, resolvedName), event);
     const model = models.get(event.modelName) ?? { name: event.modelName, resolvedName, records: 0, priced: true };
     model.records++; model.priced &&= priced; models.set(event.modelName, model);
   }
@@ -44,13 +51,16 @@ export function planImport(bundle: TransferBundle, input: ImportMappings, contex
   for (const event of bundle.events) {
     const resolvedName = canonicalModelName(event.modelName, context.aliases);
     const fingerprint = recordHash(event, resolvedName);
-    const previous = seen.get(event.eventId), native = local.get(event.eventId), prior = imported.get(event.eventId);
+    const identity = canonicalTransferId(event), previous = seen.get(identity), native = local.find(event, incoming), prior = imported.find(event, incoming);
     let classification = 'added';
-    if (previous) { classification = previous === fingerprint ? 'duplicate-imported' : 'conflict'; }
-    else if (native) { classification = native === fingerprint ? 'duplicate-local' : 'conflict'; }
+    if (incoming.count(event) > 1 && incoming.hasWeak(event)) { classification = 'conflict'; }
+    else if (previous) { classification = previous === fingerprint ? 'duplicate-imported' : 'conflict'; }
+    else if (native.ambiguous) { classification = 'conflict'; }
+    else if (native.matches.length) { classification = native.matches.every(item => item.fingerprint === fingerprint) ? 'duplicate-local' : 'conflict'; }
     else if (indexed.has(contentHash(event, resolvedName))) { classification = 'duplicate-local'; }
-    else if (prior) { classification = prior.content === fingerprint && prior.project === (mappings[event.projectKey] || externalProject(bundle.device.id, event.projectKey)) ? 'duplicate-imported' : 'conflict'; }
-    seen.set(event.eventId, fingerprint);
+    else if (prior.ambiguous) { classification = 'conflict'; }
+    else if (prior.matches.length) { classification = prior.matches.every(item => item.content === fingerprint && item.project === (mappings[event.projectKey] || externalProject(bundle.device.id, event.projectKey))) ? 'duplicate-imported' : 'conflict'; }
+    seen.set(identity, fingerprint);
     if (classification === 'added') { added++; addedTokens += eventTokens(event); }
     if (classification === 'duplicate-local') duplicateLocal++;
     if (classification === 'duplicate-imported') duplicateImported++;

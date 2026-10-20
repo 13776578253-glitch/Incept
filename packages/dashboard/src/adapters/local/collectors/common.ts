@@ -25,9 +25,11 @@ export function usageEvent(input: EventInput, pricingMap: Map<string, UnitPricin
     cacheReadTokens: input.cacheReadTokens ?? 0, cacheCreationTokens: input.cacheCreationTokens ?? 0, reasoningTokens: input.reasoningTokens ?? 0 };
   if (!Number.isFinite(input.timestampMs) || input.timestampMs <= 0
     || !Object.values(tokens).every(count => Number.isFinite(count) && count >= 0)) throw new Error('Invalid native usage record');
-  const recorded = readRecordedCost(input.recordedCost);
+  const { recordedCost, ...eventInput } = input;
+  const recorded = readRecordedCost(recordedCost);
   const price = lookupPricing(pricingMap, input.modelName);
-  return { ...input, ...tokens, ...resolveProjectFromPath(input.cwd, input.sourceLabel), ...toLocalDateAndMonth(input.timestampMs),
+  return { ...eventInput, ...tokens, ...resolveProjectFromPath(input.cwd, input.sourceLabel), ...toLocalDateAndMonth(input.timestampMs),
+    costSource: recorded === undefined ? 'calculated' : 'recorded',
     cost: recorded ?? computeCostFromPricing(price, tokens), missingPricing: recorded === undefined && !canPriceUsage(price, tokens) };
 }
 

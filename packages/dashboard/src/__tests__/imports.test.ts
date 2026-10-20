@@ -1,5 +1,6 @@
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, appendFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -36,6 +37,16 @@ afterEach(() => {
   rmSync(home, { recursive: true, force: true });
 });
 describe('validated cross-device imports', () => {
+  it('reads bounded receipts without expanding historical raw payloads and retains CLI history', () => {
+    const options = { storePath, context: context() }, ids: string[] = [];
+    for (let index = 0; index < 12; index++) ids.push(commitImport(previewImport(bundle([event(`history-${index}`)]), {}, options).previewId, options).id);
+    const db = new DatabaseSync(storePath);
+    try { db.exec("UPDATE batches SET payload='historical payload must not be parsed by history'"); } finally { db.close(); }
+    expect(importHistory(storePath)).toHaveLength(12);
+    expect(importHistory(storePath, 10).map(receipt => receipt.id)).toEqual([...ids].reverse().slice(0, 10));
+    expect(rollbackImport(ids[0], storePath).status).toBe('rolled_back');
+    expect(importHistory(storePath)).toHaveLength(12);
+  });
   it('persists batches across fresh reads, commits idempotently, and rolls back without deleting history', () => {
     const options = { storePath, context: context() }, input = bundle();
     const preview = previewImport(input, {}, options); expect(preview.added).toBe(1); expect(preview.addedTokens).toBe(185);
@@ -130,6 +141,18 @@ describe('validated cross-device imports', () => {
     expect(output.events[0].cost).toBeCloseTo(.000356); expect(output.events[1].cost).toBe(.5);
     expect(pricing.size).toBe(1);
     expect(loadImportedEvents([], new Map(), {}, storePath).events[0].cost).toBeCloseTo(.000156);
+  });
+  it('shares pricing across multiple batches so older batches without rates benefit from newer catalogs', () => {
+    const captured = { inputPerMillion: 2, outputPerMillion: 10, cacheReadPerMillion: .2 };
+    const oldBatch = bundle([event('old-event', { modelName: 'shared-model', sessionId: 'old-session' })], { prices: {} });
+    const newBatch = bundle([event('new-event', { modelName: 'other-model', sessionId: 'new-session' })], { prices: { 'shared-model': captured } });
+    const options = { storePath, context: context() };
+    commitImport(previewImport(oldBatch, {}, options).previewId, options);
+    commitImport(previewImport(newBatch, {}, options).previewId, options);
+    const output = loadImportedEvents([], new Map(), {}, storePath);
+    const oldEv = output.events.find(e => e.sessionId === 'old-session');
+    expect(oldEv?.missingPricing).toBe(false);
+    expect(oldEv?.cost).toBeGreaterThan(0);
   });
   it('rejects corruption, invalid counts, extra fields, repeated IDs and expired previews', () => {
     const valid = bundle(); expect(validateBundle(JSON.parse(JSON.stringify(valid)))).toEqual(valid);

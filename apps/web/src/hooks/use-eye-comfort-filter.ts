@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useMounted } from './use-mounted';
 
 const STORAGE_KEY = 'incept-eye-comfort-filter';
 const DATA_ATTRIBUTE = 'data-eye-comfort-filter';
@@ -13,17 +14,13 @@ function applyEyeComfortFilter(enabled: boolean) {
 }
 
 export function useEyeComfortFilter() {
-  const [enabled, setEnabled] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const isReady = useMounted();
+  const [selection, setEnabled] = useState<boolean | null>(null);
+  const enabled = selection ?? (isReady && window.localStorage.getItem(STORAGE_KEY) === 'true');
 
   useEffect(() => {
-    const storedValue = window.localStorage.getItem(STORAGE_KEY);
-    const nextEnabled = storedValue === 'true';
-
-    setEnabled(nextEnabled);
-    applyEyeComfortFilter(nextEnabled);
-    setIsReady(true);
-  }, []);
+    if (isReady) applyEyeComfortFilter(enabled);
+  }, [enabled, isReady]);
 
   const setEyeComfortFilter = (nextEnabled: boolean) => {
     setEnabled(nextEnabled);

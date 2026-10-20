@@ -453,31 +453,37 @@ async function ensureCollection({
 export async function importDocsArticleDraft({
   source,
   replace,
+  db,
 }: {
   source: DocsImportWriteSource;
   replace: boolean;
+  db?: DocsDbClient;
 }) {
   if (source.meta.routeType === 'collectionArticle') {
-    return upsertDocsCollectionArticle({ source, replace });
+    return upsertDocsCollectionArticle({ source, replace, db });
   }
 
-  return upsertDocsSingleArticle({ source, replace });
+  return upsertDocsSingleArticle({ source, replace, db });
 }
 
 export async function upsertDocsSingleArticle({
   source,
   replace,
+  db,
 }: {
   source: DocsImportWriteSource;
   replace: boolean;
-}) {
-  const systemUserId = await getSystemUserId();
+  db?: DocsDbClient;
+}): Promise<{ documentId: number; replaced: boolean }> {
+  if (!db) return prisma.$transaction(tx => upsertDocsSingleArticle({ source, replace, db: tx }));
+  const systemUserId = await getSystemUserId(db);
   const existingDocumentByKey = source.meta.documentKey
-    ? await findDocumentByKey(source.meta.documentKey)
+    ? await findDocumentByKey(source.meta.documentKey, db)
     : null;
   const existingTarget = await findExistingLocaleTarget({
     locale: source.meta.locale,
     slug: source.meta.slug,
+    db,
   });
   const targetDocumentId = existingDocumentByKey?.id ?? existingTarget?.documentId;
   const existingSameLocaleForKey = existingDocumentByKey?.locales.find(
@@ -506,6 +512,7 @@ export async function upsertDocsSingleArticle({
       locale: source.meta.locale,
       slug: source.meta.slug,
       expectedDocumentId: existingDocumentByKey.id,
+      db,
     });
   }
 
@@ -516,7 +523,7 @@ export async function upsertDocsSingleArticle({
   }
 
   const existingLocale = targetDocumentId
-    ? await prisma.docsDocumentLocale.findUnique({
+    ? await db.docsDocumentLocale.findUnique({
         where: {
           documentId_locale: {
             documentId: targetDocumentId,
@@ -532,7 +539,7 @@ export async function upsertDocsSingleArticle({
   );
 
   if (targetDocumentId) {
-    const document = await prisma.docsDocument.update({
+    const document = await db.docsDocument.update({
       where: { id: targetDocumentId },
       data: {
         documentKey: source.meta.documentKey,
@@ -558,6 +565,7 @@ export async function upsertDocsSingleArticle({
         documentId: document.id,
         type: DocsPublicationEventType.replaced,
         source,
+        db,
       });
     }
 
@@ -567,7 +575,7 @@ export async function upsertDocsSingleArticle({
     };
   }
 
-  const document = await prisma.docsDocument.create({
+  const document = await db.docsDocument.create({
     data: {
       documentKey: source.meta.documentKey,
       kind: toDocumentKind(source.meta.kind),
@@ -588,6 +596,7 @@ export async function upsertDocsSingleArticle({
     documentId: document.id,
     type: DocsPublicationEventType.published,
     source,
+    db,
   });
 
   return {
@@ -599,12 +608,13 @@ export async function upsertDocsSingleArticle({
 export async function upsertDocsCollectionArticle({
   source,
   replace,
-  db = defaultDb,
+  db,
 }: {
   source: DocsImportWriteSource;
   replace: boolean;
   db?: DocsDbClient;
-}) {
+}): Promise<{ documentId: number; collectionId: number; replaced: boolean }> {
+  if (!db) return prisma.$transaction(tx => upsertDocsCollectionArticle({ source, replace, db: tx }));
   const position = source.meta.position;
 
   if (typeof position !== 'number') {
@@ -1086,8 +1096,7 @@ export async function previewDocsCollectionDirectory({
     changes.push({
       key: source.meta.documentKey ?? source.meta.slug,
       type: 'article',
-      // TODO: Both branches of the replace check resolve to 'updated'; collapse this once the renamed and removed statuses are final.
-      status: unchanged ? 'unchanged' : replace ? 'updated' : 'updated',
+      status: unchanged ? 'unchanged' : 'updated',
     });
   }
 
@@ -1110,16 +1119,18 @@ export async function importDocsCollectionDirectory({
   sources,
   nodes,
   replace,
+  db,
 }: {
   sources: DocsImportWriteSource[];
   nodes: DocsCollectionImportNode[];
   replace: boolean;
+  db?: DocsDbClient;
 }) {
   if (sources.length === 0 || sources.some((source) => source.meta.routeType !== 'collectionArticle')) {
     throw new Error('Collection directory imports require at least one collectionArticle source.');
   }
 
-  return prisma.$transaction(async (db) => {
+  const write = async (db: DocsDbClient) => {
     const firstSource = sources[0];
     const systemUserId = await getSystemUserId(db);
     const collectionId = await ensureCollection({
@@ -1264,5 +1275,6 @@ export async function importDocsCollectionDirectory({
       count: documentIds.length,
       changes,
     };
-  });
+  };
+  return db ? write(db) : prisma.$transaction(write, { timeout: 30_000 });
 }

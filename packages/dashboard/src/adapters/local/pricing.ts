@@ -5,14 +5,7 @@ import { type UnitPricing } from './types';
 import { openSqliteReadOnly } from './sqlite';
 import { loadCommandCodePricing } from './pricing-commandcode';
 import { TEMPORARY_MODEL_PRICES } from './pricing-temporary';
-import { canonicalModelName, readLocalOverrides, type LocalOverrides } from './overrides';
-
-// These response identifiers share pricing, but remain separate usage models.
-const GEMINI_FLASH_PRICING_VARIANTS = new Set([
-  'gemini-3.8-flash-exp-a',
-  'gemini-3.8-flash-n',
-  'gemini-3.8-flash-tiered',
-]);
+import { canonicalModelName, DEFAULT_PRICING_ALIASES, readLocalOverrides, type LocalOverrides } from './overrides';
 
 export function loadLocalPricingMap(home: string, overrides: LocalOverrides = readLocalOverrides()): Map<string, UnitPricing> {
   const pricingMap = new Map<string, UnitPricing>(Object.entries(TEMPORARY_MODEL_PRICES).map(([model, rates]) => [model, { ...rates }]));
@@ -107,10 +100,11 @@ export function lookupPricing(
   if(pricingMap.has(lower)) return pricingMap.get(lower);
   const shortName = lower.includes('/') ? lower.split('/').pop()! : lower;
   if(pricingMap.has(shortName)) return pricingMap.get(shortName);
-  if (GEMINI_FLASH_PRICING_VARIANTS.has(shortName)) {
+  const target = canonicalModelName(lower, DEFAULT_PRICING_ALIASES).toLowerCase();
+  if (target !== lower) {
     const providerPrefix = lower.includes('/') ? lower.slice(0, lower.lastIndexOf('/') + 1) : '';
-    return pricingMap.get(`${providerPrefix}gemini-3.8-flash`)
-      ?? pricingMap.get('gemini-3.8-flash');
+    return pricingMap.get(target.includes('/') ? target : `${providerPrefix}${target}`)
+      ?? pricingMap.get(target);
   }
   return undefined;
 }

@@ -16,6 +16,14 @@
     "./access": {
       "types": "./src/access/index.ts",
       "default": "./src/access/index.ts"
+    },
+    "./owner": {
+      "types": "./src/owner/index.ts",
+      "default": "./src/owner/index.ts"
+    },
+    "./owner/security": {
+      "types": "./src/owner/security.ts",
+      "default": "./src/owner/security.ts"
     }
   },
   "scripts": {
@@ -30,12 +38,12 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.8.2"
+    "@prisma/client": "^6.8.2",
+    "prisma": "^6.8.2",
+    "tsx": "^4.20.6"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
-    "prisma": "^6.8.2",
-    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }

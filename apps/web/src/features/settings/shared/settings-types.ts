@@ -38,7 +38,7 @@ export type SettingsRow = {
 };
 
 export type SettingsSection = {
-  // 分区 id 放开为字符串以容纳注册表贡献；内置 appearance/language/account/music/ai 为保留字（见 mount/registry）
+  // 分区 id 放开为字符串以容纳注册表贡献；内置 appearance/language/account/docs/projects 为保留字（见 mount/registry）
   id: string;
   label: string;
   description?: string;

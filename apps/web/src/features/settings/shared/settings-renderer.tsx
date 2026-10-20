@@ -32,7 +32,7 @@ function SettingsSegmentedControl({
   isInteractive?: boolean;
 }) {
   return (
-    <div className="inline-flex flex-wrap items-center gap-1 rounded-[12px] bg-[color:var(--color-row-bg)] p-1">
+    <div className="inline-flex flex-wrap items-center gap-1 rounded-full p-0.5">
       {options.map((option) => {
         const active = option.id === selected;
 
@@ -43,14 +43,12 @@ function SettingsSegmentedControl({
             disabled={!isInteractive}
             onClick={() => onSelect(option.id)}
             className={cx(
-              'rounded-[9px] px-3 py-1.5 text-[0.8125rem] transition-all duration-150',
+              'rounded-full px-3.5 py-1.5 text-[0.78rem] transition-all duration-150 outline-none focus:outline-none',
               active
-                ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                : 'text-[var(--color-nav-dropdown-description)]',
-              isInteractive &&
-                !active &&
-                'hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]',
-              !isInteractive && 'cursor-default opacity-80',
+                ? 'bg-[var(--color-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)]'
+                : 'text-[var(--color-nav-dropdown-description)] hover:text-[var(--color-text)]',
+              isInteractive && !active && 'hover:bg-[var(--color-bg)]/60',
+              !isInteractive && 'cursor-default opacity-50',
             )}
           >
             {option.label}
@@ -63,7 +61,7 @@ function SettingsSegmentedControl({
 
 function SettingsStaticControl({ row }: { row: SettingsRow }) {
   const baseClassName =
-    'inline-flex min-h-10 items-center justify-between gap-3 rounded-[12px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3.5 py-2 text-[0.8125rem] text-[var(--color-text)]';
+    'inline-flex min-h-9 items-center justify-between gap-3 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-1.5 text-[0.8125rem] text-[var(--color-text)] shadow-[var(--shadow-card-sm)]';
   const mutedClassName =
     'border-[var(--color-border)] text-[var(--color-nav-dropdown-description)] opacity-80';
 
@@ -72,7 +70,7 @@ function SettingsStaticControl({ row }: { row: SettingsRow }) {
 
     return (
       <span
-        className="inline-flex min-h-9 items-center gap-2 rounded-full border px-3.5 text-[0.8125rem] font-medium"
+        className="inline-flex min-h-8 items-center gap-2 rounded-full border px-3 text-[0.78rem] font-medium shadow-[var(--shadow-card-sm)]"
         style={{
           color: isLocked ? 'var(--badge-amber-fg)' : 'var(--badge-emerald-fg)',
           backgroundColor: isLocked ? 'var(--badge-amber-bg)' : 'var(--badge-emerald-bg)',
@@ -96,7 +94,7 @@ function SettingsStaticControl({ row }: { row: SettingsRow }) {
       <button
         type="button"
         disabled
-        className={cx(baseClassName, mutedClassName, 'min-w-[120px]')}
+        className={cx(baseClassName, mutedClassName, 'min-w-[120px] rounded-full')}
       >
         {row.actionLabel ?? row.value}
       </button>
@@ -105,17 +103,17 @@ function SettingsStaticControl({ row }: { row: SettingsRow }) {
 
   if (row.controlType === 'input') {
     return (
-      <div className="flex w-full max-w-[360px] items-center gap-3">
+      <div className="flex w-full max-w-[360px] items-center gap-2.5">
         <input
           disabled
           placeholder={row.placeholder}
-          className="min-h-10 w-full rounded-[12px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3.5 text-[0.8125rem] text-[var(--color-nav-dropdown-description)] outline-none placeholder:text-[var(--color-nav-muted)]"
+          className="min-h-9 w-full rounded-[10px] border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-[0.8125rem] text-[var(--color-nav-dropdown-description)] outline-none shadow-[var(--shadow-card-sm)] placeholder:text-[var(--color-nav-muted)]"
         />
         {row.actionLabel ? (
           <button
             type="button"
             disabled
-            className={cx(baseClassName, mutedClassName, 'shrink-0')}
+            className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-[0.8125rem] font-medium text-[var(--color-nav-dropdown-description)] shadow-[var(--shadow-card-sm)] opacity-80"
           >
             {row.actionLabel}
           </button>
@@ -151,27 +149,18 @@ function SettingsBooleanToggle({
       disabled={!isInteractive}
       onClick={onToggle}
       className={cx(
-        'inline-flex rounded-[12px] bg-[color:var(--color-row-bg)] p-1 text-[0.8125rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]',
-        !enabled && 'hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]',
-        !isInteractive && 'cursor-default opacity-80',
+        'inline-flex min-h-7.5 items-center justify-center gap-1.5 rounded-full bg-[var(--color-bg)] px-3.5 text-[0.75rem] font-medium shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] focus:outline-none disabled:cursor-default disabled:opacity-50',
+        enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-nav-dropdown-description)]',
       )}
     >
       <span
-        className={cx(
-          'inline-flex min-h-8 items-center justify-center gap-2 rounded-[9px] px-3 py-1 text-[var(--color-nav-dropdown-description)] transition-all duration-150',
-          enabled &&
-            'bg-[var(--color-pill-active-bg)] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]',
-        )}
-      >
-        <span
-          aria-hidden="true"
-          className="size-1.5 rounded-full transition-colors"
-          style={{
-            backgroundColor: enabled ? 'var(--badge-emerald-dot)' : 'var(--color-nav-muted)',
-          }}
-        />
-        <span>{enabled ? labels.enabled : labels.disabled}</span>
-      </span>
+        aria-hidden="true"
+        className="size-1.5 rounded-full transition-colors"
+        style={{
+          backgroundColor: enabled ? 'var(--badge-emerald-dot)' : 'var(--color-nav-muted)',
+        }}
+      />
+      <span>{enabled ? labels.enabled : labels.disabled}</span>
     </button>
   );
 }
@@ -249,19 +238,19 @@ function SettingsRowControl({
 
 function SettingsRowView({ row, ...interactions }: { row: SettingsRow } & SettingsInteractionProps) {
   return (
-    <div className="grid gap-4 px-0 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-      <div className="space-y-1.5">
+    <div className="grid gap-3 py-3.5 sm:py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+      <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+          <h3 className="text-[0.875rem] font-medium tracking-[-0.01em] text-[var(--color-text)]">
             {row.label}
           </h3>
           {row.badge ? (
-            <span className="rounded-full border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2 py-0.5 text-[0.62rem] font-medium uppercase tracking-[0.12em] text-[var(--color-nav-muted)]">
+            <span className="rounded-full border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-[0.08em] text-[var(--color-nav-muted)]">
               {row.badge}
             </span>
           ) : null}
         </div>
-        <p className="max-w-2xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
+        <p className="max-w-2xl text-[0.8125rem] leading-relaxed text-[var(--color-nav-dropdown-description)]">
           {row.description}
         </p>
         {row.disabledHint && interactions.eyeComfortFilterEnabled ? (
@@ -275,6 +264,55 @@ function SettingsRowView({ row, ...interactions }: { row: SettingsRow } & Settin
         <SettingsRowControl row={row} {...interactions} />
       </div>
     </div>
+  );
+}
+
+function SettingsGroupIcon({ sectionId }: { sectionId: string }) {
+  if (sectionId === 'appearance') {
+    return (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 16 16"
+        className="size-3.5"
+        fill="none"
+      >
+        <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M8 2.5v11a5.5 5.5 0 0 0 0-11Z" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  if (sectionId === 'language') {
+    return (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 16 16"
+        className="size-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M2 3.5A2 2 0 0 1 4 2h4v10.5H4a2 2 0 0 0-2 1.5V3.5Z" />
+        <path d="M14 3.5A2 2 0 0 0 12 2H8v10.5h4a2 2 0 0 1 2 1.5V3.5Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      className="size-3.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="8" cy="8" r="5.5" />
+    </svg>
   );
 }
 
@@ -301,14 +339,21 @@ function SettingsRows({
   );
 
   const rows = (
-    <div className="max-w-[760px]">
+    <div className="max-w-[760px] space-y-6">
       {rowGroups.map((group, index) => (
-        // 首段不加上间距，否则分区标题下会多出一块空白
-        <div key={group.label ?? `ungrouped-${index}`} className={index === 0 ? undefined : 'pt-8'}>
+        <div
+          key={group.label ?? `ungrouped-${index}`}
+          className="space-y-4 rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5"
+        >
           {group.label ? (
-            <h3 className="pb-3 text-[1.0625rem] font-semibold tracking-[-0.01em] text-[var(--color-text)]">
-              {group.label}
-            </h3>
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--color-text)] shadow-[var(--shadow-card-sm)]">
+                <SettingsGroupIcon sectionId={section.id} />
+              </span>
+              <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+                {group.label}
+              </h3>
+            </div>
           ) : null}
           <div className="divide-y divide-[var(--color-nav-dropdown-border)]">
             {group.rows.map((row) => (
@@ -348,15 +393,16 @@ function SettingsRows({
 
 export function SettingsSectionPanel({
   section,
+  showDescription = true,
   ...interactions
-}: { section: SettingsSection } & SettingsInteractionProps) {
+}: { section: SettingsSection; showDescription?: boolean } & SettingsInteractionProps) {
   return (
-    <section id={section.id} className="space-y-3">
+    <section id={section.id} className="space-y-4">
       <header className="space-y-1.5">
         <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
           {section.label}
         </h2>
-        {section.description ? (
+        {showDescription && section.description ? (
           <p className="max-w-3xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
             {section.description}
           </p>

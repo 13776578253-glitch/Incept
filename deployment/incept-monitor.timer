@@ -1,0 +1,11 @@
+[Unit]
+Description=Probe Incept every minute
+
+[Timer]
+AccuracySec=5s
+OnBootSec=2min
+OnUnitActiveSec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

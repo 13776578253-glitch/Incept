@@ -7,7 +7,7 @@ export default async function DashboardPage() {
   const viewer = await getCurrentViewer();
   return (
     <WorkspaceShell>
-      <TokenDashboardPage canImport={viewer.role === 'owner'} />
+      <TokenDashboardPage canImport={viewer.role === 'owner'} canViewDetails={viewer.role === 'owner' || viewer.role === 'pro'} />
     </WorkspaceShell>
   );
 }

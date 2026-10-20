@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useMounted } from '@/hooks/use-mounted';
 
 export type ColorScheme = 'light' | 'dark' | 'system';
 
@@ -39,14 +40,15 @@ function applyColorScheme(colorScheme: ColorScheme) {
 }
 
 export function ColorSchemeProvider({ children }: { children: ReactNode }) {
-  const [colorScheme, setColorSchemeState] = useState<ColorScheme>('system');
+  const mounted = useMounted();
+  const [selection, setColorSchemeState] = useState<ColorScheme | null>(null);
+  const colorScheme = selection ?? (mounted ? getStoredColorScheme() : 'system');
 
   useEffect(() => {
-    const stored = getStoredColorScheme();
+    if (!mounted) return;
     const systemMedia = window.matchMedia('(prefers-color-scheme: dark)');
 
-    setColorSchemeState(stored);
-    applyColorScheme(stored);
+    applyColorScheme(colorScheme);
 
     const handleSystemChange = () => {
       if (getStoredColorScheme() === 'system') {
@@ -57,7 +59,7 @@ export function ColorSchemeProvider({ children }: { children: ReactNode }) {
     systemMedia.addEventListener('change', handleSystemChange);
 
     return () => systemMedia.removeEventListener('change', handleSystemChange);
-  }, []);
+  }, [colorScheme, mounted]);
 
   const setColorScheme = (nextColorScheme: ColorScheme) => {
     window.localStorage.setItem(colorSchemeStorageKey, nextColorScheme);

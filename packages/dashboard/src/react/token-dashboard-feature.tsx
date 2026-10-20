@@ -22,8 +22,9 @@ const ImportDialog = dynamic(() => import('./imports/import-dialog').then(module
 export function TokenDashboardFeature({
   data: initialData,
   canImport = false,
+  canViewDetails = canImport,
   initialStatus = 'live',
-}: { data: TokenDashboardData; canImport?: boolean; initialStatus?: 'history' | 'empty' | 'live' }) {
+}: { data: TokenDashboardData; canImport?: boolean; canViewDetails?: boolean; initialStatus?: 'history' | 'empty' | 'live' }) {
   const [importOpen, setImportOpen] = useState(false);
   const {
     rangePreset,
@@ -39,7 +40,7 @@ export function TokenDashboardFeature({
     isPollingPaused,
     hasSnapshot,
     showingHistory,
-  } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty' });
+  } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport, canViewDetails });
 
   return (
     <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-24 md:pt-8 lg:px-10 lg:pt-9 lg:pb-28">
@@ -86,7 +87,7 @@ export function TokenDashboardFeature({
         {/* =====================================================================
             SECTION 04: PROJECTS & SESSIONS (项目排行表格 + 会话主从检查器)
         ===================================================================== */}
-        <DeferredSection section="projects" enabled={hasSnapshot}><ProjectsSection data={data} /></DeferredSection>
+        <DeferredSection section="projects" enabled={hasSnapshot || !canViewDetails}><ProjectsSection data={data} canViewDetails={canViewDetails} /></DeferredSection>
       </div>
     </div>
   );

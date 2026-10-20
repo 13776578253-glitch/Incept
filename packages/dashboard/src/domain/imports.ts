@@ -1,4 +1,5 @@
-export type TransferSource = 'codex' | 'commandcode';
+export const TRANSFER_SOURCES = ['codex', 'commandcode', 'antigravity', 'claudeCode', 'opencode', 'zcode', 'geminiCli'] as const;
+export type TransferSource = typeof TRANSFER_SOURCES[number];
 export type TransferEvent = {
   eventId: string;
   source: TransferSource;

@@ -6,6 +6,8 @@ import { installMediaElementMocks, type MediaElementMocks } from '../../../testi
 import { makeCatalogPayload } from '../../../testing/music-fixtures';
 
 import { MusicPlayerRuntimeMount } from '../music-player-runtime-mount';
+import { useMusicPlayerPreferences } from '../../preferences/use-music-player-preferences';
+import { act } from '@testing-library/react';
 
 const STORAGE_KEY = 'incept-music-player-preferences';
 
@@ -80,4 +82,35 @@ it('does not touch the stored library before the catalogue has loaded', async ()
 
   // 初始的空数组不得被当成"这个库不存在"：清掉它会让用户偏好被目录加载时序悄悄覆盖
   await waitFor(() => expect(storedPreferences().selectedLibrary).toBe('播客'));
+});
+
+it('does not mount audio or request the catalog when the player is disabled', async () => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULTS, selectedLibrary: '播客', playerEnabled: false }));
+  const fetch = stubFetch(payloadWithLibrary);
+  const { container } = renderMount();
+  await waitFor(() => expect(storedPreferences().playerEnabled).toBe(false));
+  expect(container.querySelector('audio')).toBeNull();
+  expect(fetch).not.toHaveBeenCalled();
+  expect(storedPreferences().selectedLibrary).toBe('播客');
+});
+
+it('releases audio immediately on disable and preserves the page subtree', async () => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULTS, playerEnabled: true }));
+  stubFetch(payloadWithLibrary);
+  let toggle: (enabled: boolean) => void = () => {};
+  function Page() {
+    toggle = useMusicPlayerPreferences().setPlayerEnabled;
+    return <input aria-label="draft" defaultValue="keep" />;
+  }
+  const { container, getByLabelText } = render(<MusicPlayerPreferencesProvider>
+    <MusicPlayerRuntimeMount><Page /></MusicPlayerRuntimeMount>
+  </MusicPlayerPreferencesProvider>);
+  await waitFor(() => expect(container.querySelector('audio')).not.toBeNull());
+  const input = getByLabelText('draft');
+  const audio = container.querySelector('audio')!;
+  const pause = vi.spyOn(audio, 'pause');
+  act(() => toggle(false));
+  expect(pause).toHaveBeenCalled();
+  expect(container.querySelector('audio')).toBeNull();
+  expect(getByLabelText('draft')).toBe(input);
 });

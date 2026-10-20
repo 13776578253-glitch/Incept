@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { AppLocale } from '@/i18n/config/locales';
 import { localeConfig } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
+import { readBrowserDocumentLanguage, writeBrowserDocumentLanguage } from '@/features/docs/language/preference';
 
 function stripLocalePrefix(pathname: string, locale: AppLocale) {
   if (pathname === `/${locale}`) {
@@ -28,6 +29,8 @@ export function useLanguage() {
     if (!localeConfig.locales.includes(nextLocale)) {
       return;
     }
+
+    if (!readBrowserDocumentLanguage()) writeBrowserDocumentLanguage(locale);
 
     const nextPath = withLocalePath(
       nextLocale,

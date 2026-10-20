@@ -5,6 +5,7 @@ import { type UnitPricing, type RawUsageEvent } from '../types';
 import { lookupPricing, computeCostFromPricing, canPriceUsage, readRecordedCost } from '../pricing';
 import { toLocalDateAndMonth } from '../normalization';
 import { hash } from '../imports/identity';
+import { applyCommandCodeQuota } from '../pricing-schedule';
 
 export const COMMANDCODE_PROJECT_MAP: Record<
   string,
@@ -167,7 +168,7 @@ export function collectCommandCodeEvents(
                 reasoningTokens: 0,
               });
 
-          events.push({
+          events.push(applyCommandCodeQuota({
             eventId: hash(['commandcode', sessionId, obj.id ?? 'line:' + lineIndex]),
             costSource: directCost === undefined ? 'calculated' : 'recorded',
             sourceFile: fullPath,
@@ -189,7 +190,7 @@ export function collectCommandCodeEvents(
             reasoningTokens: 0,
             cost,
             missingPricing: directCost === undefined && !canPriceUsage(pricing, { inputTokens: uncachedInput, outputTokens, cacheReadTokens, cacheCreationTokens: cacheCreationTokens, reasoningTokens: 0 }),
-          });
+          }));
         } catch {
           malformed++;
         }

@@ -1,7 +1,5 @@
 import type {
   LocalizedText,
-  Roadmap,
-  RoadmapColumn,
   RoadmapEntry,
   RoadmapEntryImportItem,
   RoadmapEntryLink,
@@ -11,7 +9,7 @@ import type {
   RoadmapProject,
 } from '../domain';
 
-// 写端口契约：定义项目、看板、列与条目的写操作接口。
+// 写端口契约：定义项目与条目的写操作接口。
 // 链接随条目事务性整体重写；条目模型不含点赞与评论计数。
 export type RoadmapEntryDraft = {
   key?: string;
@@ -35,27 +33,6 @@ export type RoadmapWriter = {
   createProject: (input: { key: string; name: LocalizedText; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean }) => Promise<RoadmapProject>;
   updateProject: (input: { key: string; patch: { name?: LocalizedText; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean } }) => Promise<RoadmapProject>;
   deleteProject: (input: { key: string }) => Promise<{ key: string }>;
-  createRoadmap: (input: {
-    key: string;
-    name: LocalizedText;
-    projectKey: string;
-    position?: number;
-  }) => Promise<Roadmap>;
-  updateRoadmap: (input: {
-    key: string;
-    patch: { name?: LocalizedText; position?: number; projectKey?: string };
-  }) => Promise<Roadmap>;
-  deleteRoadmap: (input: { key: string }) => Promise<{ key: string }>;
-  upsertColumn: (input: {
-    roadmapKey: string;
-    status: RoadmapStatus;
-    label: LocalizedText;
-    position?: number;
-  }) => Promise<RoadmapColumn>;
-  deleteColumn: (input: {
-    roadmapKey: string;
-    status: RoadmapStatus;
-  }) => Promise<{ roadmapKey: string; status: RoadmapStatus }>;
   createEntry: (
     input: RoadmapEntryDraft & { roadmapKey: string },
   ) => Promise<RoadmapEntry>;

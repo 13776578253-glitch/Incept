@@ -87,30 +87,30 @@ export function MusicDeleteMenu({
       role="menu"
       aria-label={copy.deleteAction}
       style={{ left: target.x, top: target.y }}
-      className="fixed z-40 w-max min-w-[8.5rem] max-w-[15rem] rounded-[9px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 shadow-[var(--shadow-nav-dropdown)]"
+      className="fixed z-40 w-max min-w-[9rem] max-w-[16rem] rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-md"
     >
-      <p className="truncate px-2.5 pb-0.5 pt-1 text-[0.68rem] leading-4 text-[var(--color-nav-muted)]">
+      <p className="truncate px-2 pb-1 pt-0.5 text-[0.7rem] font-medium leading-4 text-[var(--color-nav-muted)]">
         {target.title}
       </p>
 
       {isConfirming ? (
-        <div className="space-y-1.5 px-2.5 pb-1.5 pt-0.5">
-          <p className="text-[0.7rem] leading-4 text-[var(--color-nav-dropdown-description)]">
+        <div className="space-y-2 px-1 pb-1 pt-1">
+          <p className="text-xs leading-4.5 text-[var(--color-nav-dropdown-description)]">
             {target.confirm}
           </p>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 pt-0.5">
             <button
               type="button"
               disabled={isBusy}
               onClick={() => onConfirm(target.id)}
-              className="inline-flex h-6 items-center justify-center rounded-[7px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-item-active)] px-2 text-[0.72rem] leading-none text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
+              className="inline-flex min-h-7 items-center justify-center rounded-full border border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] px-3 text-[0.75rem] font-medium text-[var(--badge-rose-fg)] shadow-[var(--shadow-card-sm)] transition-all hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
             >
               {copy.actionDeleteConfirm}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-6 items-center justify-center rounded-[7px] px-2 text-[0.72rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)]"
+              className="inline-flex min-h-7 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-[0.75rem] font-medium text-[var(--color-nav-dropdown-description)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]"
             >
               {copy.actionCancel}
             </button>
@@ -121,7 +121,7 @@ export function MusicDeleteMenu({
           type="button"
           role="menuitem"
           onClick={() => setIsConfirming(true)}
-          className="flex w-full items-center rounded-[6px] px-2.5 py-1.5 text-left text-[0.78rem] leading-none text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)]"
+          className="flex w-full items-center rounded-[9px] px-2.5 py-1.5 text-left text-[0.8125rem] font-medium text-[var(--badge-rose-fg)] transition-colors hover:bg-[var(--badge-rose-bg)]"
         >
           {copy.deleteAction}
         </button>

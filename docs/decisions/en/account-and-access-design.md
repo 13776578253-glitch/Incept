@@ -58,18 +58,15 @@ flowchart TD
 
 ## Security Boundary
 
-Authentication must be enforced server-side, not only through hidden navigation or `proxy.ts`.
+Authentication must be enforced server-side, not only through hidden navigation or edge middleware.
 
 Protected owner-only surfaces include:
 
-- `/[locale]/studio/**`
+- `/[locale]/settings` (Owner security and administrative sections)
 - `/[locale]/docs/import-preview/**`
-- `/[locale]/docs/style-lab`
 - Import preview confirmation and all future write routes
 
-The Owner implementation returns not found for protected internal pages. Owner login is intentionally a same-origin API endpoint rather than a public browser form.
-
-It uses `OWNER_ACCESS_SECRET` from the Web server environment, random token hashes in the database, and a secure HttpOnly cookie. Owner session revocation is available through a dedicated CLI.
+The Owner implementation returns not found or requires authentication for protected internal actions. Owner authentication uses `OwnerAccount` credentials with multi-factor authentication (TOTP/recovery codes), random session tokens stored in the database, and secure HttpOnly cookies. Owner session revocation is available through dedicated admin surfaces and CLI.
 
 ## Implemented Data Model
 

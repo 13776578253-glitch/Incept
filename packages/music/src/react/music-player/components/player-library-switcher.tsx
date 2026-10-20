@@ -39,7 +39,8 @@ export function PlayerLibrarySwitcher({
             data-player-interactive
             aria-pressed={active}
             onClick={() => onSelect(option.key)}
-            className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[0.75rem] transition-all duration-[var(--duration-fast)] ${
+            style={{ outline: 'none' }}
+            className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[0.75rem] transition-all duration-[var(--duration-fast)] outline-none focus:outline-none focus-visible:outline-none ${
               active
                 ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
                 : 'text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'

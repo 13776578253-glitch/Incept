@@ -37,6 +37,17 @@ const baseEntry3: RoadmapEntry = {
 };
 
 describe('tokenizeBilingualText', () => {
+  it.each(['，', '。', ' ', '\n', 'English', '123'])('keeps Chinese n-grams within blocks separated by %j', separator => {
+    const tokens = tokenizeBilingualText(`音频${separator}压缩`);
+    expect(tokens.has('音频')).toBe(true);
+    expect(tokens.has('压缩')).toBe(true);
+    expect(tokens.has('频压')).toBe(false);
+    expect(tokens.has('音频压')).toBe(false);
+    expect(tokens.has('频压缩')).toBe(false);
+  });
+  it('does not join isolated Chinese characters across boundaries', () => {
+    expect([...tokenizeBilingualText('音，频。压 缩')]).toEqual([]);
+  });
   it('extracts english keywords and chinese n-grams while stripping stop words', () => {
     const tokens = tokenizeBilingualText('Audio Context Compression 音频上下文压缩');
     expect(tokens.has('audio')).toBe(true);
@@ -49,6 +60,12 @@ describe('tokenizeBilingualText', () => {
 });
 
 describe('scoreSimilarity & findSimilarEntry (Scheme 4-B)', () => {
+  it('does not recommend entries based on a Chinese token fabricated across sentences', () => {
+    const target = { ...baseEntry1, title: { en: '', zh: '音频。压缩' }, summary: { en: '', zh: '' } };
+    const candidate = { ...baseEntry2, title: { en: '', zh: '频压' }, summary: { en: '', zh: '' } };
+    expect(scoreSimilarity(target, candidate)).toBe(0);
+    expect(findSimilarEntry(target, [candidate])).toBeNull();
+  });
   it('gives high score to entries with overlapping title tokens', () => {
     const score = scoreSimilarity(baseEntry1, baseEntry2);
     // Both contain 'audio' / '音频' (+10) and same type (+2)

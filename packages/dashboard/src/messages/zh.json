@@ -11,6 +11,12 @@
     "models": "模型与价格匹配", "priced": "已知费用或费率", "unpriced": "价格未知", "revalidate": "重新校验",
     "confirm": "确认导入", "imported": "已导入", "success": "导入成功，仪表盘已请求刷新", "history": "历史导入索引",
     "emptyHistory": "暂无导入记录", "active": "已生效", "rolledBack": "已回退",
+    "historyLimit": "仅显示最近 10 次导入",
+    "authTitle": "验证身份", "authHint": "输入当前密码与手机验证器动态码，验证后继续本次导入",
+    "currentPassword": "当前密码", "currentTotp": "当前 TOTP", "showPassword": "显示密码", "hidePassword": "隐藏密码",
+    "authCancel": "取消验证", "authContinue": "验证并导入", "authWorking": "正在验证并导入…",
+    "authInvalid": "密码或动态码不正确，请重试", "passwordRequired": "请输入当前密码", "totpFormat": "请输入六位验证器动态码",
+    "authSessionExpired": "登录已失效，请重新登录后导入", "authRateLimited": "尝试次数过多，请稍后重试", "authUnavailable": "暂时无法验证，请重试",
     "batchSummary": "新增 {records} 条 · {tokens} Token · 重复 {duplicates} 条", "device": "导入设备：{name}", "batch": "导入批次："
   },
   "page": {
@@ -54,7 +60,7 @@
     "projects": "04 项目与会话"
   },
   "overview": {
-    "eyebrow": "01 / OVERVIEW",
+    "eyebrow": "OVERVIEW",
     "title": "用量概览",
     "description": "使用趋势与模型分布",
     "kpi": {
@@ -87,6 +93,8 @@
       "metricTokens": "Token 消耗",
       "metricStacked": "消耗占比",
       "metricModels": "模型占比",
+      "peak": "高峰 2×",
+      "offPeak": "平峰 1×",
       "metricCost": "等效费用",
       "legend": "消耗占比图例",
       "parts": {
@@ -119,7 +127,7 @@
     }
   },
   "models": {
-    "eyebrow": "02 / MODELS & SOURCES",
+    "eyebrow": "MODELS & SOURCES",
     "title": "按模型、客户端来源与 Token 类型拆解",
     "description": "按实际会话中的模型标识拆解用量",
     "tokenTypes": {
@@ -178,7 +186,7 @@
     }
   },
   "costs": {
-    "eyebrow": "03 / COSTS & COVERAGE",
+    "eyebrow": "COSTS & COVERAGE",
     "title": "API 等效费用与价格覆盖率",
     "description": "汇总记录中的已知费用及本地价格表折算费用",
     "cards": {
@@ -204,6 +212,7 @@
       "allCovered": "所有活跃模型均已配置单价映射"
     },
     "pricingTable": {
+      "peakRates": "高峰：{rates}",
       "greyModelNote": "保留灰度模型原始标识，费用按 Gemini 3.8 Flash 费率折算",
       "title": "模型费率与成本归因表",
       "subtitle": "参考单价（USD / 1M Tokens，输入 / 输出 / 缓存读取 / 写入）及相对成本",
@@ -217,7 +226,8 @@
     }
   },
   "projects": {
-    "eyebrow": "04 / PROJECTS & SESSIONS",
+    "noAccess": "无权限查看",
+    "eyebrow": "PROJECTS & SESSIONS",
     "title": "项目归属排行与会话消耗明细",
     "description": "项目用量与会话记录",
     "attribution": {
@@ -268,6 +278,7 @@
         "coverageStatus": "计价覆盖状态",
         "coverageFull": "全部已知计价 (Measured & Priced)",
         "coveragePartial": "含未定价模型子集 (Partial Pricing)",
+        "incompleteHistory": "历史不完整，早期用量的日期归属不确定。",
         "tokenBreakdown": "会话 Token 构成明细",
         "modelBreakdown": "会话内模型调用拆解",
         "close": "收起详情"

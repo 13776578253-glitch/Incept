@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Incept backup
+
+[Timer]
+Unit=incept-offsite.service
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

@@ -7,6 +7,15 @@ const request = (body: unknown, origin = 'http://localhost:3000') => new Request
   method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 afterEach(() => vi.resetAllMocks());
 describe('import HTTP boundaries', () => {
+  it('uses only the host-supplied public origin behind a private reverse proxy', async () => {
+    service.previewImport.mockReturnValue({ previewId: 'preview' });
+    service.commitImport.mockReturnValue({ id: 'batch' });
+    const publicOrigin = 'https://site.example';
+    expect((await dashboardImportPreviewPost(request({ bundle: {} }, publicOrigin))).status).toBe(403);
+    expect((await dashboardImportPreviewPost(request({ bundle: {} }, publicOrigin), publicOrigin)).status).toBe(200);
+    expect((await dashboardImportCommitPost(request({ previewId: 'a'.repeat(36) }, publicOrigin), publicOrigin)).status).toBe(200);
+    expect((await dashboardImportPreviewPost(request({ bundle: {} }, 'https://evil.example'), publicOrigin)).status).toBe(403);
+  });
   it('rejects cross-origin writes before reading or importing the upload', async () => {
     const response = await dashboardImportPreviewPost(request({ bundle: {} }, 'https://untrusted.test'));
     expect(response.status).toBe(403); expect(service.previewImport).not.toHaveBeenCalled();
@@ -34,5 +43,11 @@ describe('import HTTP boundaries', () => {
       body: new Uint8Array(64 * 1024 * 1024 + 1) });
     expect((await dashboardImportPreviewPost(upload)).status).toBe(413);
     expect(service.previewImport).not.toHaveBeenCalled();
+  });
+  it('limits browser history to ten entries while preserving the complete history', async () => {
+    const history = Array.from({ length: 12 }, (_, index) => ({ id: `batch-${index}` }));
+    service.importHistory.mockReturnValue(history);
+    expect(await (await dashboardImportsGet()).json()).toEqual({ history: history.slice(0, 10) });
+    expect(history).toHaveLength(12);
   });
 });

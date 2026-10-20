@@ -14,6 +14,7 @@ import type { SourceDescriptionKey } from '../../domain';
 import { normalizeFile } from './collectors/common';
 import { loadImportedEvents } from './imports/layer';
 import { importStorePath } from './imports/store';
+import { applyCommandCodeQuota } from './pricing-schedule';
 
 type Snapshot = { home: string; expiresAt: number; events: RawUsageEvent[]; pricing: Map<string, UnitPricing>; updatedAt: number;
   fallbackEvents: Set<RawUsageEvent>; fallbackSources: SourceDescriptionKey[]; coveredSessions: Set<string>; errors: string[];
@@ -64,7 +65,7 @@ export async function loadTokenDashboardData(options: { range?: UsageRange; forc
   const selected = eligible.filter(event => event.dateKey >= window.from && event.dateKey <= window.to
     && !(snapshot.fallbackEvents.has(event) && fallback.coveredSessions.has(event.sourceId + ':' + event.sessionId)));
   selected.push(...fallback.events.map(event => ({ ...event, modelName: canonicalModelName(event.modelName, snapshot.aliases) })));
-  const data = summarizeUsageEvents(selected, home, imported.pricing, Math.max(snapshot.updatedAt, imported.updatedAt), window);
+  const data = summarizeUsageEvents(selected.map(applyCommandCodeQuota), home, imported.pricing, Math.max(snapshot.updatedAt, imported.updatedAt), window);
   for (const source of data.sources) {
     const modes = new Set(selected.filter(event => event.sourceId === source.sourceId).map(event =>
       event.importBatchId ? 'imported' as const : snapshot.fallbackEvents.has(event) ? 'indexed' as const : event.timestampPrecision === 'day' ? 'ccusage' as const : 'native' as const));

@@ -6,6 +6,8 @@ import { MusicSettingsPanel } from '../music-settings-panel';
 
 // history: 原 settings-renderer 的 4 个 music 用例在偏好内移后随迁至本套件，保持断言等价
 const preferences = vi.hoisted(() => ({
+  playerEnabled: true,
+  setPlayerEnabled: vi.fn(),
   playbackRateLocked: true,
   rememberPlacement: true,
   playbackMode: 'off' as string,
@@ -20,6 +22,8 @@ vi.mock('../../preferences/use-music-player-preferences', () => ({
 }));
 
 beforeEach(() => {
+  preferences.playerEnabled = true;
+  preferences.setPlayerEnabled.mockClear();
   preferences.playbackRateLocked = true;
   preferences.rememberPlacement = true;
   preferences.playbackMode = 'off';
@@ -81,4 +85,16 @@ it('keeps the management panel hidden for non-owner data', () => {
   render(<MusicSettingsPanel locale="zh" data={null} />);
 
   expect(screen.queryByText('曲库')).not.toBeInTheDocument();
+});
+
+it('keeps the main switch available while disabled preferences cannot change', async () => {
+  preferences.playerEnabled = false;
+  render(<MusicSettingsPanel locale="en" data={null} />);
+  const master = screen.getByRole('switch', { name: 'Music player' });
+  expect(master).not.toBeChecked();
+  expect(master).not.toBeDisabled();
+  expect(screen.getByRole('switch', { name: 'Locked' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Shuffle' })).toBeDisabled();
+  await userEvent.setup().click(master);
+  expect(preferences.setPlayerEnabled).toHaveBeenCalledWith(true);
 });

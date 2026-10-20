@@ -18,9 +18,11 @@ export function DocsImportSuccessToast({
   const searchParams = useSearchParams();
   const t = useTranslations('docs.importFeedback');
 
-  useEffect(() => {
+  const [previousVisible, setPreviousVisible] = useState(visible);
+  if (previousVisible !== visible) {
+    setPreviousVisible(visible);
     setIsVisible(visible);
-  }, [visible]);
+  }
 
   useEffect(() => {
     if (!visible) {

@@ -81,7 +81,7 @@ export function MusicSelect({
             setIsOpen(true);
           }
         }}
-        className={`inline-flex w-full items-center justify-between gap-3 rounded-[9px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3 text-[var(--color-text)] outline-none transition-colors hover:bg-[color:var(--color-row-hover-bg)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] disabled:cursor-default disabled:opacity-50 ${buttonClassName}`}
+        className={`inline-flex w-full items-center justify-between gap-3 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-[var(--color-text)] shadow-[var(--shadow-card-sm)] outline-none transition-all hover:bg-[color:var(--color-row-hover-bg)] focus:outline-none disabled:cursor-default disabled:opacity-50 ${buttonClassName}`}
       >
         <span className="inline-flex min-w-0 items-center gap-2 truncate">
           <span
@@ -93,17 +93,13 @@ export function MusicSelect({
         </span>
         <svg
           aria-hidden="true"
-          viewBox="0 0 12 8"
-          className={`h-[6px] w-[9px] shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          viewBox="0 0 16 16"
+          className={`size-3 shrink-0 text-[var(--color-nav-muted)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
         >
-          <path
-            d="m1 1.25 5 5 5-5"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.25"
-          />
+          <path d="m4 6 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
@@ -112,7 +108,7 @@ export function MusicSelect({
           id={listboxId}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute right-0 z-30 mt-1 min-w-full space-y-0.5 overflow-hidden rounded-[10px] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-1 shadow-[var(--shadow-nav-dropdown)]"
+          className="absolute right-0 z-30 mt-1.5 min-w-full space-y-0.5 overflow-hidden rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg)] p-1.5 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-md"
         >
           {options.map((option) => {
             const isSelected = option.value === value;
@@ -128,10 +124,10 @@ export function MusicSelect({
                   setIsOpen(false);
                   buttonRef.current?.focus();
                 }}
-                className={`flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[0.8125rem] leading-none whitespace-nowrap transition-colors ${
+                className={`flex w-full items-center gap-2 rounded-[9px] px-2.5 py-2 text-left text-[0.8125rem] leading-none whitespace-nowrap transition-colors ${
                   isSelected
-                    ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--badge-sky-fg)] shadow-[var(--shadow-pill-active)]'
-                    : 'text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
+                    ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
+                    : 'text-[var(--color-nav-dropdown-description)] hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]'
                 }`}
               >
                 <span

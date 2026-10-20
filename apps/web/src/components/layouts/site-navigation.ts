@@ -40,12 +40,6 @@ export function createSiteNavigation(
               description: t('groups.docs.notes.description'),
               href: withLocale('/notes'),
             },
-            // {
-            //   id: 'docs-archive',
-            //   label: t('groups.docs.archive.label'),
-            //   description: t('groups.docs.archive.description'),
-            //   href: withLocale('/docs/archive'),
-            // },
           ],
         },
       ],
@@ -62,12 +56,6 @@ export function createSiteNavigation(
       href: withLocale('/dashboard'),
       matchPrefix: withLocale('/dashboard'),
     },
-    // {
-    //   id: 'resources',
-    //   label: t('primary.resources'),
-    //   href: withLocale('/resources'),
-    //   matchPrefix: withLocale('/resources'),
-    // },
     {
       id: 'about',
       label: t('primary.about'),

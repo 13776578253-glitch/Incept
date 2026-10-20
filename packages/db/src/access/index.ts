@@ -4,8 +4,10 @@ import {
   AccessSessionRole,
 } from '../../generated/client/index.js';
 import { prisma } from '../client';
+import { redeemTemporaryProGrant, writeSecurityAudit } from '../owner';
+import { OWNER_TTL_MS } from '../owner/security';
 
-export const OWNER_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+export const OWNER_SESSION_TTL_MS = OWNER_TTL_MS;
 
 type AccessNowOptions = {
   now?: Date;
@@ -245,11 +247,13 @@ export async function redeemSharedAccessGrant({
   credentialHash,
   tokenHash,
   principalLabel = 'Anonymous shared access',
+  deviceHash = tokenHash,
   now = new Date(),
 }: {
   credentialHash: string;
   tokenHash: string;
   principalLabel?: string;
+  deviceHash?: string;
   now?: Date;
 }) {
   const grant = await findActiveAccessGrantByCredentialHash(credentialHash, {
@@ -259,6 +263,8 @@ export async function redeemSharedAccessGrant({
   if (!grant || !isValidSharedGrant(grant)) {
     return null;
   }
+
+  if (grant.mode) return redeemTemporaryProGrant(credentialHash, tokenHash, deviceHash, now);
 
   return prisma.$transaction(async (tx) => {
     const principal = await tx.accessPrincipal.create({
@@ -292,6 +298,7 @@ export async function findActiveAccessSessionByTokenHash(
         include: { principal: true },
       },
       principal: true,
+      ownerAccount: { select: { credentialVersion: true, totpCiphertext: true } },
     },
   });
 
@@ -300,7 +307,11 @@ export async function findActiveAccessSessionByTokenHash(
   }
 
   if (session.role === AccessSessionRole.owner) {
-    return !session.grantId && !session.principalId ? session : null;
+    if (session.grantId || session.principalId || !session.ownerAccount?.totpCiphertext
+      || session.credentialVersion !== session.ownerAccount.credentialVersion || !session.expiresAt) return null;
+    const touched = await prisma.accessSession.updateMany({ where: { id: session.id, revokedAt: null,
+      credentialVersion: session.credentialVersion, expiresAt: { gt: now } }, data: { lastUsedAt: now } });
+    return touched.count ? session : null;
   }
 
   if (
@@ -403,12 +414,20 @@ export async function listRevocableOwnerAccessSessions() {
 export async function revokeAllOwnerAccessSessions(
   { now = new Date() }: AccessNowOptions = {},
 ) {
-  return prisma.accessSession.updateMany({
+  return prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM owner_accounts WHERE id = 'owner' FOR UPDATE`;
+    await tx.ownerDevice.updateMany({ where: { revokedAt: null }, data: { revokedAt: now } });
+    await tx.ownerChallenge.updateMany({ where: { consumedAt: null }, data: { consumedAt: now, pendingTotpCiphertext: null } });
+    await tx.ownerPermit.updateMany({ where: { revokedAt: null }, data: { revokedAt: now } });
+    const result = await tx.accessSession.updateMany({
     where: {
       role: AccessSessionRole.owner,
       revokedAt: null,
     },
     data: { revokedAt: now },
+    });
+    await writeSecurityAudit('owner.sessions.revoke-cli', 'success', undefined, undefined, tx);
+    return result;
   });
 }
 
@@ -481,11 +500,16 @@ export async function rotateSharedAccessGrant({
         label: true,
         expiresAt: true,
         revokedAt: true,
+        mode: true,
       },
     });
 
     if (!existingGrant || existingGrant.type !== AccessGrantType.sharedCode) {
       throw new Error('Only an existing shared-code grant can be rotated.');
+    }
+
+    if (existingGrant.mode) {
+      throw new Error('Temporary Pro grants must be revoked and recreated through Owner settings.');
     }
 
     if (existingGrant.revokedAt) {

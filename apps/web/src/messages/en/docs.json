@@ -2,10 +2,34 @@
   "archive": {
     "title": "Documentation and references"
   },
-  "archivePage": {
-    "eyebrow": "Docs archive",
-    "title": "Browse published content over time",
-    "description": "The archive gathers articles, notes, and references by publication period. Timeline filters and archive-specific browsing will continue to improve in future updates."
+  "home": {
+    "eyebrow": "Docs",
+    "title": "Technical Documentation",
+    "description": "Guides, architecture references, and topic collections across the project.",
+    "stats": {
+      "total": "Total Documents",
+      "totalDesc": "Published technical entries",
+      "collections": "Topic Collections",
+      "collectionsDesc": "Structured series & guides",
+      "standalone": "Standalone Guides",
+      "standaloneDesc": "Focused technical notes",
+      "recent": "Updated in 30d",
+      "recentDesc": "Recently maintained records"
+    },
+    "filter": {
+      "all": "All",
+      "collections": "Collections",
+      "standalone": "Guides",
+      "searchPlaceholder": "Search articles, topics or tags…",
+      "empty": "No documents match the current filter.",
+      "clearSearch": "Clear search",
+      "viewGrid": "Grid view",
+      "viewList": "List view",
+      "readAction": "Read",
+      "viewSeriesAction": "View series"
+    },
+    "addDoc": "Add doc",
+    "addDocDesc": "Create or manage documents"
   },
   "access": {
     "requiresRole": "Requires {role} access"
@@ -24,8 +48,9 @@
   },
   "reference": {
     "backToList": "Back to article list",
+    "outline": "On this page",
     "readingMeta": {
-      "zh": "全文 {characters} 字 · 预计 {minutes} 分钟阅读",
+      "zh": "{characters} characters · {minutes} min read",
       "en": "{words} words · {minutes} min read"
     },
     "lastEdited": "Last updated {date}"
@@ -36,9 +61,6 @@
     "description": "The draft has been written to the database and is now loading through the normal docs route."
   },
   "library": {
-    "eyebrow": "Workspace",
-    "title": "Docs library overview",
-    "description": "A current-state view of what is published in docs, where each article is mounted, and which routes are live right now.",
     "roles": {
       "guest": "guest",
       "pro": "Temporary access",

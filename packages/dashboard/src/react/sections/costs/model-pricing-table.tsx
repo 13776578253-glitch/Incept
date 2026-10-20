@@ -3,7 +3,7 @@
 import { DashboardTableFrame } from '../../components/dashboard-table-frame';
 import { useTranslations } from 'next-intl';
 import type { TokenDashboardData } from '../../../domain/index';
-import { formatKnownCost, formatCompactTokens, formatUsd, formatPercent } from '../../formatters';
+import { formatKnownCost, formatCompactTokens, formatPercent } from '../../formatters';
 
 type ModelPricingTableProps = {
   maxModelCost: number;
@@ -75,6 +75,16 @@ export function ModelPricingTable({
                         {m.unitPricing.outputPerMillion} / $
                         {m.unitPricing.cacheReadPerMillion ?? '—'} / $
                         {m.unitPricing.cacheWritePerMillion ?? '—'}
+                        {m.billing?.peak || m.billing?.offPeak ? (
+                          <span className="mt-1 block text-[0.65rem] text-[var(--color-nav-muted)]">
+                            {t('costs.pricingTable.peakRates', { rates: [
+                              m.unitPricing.inputPerMillion,
+                              m.unitPricing.outputPerMillion,
+                              m.unitPricing.cacheReadPerMillion,
+                              m.unitPricing.cacheWritePerMillion,
+                            ].map(rate => rate === undefined ? '—' : '$' + Number((rate * 2).toFixed(9))).join(' / ') })}
+                          </span>
+                        ) : null}
                       </span>
                     ) : (
                       <span className="text-[var(--color-nav-muted)]">

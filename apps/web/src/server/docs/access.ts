@@ -4,6 +4,7 @@ import {
   findPublishedDocsArticleBySlug,
   findPublishedUnlistedDocsArticleByDocumentKey,
   findPublishedDocsCollectionArticleBySlugs,
+  getDocsLibraryStats,
 } from '@incept/db/docs';
 import type { DbDocsLocale } from '@incept/db/docs';
 import type {
@@ -12,6 +13,7 @@ import type {
   DocsHomePageModel,
 } from '@/features/docs/shared/types';
 import type { DbDocsCollectionNavigationNode } from '@incept/db/docs';
+import { resolveArticleReadingRoute, resolveCollectionReadingRoute, preferredHomeEntries } from './reading-language';
 import {
   docsHomeIntro,
   mapDocsArticleRecordToPageModel,
@@ -62,8 +64,7 @@ export async function getDocsArticlePage({
   viewerRole: DocsAccessRole;
 }): Promise<DocsArticlePageModel | null> {
   const record = await findPublishedDocsArticleBySlug({
-    locale: locale as DbDocsLocale,
-    slug,
+    ...await resolveArticleReadingRoute(locale, slug),
   });
 
   if (!record) {
@@ -113,9 +114,7 @@ export async function getDocsCollectionArticlePage({
   viewerRole: DocsAccessRole;
 }): Promise<DocsArticlePageModel | null> {
   const record = await findPublishedDocsCollectionArticleBySlugs({
-    locale: locale as DbDocsLocale,
-    collectionSlug,
-    articleSlug,
+    ...await resolveCollectionReadingRoute(locale, collectionSlug, articleSlug),
   });
 
   if (!record) {
@@ -146,12 +145,23 @@ export async function getDocsHomePage({
   locale: AppLocale;
   viewerRole: DocsAccessRole;
 }): Promise<DocsHomePageModel> {
-  const entries = await listPublishedDocsHomeEntries({
-    locale: locale as DbDocsLocale,
-  });
+  const [entries, rawStats] = await Promise.all([
+    preferredHomeEntries(locale, listPublishedDocsHomeEntries),
+    getDocsLibraryStats({ locale: locale as DbDocsLocale }).catch(() => null),
+  ]);
+
+  const stats = rawStats
+    ? {
+        totalArticles: rawStats.totalArticles,
+        standalone: rawStats.standaloneArticleCount,
+        collections: rawStats.collectionCount,
+        recentlyUpdated: rawStats.recentlyUpdatedCount,
+      }
+    : undefined;
 
   return {
     intro: docsHomeIntro,
+    stats,
     groups: mapDocsHomeEntriesToPageGroups(
       entries,
       viewerRole,

@@ -15,7 +15,7 @@ export function getAccountSettingsSection(locale: AppLocale): SettingsSection {
   return {
     id: 'account',
     label: 'Account',
-    description: 'Identity and controlled access.',
+    description: 'Identity and controlled access',
     visibility: 'public',
     rows: [],
   };

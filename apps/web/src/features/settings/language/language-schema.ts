@@ -28,7 +28,7 @@ export function getLanguageSettingsSection(locale: AppLocale): SettingsSection {
   return {
     id: 'language',
     label: 'Language',
-    description: 'Manage the interface language and voice.',
+    description: 'Manage the interface language and voice',
     visibility: 'public',
     rows: [
       {

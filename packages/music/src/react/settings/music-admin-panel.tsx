@@ -246,18 +246,24 @@ export function MusicAdminPanel({ locale, data }: { locale: string; data: MusicA
         <h3 className="text-[1.0625rem] font-semibold tracking-[-0.01em] text-[var(--color-text)]">
           {copy.heading}
         </h3>
-        <p className="max-w-2xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-          {copy.description}
-        </p>
       </header>
 
       {error ? (
-        <p
+        <div
           role="alert"
-          className="rounded-[10px] border border-[var(--color-nav-dropdown-border)] px-3 py-2 text-[0.8125rem] text-[var(--color-text)]"
+          className="flex items-center gap-2.5 rounded-xl border border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] px-3.5 py-2.5 text-[0.8125rem] text-[var(--badge-rose-fg)]"
         >
-          {error}
-        </p>
+          <span className="size-1.5 shrink-0 rounded-full bg-[var(--badge-rose-dot)]" />
+          <span className="flex-1">{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-xs opacity-70 transition-opacity hover:opacity-100"
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+        </div>
       ) : null}
 
       <MusicUploadZone

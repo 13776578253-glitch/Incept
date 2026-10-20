@@ -12,7 +12,7 @@ export function modelTokens(model: CcusageModelBreakdown | undefined): number {
 export function ModelHeatmap({ points, models }: { points: DailyUsagePoint[]; models: ModelUsageSummary[] }) {
   const t = useTranslations('dashboard');
   if (!models.length) return <p className="text-sm text-[var(--color-nav-muted)]">{t('page.noUsage')}</p>;
-  const width = Math.max(600, 170 + points.length * 34);
+  const width = Math.max(600, 240 + points.length * 34);
   return <div className="dashboard-model-matrix" role="table" aria-label={t('overview.trend.viewMatrix')}
     style={{ minWidth: width, '--matrix-columns': points.length, '--matrix-rows': models.length } as CSSProperties}>
     <div className="dashboard-matrix-header" role="row">
@@ -23,7 +23,7 @@ export function ModelHeatmap({ points, models }: { points: DailyUsagePoint[]; mo
       const values = points.map(point => modelTokens(point.modelBreakdowns.find(item => item.modelName === model.modelName)));
       const maximum = Math.max(1, ...values);
       return <div className="dashboard-matrix-row" role="row" key={model.modelName}>
-        <span role="rowheader" title={model.modelName}>{model.modelName}</span>
+        <span role="rowheader" title={model.modelName}><span>{model.modelName}</span></span>
         {points.map((point, index) => <div role="cell" key={point.date}>
           <span className="dashboard-matrix-cell" title={model.modelName + ' (' + point.date + '): ' + formatCompactTokens(values[index])}
             aria-label={model.modelName + ' ' + point.date + ': ' + formatCompactTokens(values[index])}

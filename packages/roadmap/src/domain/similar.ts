@@ -76,15 +76,15 @@ export function tokenizeBilingualText(text: string): Set<string> {
   }
 
   // 2. 中文 2-gram 与 3-gram 词元切分
-  const cjkChars = text.match(/[\u4e00-\u9fa5]/g);
-  if (cjkChars && cjkChars.length >= 2) {
-    for (let i = 0; i < cjkChars.length - 1; i++) {
-      const biGram = cjkChars[i] + cjkChars[i + 1];
+  const cjkBlocks = text.match(/[\u4e00-\u9fa5]+/g) ?? [];
+  for (const block of cjkBlocks) {
+    for (let i = 0; i < block.length - 1; i++) {
+      const biGram = block.slice(i, i + 2);
       if (!CHINESE_STOP_WORDS.has(biGram)) {
         tokens.add(biGram);
       }
-      if (i < cjkChars.length - 2) {
-        const triGram = biGram + cjkChars[i + 2];
+      if (i < block.length - 2) {
+        const triGram = block.slice(i, i + 3);
         tokens.add(triGram);
       }
     }

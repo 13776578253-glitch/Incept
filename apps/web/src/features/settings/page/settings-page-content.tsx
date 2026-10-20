@@ -1,6 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import type { DocsLibraryPageModel } from '../docs/types';
+import { DocsSettingsPanel } from '../docs/docs-settings-panel';
+
+import { useMounted } from '@/hooks/use-mounted';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -16,18 +19,9 @@ import { AccountSettingsPanel } from '../account/account-settings-panel';
 import { SettingsSectionPanel } from '../shared/settings-renderer';
 import { getSettingsPageData } from '../shared/settings-schema';
 import { ProjectSurfacesPanel } from '../projects/project-surfaces-panel';
+import { LanguageSettingsPanel } from '../language/language-settings-panel';
 
 import type { SettingsSection } from '../shared/settings-types';
-
-function useMounted() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  return mounted;
-}
 
 function getLocalizedReturnPath(returnTo: string | null, locale: AppLocale) {
   if (!returnTo?.startsWith('/') || returnTo.startsWith('//')) {
@@ -77,8 +71,12 @@ export function SettingsPageContent({
   viewerRole,
   settingsContributionData,
   projects,
+  documentLanguage,
+  docs,
 }: {
   viewerRole: 'guest' | 'pro' | 'owner';
+  documentLanguage: AppLocale;
+  docs: DocsLibraryPageModel | null;
   // 注册表贡献分区的 loader 数据：owner 门控，非 owner 为 null
   settingsContributionData: Record<string, unknown>;
   projects: Array<{ key: string; name: { en: string; zh: string }; roadmapEnabled: boolean; atlasEnabled: boolean }>;
@@ -133,9 +131,9 @@ export function SettingsPageContent({
       <button
         type="button"
         onClick={handleBack}
-        className="mb-5 inline-flex items-center gap-2 rounded-[8px] px-1.5 py-1 text-[0.8125rem] font-medium text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+        className="mb-6 inline-flex items-center gap-2 rounded-[8px] px-1.5 py-1 text-[0.8125rem] font-medium text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] active:bg-[var(--color-nav-item-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
       >
-        <span aria-hidden="true" className="text-[1.125rem] leading-none">
+        <span aria-hidden="true" className="text-[0.9375rem] leading-none">
           &larr;
         </span>
         {language === 'zh' ? '返回' : 'Back'}
@@ -150,30 +148,38 @@ export function SettingsPageContent({
       </header>
 
       <div className="hidden lg:block">
-        {selectedSection.id === 'projects' && viewerRole === 'owner' ? (
+        {selectedSection.id === 'docs' && viewerRole === 'owner' && docs ? (
+          <DocsSettingsPanel page={docs} />
+        ) : selectedSection.id === 'projects' && viewerRole === 'owner' ? (
           <ProjectSurfacesPanel initialProjects={projects} language={language} />
+        ) : selectedSection.id === 'language' ? (
+          <LanguageSettingsPanel documentLanguage={documentLanguage} />
         ) : selectedSection.id === 'account' ? (
           <AccountSettingsPanel language={language} viewerRole={viewerRole} />
         ) : findSettingsSectionContribution(mountManifest, selectedSection.id) ? (
           <ContributionSectionPanel section={selectedSection} data={settingsContributionData} />
         ) : (
           <div className="space-y-8">
-            <SettingsSectionPanel section={selectedSection} {...interactions} />
+            <SettingsSectionPanel section={selectedSection} showDescription={!['appearance', 'language'].includes(selectedSection.id)} {...interactions} />
           </div>
         )}
       </div>
 
       <div className="space-y-12 lg:hidden">
         {page.sections.map((section) => (
-          section.id === 'projects' && viewerRole === 'owner' ? (
+          section.id === 'docs' && viewerRole === 'owner' && docs ? (
+            <DocsSettingsPanel key={section.id} page={docs} />
+          ) : section.id === 'projects' && viewerRole === 'owner' ? (
             <ProjectSurfacesPanel key={section.id} initialProjects={projects} language={language} />
+          ) : section.id === 'language' ? (
+            <LanguageSettingsPanel key={section.id} documentLanguage={documentLanguage} />
           ) : section.id === 'account' ? (
             <AccountSettingsPanel key={section.id} language={language} viewerRole={viewerRole} />
           ) : findSettingsSectionContribution(mountManifest, section.id) ? (
             <ContributionSectionPanel key={section.id} section={section} data={settingsContributionData} />
           ) : (
             <div key={section.id} className="space-y-8">
-              <SettingsSectionPanel section={section} {...interactions} />
+              <SettingsSectionPanel section={section} showDescription={!['appearance', 'language'].includes(section.id)} {...interactions} />
             </div>
           )
         ))}

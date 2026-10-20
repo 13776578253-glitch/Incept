@@ -1,39 +1,56 @@
 import type { CcusageModelBreakdown, DailyUsagePoint } from '../../../domain';
 import { MODEL_COLORS } from '../../model-colors';
 
-export type ShareSegment = { id: string; tokens: number; share: number; color: string };
+export type ShareSegment = { id: string; tokens: number; share: number; color: string;
+  modelName?: string; billingPeriod?: 'peak' | 'offPeak'; cost?: number };
+
+// Only this chart splits periods; model identities remain unchanged elsewhere.
+function modelParts(point: DailyUsagePoint) {
+  return point.modelBreakdowns.flatMap(model => {
+    if (!model.billing) return [{ id: model.modelName, modelName: model.modelName,
+      billingPeriod: undefined, tokens: breakdownTokens(model), cost: model.cost }];
+    return (['standard', 'offPeak', 'peak'] as const).flatMap(period => {
+      const part = model.billing?.[period];
+      const billingPeriod = period === 'standard' ? undefined : period;
+      return part ? [{ id: billingPeriod ? JSON.stringify([model.modelName, period]) : model.modelName,
+        modelName: model.modelName, billingPeriod, tokens: part.totalTokens, cost: part.cost }] : [];
+    });
+  });
+}
 
 export function breakdownTokens(model: CcusageModelBreakdown): number {
   return model.inputTokens + model.outputTokens + model.cacheReadTokens
     + model.cacheCreationTokens + (model.reasoningTokens ?? 0);
 }
 
-export function modelSeries(points: DailyUsagePoint[]) {
-  const totals = new Map<string, number>();
+function modelTotals(points: DailyUsagePoint[]) {
+  const totals = new Map<string, ReturnType<typeof modelParts>[number]>();
   for (const point of points) {
-    for (const model of point.modelBreakdowns) {
-      totals.set(model.modelName, (totals.get(model.modelName) ?? 0) + breakdownTokens(model));
+    for (const part of modelParts(point)) {
+      const previous = totals.get(part.id);
+      totals.set(part.id, { ...part, tokens: (previous?.tokens ?? 0) + part.tokens,
+        cost: (previous?.cost ?? 0) + part.cost });
     }
   }
-  const total = [...totals.values()].reduce((sum, tokens) => sum + tokens, 0);
-  return [...totals.entries()]
-    .filter(([, tokens]) => tokens > 0)
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([id, tokens], index) => ({
-      id, tokens, share: total > 0 ? tokens / total : 0,
-      color: MODEL_COLORS[index] ?? `hsl(${Math.round(index * 137.508) % 360} 58% 55%)`,
+  return totals;
+}
+
+export function modelSeries(points: DailyUsagePoint[]): ShareSegment[] {
+  const totals = modelTotals(points);
+  const total = [...totals.values()].reduce((sum, part) => sum + part.tokens, 0);
+  return [...totals.values()].filter(part => part.tokens > 0)
+    .sort((a, b) => b.tokens - a.tokens || a.id.localeCompare(b.id))
+    .map((part, index) => ({ ...part, share: total > 0 ? part.tokens / total : 0,
+      color: MODEL_COLORS[index] ?? 'hsl(' + Math.round(index * 137.508) % 360 + ' 58% 55%)',
     }));
 }
 
 export function modelShares(point: DailyUsagePoint, series: ShareSegment[]): ShareSegment[] {
-  const totals = new Map<string, number>();
-  for (const model of point.modelBreakdowns) {
-    totals.set(model.modelName, (totals.get(model.modelName) ?? 0) + breakdownTokens(model));
-  }
-  const total = [...totals.values()].reduce((sum, tokens) => sum + tokens, 0);
-  return series.map(model => ({
-    ...model, tokens: totals.get(model.id) ?? 0,
-    share: total > 0 ? (totals.get(model.id) ?? 0) / total : 0,
+  const totals = modelTotals([point]);
+  const total = [...totals.values()].reduce((sum, part) => sum + part.tokens, 0);
+  return series.map(model => ({ ...model,
+    tokens: totals.get(model.id)?.tokens ?? 0, cost: totals.get(model.id)?.cost ?? 0,
+    share: total > 0 ? (totals.get(model.id)?.tokens ?? 0) / total : 0,
   })).filter(model => model.tokens > 0);
 }
 

@@ -1,127 +1,26 @@
+import type { Prisma } from '@incept/db';
 import {
   assertLocalizedText,
   validateEntry,
   ROADMAP_ENTRY_PRIORITIES,
   ROADMAP_ENTRY_TYPES,
-  ROADMAP_STATUSES,
   type Roadmap,
-  type RoadmapColumn,
   type RoadmapEntry,
   type RoadmapEntryImportItem,
   type RoadmapEntryLink,
-  type RoadmapEntryPriority,
-  type RoadmapEntryType,
   type RoadmapStatus,
 } from '../../domain';
 import type { RoadmapEntryPatch, RoadmapWriter } from '../../ports';
 
 import {
-  toColumn,
   toEntry,
   toRoadmap,
-  type RoadmapColumnRow,
   type RoadmapEntryLinkRow,
   type RoadmapEntryRow,
-  type RoadmapRow,
-  type RoadmapProjectRow,
-  type RoadmapWithProject,
 } from './roadmap-repository';
 
-// 写端口的结构化 Prisma 句柄：事务回调只拿事务代理（Prisma TransactionClient 同形）。
-export type RoadmapPrismaTx = {
-  roadmap: {
-    findUnique(query: {
-      where: { key: string };
-      include: { columns: true; project: true; entries: { include: { links: true } } };
-    }): Promise<
-      | (RoadmapRow & {
-          project: RoadmapProjectRow | null;
-          columns: RoadmapColumnRow[];
-          entries: (RoadmapEntryRow & { links: RoadmapEntryLinkRow[] })[];
-        })
-      | null
-    >;
-    findMany(query: {
-      orderBy: { position: 'asc' };
-      include: { columns: true; project: true };
-    }): Promise<(RoadmapWithProject & { columns: RoadmapColumnRow[] })[]>;
-    count(args: { where: { projectId: string } }): Promise<number>;
-    create(args: {
-      data: { key: string; nameEn: string; nameZh: string; position: number; project: { connect: { key: string } } };
-      include: { project: true; columns: true };
-    }): Promise<RoadmapWithProject & { columns: RoadmapColumnRow[] }>;
-    update(args: {
-      where: { key: string };
-      data: { nameEn?: string; nameZh?: string; position?: number; projectId?: string };
-    }): Promise<RoadmapRow>;
-    delete(args: { where: { key: string } }): Promise<RoadmapRow>;
-  };
-  roadmapProject: {
-    findMany(args: { orderBy: { position: 'asc' } }): Promise<RoadmapProjectRow[]>;
-    findUnique(args: { where: { key: string } }): Promise<RoadmapProjectRow | null>;
-    create(args: { data: { key: string; nameEn: string; nameZh: string; position: number; roadmapEnabled: boolean; atlasEnabled: boolean } }): Promise<RoadmapProjectRow>;
-    update(args: { where: { key: string }; data: { nameEn?: string; nameZh?: string; position?: number; roadmapEnabled?: boolean; atlasEnabled?: boolean } }): Promise<RoadmapProjectRow>;
-    delete(args: { where: { key: string } }): Promise<RoadmapProjectRow>;
-  };
-  roadmapColumn: {
-    upsert(args: {
-      where: { roadmapId_status: { roadmapId: string; status: RoadmapStatus } };
-      create: {
-        roadmapId: string;
-        status: RoadmapStatus;
-        labelEn: string;
-        labelZh: string;
-        position: number;
-      };
-      update: { labelEn: string; labelZh: string; position?: number };
-    }): Promise<RoadmapColumnRow>;
-    delete(args: {
-      where: { roadmapId_status: { roadmapId: string; status: RoadmapStatus } };
-    }): Promise<RoadmapColumnRow>;
-  };
-  roadmapEntry: {
-    count(args: { where: { roadmapId: string; status?: RoadmapStatus } }): Promise<number>;
-    findUnique(args: { where: { key: string } }): Promise<RoadmapEntryRow | null>;
-    create(args: {
-      data: {
-        roadmapId: string;
-        key: string;
-        status: RoadmapStatus;
-        type: RoadmapEntryType;
-        priority: RoadmapEntryPriority;
-        titleEn: string;
-        titleZh: string;
-        summaryEn: string;
-        summaryZh: string;
-        detailEn: string | null;
-        detailZh: string | null;
-        position: number;
-      };
-    }): Promise<RoadmapEntryRow>;
-    update(args: {
-      where: { key: string };
-      data: {
-        status?: RoadmapStatus;
-        type?: RoadmapEntryType;
-        priority?: RoadmapEntryPriority;
-        titleEn?: string;
-        titleZh?: string;
-        summaryEn?: string;
-        summaryZh?: string;
-        detailEn?: string | null;
-        detailZh?: string | null;
-        position?: number;
-      };
-    }): Promise<RoadmapEntryRow>;
-    delete(args: { where: { key: string } }): Promise<RoadmapEntryRow>;
-  };
-  roadmapEntryLink: {
-    deleteMany(args: { where: { entryId: string } }): Promise<{ count: number }>;
-    create(args: {
-      data: { entryId: string; labelEn: string; labelZh: string; href: string; position: number };
-    }): Promise<RoadmapEntryLinkRow>;
-  };
-};
+// Use the schema-generated transaction delegates for all write operations.
+export type RoadmapPrismaTx = Prisma.TransactionClient;
 
 export type RoadmapPrismaWriteClient = RoadmapPrismaTx & {
   $transaction<T>(fn: (tx: RoadmapPrismaTx) => Promise<T>): Promise<T>;
@@ -129,12 +28,6 @@ export type RoadmapPrismaWriteClient = RoadmapPrismaTx & {
 
 function fail(reason: string): never {
   throw new Error(`roadmap write rejected: ${reason}`);
-}
-
-function assertStatus(value: string): asserts value is RoadmapStatus {
-  if (!ROADMAP_STATUSES.includes(value as RoadmapStatus)) {
-    fail(`unknown status "${value}"`);
-  }
 }
 
 // 缺省标识生成：提取英文标题小写字母与数字生成 slug，全空退化为 "entry"；碰撞由写端口递增后缀。
@@ -397,104 +290,6 @@ export function createPrismaRoadmapWriter(client: RoadmapPrismaWriteClient): Roa
         await tx.roadmapProject.delete({ where: { key } });
       });
       return { key };
-    },
-
-    async createRoadmap({ key, name, projectKey, position }) {
-      assertLocalizedText(name, 'name');
-
-      return client.$transaction(async (tx) => {
-        const existing = await tx.roadmap.findMany({
-          orderBy: { position: 'asc' },
-          include: { columns: true, project: true },
-        });
-
-        if (existing.some((row) => row.key === key)) {
-          fail(`the roadmap "${key}" already exists`);
-        }
-
-        const resolved =
-          position ?? (existing.length === 0 ? 10 : Math.max(...existing.map((row) => row.position)) + 10);
-        const row = await tx.roadmap.create({
-          data: { key, nameEn: name.en, nameZh: name.zh, position: resolved, project: { connect: { key: projectKey } } },
-          include: { project: true, columns: true },
-        });
-
-        if (!row.project) fail(`the roadmap "${key}" was created without a project`);
-
-        return toRoadmap(row, row.columns);
-      });
-    },
-
-    async updateRoadmap({ key, patch }) {
-      if (patch.name) {
-        assertLocalizedText(patch.name, 'patch.name');
-      }
-
-      return client.$transaction(async (tx) => {
-        const project = patch.projectKey === undefined ? undefined : await tx.roadmapProject.findUnique({ where: { key: patch.projectKey } });
-        if (patch.projectKey !== undefined && !project) fail(`the project "${patch.projectKey}" does not exist`);
-        const row = await tx.roadmap.update({
-          where: { key },
-          data: {
-            ...(patch.name ? { nameEn: patch.name.en, nameZh: patch.name.zh } : {}),
-            ...(patch.position !== undefined ? { position: patch.position } : {}),
-            ...(project ? { projectId: project.id } : {}),
-          },
-        });
-        const { roadmap } = await readRoadmapShape(tx, key);
-
-        return roadmap;
-      });
-    },
-
-    async deleteRoadmap({ key }) {
-      await client.roadmap.delete({ where: { key } });
-
-      return { key };
-    },
-
-    async upsertColumn({ roadmapKey, status, label, position }) {
-      assertStatus(status);
-      assertLocalizedText(label, 'label');
-
-      return client.$transaction(async (tx) => {
-        const { roadmapId } = await readRoadmapShape(tx, roadmapKey);
-        const row = await tx.roadmapColumn.upsert({
-          where: { roadmapId_status: { roadmapId, status } },
-          create: {
-            roadmapId,
-            status,
-            labelEn: label.en,
-            labelZh: label.zh,
-            position: position ?? 10,
-          },
-          update: {
-            labelEn: label.en,
-            labelZh: label.zh,
-            ...(position !== undefined ? { position } : {}),
-          },
-        });
-
-        return toColumn(row);
-      });
-    },
-
-    // 列删除约束：仍有条目引用该状态列时拒绝删除，防止数据孤立。
-    async deleteColumn({ roadmapKey, status }) {
-      assertStatus(status);
-
-      await client.$transaction(async (tx) => {
-        const { roadmapId } = await readRoadmapShape(tx, roadmapKey);
-        const referenced = await tx.roadmapEntry.count({ where: { roadmapId, status } });
-
-        if (referenced > 0) {
-          fail(`column "${status}" still holds ${referenced} entries; move or delete them first`);
-        }
-
-        await tx.roadmapColumn.delete({ where: { roadmapId_status: { roadmapId, status } } });
-      });
-
-      return { roadmapKey, status };
     },
 
     async createEntry(input) {

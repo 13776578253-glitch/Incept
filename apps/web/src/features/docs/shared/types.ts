@@ -83,7 +83,7 @@ export type DocsArticlePageModel = {
   layoutMode: DocsLayoutMode;
   locale: 'en' | 'zh';
   eyebrow?: string;
-  // TODO: Tags are an unused contract placeholder until the tag data model exists; the article header still renders the eyebrow only.
+  // Tags placeholder: reserved field for interface compatibility.
   tags?: string[];
   title: string;
   description?: string;
@@ -107,10 +107,17 @@ export type DocsHomeArticleItemModel = {
   publishedAt: string;
   requiredRole: DocsAccessRole;
   eyebrow?: string;
-  // TODO: Tags are an unused contract placeholder until the tag data model exists; the expandable row still falls back to the eyebrow tag.
+  // Tags placeholder: reserved field for interface compatibility.
   tags?: string[];
   isAccessible: boolean;
   href?: string;
+};
+
+export type DocsHomeStatsModel = {
+  totalArticles: number;
+  standalone: number;
+  collections: number;
+  recentlyUpdated: number;
 };
 
 export type DocsHomeGroupModel = {
@@ -122,5 +129,6 @@ export type DocsHomeGroupModel = {
 
 export type DocsHomePageModel = {
   intro: DocsHomeIntroModel;
+  stats?: DocsHomeStatsModel;
   groups: DocsHomeGroupModel[];
 };

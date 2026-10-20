@@ -9,6 +9,8 @@ import { createPrismaMusicRepository } from '@incept/music/adapters';
 import type { AuthorizeOwner } from '@incept/music/ports';
 
 import { getCurrentViewer, hasSameOrigin } from '@/server/auth';
+import { withSensitiveOwnerAction } from '@/server/auth/sensitive-action';
+import { withUploadSlot } from '@/server/media/upload-slot';
 import { findRepoRoot } from '@/features/docs/importer/paths';
 import { musicMirrorDirectory as musicMirrorDirectoryOf } from '../../../../../scripts/music-paths.mjs';
 
@@ -34,9 +36,12 @@ const musicLibrariesRoute = createMusicLibrariesRoute(musicRouteDeps);
 const musicLibraryItemRoute = createMusicLibraryItemRoute(musicRouteDeps);
 
 export const musicCatalogGet = musicCatalogRoute.GET;
-export const musicTracksUpload = musicTracksRoute.POST;
+export const musicTracksUpload = async (request: Request): Promise<Response> => {
+  if (!(await authorizeOwner(request))) return musicTracksRoute.POST(request);
+  return withUploadSlot(() => musicTracksRoute.POST(request));
+};
 export const musicTrackUpdate = musicTrackItemRoute.PATCH;
-export const musicTrackDelete = musicTrackItemRoute.DELETE;
+export const musicTrackDelete = withSensitiveOwnerAction('music.track.delete', musicTrackItemRoute.DELETE);
 export const musicLibraryCreate = musicLibrariesRoute.POST;
 export const musicLibraryUpdate = musicLibraryItemRoute.PATCH;
-export const musicLibraryDelete = musicLibraryItemRoute.DELETE;
+export const musicLibraryDelete = withSensitiveOwnerAction('music.library.delete', musicLibraryItemRoute.DELETE);

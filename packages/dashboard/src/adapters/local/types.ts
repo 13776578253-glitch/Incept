@@ -9,6 +9,9 @@ export type UnitPricing = {
 };
 
 export type RawUsageEvent = {
+  nominalCost?: number;
+  isPeak?: boolean;
+  peakMultiplier?: number;
   eventId?: string;
   costSource?: 'recorded' | 'calculated';
   deviceId?: string;
@@ -20,6 +23,8 @@ export type RawUsageEvent = {
   sessionId: string;
   sessionTitle?: string;
   sourceFile?: string;
+  sourceFiles?: string[];
+  historyIncomplete?: boolean;
   projectKey: string;
   projectName: string;
   workspacePath?: string;

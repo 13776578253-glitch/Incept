@@ -14,6 +14,9 @@ type PlayerExpandedProps = {
   title: string;
   clock: string;
   totalClock: string;
+  currentTime: number;
+  duration: number;
+  onSeek: (seconds: number) => void;
   rateLabel: string;
   rateCycleLabel: string;
   isPlaying: boolean;
@@ -29,6 +32,67 @@ type PlayerExpandedProps = {
   onCycleRate: () => void;
 };
 
+function PlayerSeekBar({
+  currentTime,
+  duration,
+  clock,
+  totalClock,
+  copy,
+  onSeek,
+}: {
+  currentTime: number;
+  duration: number;
+  clock: string;
+  totalClock: string;
+  copy: PlayerCopy;
+  onSeek: (seconds: number) => void;
+}) {
+  const isReady = Number.isFinite(duration) && duration > 0;
+  const clampedTime = isReady ? Math.max(0, Math.min(currentTime, duration)) : 0;
+  const percent = isReady ? (clampedTime / duration) * 100 : 0;
+
+  return (
+    <div
+      data-player-interactive
+      className="group relative flex h-3 w-full cursor-pointer items-center select-none"
+    >
+      {/* 极简克制细线轨道：常规 1.5px，悬停平滑微增至 2.5px */}
+      <div className="relative h-[1.5px] w-full rounded-full bg-[var(--color-border)]/80 transition-all duration-150 group-hover:h-[2.5px]">
+        {/* 已播放进度条 */}
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-[var(--badge-sky-icon)] transition-[width] duration-75"
+          style={{ width: `${percent}%` }}
+        />
+        {/* 悬停微现的小巧精致小圆点指示器（更小更克制） */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 scale-75 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:scale-100"
+          style={{ left: `${percent}%` }}
+        >
+          <span className="block size-2 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] ring-1 ring-black/10 dark:ring-white/20" />
+        </div>
+      </div>
+
+      {/* 透明原生 range 覆盖层：提供完整的可访问性、键盘导航与拖拽计算 */}
+      <input
+        type="range"
+        data-player-interactive
+        aria-label={copy.seek}
+        aria-valuetext={`${clock} / ${totalClock}`}
+        min={0}
+        step={0.1}
+        max={isReady ? duration : 1}
+        value={clampedTime}
+        disabled={!isReady}
+        onChange={(event) => onSeek(Number(event.currentTarget.value))}
+        onInput={(event) => onSeek(Number(event.currentTarget.value))}
+        style={{ outline: 'none' }}
+        className="absolute inset-0 m-0 h-full w-full cursor-pointer opacity-0 p-0 disabled:cursor-default outline-none focus:outline-none focus-visible:outline-none"
+      />
+    </div>
+  );
+}
+
 export function PlayerExpanded({
   copy,
   heading,
@@ -36,6 +100,9 @@ export function PlayerExpanded({
   title,
   clock,
   totalClock,
+  currentTime,
+  duration,
+  onSeek,
   rateLabel,
   rateCycleLabel,
   isPlaying,
@@ -72,7 +139,8 @@ export function PlayerExpanded({
           data-player-interactive
           onClick={onCollapseList}
           aria-label={copy.closePlaylist}
-          className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)]"
+          style={{ outline: 'none' }}
+          className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)] outline-none focus:outline-none focus-visible:outline-none"
         >
           <PlayerCloseIcon className="h-3.5 w-3.5" />
         </button>
@@ -90,7 +158,18 @@ export function PlayerExpanded({
 
       <PlayerPlaylist items={items} emptyLabel={copy.emptyQueue} playLabel={copy.play} onSelect={onSelect} />
 
-      <div className="mt-1 border-t border-[var(--color-border)]">
+      <div className="border-t border-[var(--color-border)]">
+        <div className="px-9 pt-2 pb-0.5">
+          <PlayerSeekBar
+            currentTime={currentTime}
+            duration={duration}
+            clock={clock}
+            totalClock={totalClock}
+            copy={copy}
+            onSeek={onSeek}
+          />
+        </div>
+
         <PlayerCompact
           title={title}
           clock={clock}

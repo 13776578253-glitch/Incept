@@ -11,6 +11,12 @@
     "models": "Model and price matching", "priced": "Known cost or rates", "unpriced": "Unknown price", "revalidate": "Validate again",
     "confirm": "Confirm import", "imported": "Imported", "success": "Import complete; dashboard refresh requested", "history": "Import history",
     "emptyHistory": "No imports yet", "active": "Active", "rolledBack": "Rolled back",
+    "historyLimit": "Latest 10 imports",
+    "authTitle": "Verify your identity", "authHint": "Enter your current password and authenticator code to continue this import.",
+    "currentPassword": "Current password", "currentTotp": "Current TOTP", "showPassword": "Show password", "hidePassword": "Hide password",
+    "authCancel": "Cancel verification", "authContinue": "Verify and import", "authWorking": "Verifying and importing…",
+    "authInvalid": "Incorrect password or authenticator code. Please try again.", "passwordRequired": "Enter your current password", "totpFormat": "Enter the six-digit authenticator code",
+    "authSessionExpired": "Your session expired. Sign in again before importing.", "authRateLimited": "Too many attempts. Try again later.", "authUnavailable": "Verification is unavailable. Please try again.",
     "batchSummary": "{records} new records · {tokens} tokens · {duplicates} duplicates", "device": "Imported device: {name}", "batch": "Import batch:"
   },
   "page": {
@@ -54,7 +60,7 @@
     "projects": "04 Projects"
   },
   "overview": {
-    "eyebrow": "01 / OVERVIEW",
+    "eyebrow": "OVERVIEW",
     "title": "Usage overview",
     "description": "Usage trends and model distribution",
     "kpi": {
@@ -87,6 +93,8 @@
       "metricTokens": "Token Usage",
       "metricStacked": "Token Shares",
       "metricModels": "Model Shares",
+      "peak": "Peak 2×",
+      "offPeak": "Off-peak 1×",
       "metricCost": "Equiv. Cost",
       "legend": "Usage share legend",
       "parts": {
@@ -119,7 +127,7 @@
     }
   },
   "models": {
-    "eyebrow": "02 / MODELS & SOURCES",
+    "eyebrow": "MODELS & SOURCES",
     "title": "Breakdown by Model, Client Source & Token Type",
     "description": "Breaks down actual session model identifiers; unused configured models appear only as slots.",
     "tokenTypes": {
@@ -178,7 +186,7 @@
     }
   },
   "costs": {
-    "eyebrow": "03 / COSTS & COVERAGE",
+    "eyebrow": "COSTS & COVERAGE",
     "title": "API Equivalent Costs & Price Coverage",
     "description": "Recorded known costs and costs estimated using local rates, with explicit unpriced-request coverage gaps.",
     "cards": {
@@ -204,6 +212,7 @@
       "allCovered": "All active models have pricing rules configured"
     },
     "pricingTable": {
+      "peakRates": "Peak: {rates}",
       "greyModelNote": "Grey model identifiers are preserved; costs use Gemini 3.8 Flash rates",
       "title": "Unit Rates & Cost Attribution Table",
       "subtitle": "Reference rates (USD / 1M tokens, input / output / cache read / write) and relative costs",
@@ -217,7 +226,8 @@
     }
   },
   "projects": {
-    "eyebrow": "04 / PROJECTS & SESSIONS",
+    "noAccess": "You do not have permission to view this data",
+    "eyebrow": "PROJECTS & SESSIONS",
     "title": "Project Attribution Ranking & Session Explorer",
     "description": "Project usage and sessions in the selected window; select a project to filter sessions.",
     "attribution": {
@@ -268,6 +278,7 @@
         "coverageStatus": "Pricing Coverage",
         "coverageFull": "Fully Priced (Measured & Priced)",
         "coveragePartial": "Contains Unpriced Model Subset",
+        "incompleteHistory": "History is incomplete; dates for earlier usage are uncertain.",
         "tokenBreakdown": "Session Token Split",
         "modelBreakdown": "Per-Model Breakdown in Session",
         "close": "Close Inspector"

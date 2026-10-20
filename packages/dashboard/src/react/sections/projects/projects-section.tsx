@@ -10,10 +10,21 @@ import { SessionInspector } from './session-inspector';
 
 type ProjectsSectionProps = {
   data: TokenDashboardData;
+  canViewDetails?: boolean;
 };
+
+function RestrictedPanel({ title, message }: { title: string; message: string }) {
+  return <div className="rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-card)]">
+    <div className="border-b border-[var(--color-border)] px-5 py-3.5">
+      <h3 className="text-[0.95rem] font-semibold text-[var(--color-text)]">{title}</h3>
+    </div>
+    <p className="flex min-h-40 items-center justify-center px-5 py-8 text-sm text-[var(--color-nav-muted)]">{message}</p>
+  </div>;
+}
 
 export function ProjectsSection({
   data,
+  canViewDetails = true,
 }: ProjectsSectionProps) {
   const t = useTranslations('dashboard');
   const {
@@ -48,17 +59,17 @@ export function ProjectsSection({
       />
 
       {/* Flat Project Attribution Ranking Table */}
-      <ProjectAttributionTable
+      {canViewDetails ? <ProjectAttributionTable
         selectedProjectKey={selectedProjectKey}
         setSelectedProjectKey={setSelectedProjectKey}
         maxProjectTokens={maxProjectTokens}
         data={data}
-      />
+      /> : <RestrictedPanel title={t('projects.attribution.title')} message={t('projects.noAccess')} />}
 
       {/* Sessions Master-Detail Explorer */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
         {/* Left: Sessions Table */}
-        <SessionsTable
+        {canViewDetails ? <SessionsTable
           sessionSearch={sessionSearch}
           setSessionSearch={setSessionSearch}
           sessionSort={sessionSort}
@@ -70,10 +81,11 @@ export function ProjectsSection({
           visibleSessions={visibleSessions}
           maxSessionTokens={maxSessionTokens}
           inspectedSession={inspectedSession}
-        />
+        /> : <RestrictedPanel title={t('projects.sessions.title')} message={t('projects.noAccess')} />}
 
         {/* Right: Session Detail Inspector */}
-        <SessionInspector inspectedSession={inspectedSession} />
+        {canViewDetails ? <SessionInspector inspectedSession={inspectedSession} />
+          : <RestrictedPanel title={t('projects.sessions.inspector.title')} message={t('projects.noAccess')} />}
       </div>
     </section>
   );

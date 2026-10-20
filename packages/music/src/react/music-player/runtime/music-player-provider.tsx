@@ -56,6 +56,7 @@ export type MusicPlayerContextValue = {
 export const MusicPlayerContext = createContext<MusicPlayerContextValue | null>(null);
 
 type MusicPlayerProviderProps = {
+  enabled?: boolean;
   catalog: MusicTrackCatalogEntry[];
   libraries: MusicLibraryCatalogEntry[];
   catalogStatus: TrackCatalogStatus;
@@ -67,6 +68,7 @@ type MusicPlayerProviderProps = {
 type SourceApplyResult = 'applied' | 'unchanged' | 'replaced' | 'unavailable';
 
 export function MusicPlayerProvider({
+  enabled = true,
   catalog,
   libraries,
   catalogStatus,
@@ -210,13 +212,21 @@ export function MusicPlayerProvider({
 
   // 唯一 audio owner 的事件绑定：挂载时绑定一次，卸载时清理
   useEffect(() => {
+    if (!enabled) return;
     const audio = audioRef.current;
     if (!audio) return;
 
     const driver = attachAudioDriver(audio, handleRuntimeEvent);
 
-    return () => driver.dispose();
-  }, [handleRuntimeEvent]);
+    return () => {
+      driver.dispose();
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      appliedTrackIdRef.current = null;
+      appliedAudioUrlRef.current = null;
+    };
+  }, [handleRuntimeEvent, enabled]);
 
   // 音源写入：目录换引用会重新进入，未变化的音源由 applySource 空操作处理
   useEffect(() => {
@@ -309,7 +319,7 @@ export function MusicPlayerProvider({
 
   return (
     <MusicPlayerContext.Provider value={value}>
-      <audio ref={audioRef} preload="metadata" hidden />
+      {enabled ? <audio ref={audioRef} preload="metadata" hidden /> : null}
       {children}
     </MusicPlayerContext.Provider>
   );

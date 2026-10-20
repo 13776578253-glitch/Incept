@@ -8,6 +8,8 @@ import { modelSeries, modelShares, tokenShares } from '../react/sections/overvie
 import { useOverviewState } from '../react/sections/overview/use-overview-state';
 import { TrendChart } from '../react/sections/overview/trend-chart';
 import type { TokenDashboardData } from '../domain';
+import { emptyDashboard } from '../domain';
+import { ModelPricingTable } from '../react/sections/costs/model-pricing-table';
 
 afterEach(cleanup);
 const emptyTokens = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0, reasoningTokens: 0, cost: 0, totalTokens: 0 };
@@ -22,6 +24,33 @@ const point: DailyUsagePoint = {
 const wrap = (children: React.ReactNode) => <NextIntlClientProvider locale="zh" timeZone="Asia/Singapore" messages={{ dashboard: zh }}>{children}</NextIntlClientProvider>;
 
 describe('daily consumption and model shares', () => {
+  it('labels peak and off-peak only in Model Shares and retains one pricing row', () => {
+    const modelName = 'deepseek/deepseek-v4.1-flash';
+    const billing = {
+      peak: { totalTokens: 300, cost: 1.18, nominalCost: .59, requests: 101 },
+      offPeak: { totalTokens: 200, cost: .23, nominalCost: .23, requests: 75 },
+    };
+    const day = { ...point, cost: 1.41, modelBreakdowns: [
+      { ...point.modelBreakdowns[0], modelName, inputTokens: 500, cost: 1.41, billing },
+    ] };
+    const props = { trendItems: [{ ...day, label: '10-14', fullLabel: '2026-10-14' }], activeTrendIndex: 0,
+      maxTrendValue: 500, setSelectedTrendIndex: () => {} };
+    const { rerender, container } = render(wrap(<TrendChart {...props} trendMetric="models" />));
+    expect(screen.getByRole('img', { name: modelName + ' · 高峰 2×: 60.0%' })).toBeDefined();
+    expect(screen.getByRole('img', { name: modelName + ' · 平峰 1×: 40.0%' })).toBeDefined();
+    expect(container.querySelector('.dashboard-trend-legend')?.textContent).toContain('$1.18');
+    const data = emptyDashboard();
+    data.models = [{ ...point, modelName, displayName: modelName, provider: 'deepseek', source: 'CommandCode / OpenCode',
+      billing, cost: 1.41, missingPricing: false, shareOfTokens: 1, shareOfCost: 1, cacheHitRate: 0,
+      sessionCount: 1, activeDays: 1, unitPricing: { inputPerMillion: .15, outputPerMillion: .6 } }];
+    rerender(wrap(<ModelPricingTable data={data} maxModelCost={1.41} />));
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+    expect(screen.getByText(modelName)).toBeDefined();
+    expect(screen.getByText('$1.41')).toBeDefined();
+    expect(screen.getByText('高峰：$0.3 / $1.2 / — / —')).toBeDefined();
+    expect(screen.queryByText(/高峰溢价|此处展示基础价/)).toBeNull();
+  });
+
   it('uses the same daily denominator for Input, Output, Cache Read, Cache Write and Reasoning', () => {
     const parts = tokenShares(point);
     expect(Object.fromEntries(parts.map(part => [part.id, part.share]))).toEqual({

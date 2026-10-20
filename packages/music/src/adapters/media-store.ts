@@ -31,6 +31,14 @@ async function readMusicMediaHash(targetPath: string): Promise<string | null> {
 
 const musicPublishAttempts = 3;
 
+async function writeMusicMediaAtomically(targetPath: string, bytes: Buffer) {
+  const temporary = `${targetPath}.${crypto.randomUUID()}.tmp`;
+  try {
+    await fs.writeFile(temporary, bytes, { flag: 'wx' });
+    await fs.rename(temporary, targetPath);
+  } finally { await fs.rm(temporary, { force: true }); }
+}
+
 // 发布临时文件：改名冲突就重新哈希目标，已是同一份就按复用收场
 async function publishMusicTempFile(input: {
   tempPath: string;
@@ -39,7 +47,6 @@ async function publishMusicTempFile(input: {
 }): Promise<MusicMediaStatus> {
   for (let attempt = 0; ; attempt += 1) {
     try {
-      await fs.rm(input.targetPath, { force: true });
       await fs.rename(input.tempPath, input.targetPath);
 
       return 'publish';
@@ -151,7 +158,7 @@ export async function publishMusicMedia({
     }
 
     if (mode === 'publish') {
-      await fs.writeFile(targetPath, bytes);
+      await writeMusicMediaAtomically(targetPath, bytes);
     }
 
     return { ...operation, repaired: true };
@@ -159,7 +166,7 @@ export async function publishMusicMedia({
 
   if (mode === 'publish') {
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await fs.writeFile(targetPath, bytes, { flag: 'wx' }).catch(async (error: unknown) => {
+    await writeMusicMediaAtomically(targetPath, bytes).catch(async (error: unknown) => {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
         throw error;
       }
@@ -173,7 +180,7 @@ export async function publishMusicMedia({
         : crypto.createHash('sha256').update(racedBytes).digest('hex');
 
       if (racedHash !== hash || racedBytes?.byteLength !== bytes.byteLength) {
-        await fs.writeFile(targetPath, bytes);
+        await writeMusicMediaAtomically(targetPath, bytes);
       }
     });
 

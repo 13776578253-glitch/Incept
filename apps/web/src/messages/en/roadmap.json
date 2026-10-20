@@ -50,46 +50,5 @@
       "low": "Low Priority",
       "none": "No Priority"
     }
-  },
-  "admin": {
-    "heading": "Roadmap admin",
-    "boardsLabel": "Roadmaps",
-    "projectsLabel": "Projects",
-    "columnsLabel": "Columns",
-    "entriesLabel": "Entries",
-    "emptySelection": "Select a roadmap on the left to edit its columns and entries.",
-    "emptyProjectSelection": "Select a project to manage it.",
-    "projectKey": "Project key",
-    "projectNameEn": "Project name (English)",
-    "projectNameZh": "Project name (Chinese)",
-    "projectDeleteBlocked": "A project with roadmaps cannot be deleted.",
-    "fieldKey": "Key",
-    "nameEn": "Name (English)",
-    "nameZh": "Name (Chinese)",
-    "titleEn": "Title (English)",
-    "titleZh": "Title (Chinese)",
-    "summaryEn": "Summary (English)",
-    "summaryZh": "Summary (Chinese)",
-    "labelEn": "Label (English)",
-    "labelZh": "Label (Chinese)",
-    "fieldStatus": "Status",
-    "fieldType": "Type",
-    "fieldPriority": "Priority",
-    "fieldOrder": "Order",
-    "fieldHref": "Link URL",
-    "addLink": "Add link",
-    "removeLink": "Remove link",
-    "create": "Create",
-    "update": "Save",
-    "deleteLabel": "Delete",
-    "confirmDelete": "Confirm delete",
-    "failed": "The request failed.",
-    "status": {
-      "reviewing": "Reviewing",
-      "unstarted": "Unstarted",
-      "active": "Active",
-      "completed": "Completed",
-      "canceled": "Canceled"
-    }
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useMounted } from './use-mounted';
 
 import {
   DOCS_CODE_PALETTE_COOKIE,
@@ -18,17 +19,14 @@ function applyDocsCodePalette(palette: DocsCodePalette) {
 }
 
 export function useDocsCodePalette() {
-  const [codePalette, setCodePaletteState] = useState<DocsCodePalette>(DEFAULT_PALETTE);
-  const [isCodePaletteReady, setIsCodePaletteReady] = useState(false);
+  const isCodePaletteReady = useMounted();
+  const [selection, setCodePaletteState] = useState<DocsCodePalette | null>(null);
+  const storedValue = isCodePaletteReady ? window.localStorage.getItem(DOCS_CODE_PALETTE_STORAGE_KEY) : null;
+  const codePalette = selection ?? (isDocsCodePalette(storedValue) ? storedValue : DEFAULT_PALETTE);
 
   useEffect(() => {
-    const storedValue = window.localStorage.getItem(DOCS_CODE_PALETTE_STORAGE_KEY);
-    const nextPalette = isDocsCodePalette(storedValue) ? storedValue : DEFAULT_PALETTE;
-
-    setCodePaletteState(nextPalette);
-    applyDocsCodePalette(nextPalette);
-    setIsCodePaletteReady(true);
-  }, []);
+    if (isCodePaletteReady) applyDocsCodePalette(codePalette);
+  }, [codePalette, isCodePaletteReady]);
 
   const setCodePalette = (nextPalette: DocsCodePalette) => {
     setCodePaletteState(nextPalette);

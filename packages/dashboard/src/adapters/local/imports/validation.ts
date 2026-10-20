@@ -1,9 +1,11 @@
 import type { TransferBundle, TransferEvent, TransferPrice } from '../../../domain';
+import { TRANSFER_SOURCES } from '../../../domain';
 import { hash } from './identity';
 
 export const MAX_TRANSFER_BYTES = 64 * 1024 * 1024;
 const digest = /^[a-f0-9]{64}$/;
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+const allowedSources = new Set<string>(TRANSFER_SOURCES);
 export class ImportError extends Error {
   constructor(public readonly code: string, message: string, public readonly status = 400) { super(message); }
 }
@@ -34,8 +36,8 @@ function validateEvent(value: unknown, exportedAt: number): TransferEvent {
   const row = object(value);
   keys(row, ['eventId', 'source', 'sessionId', 'timestampMs', 'modelName', 'projectKey', 'projectName', 'workspacePath', 'sessionTitle',
     'inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheCreationTokens', 'reasoningTokens', 'recordedCost']);
-  const source = row.source;
-  if (source !== 'codex' && source !== 'commandcode') fail('Only Codex and CommandCode transfer records are supported');
+  const source = row.source as TransferEvent['source'];
+  if (!allowedSources.has(source)) fail('Unsupported transfer source: ' + source);
   const eventId = text(row.eventId, 'eventId', 64); if (!digest.test(eventId)) fail('Invalid event identifier');
   const timestampMs = row.timestampMs;
   if (typeof timestampMs !== 'number' || !Number.isSafeInteger(timestampMs)) fail('Invalid timestampMs');
@@ -48,7 +50,7 @@ function validateEvent(value: unknown, exportedAt: number): TransferEvent {
     cacheReadTokens: count(row.cacheReadTokens, 'cacheReadTokens'), cacheCreationTokens: count(row.cacheCreationTokens, 'cacheCreationTokens'),
     reasoningTokens: count(row.reasoningTokens, 'reasoningTokens') };
   if (row.recordedCost !== undefined) {
-    if (source !== 'commandcode') fail('Codex exports have no recorded fee field');
+    if (source === 'codex') fail('Codex exports have no recorded fee field');
     event.recordedCost = rate(row.recordedCost);
   }
   if (event.inputTokens + event.outputTokens + event.cacheReadTokens + event.cacheCreationTokens + event.reasoningTokens <= 0) fail('Empty usage event');

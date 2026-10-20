@@ -1,4 +1,5 @@
 import { dashboardImportCommitPost } from '@incept/dashboard/next';
-import { requireOwner } from '@/server/auth/guards';
+import { withSensitiveOwnerAction } from '@/server/auth/sensitive-action';
+import { getRequestOrigin } from '@/server/auth/request-origin';
 export const runtime = 'nodejs';
-export async function POST(request: Request) { await requireOwner(); return dashboardImportCommitPost(request); }
+export const POST = withSensitiveOwnerAction('dashboard.import.commit', async (request: Request) => dashboardImportCommitPost(request, getRequestOrigin(request)));

@@ -2,8 +2,13 @@
 export const validMarkdownLikeFixtures = [
   {
     fileName: 'full-single.docs.md',
+    expectedNestedHeading: 'Fine detail',
     expectedSectionIds: ['想法产生', '第二部分'],
     expectedBlockTypes: [
+      'paragraph',
+      'heading',
+      'paragraph',
+      'heading',
       'paragraph',
       'heading',
       'paragraph',
@@ -30,6 +35,7 @@ export const validMarkdownLikeFixtures = [
   },
   {
     fileName: 'collection-article.docs.md',
+    expectedNestedHeading: undefined,
     expectedSectionIds: ['collection-opening'],
     expectedBlockTypes: ['paragraph', 'heading', 'callout', 'image'],
     expectedSource: {

@@ -8,9 +8,13 @@ import { toLocalDateAndMonth, resolveProjectFromPath } from '../normalization';
 import { openSqliteReadOnly } from '../sqlite';
 import { loadAntigravityWorkspaces } from './antigravity';
 import { loadOpenCodeSessions } from './opencode';
+import { hash } from '../imports/identity';
+import { normalizeFile } from './common';
 
 export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, UnitPricing>) {
   const events: RawUsageEvent[] = [];
+  const seen = new Map<string, RawUsageEvent>();
+  let unpricedCodex = 0;
 
   let latestMtimeMs = 0;
 
@@ -41,6 +45,10 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
         )
         .all();
 
+      // Select duplicate metadata deterministically; file/cost changes do not
+      // change a session event's identity or accumulate between full snapshots.
+      rows.sort((a, b) => String(a.source_file ?? '').localeCompare(String(b.source_file ?? ''), 'en')
+        || Number(a.cost ?? 0) - Number(b.cost ?? 0));
       for(const row of rows) {
         const rawTool = String(row.tool ?? '').trim().toLowerCase();
         const modelName = String(row.model ?? '').trim();
@@ -109,12 +117,33 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
 
         const pricing = lookupPricing(pricingMap, modelName);
         const recordedCost = Number(row.cost ?? 0);
-        const cost = recordedCost > 0 ? recordedCost : computeCostFromPricing(pricing, {
+        const tokens = {
           inputTokens: uncachedInput, outputTokens, cacheReadTokens, cacheCreationTokens, reasoningTokens,
-        });
+        };
+        const priced = canPriceUsage(pricing, tokens);
+        // Codex indexed cost charges cached input twice. Recalculate when rates
+        // are complete; otherwise exclude its cost while retaining unpriced tokens.
+        const useRecorded = recordedCost > 0 && sourceId !== 'codex';
+        const cost = useRecorded ? recordedCost : computeCostFromPricing(pricing, tokens);
+        const eventKey = hash([timestampMs, sourceId, modelName, rawInput, cacheReadTokens,
+          cacheCreationTokens, rawOutput, reasoningTokens, sessionId,
+          sessionId === 'default' ? normalizeFile(sourceFile).replace(/\.zst$/, '') : undefined]);
+        const duplicate = seen.get(eventKey);
+        if (duplicate) {
+          if (sourceFile && !duplicate.sourceFiles!.includes(sourceFile)) duplicate.sourceFiles!.push(sourceFile);
+          if (useRecorded && duplicate.costSource !== 'recorded') {
+            duplicate.cost = recordedCost;
+            duplicate.costSource = 'recorded';
+            duplicate.missingPricing = false;
+          }
+          continue;
+        }
+        if (sourceId === 'codex' && !priced) unpricedCodex++;
 
         events.push({
+          eventId: eventKey,
           sourceFile,
+          sourceFiles: sourceFile ? [sourceFile] : [],
           sourceId,
           sourceLabel,
           sessionId,
@@ -132,8 +161,10 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
           cacheReadTokens,
           reasoningTokens,
           cost,
-          missingPricing: !(recordedCost > 0) && !canPriceUsage(pricing, { inputTokens: uncachedInput, outputTokens, cacheReadTokens, cacheCreationTokens: cacheCreationTokens, reasoningTokens: reasoningTokens }),
+          costSource: useRecorded ? 'recorded' : 'calculated',
+          missingPricing: (sourceId === 'codex' || !useRecorded) && !priced,
         });
+        seen.set(eventKey, events.at(-1)!);
       }
     } catch {
       // ignore sqlite errors
@@ -142,5 +173,6 @@ export function collectIndexedAgentEvents(home: string, pricingMap: Map<string, 
     }
   }
 
-  return { events, latestMtimeMs, ingestedFiles };
+  return { events, latestMtimeMs, ingestedFiles, errors: unpricedCodex
+    ? [`Codex index: ${unpricedCodex} records lack complete pricing; their tokens remain unpriced and recorded costs were excluded.`] : [] };
 }

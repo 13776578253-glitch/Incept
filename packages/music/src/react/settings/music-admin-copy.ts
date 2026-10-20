@@ -1,6 +1,5 @@
 export type MusicAdminCopy = {
   heading: string;
-  description: string;
   unavailablePrefix: string;
   uploadHeading: string;
   uploadHint: string;
@@ -61,16 +60,14 @@ export type MusicAdminCopy = {
 
 const zhCopy: MusicAdminCopy = {
   heading: '曲库与曲目管理',
-  description:
-    '在这里上传音频、编辑曲目与曲库。改动直接写数据库，播放器下一次拉取就能看到；不再需要内容根或命令行。',
   unavailablePrefix: '数据库不可用：',
   uploadHeading: '上传',
   uploadHint:
-    '把音频拖到这里，或选择文件 / 文件夹（mp3、wav、flac、ncm，单个最大 128 MB）。ncm 会在服务端自动解密成原始音频，并用它内嵌的歌名与歌手；选文件夹时，第一层目录名作为曲库名，缺的曲库会自动创建。',
+    '把音频拖到这里，或选择文件 / 文件夹（mp3、wav、flac、ncm，单个最大 128 MB）；ncm 会在服务端自动解密成原始音频，并用它内嵌的歌名与歌手；选文件夹时，第一层目录名作为曲库名，缺的曲库会自动创建',
   chooseFiles: '选择文件',
   chooseFolder: '选择文件夹',
   uploadLibraryLabel: '归属曲库',
-  uploadNeedsLibrary: '先创建一个曲库，再上传。',
+  uploadNeedsLibrary: '先创建一个曲库，再上传',
   uploadQueued: '等待',
   uploadDone: '完成',
   uploadFailed: '失败',
@@ -85,8 +82,8 @@ const zhCopy: MusicAdminCopy = {
   tracksHeading: '曲目',
   searchPlaceholder: '搜索标题、作者或 key',
   filterAllLibraries: '全部曲库',
-  tableEmpty: '还没有曲目，先在上面上传。',
-  tableNoMatch: '没有符合条件的曲目。',
+  tableEmpty: '还没有曲目，先在上面上传',
+  tableNoMatch: '没有符合条件的曲目',
   columnTrack: '曲目',
   columnArtist: '作者',
   columnDuration: '时长',
@@ -103,7 +100,7 @@ const zhCopy: MusicAdminCopy = {
   actionMoveUp: '上移',
   actionMoveDown: '下移',
   librariesHeading: '曲库',
-  libraryEmpty: '还没有曲库。',
+  libraryEmpty: '还没有曲库',
   newLibraryPlaceholder: '新曲库名字',
   newLibraryAction: '新建',
   libraryActive: '启用',
@@ -111,22 +108,20 @@ const zhCopy: MusicAdminCopy = {
   libraryDeactivate: '停用',
   libraryReactivate: '恢复',
   libraryMoveMembersLabel: '成员移到',
-  libraryRemoveHint: '停用后曲目会移到你选择的曲库；最后一个启用的曲库不能停用。',
+  libraryRemoveHint: '停用后曲目会移到你选择的曲库；最后一个启用的曲库不能停用',
   unknownValue: '-',
-  membershipLastHint: '每首曲目至少属于一个曲库，最后一个归属不能取消。',
+  membershipLastHint: '每首曲目至少属于一个曲库，最后一个归属不能取消',
   failedPrefix: '操作失败：',
-  confirmDeactivateTrack: '停用后可以恢复，媒体文件不会被删除。',
-  confirmDeactivateLibrary: '停用曲库前，必须为它的曲目指定去处。',
+  confirmDeactivateTrack: '停用后可以恢复，媒体文件不会被删除',
+  confirmDeactivateLibrary: '停用曲库前，必须为它的曲目指定去处',
   deleteAction: '永久删除',
-  deleteTrackConfirm: '删除后无法恢复：曲目与其归属关系会被移除；镜像文件保留，由清理流程在安全时机回收。',
-  deleteLibraryConfirm: '只能删除没有成员的曲库；删除后无法恢复。',
+  deleteTrackConfirm: '删除后无法恢复：曲目与其归属关系会被移除；镜像文件保留，由清理流程在安全时机回收',
+  deleteLibraryConfirm: '只能删除没有成员的曲库；删除后无法恢复',
   actionDeleteConfirm: '确认删除',
 };
 
 const enCopy: MusicAdminCopy = {
   heading: 'Tracks and libraries',
-  description:
-    'Upload audio and edit tracks and libraries here. Changes are written straight to the database, so the player picks them up on its next fetch; no content root or command line involved.',
   unavailablePrefix: 'The database is unavailable: ',
   uploadHeading: 'Upload',
   uploadHint:

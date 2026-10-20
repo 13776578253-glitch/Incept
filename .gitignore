@@ -61,3 +61,18 @@ packages/dashboard/dashboard.local.json
 token-export-*.json
 dashboard-imports.db*
 dashboard-snapshots.json*
+
+# Local generated outputs and audit artifacts
+/output/
+
+# Non-public document media
+/.docs-media/
+
+# Temporary browser acceptance evidence
+/.playwright-cli/
+
+# Temporary scratch space for local development and testing. This is a private
+/.scratch/
+
+# Temporary files created by the build process, which are not needed in source control
+/.tmp/

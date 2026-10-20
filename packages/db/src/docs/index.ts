@@ -40,6 +40,7 @@ export {
 
 export { calculateDocsReadingStats } from './reading-stats';
 export { listDocsWritingActivityEntries } from './activity';
+export { confirmDocsImportDraft, findDocsImportConfirmation } from './confirm';
 
 export type {
   DocsArchiveArticleLocaleResult,

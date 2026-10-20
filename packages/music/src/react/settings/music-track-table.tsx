@@ -61,27 +61,27 @@ function MusicTrackRow({
 
   return (
     <tr
-      className="border-t border-[var(--color-nav-dropdown-border)] align-top"
+      className="transition-colors hover:bg-[color:var(--color-row-hover-bg)]/40"
       onContextMenu={(event) => {
         event.preventDefault();
         onOpenDeleteMenu(event, track);
       }}
     >
-      <td className="py-2 pr-3">
-        <span className="flex min-h-7 items-center text-[0.8125rem] leading-5 text-[var(--color-text)]">
+      <td className="py-3 pl-3 pr-2">
+        <span className="block truncate font-medium text-[0.8125rem] leading-5 text-[var(--color-text)]">
           {track.title}
         </span>
-        <span className="mt-1 block text-[0.7rem] text-[var(--color-nav-muted)]">{track.trackKey}</span>
-      </td>
-      <td className="py-2 pr-3 text-[0.8125rem] text-[var(--color-nav-dropdown-description)]">
-        <span className="flex h-7 items-center leading-none">{artist}</span>
-      </td>
-      <td className="py-2 pr-3 text-[0.8125rem] text-[var(--color-nav-dropdown-description)]">
-        <span className="flex h-7 items-center leading-none">
-          {formatTrackDuration(track.durationSeconds, copy)}
+        <span className="mt-0.5 block truncate font-mono text-[0.68rem] text-[var(--color-nav-muted)]">
+          {track.trackKey}
         </span>
       </td>
-      <td className="py-2 pr-3">
+      <td className="py-3 px-2 text-xs text-[var(--color-nav-dropdown-description)]">
+        <span className="block truncate">{artist}</span>
+      </td>
+      <td className="py-3 px-2 text-xs text-[var(--color-nav-dropdown-description)]">
+        <span className="block tabular-nums">{formatTrackDuration(track.durationSeconds, copy)}</span>
+      </td>
+      <td className="py-3 px-2">
         <MusicMultiSelect
           values={track.libraries}
           ariaLabel={`${copy.columnLibraries} ${track.trackKey}`}
@@ -98,38 +98,41 @@ function MusicTrackRow({
               title: isLast ? copy.membershipLastHint : library.title,
             };
           })}
-          buttonClassName="h-7 text-[0.78rem]"
+          buttonClassName="h-7 text-[0.75rem]"
         />
       </td>
-      <td className="px-1 py-2">
-        <div className="flex h-7 items-center justify-center gap-1">
+      <td className="py-3 px-1">
+        <div className="flex h-7 items-center justify-center gap-0.5">
           <button
             type="button"
             aria-label={`${copy.actionMoveUp} ${track.trackKey}`}
             disabled={isBusy || isFirst}
             onClick={() => onMove(track.trackKey, -1)}
-            className="inline-flex h-7 items-center justify-center rounded-full px-2 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
+            className="inline-flex size-6.5 items-center justify-center rounded-full text-[var(--color-nav-dropdown-description)] transition-all hover:bg-[var(--color-bg)] hover:text-[var(--color-text)] disabled:cursor-default disabled:opacity-25"
           >
-            ↑
+            <svg viewBox="0 0 16 16" className="size-3" fill="none" stroke="currentColor" strokeWidth="1.75">
+              <path d="m4 10 4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
           <button
             type="button"
             aria-label={`${copy.actionMoveDown} ${track.trackKey}`}
             disabled={isBusy || isLast}
             onClick={() => onMove(track.trackKey, 1)}
-            className="inline-flex h-7 items-center justify-center rounded-full px-2 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:cursor-default disabled:opacity-40"
+            className="inline-flex size-6.5 items-center justify-center rounded-full text-[var(--color-nav-dropdown-description)] transition-all hover:bg-[var(--color-bg)] hover:text-[var(--color-text)] disabled:cursor-default disabled:opacity-25"
           >
-            ↓
+            <svg viewBox="0 0 16 16" className="size-3" fill="none" stroke="currentColor" strokeWidth="1.75">
+              <path d="m4 6 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
         </div>
       </td>
-      <td className="px-1 py-2 text-center text-[0.75rem]">
+      <td className="py-3 px-1 text-center text-[0.75rem]">
         <span
-          className="inline-flex h-6 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-[0.7rem] font-medium leading-none"
+          className="inline-flex h-6 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[0.7rem] font-medium leading-none"
           style={{
             color: track.isActive ? 'var(--badge-emerald-fg)' : 'var(--badge-amber-fg)',
             backgroundColor: track.isActive ? 'var(--badge-emerald-bg)' : 'var(--badge-amber-bg)',
-            borderColor: track.isActive ? 'var(--badge-emerald-border)' : 'var(--badge-amber-border)',
           }}
         >
           <span
@@ -142,15 +145,15 @@ function MusicTrackRow({
           <span>{track.isActive ? copy.statusActive : copy.statusInactive}</span>
         </span>
       </td>
-      <td className="px-1 py-2">
-        <div className="flex min-h-7 flex-wrap items-center justify-center gap-2">
+      <td className="py-3 pl-1 pr-3.5">
+        <div className="flex min-h-7 items-center justify-center gap-2 whitespace-nowrap">
           {track.isActive ? (
             <button
               type="button"
               disabled={isBusy}
               title={copy.confirmDeactivateTrack}
               onClick={() => onPatch(track.trackKey, { isActive: false })}
-              className="inline-flex h-7 items-center justify-center rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 text-[0.75rem] leading-none text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
+              className="inline-flex h-7 items-center justify-center rounded-full bg-[var(--color-bg)] px-3 text-[0.72rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:opacity-50"
             >
               {copy.actionDeactivate}
             </button>
@@ -159,7 +162,7 @@ function MusicTrackRow({
               type="button"
               disabled={isBusy || track.libraries.length === 0}
               onClick={() => onPatch(track.trackKey, { isActive: true, libraries: track.libraries })}
-              className="inline-flex h-7 items-center justify-center rounded-[9px] border border-[var(--color-nav-dropdown-border)] px-2.5 text-[0.75rem] leading-none text-[var(--color-text)] transition-colors hover:bg-[var(--color-nav-item-hover)] disabled:opacity-50"
+              className="inline-flex h-7 items-center justify-center rounded-full bg-[var(--color-bg)] px-3 text-[0.72rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:opacity-50"
             >
               {copy.actionReactivate}
             </button>
@@ -205,18 +208,38 @@ export function MusicTrackTable({
   });
 
   return (
-    <section className="ml-4 max-w-[744px] space-y-3">
-      <h4 className="text-[0.8125rem] font-medium text-[var(--color-text)]">{copy.tracksHeading}</h4>
+    <section className="space-y-4 rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5">
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-emerald-icon)] shadow-[var(--shadow-card-sm)]">
+          <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <path d="M6 13V4.5l7-2V11M6 13a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm7-2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <h4 className="text-[0.9375rem] font-medium text-[var(--color-text)]">{copy.tracksHeading}</h4>
+      </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="search"
-          value={search}
-          aria-label={copy.searchPlaceholder}
-          placeholder={copy.searchPlaceholder}
-          onChange={(event) => setSearch(event.target.value)}
-          className="min-h-9 min-w-[12rem] flex-1 rounded-[9px] border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3 text-[0.8125rem] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-nav-muted)] focus:border-[var(--color-nav-search-hover-border)]"
-        />
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="relative min-w-[12rem] flex-1">
+          <input
+            type="search"
+            value={search}
+            aria-label={copy.searchPlaceholder}
+            placeholder={copy.searchPlaceholder}
+            onChange={(event) => setSearch(event.target.value)}
+            className="min-h-9.5 w-full rounded-[12px] bg-[var(--color-bg)] pl-9 pr-3.5 text-[0.8125rem] text-[var(--color-text)] outline-none shadow-[var(--shadow-card-sm)] transition-all placeholder:text-[var(--color-nav-muted)] focus:outline-none"
+          />
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 16 16"
+            className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[var(--color-nav-muted)]"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          >
+            <circle cx="7" cy="7" r="4.5" />
+            <path d="m10.5 10.5 3 3" strokeLinecap="round" />
+          </svg>
+        </div>
         <MusicSelect
           value={libraryFilter}
           ariaLabel={copy.filterAllLibraries}
@@ -225,37 +248,37 @@ export function MusicTrackTable({
             { value: '', label: copy.filterAllLibraries },
             ...libraries.map((library) => ({ value: library.key, label: library.title })),
           ]}
-          className="min-w-[8.25rem]"
-          buttonClassName="h-9 text-[0.8125rem]"
+          className="min-w-[8.5rem]"
+          buttonClassName="min-h-9.5 text-[0.8125rem] bg-[var(--color-bg)] shadow-[var(--shadow-card-sm)] border-0"
         />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed border-separate border-spacing-0 text-left">
+      <div className="overflow-x-auto pt-1 [scrollbar-width:thin] [scrollbar-color:var(--color-border)_transparent] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--color-border)] [&::-webkit-scrollbar-button]:hidden">
+        <table className="w-full min-w-[900px] table-fixed border-collapse text-left">
           <colgroup>
-            <col className="w-[28%]" />
-            <col className="w-[15%]" />
-            <col className="w-[13%]" />
-            <col className="w-[14%]" />
-            <col className="w-[8%]" />
-            <col className="w-[12%]" />
-            <col className="w-[10%]" />
+            <col />
+            <col className="w-28" />
+            <col className="w-20" />
+            <col className="w-32" />
+            <col className="w-16" />
+            <col className="w-32" />
+            <col className="w-28" />
           </colgroup>
           <thead>
-            <tr className="text-[0.7rem] uppercase tracking-[0.12em] text-[var(--color-nav-muted)]">
-              <th className="pb-2 pr-3 font-medium">{copy.columnTrack}</th>
-              <th className="pb-2 pr-3 font-medium">{copy.columnArtist}</th>
-              <th className="pb-2 pr-3 font-medium">{copy.columnDuration}</th>
-              <th className="pb-2 pr-3 font-medium">{copy.columnLibraries}</th>
-              <th className="px-1 pb-2 text-center font-medium">{copy.columnOrder}</th>
-              <th className="px-1 pb-2 text-center font-medium">{copy.columnStatus}</th>
-              <th className="px-1 pb-2 text-center font-medium">{copy.columnActions}</th>
+            <tr className="border-b border-[var(--color-nav-dropdown-border)] text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-nav-muted)]">
+              <th className="py-2.5 pl-3 pr-2 font-medium">{copy.columnTrack}</th>
+              <th className="py-2.5 px-2 font-medium">{copy.columnArtist}</th>
+              <th className="py-2.5 px-2 font-medium">{copy.columnDuration}</th>
+              <th className="py-2.5 px-2 font-medium">{copy.columnLibraries}</th>
+              <th className="py-2.5 px-1 text-center font-medium">{copy.columnOrder}</th>
+              <th className="py-2.5 px-1 text-center font-medium">{copy.columnStatus}</th>
+              <th className="py-2.5 pl-1 pr-3.5 text-center font-medium">{copy.columnActions}</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[var(--color-nav-dropdown-border)]">
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-4 text-[0.8125rem] text-[var(--color-nav-dropdown-description)]">
+                <td colSpan={7} className="py-8 text-center text-xs text-[var(--color-nav-dropdown-description)]">
                   {tracks.length === 0 ? copy.tableEmpty : copy.tableNoMatch}
                 </td>
               </tr>

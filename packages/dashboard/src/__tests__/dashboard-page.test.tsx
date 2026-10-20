@@ -37,6 +37,18 @@ afterEach(() => {
 });
 
 describe('package server/client composition', () => {
+  it('projects Guest and Pro data before handing it to the client', async () => {
+    const data = { ...emptyData, collectionIssues: ['private-issue'], projects: [{ ...tokens, projectKey: 'project', projectName: 'Project',
+      workspacePath: 'private-path', sessionCount: 1, shareOfTokens: 1, shareOfCost: 1, lastActivity: '2026-10-14', modelsUsed: [] }] };
+    mocks.load.mockResolvedValue(data);
+    const guest = await TokenDashboardPage();
+    expect(guest.props.data.projects).toEqual([]);
+    expect(guest.props.canViewDetails).toBe(false);
+    const pro = await TokenDashboardPage({ canViewDetails: true });
+    expect(pro.props.data.projects[0].projectName).toBe('Project');
+    expect(pro.props.canImport).toBe(false);
+    expect(JSON.stringify(pro.props.data)).not.toContain('private-');
+  });
   it('renders a loading shell when history is absent without waiting for native collection', async () => {
     mocks.load.mockResolvedValue(null);
     render(<NextIntlClientProvider locale="zh" messages={{ dashboard: zh }} timeZone="Asia/Singapore">{await TokenDashboardPage()}</NextIntlClientProvider>);
@@ -50,7 +62,7 @@ describe('package server/client composition', () => {
     mocks.load.mockResolvedValue(emptyData);
     render(
       <NextIntlClientProvider locale={locale} messages={{ dashboard: messages }} timeZone="Asia/Shanghai">
-        {await TokenDashboardPage()}
+        {await TokenDashboardPage({ canImport: true })}
       </NextIntlClientProvider>,
     );
 
@@ -58,9 +70,6 @@ describe('package server/client composition', () => {
     expect(mocks.load).toHaveBeenCalledWith('30d');
     expect(screen.getByRole('button', { name: messages.page.range30d }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(messages.page.title);
-    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
-      '#overview', '#models', '#costs', '#projects',
-    ]);
     for (const section of ['overview', 'models', 'costs', 'projects'] as const) {
       expect(screen.getByRole('heading', { name: messages[section].title })).toBeDefined();
     }

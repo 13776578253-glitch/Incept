@@ -3,5 +3,7 @@
 import path from 'node:path';
 
 export function musicMirrorDirectory(projectRoot) {
-  return path.join(projectRoot, 'apps', 'web', 'public', '_music-media');
+  return process.env.INCEPT_MUSIC_MEDIA_DIR
+    ? path.resolve(process.env.INCEPT_MUSIC_MEDIA_DIR)
+    : path.join(projectRoot, 'apps', 'web', 'public', '_music-media');
 }

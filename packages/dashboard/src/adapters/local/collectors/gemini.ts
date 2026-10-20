@@ -5,9 +5,11 @@ import { type UnitPricing, type RawUsageEvent } from '../types';
 import { lookupPricing, computeCostFromPricing, canPriceUsage } from '../pricing';
 import { toLocalDateAndMonth, resolveProjectFromPath } from '../normalization';
 import { walkFiles } from '../files';
+import { hash } from '../imports/identity';
 
 export function collectGeminiEvents(home: string, pricingMap: Map<string, UnitPricing>) {
   const events: RawUsageEvent[] = [];
+  const errors: string[] = [];
   const parsedFiles = new Set<string>();
   let latestMtimeMs = 0;
 
@@ -26,6 +28,7 @@ export function collectGeminiEvents(home: string, pricingMap: Map<string, UnitPr
         sessionId?: string;
         startTime?: string;
         messages?: Array<{
+          id?: string;
           timestamp?: string;
           type?: string;
           model?: string;
@@ -67,6 +70,7 @@ export function collectGeminiEvents(home: string, pricingMap: Map<string, UnitPr
 
         parsedFiles.add(chatFile.toLowerCase().replace(/\//g, '\\'));
         events.push({
+          eventId: msg.id ? hash(['geminiCli', sessionId, msg.id]) : undefined,
           sourceFile: chatFile,
           sourceId: 'geminiCli',
           sourceLabel: 'Gemini CLI',
@@ -87,10 +91,10 @@ export function collectGeminiEvents(home: string, pricingMap: Map<string, UnitPr
           missingPricing: !canPriceUsage(pricing, { inputTokens: uncachedInput, outputTokens, cacheReadTokens, cacheCreationTokens: 0, reasoningTokens: reasoningTokens }),
         });
       }
-    } catch {
-      // ignore
+    } catch (error) {
+      errors.push(`Failed to parse Gemini session at ${chatFile}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  return { events, latestMtimeMs, parsedFiles };
+  return { events, errors, latestMtimeMs, parsedFiles };
 }

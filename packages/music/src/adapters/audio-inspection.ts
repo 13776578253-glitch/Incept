@@ -1,5 +1,6 @@
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
+import { finished } from 'node:stream/promises';
 
 import { parseFile, parseStream } from 'music-metadata';
 
@@ -83,9 +84,10 @@ export async function inspectUploadedAudio(storedPath: string): Promise<Uploaded
     return { ok: false, error: 'The file is not MP3, WAV or FLAC audio.' };
   }
 
+  const stream = createReadStream(storedPath);
   try {
     // 显式给定 MIME：parseStream 不按扩展名猜解析器
-    const metadata = await parseStream(createReadStream(storedPath), formatMimeTypes[format]);
+    const metadata = await parseStream(stream, formatMimeTypes[format]);
     const sampleRate = metadata.format.sampleRate;
 
     // 解析出采样率才算真的有音频流
@@ -109,6 +111,11 @@ export async function inspectUploadedAudio(storedPath: string): Promise<Uploaded
     };
   } catch {
     return { ok: false, error: 'The audio file could not be parsed; it may be corrupt.' };
+  } finally {
+    // Metadata parsing may stop before EOF; release the handle before atomic publication.
+    const closed = finished(stream, { cleanup: true }).catch(() => undefined);
+    stream.destroy();
+    await closed;
   }
 }
 

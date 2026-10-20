@@ -1,3 +1,10 @@
+export type BillingBreakdown = Partial<Record<'peak' | 'offPeak' | 'standard', {
+  totalTokens: number;
+  cost: number;
+  nominalCost: number;
+  requests: number;
+}>>;
+
 export type TokenBreakdown = {
   missingPricing?: boolean;
   inputTokens: number;
@@ -10,6 +17,7 @@ export type TokenBreakdown = {
 };
 
 export type CcusageModelBreakdown = {
+  billing?: BillingBreakdown;
   modelName: string;
   inputTokens: number;
   outputTokens: number;
@@ -44,6 +52,7 @@ export type ModelProviderFamily =
   | 'other';
 
 export type ModelUsageSummary = TokenBreakdown & {
+  billing?: BillingBreakdown;
   modelName: string;
   displayName: string;
   provider: ModelProviderFamily;
@@ -129,6 +138,7 @@ export type SessionUsageItem = TokenBreakdown & {
   deviceLabel?: string;
   importBatchId?: string;
   timestampPrecision?: 'event' | 'day';
+  historyIncomplete?: boolean;
   sessionKey?: string;
   sessionId: string;
   projectKey: string;

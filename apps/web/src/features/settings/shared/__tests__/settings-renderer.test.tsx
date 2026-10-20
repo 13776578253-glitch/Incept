@@ -4,8 +4,17 @@ import { expect, it, vi } from 'vitest';
 
 import { SettingsSectionPanel } from '../settings-renderer';
 import type { SettingsSection } from '../settings-types';
+import { getAppearanceSettingsSection } from '../../appearance/appearance-schema';
+import { getSettingsPageData } from '../settings-schema';
 
 type Interactions = Omit<Parameters<typeof SettingsSectionPanel>[0], 'section'>;
+
+it('places Owner Docs between Account and Projects without exposing it to other viewers', () => {
+  expect(getSettingsPageData('en', true).sections.map(section => section.id)).toEqual([
+    'appearance', 'language', 'account', 'docs', 'projects', 'music',
+  ]);
+  expect(getSettingsPageData('en').sections.some(section => section.id === 'docs')).toBe(false);
+});
 
 function makeInteractions(overrides: Partial<Interactions> = {}): Interactions {
   return {
@@ -51,6 +60,30 @@ it('renders ungrouped rows without a group heading', () => {
   expect(screen.getByRole('button', { name: '跟随系统' })).toBeInTheDocument();
 });
 
+it('renders grouped rows with a group sub-header inside the card', () => {
+  const section: SettingsSection = {
+    id: 'appearance',
+    label: '主题',
+    visibility: 'public',
+    rows: [
+      {
+        id: 'theme',
+        label: '主题模式',
+        description: '选择站点主题',
+        group: '外观偏好',
+        controlType: 'theme-segmented',
+        state: 'interactive',
+        visibility: 'public',
+      },
+    ],
+  };
+
+  render(<SettingsSectionPanel section={section} {...makeInteractions()} />);
+
+  expect(screen.getByRole('heading', { name: '外观偏好' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '主题模式' })).toBeInTheDocument();
+});
+
 it('renders status, button and input rows as static controls', () => {
   const section: SettingsSection = {
     id: 'ai',
@@ -93,4 +126,20 @@ it('renders status, button and input rows as static controls', () => {
   expect(screen.getByText('已连接')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '立即同步' })).toBeDisabled();
   expect(screen.getByPlaceholderText('粘贴密钥')).toBeDisabled();
+});
+
+it('renders appearance settings section with the sub-header card', () => {
+  const zhSection = getAppearanceSettingsSection('zh');
+  const { rerender } = render(<SettingsSectionPanel section={zhSection} {...makeInteractions()} />);
+
+  expect(screen.getByRole('heading', { name: '外观偏好' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '主题模式' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '护眼模式' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '代码块配色' })).toBeInTheDocument();
+
+  const enSection = getAppearanceSettingsSection('en');
+  rerender(<SettingsSectionPanel section={enSection} {...makeInteractions({ language: 'en' })} />);
+
+  expect(screen.getByRole('heading', { name: 'Appearance preferences' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Theme mode' })).toBeInTheDocument();
 });
