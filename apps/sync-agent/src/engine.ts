@@ -4,7 +4,7 @@ import {rmSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {hash} from '../../../packages/dashboard/src/adapters/local/imports/identity';
-import {buildCandidate,type Capture,type ParentCapture,type CaptureResult,type CaptureOptions,type SessionIsolation} from '../../../packages/dashboard/src/agent/capture';
+import {buildCandidate,selectCaptureMode,type Capture,type ParentCapture,type CaptureResult,type CaptureOptions,type SessionIsolation} from '../../../packages/dashboard/src/agent/capture';
 import type {TransferSource} from '../../../packages/dashboard/src/domain';
 import {AgentState,scopeKey} from './state';
 import {AgentHttp,RemoteError} from './transport';
@@ -18,7 +18,7 @@ export {resumeHeld} from './resume';
 export {classifyIssues} from './issues';
 export {verifyLineage,V4_BASELINE} from './verify-lineage';
 export {verifyR5ImageIdentity,classifyR5Digest,R5_IMAGE} from './image-identity';
-export {captureHome,buildCandidate} from '../../../packages/dashboard/src/agent/capture';
+export {captureHome,buildCandidate,selectCaptureMode} from '../../../packages/dashboard/src/agent/capture';
 export type Config={version:1;endpoint:string;deviceId:string;home:string;allowedSources:TransferSource[];allowLoopbackHttp?:boolean;remote?:boolean;allowIncomplete?:boolean;autoReviewSessions?:string[]};
 export type Collector=(home:string,allowed:TransferSource[],parents:ParentCapture[],signal?:AbortSignal,options?:CaptureOptions)=>Promise<CaptureResult>;
 export function workerCollector(stateDirectory:string):Collector{return async(home,allowed,parents,signal,options)=>{
@@ -59,8 +59,7 @@ export class SyncEngine {
     }
     this.state.set('lastCollectedAt',new Date().toISOString());this.state.set('issues',[...new Set(captured.issues)]);
     const reviewBefore=new Set(this.state.reviewBatches());
-    const seen=new Set<string>(),allSeen=new Set(captured.captures.map(c=>scopeKey(c.source,c.sessionId))),oldParents=this.state.parents();
-    const activeIsolated=this.state.sessionIsolations().filter(item=>item.active&&this.config.allowedSources.includes(item.source));
+    const seen=new Set<string>(),oldParents=this.state.parents();
     for(const capture of captured.captures){const key=scopeKey(capture.source,capture.sessionId);seen.add(key);const previous=this.state.tail(key);
       // An unavailable/empty source is not a zero baseline and must not create a scope.
       if(!capture.records.length)continue;
@@ -80,13 +79,11 @@ export class SyncEngine {
         &&capture.proofs.every(proof=>proof.range.sessionAnchorHash===hash(capture.sessionId)
           &&!oldParents.some(parent=>parent.header.manifest.scope.source==='codex'&&parent.header.manifest.scope.sessionId!==capture.sessionId
             &&parent.proofs.some(old=>old.range.locatorHash===proof.range.locatorHash||old.range.identityHash===proof.range.identityHash||old.range.root===proof.range.root)));
-      if(!previous&&capture.source!=='codex'&&oldParents.some(p=>p.header.manifest.scope.source===capture.source&&!allSeen.has(scopeKey(capture.source,p.header.manifest.scope.sessionId))
-        &&!this.state.isHistoricalPolicyCurrent(p,this.config.deviceId)
-        &&!activeIsolated.some(item=>item.source===capture.source&&item.sessionId===p.header.manifest.scope.sessionId))){this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),capture.source+':ROTATION_UNVERIFIED']);continue;}
       try{
         if(!previous&&capture.source==='codex'&&!independentCodex)throw Error('ROTATION_UNVERIFIED');
         const scope=previous?.parent.header.manifest.scope??{deviceId:this.config.deviceId,source:capture.source,sessionId:capture.sessionId,originId:hash(['incept-origin/1',capture.source,capture.sessionId])};
-        this.state.enqueue(buildCandidate(capture,scope,previous?.parent,randomUUID()),signature);
+        const mode=selectCaptureMode(capture,previous?.parent);
+        this.state.enqueue(buildCandidate(capture,scope,previous?.parent,randomUUID(),undefined,mode),signature);
         if(sourceReports[capture.source])sourceReports[capture.source].changedSessions=(sourceReports[capture.source].changedSessions??0)+1;
       }catch(error){
         if(error instanceof Error&&error.message==='OUTBOX_CAPACITY')throw error;

@@ -25,6 +25,7 @@ export type SessionIsolation={source:TransferSource;sessionId:string;reason:stri
 export type RecoveryRange={source:TransferSource;sessionId:string;afterTimestampMs:number};
 export type CaptureOptions={tolerantIncomplete?:boolean;recoveryRanges?:RecoveryRange[];autoReviewSessions?:string[]};
 export type CaptureResult={captures:Capture[];issues:string[];isolations?:SessionIsolation[]};
+export type CaptureMode='initial'|'incremental'|'rebase';
 const roots:Record<string,string[]>={codex:['.codex/sessions','.codex/archived_sessions'],commandcode:['.commandcode/projects'],claudeCode:['.claude/projects'],geminiCli:['.gemini/tmp'],
   antigravity:['antigravity','antigravity-cli','antigravity-ide'].map(x=>'.gemini/'+x+'/conversations'),opencode:['.local/share/opencode'],zcode:['.zcode/cli/db'],deepseekHarness:['.dsh/sessions'],aiusage:['.aiusage']};
 const binary=(value:unknown):unknown=>value instanceof Uint8Array?{blobHash:hash(Buffer.from(value).toString('base64'))}:value;
@@ -179,17 +180,32 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
   }
   return {captures,issues:[...new Set(issues)],isolations};
 }
-export function buildCandidate(capture:Capture,scope:SyncScope,parent:ParentCapture|undefined,batchId:string,readCurrentPrefix?:(locatorHash:string,length:number)=>string|undefined){
+export function selectCaptureMode(capture:Capture,parent?:ParentCapture):CaptureMode{
+  if(!parent)return 'initial';
+  const probe=buildCandidate(capture,parent.header.manifest.scope,parent,'mode-probe');
+  try{qualifyRanges(parent.header.manifest,probe.header.manifest);return 'incremental';}
+  catch(error){
+    const code=error instanceof Error?error.message:'';
+    if(!['ROTATION_UNVERIFIED','PREFIX_LOST','DB_REPLACED_UNVERIFIED','SOURCE_REVISION_UNVERIFIED'].includes(code))throw error;
+    const anchored=['codex','claudeCode','geminiCli','deepseekHarness'].includes(capture.source)
+      &&capture.records.length>0&&capture.records.every(row=>!!row.event.eventId)
+      &&capture.proofs.length>0&&capture.proofs.every(proof=>proof.range.sessionAnchorHash===hash(capture.sessionId));
+    if(!anchored)throw error;
+    return 'rebase';
+  }
+}
+export function buildCandidate(capture:Capture,scope:SyncScope,parent:ParentCapture|undefined,batchId:string,readCurrentPrefix?:(locatorHash:string,length:number)=>string|undefined,mode:CaptureMode=parent?'incremental':'initial'){
+  if(mode==='initial'&&parent||mode!=='initial'&&!parent)throw Error('CAPTURE_MODE_PARENT_MISMATCH');
   const proofs=capture.proofs.map(p=>structuredClone(p));
-  for(const proof of proofs){const next=proof.range,old=parent?.proofs.find(p=>p.range.locatorHash===next.locatorHash);
+  for(const proof of proofs){const next=proof.range,old=mode==='rebase'?undefined:parent?.proofs.find(p=>p.range.locatorHash===next.locatorHash);
     if(old&&old.range.root!==next.root){let retained=false;
       if(proof.parts&&old.parts)retained=old.parts.every((part,i)=>part.schema===proof.parts![i]?.schema&&part.rows.every((h,n)=>h===proof.parts![i].rows[n]));
       else retained=(readCurrentPrefix?.(next.locatorHash,old.range.byteLength)??capture.prefixes[next.locatorHash+':'+old.range.byteLength])===old.range.root;
       next.previous={locatorHash:old.range.locatorHash,root:old.range.root,retainedRoot:retained?old.range.root:hash('PREFIX_NOT_RETAINED'),retainedBytes:old.range.byteLength,change:retained?'append':next.envelopeRoot===old.range.envelopeRoot&&capture.reader!=='aiusage'&&scope.source!=='antigravity'?'usage-revision':'append'};
     }}
   const ranges=proofs.map(p=>p.range),root=hash(ranges.map(r=>[r.locatorHash,r.root])),basis=parent?.header.basis??{rates:capture.rates,aliases:{},schedule:'commandcode-peak-v1' as const},mappings=parent?.header.mappings??{};
-  const header:SyncHeader={batchId,basis,mappings,manifest:makeManifest({version:2,scope,reader:capture.reader,collectorVersion:'incept-collector/1',epoch:parent?.header.manifest.epoch??0,parent:parent?{generationId:parent.header.manifest.generationId,manifestHash:parent.header.manifest.manifestHash}:null,
-    read:{status:'complete',inventoryHash:hash(ranges.map(r=>r.locatorHash).sort()),beforeRoot:root,afterRoot:root,snapshotRoot:root},ranges,recordCount:capture.records.length,sequenceHash:sequenceHash(capture.records),basisHash:hash(basis),mappingsHash:hash(mappings),intent:'observe'})};
+  const header:SyncHeader={batchId,basis,mappings,manifest:makeManifest({version:2,scope,reader:capture.reader,collectorVersion:'incept-collector/1',epoch:(parent?.header.manifest.epoch??0)+(mode==='rebase'?1:0),parent:parent?{generationId:parent.header.manifest.generationId,manifestHash:parent.header.manifest.manifestHash}:null,
+    read:{status:'complete',inventoryHash:hash(ranges.map(r=>r.locatorHash).sort()),beforeRoot:root,afterRoot:root,snapshotRoot:root},ranges,recordCount:capture.records.length,sequenceHash:sequenceHash(capture.records),basisHash:hash(basis),mappingsHash:hash(mappings),intent:mode==='rebase'?'rebase':'observe'})};
   validateHeader(header);for(let i=0;i<capture.records.length;i+=500)validateRecords(capture.records.slice(i,i+500),header);
   return {header,records:capture.records,proofs};
 }

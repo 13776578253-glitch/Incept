@@ -56,9 +56,11 @@ test('missing sealed history permits an independent healthy scope and preserves 
   const repeat=await ctx.engine().run();assert.equal(repeat.sent,0);assert.equal(repeat.newTokens,0);assert.equal(repeat.outcome,'partial_success');
 }));
 
-test('an unsealed missing head continues to block unverified rotation',()=>setup(async ctx=>{
+test('an unsealed missing head is isolated while an independent initial scope proceeds',()=>setup(async ctx=>{
   rmSync(historicalFile(ctx.home));f.writePhase0Source(ctx.home,source,{session:'unverified-new'});
-  const result=await ctx.engine().run();assert.equal(result.sent,0);assert(result.issues.includes(source+':ROTATION_UNVERIFIED'));assert.equal(result.receiptCount,1);
+  const result=await ctx.engine().run();assert.equal(result.sent,1);assert.equal(result.newTokens,130);assert.equal(result.receiptCount,2);
+  assert(!result.issues.includes(source+':ROTATION_UNVERIFIED'));assert(result.issues.includes(source+':MISSING_ORIGIN_RETAINED'));
+  assert.deepEqual(ctx.state.parents().map(parent=>parent.header.manifest.scope.sessionId).sort(),['historical','unverified-new']);
 }));
 
 test('returning sealed history is isolated before signature comparison and does not re-alert after restart',()=>setup(async ctx=>{
@@ -89,11 +91,12 @@ test('sealing rejects pending, review, held, and unconfirmed local heads',()=>se
   assert.throws(()=>ctx.state.sealHistorical(key,input),/HISTORICAL_SCOPE_HAS_UNRESOLVED_WORK/);assert.equal(ctx.state.historicalSeals().length,0);
 }));
 
-test('proof tampering invalidates a seal exemption instead of trusting its existence',()=>setup(async ctx=>{
+test('proof tampering invalidates the old scope but does not block an independently anchored new scope',()=>setup(async ctx=>{
   ctx.state.sealHistorical(key,decision(ctx.state));const parent=structuredClone(ctx.state.parents()[0]);parent.proofs[0].range.root='f'.repeat(64);
   ctx.state.db.prepare('UPDATE lineage SET parent_json=? WHERE scope=?').run(JSON.stringify(parent),key);
   assert.equal(ctx.state.isHistoricalSealCurrent(parent,deviceId),false);rmSync(historicalFile(ctx.home));f.writePhase0Source(ctx.home,source,{session:'new-unverified'});
-  const result=await ctx.engine().run();assert.equal(result.sent,0);assert(result.issues.includes(source+':ROTATION_UNVERIFIED'));
+  const result=await ctx.engine().run();assert.equal(result.sent,1);assert.equal(result.newTokens,130);assert(result.issues.includes(source+':MISSING_ORIGIN_RETAINED'));
+  assert.equal(result.sourceReports[source].outcome,'partial_success');assert.equal(ctx.state.status().receiptCount,2);
 }));
 
 test('sealing rejects a receipt ledger mismatch and leaves the scope unsealed',()=>setup(async ctx=>{
