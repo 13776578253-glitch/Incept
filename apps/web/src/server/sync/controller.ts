@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {AgentAuthError,authenticateAgent,manageAgentDevices,type AgentIdentity} from '@incept/db/agent';
 import {OwnerAuthError} from '@incept/db/owner';
-import {SyncTransportError,type SyncActor,type SyncScope,type SyncHeader,type SyncRecord,type SyncWork} from '@incept/dashboard/sync';
+import {SyncTransportError,isSyncTransportError,type SyncActor,type SyncScope,type SyncHeader,type SyncRecord,type SyncWork} from '@incept/dashboard/sync';
 import type {SyncExecutor} from '@incept/dashboard/sync';
 import {boundedJson,exactFields,safeId,response,HTTP_LIMITS,DeviceRequestLimiter} from './http';
 
@@ -90,9 +90,9 @@ export function createSyncHandler(deps:Dependencies) {
       const receipt=(result as {receipt?:{status:string}})?.receipt;
       return response(result,receipt?.status==='review-required'?409:200,requestId);
     }catch(error) {
-      if(error instanceof SyncTransportError||error instanceof AgentAuthError||error instanceof OwnerAuthError) {
+      if(isSyncTransportError(error)||error instanceof AgentAuthError||error instanceof OwnerAuthError) {
         const code=error.code,status=error.status;
-        return response({error:status===403?'FORBIDDEN':code},status,requestId,error instanceof SyncTransportError?error.retryAfter:undefined);
+        return response({error:status===403?'FORBIDDEN':code},status,requestId,isSyncTransportError(error)?error.retryAfter:undefined);
       }
       // Deliberately discard third-party SQL/stack/path/token-bearing errors.
       return response({error:'BACKEND_UNAVAILABLE'},503,requestId,2);
