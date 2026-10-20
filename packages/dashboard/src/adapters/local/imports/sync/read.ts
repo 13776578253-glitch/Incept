@@ -60,7 +60,7 @@ export function readSyncView(service: CompatibleSyncService, native: RawUsageEve
       const modelName=resolve(event.modelName), price=lookupPricing(receiver,modelName)??lookupPricing(catalog.captured,event.modelName)??lookupPricing(catalog.captured,modelName)??lookupPricing(pricing,modelName);
       if(price && !lookupPricing(pricing,modelName)) pricing.set(modelName.toLowerCase(),price);
       const target=catalog.mappings[event.projectKey], project=target?targets.get(target):undefined,dateKey=dashboardDate(event.timestampMs);
-      const labels={codex:'Codex CLI',commandcode:'CommandCode',antigravity:'Antigravity',claudeCode:'Claude Code',geminiCli:'Gemini CLI',opencode:'OpenCode',zcode:'ZCode'};
+      const labels={codex:'Codex CLI',commandcode:'CommandCode',antigravity:'Antigravity',claudeCode:'Claude Code',deepseekHarness:'DeepSeek Harness',geminiCli:'Gemini CLI',opencode:'OpenCode',zcode:'ZCode'};
       events.push(applyCommandCodeQuota({...event,modelName,sourceId:event.source,sourceLabel:labels[event.source],deviceId:catalog.bundle.device.id,deviceLabel:catalog.bundle.device.label,importBatchId:batchId,
         projectKey:effectiveProject,projectName:project?.projectName??(target?event.projectName:event.projectName+' · '+catalog.bundle.device.label),workspacePath:project?.workspacePath??event.workspacePath,
         costSource:event.recordedCost===undefined?'calculated':'recorded',cost:event.recordedCost??computeCostFromPricing(price,event),missingPricing:event.recordedCost===undefined&&!canPriceUsage(price,event),dateKey,monthKey:dateKey.slice(0,7)}));

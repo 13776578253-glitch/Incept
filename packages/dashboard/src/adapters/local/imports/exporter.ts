@@ -30,7 +30,7 @@ export function exportTokenData(options: { home?: string; deviceId?: string; lab
   const commandFiles = new Set(commandcode.events.flatMap(event => event.sourceFile ? [normalizeFile(event.sourceFile)] : []));
   const agentEvents = agents.events.filter(event => event.sourceId !== 'commandcode' || !event.sourceFile || !commandFiles.has(normalizeFile(event.sourceFile)));
   const records = [...commandcode.events, ...agentEvents];
-  const events = new Map<string, TransferEvent>(), prices: Record<string, TransferPrice> = {}, warnings = [...commandcode.errors, ...agents.errors];
+  const events = new Map<string, TransferEvent>(), prices: Record<string, TransferPrice> = {}, warnings = [...commandcode.errors, ...agents.errors, ...agents.harnessDiagnostics.map(item => 'deepseekHarness:' + item.reason + ':' + (item.sessionId ?? 'unidentified'))];
   for (const raw of records) {
     if (raw.timestampMs > now) { warnings.push('Excluded usage newer than the export snapshot'); continue; }
     const event: TransferEvent = { eventId: nativeEventId(raw), source: raw.sourceId as TransferEvent['source'],

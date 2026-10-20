@@ -249,8 +249,8 @@ describe('Phase 0B B2: legacy adoption, one projection and recoverable journal',
   it('two overlapping v1 batches keep the entity supported after either rollback', () => {
     writePhase0Home(home); const bundle = phase0Export(home), first = phase0Import(bundle, legacyPath);
     const second = phase0Import(phase0Rehash({ ...bundle, exportId: randomUUID() }), legacyPath);
-    shadow.migrate(legacyPath); expect(totalInput()).toBe(700);
-    shadow.rollbackLegacy(first.id); expect(totalInput()).toBe(700); shadow.rollbackLegacy(second.id); expect(totalInput()).toBe(0);
+    shadow.migrate(legacyPath); expect(totalInput()).toBe(100 * TRANSFER_SOURCES.length);
+    shadow.rollbackLegacy(first.id); expect(totalInput()).toBe(100 * TRANSFER_SOURCES.length); shadow.rollbackLegacy(second.id); expect(totalInput()).toBe(0);
   });
 
   it('migration resumes after interruption, retains rolled batches/order/receipts and rebuilds twice without changes', () => {
@@ -258,7 +258,7 @@ describe('Phase 0B B2: legacy adoption, one projection and recoverable journal',
     phase0Import(phase0Rehash({ ...bundle, exportId: randomUUID() }), legacyPath); rollbackImport(first.id, legacyPath);
     expect(() => shadow.migrate(legacyPath, 1)).toThrow('MIGRATION_INTERRUPTED'); expect(totalInput()).toBe(0);
     shadow.close(); shadow = new Phase0bShadow(join(home, 'sync-agent-phase0b-shadow'));
-    shadow.migrate(legacyPath); expect(totalInput()).toBe(700); const dump = shadow.dump(), revision = shadow.revision;
+    shadow.migrate(legacyPath); expect(totalInput()).toBe(100 * TRANSFER_SOURCES.length); const dump = shadow.dump(), revision = shadow.revision;
     shadow.migrate(legacyPath); shadow.rebuild(); shadow.rebuild();
     expect(shadow.dump()).toEqual(dump); expect(shadow.revision).toBe(revision);
     const stored = shadow.db.prepare("SELECT payload FROM phase0b_log WHERE op_id=?").get('legacy:' + first.id)!;
@@ -274,7 +274,7 @@ describe('Phase 0B B2: legacy adoption, one projection and recoverable journal',
 
   it('observes a later real v1 rollback without changing immutable imported payload or resurrecting membership', () => {
     writePhase0Home(home); const bundle = phase0Export(home), receipt = phase0Import(bundle, legacyPath);
-    shadow.migrate(legacyPath); expect(totalInput()).toBe(700); rollbackImport(receipt.id, legacyPath);
+    shadow.migrate(legacyPath); expect(totalInput()).toBe(100 * TRANSFER_SOURCES.length); rollbackImport(receipt.id, legacyPath);
     shadow.migrate(legacyPath); expect(totalInput()).toBe(0); const before = shadow.dump(); shadow.migrate(legacyPath); shadow.rebuild();
     expect(shadow.dump()).toEqual(before);
   });
@@ -491,9 +491,9 @@ describe('Phase 0B D: statistical parity through real v1 import and the unified 
       for (const [range, groups] of [['7d', 1], ['30d', 2], ['all', 3]] as const) {
         const expected = summarize(legacy, range), actual = summarize(shadow.view(), range);
         expect(comparable(actual)).toEqual(comparable(expected));
-        expect(actual.totals).toMatchObject({ inputTokens: 700 * groups, outputTokens: 140 * groups, cacheReadTokens: 70 * groups,
-          cacheCreationTokens: 35 * groups, reasoningTokens: 21 * groups, totalTokens: 966 * groups, sessionCount: 7 });
-        expect(actual.costs.totalCost).toBeCloseTo(.001162 * groups, 10);
+        expect(actual.totals).toMatchObject({ inputTokens: 100 * TRANSFER_SOURCES.length * groups, outputTokens: 20 * TRANSFER_SOURCES.length * groups, cacheReadTokens: 10 * TRANSFER_SOURCES.length * groups,
+          cacheCreationTokens: 5 * TRANSFER_SOURCES.length * groups, reasoningTokens: 3 * TRANSFER_SOURCES.length * groups, totalTokens: 138 * TRANSFER_SOURCES.length * groups, sessionCount: TRANSFER_SOURCES.length });
+        expect(actual.costs.totalCost).toBeCloseTo(.000166 * TRANSFER_SOURCES.length * groups, 10);
       }
     };
     assertParity();
@@ -505,7 +505,7 @@ describe('Phase 0B D: statistical parity through real v1 import and the unified 
       for (const batch of batches) adoptAll(batch.bundle, batch.receipt.id, value);
       shadow.ingest('unified-' + source, value, PHASE0_DEVICE);
     }
-    shadow.switchProjection(); assertParity(); expect(shadow.view()).toHaveLength(21);
+    shadow.switchProjection(); assertParity(); expect(shadow.view()).toHaveLength(3 * TRANSFER_SOURCES.length);
     expect(shadow.db.prepare('SELECT switched FROM phase0b_meta').get()!.switched).toBe(1);
     const before = shadow.dump(); shadow.rebuild(); expect(shadow.dump()).toEqual(before); assertParity();
     shadow.rollbackLegacy(receipt.id); assertParity();

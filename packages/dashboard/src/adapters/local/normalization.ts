@@ -3,7 +3,9 @@ import { dashboardDate } from '../../domain';
 import type { ModelProviderFamily } from '../../domain/index';
 
 export function classifyProvider(modelName: string): ModelProviderFamily {
-  const lower = modelName.toLowerCase();
+  const lower = modelName.trim().toLowerCase();
+  // Keep the explicit service provider ahead of the underlying model vendor.
+  if (lower.startsWith('workbuddy/') || lower.startsWith('workbuddy-ai/')) return 'workbuddy';
   if(lower.includes('gemini') || lower.startsWith('google/')) return 'gemini';
   if(lower.includes('claude') || lower.startsWith('anthropic/')) return 'claude';
   if(

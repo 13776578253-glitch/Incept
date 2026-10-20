@@ -56,7 +56,7 @@ export function loadImportedEvents(native: RawUsageEvent[], pricing: Map<string,
       const dateKey = dashboardDate(event.timestampMs);
       const sourceLabels: Record<string, string> = {
         codex: 'Codex CLI', commandcode: 'CommandCode', antigravity: 'Antigravity',
-        claudeCode: 'Claude Code', opencode: 'OpenCode', zcode: 'ZCode', geminiCli: 'Gemini CLI',
+        claudeCode: 'Claude Code', opencode: 'OpenCode', zcode: 'ZCode', deepseekHarness: 'DeepSeek Harness', geminiCli: 'Gemini CLI',
       };
       events.push({ ...event, modelName, sourceId: event.source, sourceLabel: sourceLabels[event.source] ?? event.source,
         deviceId: batch.bundle.device.id, deviceLabel: batch.bundle.device.label, importBatchId: batch.receipt.id,

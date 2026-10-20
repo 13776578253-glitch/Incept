@@ -154,6 +154,7 @@
       "claudeCode": "Claude Code 原始会话 JSONL，读取失败时使用工具报表兜底",
       "opencode": "OpenCode 原始消息与会话数据库",
       "zcode": "ZCode 原始模型请求用量与会话数据库",
+      "deepseekHarness": "DeepSeek Harness 原始会话",
       "geminiCli": "Gemini CLI 原始会话及索引记录",
       "sessionsModels": "{sessions} 会话 · {models} 模型",
       "readIssues": "有 {count} 项采集异常，当前数据可能不完整",

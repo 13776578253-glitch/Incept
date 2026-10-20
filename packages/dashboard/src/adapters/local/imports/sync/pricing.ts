@@ -13,7 +13,7 @@ export function priceSyncRecord(scope: SyncScope, record: SyncRecord, basis: Syn
   const modelName = autoReview ? CODEX_AUTO_REVIEW_MODEL : canonicalName;
   const rates = new Map(Object.entries(basis.rates).map(([model, rate]) => [model.toLowerCase(), rate]));
   const price = lookupPricing(rates, modelName) ?? lookupPricing(rates, event.modelName), dateKey = dashboardDate(event.timestampMs);
-  const equivalent = computeCostFromPricing(price, event), labels = { codex: 'Codex CLI', commandcode: 'CommandCode', antigravity: 'Antigravity', claudeCode: 'Claude Code', geminiCli: 'Gemini CLI', opencode: 'OpenCode', zcode: 'ZCode' };
+  const equivalent = computeCostFromPricing(price, event), labels = { codex: 'Codex CLI', commandcode: 'CommandCode', antigravity: 'Antigravity', claudeCode: 'Claude Code', deepseekHarness: 'DeepSeek Harness', geminiCli: 'Gemini CLI', opencode: 'OpenCode', zcode: 'ZCode' };
   const raw: RawUsageEvent = { ...event, modelName, sourceId: scope.source, sourceLabel: labels[scope.source], deviceId: scope.deviceId, deviceLabel: label,
     projectKey: mappings[event.projectKey] || 'external:' + scope.deviceId + ':' + event.projectKey,
     projectName: mappings[event.projectKey] ? event.projectName : event.projectName + ' · ' + label,

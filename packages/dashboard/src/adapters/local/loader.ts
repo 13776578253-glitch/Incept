@@ -53,7 +53,7 @@ export async function loadTokenDashboardData(options: { range?: UsageRange; forc
       fallbackEvents, fallbackSources: agents.fallbackSources, coveredSessions: agents.coveredSessions,
       fallbackDateHints: agents.fallbackDateHints,
       coveredFiles: new Set([...agents.parsedFiles, ...commandFiles]),
-      errors: [...agents.errors, ...commandcode.errors, ...(overrides.error ? [overrides.error] : [])] };
+      errors: [...agents.errors, ...agents.harnessDiagnostics.map(item => 'deepseekHarness:' + item.reason + ':' + (item.sessionId ?? 'unidentified')), ...commandcode.errors, ...(overrides.error ? [overrides.error] : [])] };
   }
   const snapshot = cachedSnapshot;
   const range = options.range ?? 'all';

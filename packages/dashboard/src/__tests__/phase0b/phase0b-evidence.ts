@@ -12,6 +12,7 @@ import { collectGeminiEvents } from '../../adapters/local/collectors/gemini';
 import { collectAntigravityEvents } from '../../adapters/local/collectors/antigravity';
 import { collectOpenCodeEvents } from '../../adapters/local/collectors/opencode-usage';
 import { collectZCodeEvents } from '../../adapters/local/collectors/zcode';
+import { collectDeepSeekHarnessEvents } from '../../adapters/local/collectors/deepseek-harness';
 import { collectIndexedAgentEvents } from '../../adapters/local/collectors/aiusage';
 import { nativeEventId, hash } from '../../adapters/local/imports/identity';
 import { PHASE0_PRICE, PHASE0_MODEL } from '../fixtures/sync-agent-phase0';
@@ -21,7 +22,7 @@ export type OriginRegistry = { scope: Scope; paths: string[] };
 const roots: Record<TransferSource | 'aiusage', string[]> = {
   codex: ['.codex/sessions', '.codex/archived_sessions'], commandcode: ['.commandcode/projects'],
   claudeCode: ['.claude/projects'], geminiCli: ['.gemini/tmp'], antigravity: ['.gemini/antigravity/conversations'],
-  opencode: ['.local/share/opencode'], zcode: ['.zcode/cli/db'], aiusage: ['.aiusage'],
+  deepseekHarness: ['.dsh/sessions'], opencode: ['.local/share/opencode'], zcode: ['.zcode/cli/db'], aiusage: ['.aiusage'],
 };
 export function inventory(home: string, reader: TransferSource | 'aiusage'): string[] {
   return roots[reader].flatMap(root => {
@@ -104,6 +105,7 @@ export async function capture(home: string, frozenHome: string, registry: Origin
       : source === 'claudeCode' ? collectClaudeEvents(frozenHome, prices)
       : source === 'geminiCli' ? collectGeminiEvents(frozenHome, prices)
       : source === 'antigravity' ? collectAntigravityEvents(frozenHome, prices)
+      : source === 'deepseekHarness' ? collectDeepSeekHarnessEvents(frozenHome, prices)
       : source === 'opencode' ? collectOpenCodeEvents(frozenHome, prices) : collectZCodeEvents(frozenHome, prices);
     if (collected.errors.length || collected.events.some(row => row.historyIncomplete)) {
       evidence.status = 'partial'; evidence.code = 'COLLECTOR_INCOMPLETE'; evidence.history = 'unknown-prefix'; return result;

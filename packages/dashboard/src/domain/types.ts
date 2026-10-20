@@ -46,6 +46,7 @@ export type ModelProviderFamily =
   | 'claude'
   | 'openai'
   | 'deepseek'
+  | 'workbuddy'
   | 'xiaomi'
   | 'zhipu'
   | 'xai'
@@ -80,7 +81,8 @@ export type SourceDescriptionKey =
   | 'claudeCode'
   | 'opencode'
   | 'zcode'
-  | 'geminiCli';
+  | 'geminiCli'
+  | 'deepseekHarness';
 
 export type SourceUsageSummary = TokenBreakdown & {
   collectionMode?: 'native' | 'ccusage' | 'indexed' | 'imported' | 'mixed';

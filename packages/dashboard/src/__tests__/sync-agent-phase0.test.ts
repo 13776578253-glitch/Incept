@@ -27,7 +27,7 @@ const imported = () => loadImportedEvents([], new Map(), {}, path).events;
 const one = (source: TransferSource) => phase0Export(home).events.find(event => event.source === source)!;
 
 describe('Phase 0 characterization and Phase 1 admission gate', () => {
-  it('runs all seven native collectors repeatedly, with stable unchanged IDs and no duplicate import after 100 commit retries', () => {
+  it('runs all supported native collectors repeatedly, with stable unchanged IDs and no duplicate import after 100 commit retries', () => {
     writePhase0Home(home);
     const first = phase0Export(home), second = phase0Export(home);
     expect(first.warnings).toEqual([]);
@@ -36,9 +36,9 @@ describe('Phase 0 characterization and Phase 1 admission gate', () => {
     const preview = previewImport(first, {}, options());
     const receipt = commitImport(preview.previewId, options());
     for (let i = 0; i < 100; i++) expect(commitImport(preview.previewId, options())).toEqual(receipt);
-    expect(previewImport(second, {}, options())).toMatchObject({ added: 0, duplicateImported: 7, conflicts: 0 });
+    expect(previewImport(second, {}, options())).toMatchObject({ added: 0, duplicateImported: TRANSFER_SOURCES.length, conflicts: 0 });
     expect(importHistory(path)).toHaveLength(1);
-    expect(imported()).toHaveLength(7);
+    expect(imported()).toHaveLength(TRANSFER_SOURCES.length);
   });
 
   it.each(TRANSFER_SOURCES)('keeps a late old %s event in the next full scan', source => {
@@ -153,7 +153,7 @@ describe('Phase 0 characterization and Phase 1 admission gate', () => {
     writePhase0Home(home); const first = phase0Export(home), receipt = phase0Import(first, path);
     const subset = phase0Rehash({ ...first, exportId: randomUUID(), events: first.events.slice(0, 1) });
     const second = phase0Import(subset, path);
-    expect(imported()).toHaveLength(7);
+    expect(imported()).toHaveLength(TRANSFER_SOURCES.length);
     rollbackImport(receipt.id, path); expect(imported()).toHaveLength(1);
     rollbackImport(second.id, path); expect(imported()).toHaveLength(0);
   });
@@ -170,7 +170,7 @@ describe('Phase 0 characterization and Phase 1 admission gate', () => {
   it('records exact 7d/30d/all token, cost and session baselines through native, repeated import and rollback', () => {
     writePhase0Home(home);
     const base = phase0Export(home);
-    // Retain seven source sessions, three observations each: recent, 15 days ago, 45 days ago.
+    // Retain supported source sessions, three observations each: recent, 15 days ago, 45 days ago.
     const events = [PHASE0_AT, PHASE0_NOW - 15 * 86_400_000, PHASE0_NOW - 45 * 86_400_000].flatMap((at, group) =>
       base.events.map(event => ({ ...event, eventId: (group + 1).toString().repeat(64).slice(0, 16) + event.eventId.slice(16), timestampMs: at })));
     const bundle = phase0Rehash({ ...base, events });
@@ -178,22 +178,22 @@ describe('Phase 0 characterization and Phase 1 admission gate', () => {
     expect(readActiveBatches(path)).toHaveLength(2);
     for (const [range, groups] of [['7d', 1], ['30d', 2], ['all', 3]] as const) {
       const summary = phase0Summary(home, path, range);
-      expect(summary.totals).toMatchObject({ inputTokens: 700 * groups, outputTokens: 140 * groups, cacheReadTokens: 70 * groups,
-        cacheCreationTokens: 0, reasoningTokens: 0, totalTokens: 910 * groups, sessionCount: 7 });
-      expect(summary.costs.totalCost).toBeCloseTo(.001015 * groups, 10);
+      expect(summary.totals).toMatchObject({ inputTokens: 100 * TRANSFER_SOURCES.length * groups, outputTokens: 20 * TRANSFER_SOURCES.length * groups, cacheReadTokens: 10 * TRANSFER_SOURCES.length * groups,
+        cacheCreationTokens: 0, reasoningTokens: 0, totalTokens: 130 * TRANSFER_SOURCES.length * groups, sessionCount: TRANSFER_SOURCES.length });
+      expect(summary.costs.totalCost).toBeCloseTo(.000145 * TRANSFER_SOURCES.length * groups, 10);
     }
     rollbackImport(second.id, path);
-    expect(phase0Summary(home, path, 'all').totals.totalTokens).toBe(2730);
+    expect(phase0Summary(home, path, 'all').totals.totalTokens).toBe(390 * TRANSFER_SOURCES.length);
     rollbackImport(first.id, path); expect(phase0Summary(home, path, 'all').totals.totalTokens).toBe(0);
   });
 
-  it('matches native/import overlap without changing the seven-source baseline', () => {
+  it('matches native/import overlap without changing the supported-source baseline', () => {
     writePhase0Home(home); const bundle = phase0Export(home), native = collectImportContext(home);
-    expect(native.events).toHaveLength(7);
+    expect(native.events).toHaveLength(TRANSFER_SOURCES.length);
     const summary = summarizeUsageEvents(native.events, home, native.pricing, PHASE0_AT);
-    expect(summary.totals).toMatchObject({ inputTokens: 700, outputTokens: 140, cacheReadTokens: 70, totalTokens: 910, sessionCount: 7 });
-    expect(summary.costs.totalCost).toBeCloseTo(.001015, 10);
-    expect(previewImport(bundle, {}, { storePath: path, context: native })).toMatchObject({ added: 0, duplicateLocal: 7, conflicts: 0 });
+    expect(summary.totals).toMatchObject({ inputTokens: 100 * TRANSFER_SOURCES.length, outputTokens: 20 * TRANSFER_SOURCES.length, cacheReadTokens: 10 * TRANSFER_SOURCES.length, totalTokens: 130 * TRANSFER_SOURCES.length, sessionCount: TRANSFER_SOURCES.length });
+    expect(summary.costs.totalCost).toBeCloseTo(.000145 * TRANSFER_SOURCES.length, 10);
+    expect(previewImport(bundle, {}, { storePath: path, context: native })).toMatchObject({ added: 0, duplicateLocal: TRANSFER_SOURCES.length, conflicts: 0 });
     phase0Import(bundle, path);
     expect(loadImportedEvents(native.events, native.pricing, {}, path).events).toHaveLength(0);
   });

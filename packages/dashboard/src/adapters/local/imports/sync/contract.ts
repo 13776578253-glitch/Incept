@@ -53,7 +53,7 @@ export function validateHeader(value: unknown): SyncHeader {
     fields(range, ['locatorHash','identityHash','root','envelopeRoot','byteLength','kind','sessionAnchorHash','previous']);
     for (const key of ['locatorHash','identityHash','root','envelopeRoot']) digest(range[key]); count(range.byteLength);
     requireSync(['jsonl','json','sqlite','compressed'].includes(String(range.kind)), 'INVALID_RANGE_KIND');
-    const kinds:Record<string,string[]>={codex:['jsonl','compressed'],commandcode:['jsonl','json'],claudeCode:['jsonl'],geminiCli:['json'],antigravity:['sqlite'],opencode:['sqlite'],zcode:['sqlite'],aiusage:['sqlite']};
+    const kinds:Record<string,string[]>={codex:['jsonl','compressed'],commandcode:['jsonl','json'],claudeCode:['jsonl'],geminiCli:['json'],antigravity:['sqlite'],opencode:['sqlite'],zcode:['sqlite'],deepseekHarness:['jsonl'],aiusage:['sqlite']};
     // Compression is a recognizable unsupported evidence declaration. Keep its
     // review path available; qualifyRanges never admits it automatically.
     requireSync(range.kind==='compressed'||kinds[String(manifest.reader)].includes(String(range.kind)),'SOURCE_FORMAT_MISMATCH');
@@ -119,7 +119,7 @@ export function qualifyRanges(parent: SyncManifest | undefined, next: SyncManife
     const proof=range.previous,old=parent.ranges.find(row=>row.locatorHash===proof.locatorHash);
     requireSync(old&&old.root===proof.root,'ROTATION_UNVERIFIED');requireSync(old.kind===range.kind,'UNSUPPORTED_EVIDENCE');
     if(proof.change==='rotation') requireSync(range.sessionAnchorHash&&range.sessionAnchorHash===old.sessionAnchorHash&&proof.retainedRoot===old.root&&proof.retainedBytes===old.byteLength
-      && (range.identityHash===old.identityHash||['codex','claudeCode','geminiCli'].includes(next.scope.source)),'ROTATION_UNVERIFIED');
+      && (range.identityHash===old.identityHash||['codex','claudeCode','geminiCli','deepseekHarness'].includes(next.scope.source)),'ROTATION_UNVERIFIED');
     else {
       requireSync(range.locatorHash===old.locatorHash&&range.identityHash===old.identityHash,'ROTATION_UNVERIFIED');
       if(proof.change==='append')requireSync(proof.retainedRoot===old.root&&proof.retainedBytes===old.byteLength&&(range.kind!=='jsonl'||range.byteLength>=old.byteLength),'PREFIX_LOST');
@@ -136,12 +136,12 @@ export function qualifyRanges(parent: SyncManifest | undefined, next: SyncManife
     requireSync(proof?.root === old.root, 'PREFIX_LOST');
     if (proof.change === 'rotation') requireSync(current.sessionAnchorHash && current.sessionAnchorHash === old.sessionAnchorHash
       && proof.retainedRoot === old.root && proof.retainedBytes === old.byteLength
-      && (current.identityHash === old.identityHash || ['codex','claudeCode','geminiCli'].includes(next.scope.source)), 'ROTATION_UNVERIFIED');
+      && (current.identityHash === old.identityHash || ['codex','claudeCode','geminiCli','deepseekHarness'].includes(next.scope.source)), 'ROTATION_UNVERIFIED');
     else if (proof.change === 'append') requireSync(proof.retainedRoot === old.root && proof.retainedBytes === old.byteLength && (current.kind!=='jsonl'||current.byteLength >= old.byteLength), 'PREFIX_LOST');
     else requireSync(current.envelopeRoot === old.envelopeRoot && next.scope.source !== 'antigravity' && next.reader !== 'aiusage', 'SOURCE_REVISION_UNVERIFIED');
   }
   for (const added of next.ranges.filter(row => !parent.ranges.some(old => old.locatorHash === row.locatorHash) && !row.previous))
-    requireSync(!parent.ranges.some(old=>old.root===added.root)&&added.sessionAnchorHash === hash(next.scope.sessionId) && ['codex','claudeCode','geminiCli'].includes(next.scope.source), 'ROTATION_UNVERIFIED');
+    requireSync(!parent.ranges.some(old=>old.root===added.root)&&added.sessionAnchorHash === hash(next.scope.sessionId) && ['codex','claudeCode','geminiCli','deepseekHarness'].includes(next.scope.source), 'ROTATION_UNVERIFIED');
 }
 export function qualifyRecords(parent: Iterable<SyncRecord>, next: Iterable<SyncRecord>, manifest: SyncManifest) {
   const accumulate=(total:number,record:SyncRecord)=>{const next=total+record.event.inputTokens+record.event.outputTokens+record.event.cacheReadTokens+record.event.cacheCreationTokens+record.event.reasoningTokens;requireSync(Number.isSafeInteger(next),'TOKEN_TOTAL_OVERFLOW');return next;};

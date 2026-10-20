@@ -9,7 +9,7 @@ export function SyncDevicesPanel({language}:{language:'zh'|'en'}) {
   const [legacyId,setLegacyId]=useState('');
   const [reviews,setReviews]=useState<SyncReview[]|null>(null);
   const [editingSources,setEditingSources]=useState(''),[sourceDraft,setSourceDraft]=useState<string[]>([]);
-  const sources=['codex','commandcode','claudeCode','geminiCli','antigravity','opencode','zcode'];
+  const sources=['codex','commandcode','claudeCode','geminiCli','antigravity','opencode','zcode','deepseekHarness'];
   const [allowedSources,setAllowedSources]=useState(sources);
   useEffect(()=>{const clear=()=>{if(document.visibilityState!=='visible')setSecret(null);};document.addEventListener('visibilitychange',clear);return()=>document.removeEventListener('visibilitychange',clear);},[]);
   async function request(path='',method='GET',body?:unknown) {

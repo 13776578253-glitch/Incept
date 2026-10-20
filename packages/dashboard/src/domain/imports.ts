@@ -1,4 +1,4 @@
-export const TRANSFER_SOURCES = ['codex', 'commandcode', 'antigravity', 'claudeCode', 'opencode', 'zcode', 'geminiCli'] as const;
+export const TRANSFER_SOURCES = ['codex', 'commandcode', 'antigravity', 'claudeCode', 'opencode', 'zcode', 'geminiCli', 'deepseekHarness'] as const;
 export type TransferSource = typeof TRANSFER_SOURCES[number];
 export type TransferEvent = {
   eventId: string;

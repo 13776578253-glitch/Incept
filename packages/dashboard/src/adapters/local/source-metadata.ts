@@ -13,4 +13,5 @@ export const SOURCE_META: Array<{
     { sourceId: 'opencode', label: 'OpenCode', descriptionKey: 'opencode' },
     { sourceId: 'zcode', label: 'ZCode', descriptionKey: 'zcode' },
     { sourceId: 'geminiCli', label: 'Gemini CLI', descriptionKey: 'geminiCli' },
+    { sourceId: 'deepseekHarness', label: 'DeepSeek Harness', descriptionKey: 'deepseekHarness' },
   ];

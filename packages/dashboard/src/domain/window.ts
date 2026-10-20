@@ -1,6 +1,6 @@
 export type UsageRange = 'all' | '7d' | '14d' | '30d';
 export const usageRanges: readonly UsageRange[] = ['all', '7d', '14d', '30d'];
-export const dashboardTimeZone = 'Asia/Singapore';
+export const dashboardTimeZone = 'Asia/Shanghai';
 
 export function dashboardDate(timestampMs: number): string {
   return new Date(timestampMs + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);

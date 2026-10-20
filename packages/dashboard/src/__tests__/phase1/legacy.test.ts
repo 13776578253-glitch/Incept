@@ -25,7 +25,7 @@ afterEach(()=>{service.close();rmSync(home,{recursive:true,force:true});});
 function comparable(value:unknown):unknown {if(Array.isArray(value))return value.map(comparable).sort((a,b)=>stableJson(a).localeCompare(stableJson(b),'en'));
   if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,k==='source'&&typeof v==='string'&&v.includes(' / ')?v.split(' / ').sort().join(' / '):comparable(v)]));return value;}
 function stage(candidate:ReturnType<typeof fromEvents>){service.begin(candidate.header,device);service.stage(PHASE0_DEVICE,candidate.header.batchId,0,candidate.records,device);}
-it('v1 exact loader parity, idempotent interrupted migration, all seven adoptions and three windows',()=>{
+it('v1 exact loader parity, idempotent interrupted migration, all supported-source adoptions and three windows',()=>{
   writePhase0Home(home);const original=phase0Export(home),dates=[PHASE0_NOW-45*86400000,PHASE0_NOW-15*86400000,PHASE0_AT];
   const bundle=phase0Rehash({...original,events:dates.flatMap((at,i)=>original.events.map(event=>({...event,eventId:hash([i,event.eventId]),timestampMs:at})))});
   const first=phase0Import(bundle,path);phase0Import(phase0Rehash({...bundle,exportId:randomUUID()}),path);
@@ -33,13 +33,13 @@ it('v1 exact loader parity, idempotent interrupted migration, all seven adoption
   const revision=service.revision();expect(service.migrateV1(path,owner)).toBe(0);expect(service.revision()).toBe(revision);
   const legacy=loadImportedEvents([],new Map(),{},path).events.map(applyCommandCodeQuota);
   const summary=(rows:typeof legacy,range:'7d'|'30d'|'all')=>{const window=dateWindow(range,PHASE0_NOW,rows.map(r=>r.dateKey).sort()[0]);return summarizeUsageEvents(rows.filter(row=>row.dateKey>=window.from&&row.dateKey<=window.to),home,new Map(),PHASE0_AT,window);};
-  const parity=()=>{for(const [range,multiplier] of [['7d',1],['30d',2],['all',3]] as const){const actual=summary(readSyncView(service).events,range);expect(comparable(actual)).toEqual(comparable(summary(legacy,range)));expect(actual.totals.totalTokens).toBe(910*multiplier);}};parity();
+  const parity=()=>{for(const [range,multiplier] of [['7d',1],['30d',2],['all',3]] as const){const actual=summary(readSyncView(service).events,range);expect(comparable(actual)).toEqual(comparable(summary(legacy,range)));expect(actual.totals.totalTokens).toBe(130*TRANSFER_SOURCES.length*multiplier);}};parity();
   const store=new ImportStore(path),batches=store.batches();store.close();
   for(const source of TRANSFER_SOURCES){const events=bundle.events.filter(e=>e.source===source),scope={deviceId:PHASE0_DEVICE,source,sessionId:events[0].sessionId,originId:'origin:'+source};service.register(scope,'Synthetic device',owner);
     const candidate=fromEvents(events,scope,undefined,'adopt:'+source);stage(candidate);for(const batch of batches)service.adopt(candidate.header,batch.receipt.id,owner);
     expect(service.commit(PHASE0_DEVICE,candidate.header.batchId,device).status).toBe('committed');parity();}
-  expect(readSyncView(service).events).toHaveLength(21);service.rebuild(owner);service.rebuildLegacyProjection();parity();
-  const tables=service.db.prepare('SELECT COUNT(*) n FROM sync_legacy_members').get()!.n;expect(tables).toBe(42);
+  expect(readSyncView(service).events).toHaveLength(3*TRANSFER_SOURCES.length);service.rebuild(owner);service.rebuildLegacyProjection();parity();
+  const tables=service.db.prepare('SELECT COUNT(*) n FROM sync_legacy_members').get()!.n;expect(tables).toBe(6*TRANSFER_SOURCES.length);
   rollbackImport(first.id,path);service.migrateV1(path,owner);parity();
 });
 it('unadopted v1 survives review, wrong price or mappings require Owner review, and double legacy rollback retains independent v2',()=>{

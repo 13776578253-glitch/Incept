@@ -71,7 +71,7 @@ export function pricedObservation(scope: Scope, row: Observation, basis: PriceBa
   if (event.source === 'codex' && event.recordedCost !== undefined) throw new Error('CODEX_RECORDED_COST');
   const equivalent = computeCostFromPricing(rate, event), dateKey = dashboardDate(event.timestampMs);
   const labels: Record<TransferSource, string> = { codex: 'Codex CLI', commandcode: 'CommandCode', antigravity: 'Antigravity',
-    claudeCode: 'Claude Code', geminiCli: 'Gemini CLI', opencode: 'OpenCode', zcode: 'ZCode' };
+    claudeCode: 'Claude Code', deepseekHarness: 'DeepSeek Harness', geminiCli: 'Gemini CLI', opencode: 'OpenCode', zcode: 'ZCode' };
   const raw: RawUsageEvent = { ...event, modelName, sourceId: event.source, sourceLabel: labels[event.source],
     deviceId: scope.deviceId, deviceLabel: 'Synthetic device', projectKey: mappings[event.projectKey] || 'external:' + scope.deviceId + ':' + event.projectKey,
     projectName: mappings[event.projectKey] ? event.projectName : event.projectName + ' · Synthetic device',

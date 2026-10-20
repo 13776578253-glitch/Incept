@@ -3,7 +3,7 @@ import { prisma } from '../client';
 import { requireRecentOwnerSession, OwnerAuthError } from '../owner';
 import { RECENT_AUTH_MS } from '../owner/security';
 
-export const AGENT_SOURCES = ['codex','commandcode','claudeCode','geminiCli','antigravity','opencode','zcode'] as const;
+export const AGENT_SOURCES = ['codex','commandcode','claudeCode','geminiCli','antigravity','opencode','zcode','deepseekHarness'] as const;
 export class AgentAuthError extends Error {
   constructor(readonly status:number, readonly code:string) { super(code); }
 }
@@ -18,7 +18,7 @@ function name(value:unknown):string {
   return value.trim();
 }
 function sources(value:unknown):string[] {
-  if(!Array.isArray(value)||!value.length||value.length>7||new Set(value).size!==value.length||value.some(s=>!AGENT_SOURCES.includes(s)))throw new AgentAuthError(400,'INVALID_SOURCES');
+  if(!Array.isArray(value)||!value.length||value.length>AGENT_SOURCES.length||new Set(value).size!==value.length||value.some(s=>!AGENT_SOURCES.includes(s)))throw new AgentAuthError(400,'INVALID_SOURCES');
   return value;
 }
 // Session gate rechecks current credential version, TOTP enrollment and recent auth.

@@ -230,7 +230,8 @@ describe('Phase 0C: incomplete reads, loss and rotation preserve the committed g
     const target = join(home, '.aiusage/archive/cache.db'); mkdirSync(dirname(target), { recursive: true }); renameSync(join(home, '.aiusage/cache.db'), target);
     expect((await server.submit('cache-renamed', await observed('claudeCode', first, { reader: 'aiusage' }), PHASE0_DEVICE)).code).toBe('ROTATION_UNVERIFIED'); expect(input()).toBe(100);
   });
-  it.each(TRANSFER_SOURCES)('%s native/index dual representation uses the real exporter once; changing lineage reader stays under review', async source => {
+  // Harness has no verified aiusage index format; its native adapter is tested above.
+  it.each(TRANSFER_SOURCES.filter(source => source !== 'deepseekHarness'))('%s native/index dual representation uses the real exporter once; changing lineage reader stays under review', async source => {
     writePhase0Index(home, source, { session: scopeFor(source).sessionId });
     if (source === 'commandcode') {
       const db = new DatabaseSync(join(home, '.aiusage/cache.db'));
@@ -370,7 +371,7 @@ describe('Phase 0C: B2 adoption plus lineage preserves real v1 statistics and B3
     expect((await server.submit('owner-explicit', candidate, PHASE0_DEVICE)).code).toBe('baseline-observed'); expect(input()).toBe(100);
     expect(server.state().audit.some(row => (row as { kind?: string }).kind === 'adoption-grant')).toBe(true);
   });
-  it('7d/30d/all full-object parity survives seven-source lineage adoption, replay, revision rollback and legacy rollback', async () => {
+  it('7d/30d/all full-object parity survives supported-source lineage adoption, replay, revision rollback and legacy rollback', async () => {
     writePhase0Home(home, 3);
     const dates = [PHASE0_NOW - 45 * 86_400_000, PHASE0_NOW - 15 * 86_400_000, PHASE0_AT];
     // Modify synthetic timestamps in each real source, preserving native anchors.
@@ -378,7 +379,7 @@ describe('Phase 0C: B2 adoption plus lineage preserves real v1 statistics and B3
       const file = join(home, locator);
       if (locator.endsWith('.jsonl')) {
         let i = 0; const rows = readFileSync(file, 'utf8').trim().split('\n').map(line => {
-          const row = JSON.parse(line); if (row.timestamp !== undefined) row.timestamp = source === 'commandcode' ? dates[i++] : new Date(dates[i++]).toISOString(); return row;
+          const row = JSON.parse(line); if (source === 'deepseekHarness' && row.type === 'assistant/message') row.time = dates[i++]; if (row.timestamp !== undefined) row.timestamp = source === 'commandcode' ? dates[i++] : new Date(dates[i++]).toISOString(); return row;
         }); writeFileSync(file, rows.map(row => JSON.stringify(row)).join('\n') + '\n');
       } else if (source === 'geminiCli') {
         const data = JSON.parse(readFileSync(file, 'utf8')); data.messages.forEach((row: { timestamp: string }, i: number) => { row.timestamp = new Date(dates[i]).toISOString(); }); writeFileSync(file, JSON.stringify(data));
@@ -405,7 +406,7 @@ describe('Phase 0C: B2 adoption plus lineage preserves real v1 statistics and B3
     };
     const parity = () => { for (const [range, groups] of [['7d', 1], ['30d', 2], ['all', 3]] as const) {
       const actual = summarize(server.view(), range); expect(comparable(actual)).toEqual(comparable(summarize(legacy, range)));
-      expect(actual.totals.totalTokens).toBe(910 * groups); expect(actual.totals.sessionCount).toBe(7);
+      expect(actual.totals.totalTokens).toBe(130 * TRANSFER_SOURCES.length * groups); expect(actual.totals.sessionCount).toBe(TRANSFER_SOURCES.length);
     } }; parity();
     const store = new ImportStore(legacyPath), batches = store.batches(); store.close(); const manifests: Manifest[] = [];
     for (const source of TRANSFER_SOURCES) {
@@ -413,13 +414,13 @@ describe('Phase 0C: B2 adoption plus lineage preserves real v1 statistics and B3
       for (const batch of batches) await server.reviewLegacy(manifest, batch.receipt.id, proof(manifest, batch.bundle.checksum), 'owner');
       expect((await server.submit('adopt-' + source, manifest, PHASE0_DEVICE)).status).toBe('committed'); manifests.push(manifest); parity();
     }
-    expect(server.view()).toHaveLength(21);
+    expect(server.view()).toHaveLength(3 * TRANSFER_SOURCES.length);
     const restarted = another('server'); expect(restarted.state()).toEqual(server.state()); parity();
     rollbackImport(receipt.id, legacyPath); server.attachLegacy(legacyPath); parity();
     const claude = manifests.find(row => row.scope.source === 'claudeCode')!, file = join(home, claude.files[0].locator);
     const rows = readFileSync(file, 'utf8').trim().split('\n').map(row => JSON.parse(row)); rows[2].message.usage.input_tokens = 120;
     writeFileSync(file, rows.map(row => JSON.stringify(row)).join('\n') + '\n'); const revised = await observed('claudeCode', claude);
-    expect((await server.submit('revision', revised, PHASE0_DEVICE)).status).toBe('committed'); expect(input()).toBe(2120);
+    expect((await server.submit('revision', revised, PHASE0_DEVICE)).status).toBe('committed'); expect(input()).toBe(300 * TRANSFER_SOURCES.length + 20);
     server.rollbackRevision(revised.manifestHash, 'owner'); parity();
     expect((await server.submit('rollback-replay', await observed('claudeCode', revised), PHASE0_DEVICE)).code).toBe('ROLLED_BACK_LINEAGE_REVIEW_REQUIRED'); parity();
     const repriced = patch(await observed('claudeCode', revised), { basis: { ...basis(), provenance: 'implicit-price-change' } });

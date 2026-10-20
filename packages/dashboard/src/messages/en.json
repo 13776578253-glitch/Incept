@@ -154,6 +154,7 @@
       "claudeCode": "Native Claude Code session JSONLs, with report fallback when unreadable",
       "opencode": "Native OpenCode message and session databases",
       "zcode": "Native ZCode model request usage and session databases",
+      "deepseekHarness": "DeepSeek Harness native sessions",
       "geminiCli": "Gemini CLI raw sessions and indexed records",
       "sessionsModels": "{sessions} sessions · {models} models",
       "readIssues": "{count} collection issues; current data may be incomplete",

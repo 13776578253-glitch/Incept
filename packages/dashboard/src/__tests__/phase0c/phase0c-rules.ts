@@ -13,6 +13,7 @@ function envelope(row: Record<string, unknown>, source: Manifest['scope']['sourc
   } else if (source === 'commandcode') { delete copy.usage; }
   else if (source === 'claudeCode') { if (copy.message) delete copy.message.usage; delete copy.costUSD; }
   else if (source === 'geminiCli') { delete copy.tokens; }
+  else if (source === 'deepseekHarness' && copy.data && typeof copy.data === 'object') { delete (copy.data as Record<string, unknown>).usage; }
   return copy;
 }
 function codexSequence(next: Manifest) {

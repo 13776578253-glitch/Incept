@@ -67,6 +67,14 @@ export function writePhase0Source(home: string, source: TransferSource, options:
       type: 'assistant', sessionId: session, timestamp: new Date(at).toISOString(), cwd, costUSD: options.cost,
       message: { id, model, usage: { input_tokens: input, output_tokens: 20, cache_read_input_tokens: 10 } },
     })).join('\n') + '\n');
+  } else if (source === 'deepseekHarness') {
+    write(join(home, '.dsh', 'sessions', session, 'session.jsonl'), [
+      { type: 'session', version: 4, id: session, cwd, createdAt: options.at ?? PHASE0_AT },
+      ...rows.map(({ at, id }, i) => ({ type: 'assistant/message', seq: i + 1, time: at, data: {
+        message: { role: 'assistant', id, source: { model } },
+        usage: { inputTokens: input, outputTokens: 20, cacheReadTokens: 10, cacheWriteTokens: 0, totalTokens: input + 30 },
+      } })),
+    ].map(row => JSON.stringify(row)).join('\n') + '\n');
   } else if (source === 'geminiCli') {
     write(join(home, '.gemini', 'tmp', 'phase0-project', 'chats', 'session-' + session + '.json'), JSON.stringify({
       sessionId: session, messages: rows.map(({ at, id }) => ({ id, model, timestamp: new Date(at).toISOString(),

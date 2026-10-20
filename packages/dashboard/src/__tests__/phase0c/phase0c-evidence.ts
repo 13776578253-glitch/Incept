@@ -12,6 +12,7 @@ import { collectGeminiEvents } from '../../adapters/local/collectors/gemini';
 import { collectAntigravityEvents } from '../../adapters/local/collectors/antigravity';
 import { collectOpenCodeEvents } from '../../adapters/local/collectors/opencode-usage';
 import { collectZCodeEvents } from '../../adapters/local/collectors/zcode';
+import { collectDeepSeekHarnessEvents } from '../../adapters/local/collectors/deepseek-harness';
 import { collectIndexedAgentEvents } from '../../adapters/local/collectors/aiusage';
 import { PHASE0_MODEL, PHASE0_PRICE } from '../fixtures/sync-agent-phase0';
 import type { Observation, Scope, PriceBasis } from '../phase0b/phase0b-contract';
@@ -34,7 +35,7 @@ const quote = (name: string) => '"' + name.replaceAll('"', '""') + '"';
 const roots: Record<Manifest['reader'], string[]> = {
   codex: ['.codex/sessions', '.codex/archived_sessions'], commandcode: ['.commandcode/projects'], claudeCode: ['.claude/projects'],
   geminiCli: ['.gemini/tmp'], antigravity: ['antigravity', 'antigravity-cli', 'antigravity-ide'].map(name => '.gemini/' + name + '/conversations'),
-  opencode: ['.local/share/opencode'], zcode: ['.zcode/cli/db'], aiusage: ['.aiusage'],
+  deepseekHarness: ['.dsh/sessions'], opencode: ['.local/share/opencode'], zcode: ['.zcode/cli/db'], aiusage: ['.aiusage'],
 };
 export function inventory(home: string, reader: Manifest['reader']): string[] {
   return roots[reader].flatMap(root => existsSync(join(home, root)) ? readdirSync(join(home, root), { recursive: true, withFileTypes: true })
@@ -69,6 +70,9 @@ export function embeddedSession(file: FileEvidence, source: Scope['source'], ses
     const text = Buffer.from(file.bytes, 'base64').toString('utf8');
     if (source === 'codex') return text.split('\n').filter(Boolean).some(line => {
       const row = JSON.parse(line); return row.type === 'session_meta' && row.payload?.id === session;
+    });
+    if (source === 'deepseekHarness') return text.split('\n').filter(Boolean).some(line => {
+      const row = JSON.parse(line); return row.type === 'session' && row.id === session;
     });
     if (source === 'claudeCode') return text.split('\n').filter(Boolean).every(line => JSON.parse(line).sessionId === session);
     return source === 'geminiCli' && JSON.parse(text).sessionId === session;
@@ -115,7 +119,8 @@ export async function replay(home: string, manifest: Pick<Manifest, 'files' | 'b
   const collected = manifest.reader === 'aiusage' ? collectIndexedAgentEvents(home, prices)
     : source === 'codex' ? collectCodexEvents(home, prices, new Set()) : source === 'commandcode' ? collectCommandCodeEvents(home, prices)
     : source === 'claudeCode' ? collectClaudeEvents(home, prices) : source === 'geminiCli' ? collectGeminiEvents(home, prices)
-    : source === 'antigravity' ? collectAntigravityEvents(home, prices) : source === 'opencode' ? collectOpenCodeEvents(home, prices) : collectZCodeEvents(home, prices);
+    : source === 'antigravity' ? collectAntigravityEvents(home, prices) : source === 'deepseekHarness' ? collectDeepSeekHarnessEvents(home, prices)
+    : source === 'opencode' ? collectOpenCodeEvents(home, prices) : collectZCodeEvents(home, prices);
   if (collected.errors.length || collected.events.some(row => row.historyIncomplete)) throw new Error('COLLECTOR_INCOMPLETE');
   if (source === 'zcode' && manifest.reader !== 'aiusage' && files.some(file => file.tables?.some(table => table.name === 'model_usage'
     && table.rows.some(row => row.session_id === manifest.scope.sessionId && row.status === 'running')))) throw new Error('RUNNING_USAGE');

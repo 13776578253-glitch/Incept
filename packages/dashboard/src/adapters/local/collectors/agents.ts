@@ -7,14 +7,16 @@ import { collectAntigravityEvents } from './antigravity';
 import { collectClaudeEvents } from './claude';
 import { collectOpenCodeEvents } from './opencode-usage';
 import { collectZCodeEvents } from './zcode';
+import { collectDeepSeekHarnessEvents } from './deepseek-harness';
 import { normalizeFile } from './common';
 
 export function collectAiusageAndRawAgentEvents(home: string, pricingMap: Map<string, UnitPricing>, codexPolicy:CodexSourcePolicy={}) {
   const indexed = collectIndexedAgentEvents(home, pricingMap);
   const codex = collectCodexEvents(home, pricingMap, indexed.ingestedFiles,codexPolicy);
   const gemini = collectGeminiEvents(home, pricingMap);
+  const harness = collectDeepSeekHarnessEvents(home, pricingMap);
   const native = [collectAntigravityEvents(home, pricingMap), collectClaudeEvents(home, pricingMap),
-    collectOpenCodeEvents(home, pricingMap), collectZCodeEvents(home, pricingMap)];
+    collectOpenCodeEvents(home, pricingMap), collectZCodeEvents(home, pricingMap), harness];
   const coveredSessions = new Set(native.flatMap(result => [...result.coveredSessions]));
   for (const event of [...codex.events, ...gemini.events]) coveredSessions.add(event.sourceId + ':' + event.sessionId);
   const parsedFiles = new Set([...codex.parsedFiles, ...gemini.parsedFiles].map(normalizeFile));
@@ -30,9 +32,10 @@ export function collectAiusageAndRawAgentEvents(home: string, pricingMap: Map<st
     coveredSessions,
     parsedFiles,
     sessionIntegrity: codex.sessionIntegrity,
+    harnessDiagnostics: harness.diagnostics,
     errors: [...indexed.errors, ...codex.errors, ...gemini.errors, ...native.flatMap(result => result.errors)],
     fallbackSources: [...new Set([...fallbackEvents.map(event => event.sourceId),
-      ...native.flatMap((result, index) => result.errors.length ? [(['antigravity', 'claudeCode', 'opencode', 'zcode'] as const)[index]] : [])])],
+      ...native.flatMap((result, index) => result.errors.length ? [(['antigravity', 'claudeCode', 'opencode', 'zcode', 'deepseekHarness'] as const)[index]] : [])])],
     fallbackDateHints: Object.fromEntries([...new Set(fallbackEvents.map(event => event.sourceId))].map(source => [source,
       native.some(result => result.errors.length) ? undefined : [...new Set(fallbackEvents.filter(event => event.sourceId === source).map(event => event.dateKey))]])),
     latestMtimeMs: Math.max(indexed.latestMtimeMs, codex.latestMtimeMs, gemini.latestMtimeMs, ...native.map(result => result.latestMtimeMs)),

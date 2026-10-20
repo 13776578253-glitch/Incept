@@ -37,6 +37,13 @@ export function ProviderBadge({
       fg: 'var(--badge-indigo-fg)',
       dot: 'var(--badge-indigo-dot)',
     },
+    workbuddy: {
+      label: 'WorkBuddy',
+      bg: 'var(--badge-indigo-bg)',
+      border: 'var(--badge-indigo-border)',
+      fg: 'var(--badge-indigo-fg)',
+      dot: 'var(--badge-indigo-dot)',
+    },
     xiaomi: {
       label: 'Xiaomi',
       bg: 'var(--badge-amber-bg)',
