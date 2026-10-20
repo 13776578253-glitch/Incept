@@ -36,6 +36,15 @@ it('migrates v1 to shadow, compares all three windows and checkpoints without ch
   expect(replay.revision).toBe(before);
 });
 
+it('shadow comparison ignores the intentional v2 receipt-clock updatedAt difference',async()=>{
+  writePhase0Home(home);const bundle=phase0Export(home),receipt=phase0Import(bundle,legacy),ownerActor={role:'owner' as const,subject:'owner',reason:'clock fixture'};
+  const service=new CompatibleSyncService(sync);service.migrateV1(legacy,ownerActor);
+  const events=bundle.events.filter(e=>e.source==='claudeCode'),scope={deviceId:bundle.device.id,source:'claudeCode' as const,sessionId:events[0].sessionId,originId:'clock-origin'};
+  service.register(scope,bundle.device.label,ownerActor);const candidate=fromEvents(events,scope,undefined,'clock-candidate');service.begin(candidate.header,ownerActor);service.stage(scope.deviceId,candidate.header.batchId,0,candidate.records,ownerActor);service.adopt(candidate.header,receipt.id,ownerActor);
+  vi.setSystemTime(PHASE0_NOW+60_000);service.commit(scope.deviceId,candidate.header.batchId,ownerActor);service.close();
+  const result=await runMaintenance(['shadow-check','--owner-confirm=I_AM_THE_OWNER','--reason=clock comparison'],env()) as {ok:boolean};
+  expect(result.ok).toBe(true);
+});
 it('requires explicit Owner confirmation for writes',async()=>{
   writePhase0Home(home);phase0Import(phase0Export(home),legacy);
   await expect(runMaintenance(['migrate-v1'],env())).rejects.toMatchObject({code:'OWNER_CONFIRMATION_REQUIRED'});
