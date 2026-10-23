@@ -112,8 +112,7 @@
     "columns": {
       "title": "标题",
       "locale": "语言",
-      "routeType": "路由类型",
-      "kind": "类型",
+      "type": "类型",
       "accessRole": "访问权限",
       "collection": "当前合集",
       "position": "当前位置",

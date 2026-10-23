@@ -150,11 +150,10 @@ export function DocsLibraryTable({
 
       {/* 紧凑现代表格 */}
       <div className="overflow-x-auto pt-1 [scrollbar-width:thin] [scrollbar-color:var(--color-border)_transparent] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--color-border)] [&::-webkit-scrollbar-button]:hidden">
-        <table className="w-full min-w-[1104px] table-fixed border-collapse text-left">
+        <table className="w-full min-w-[1040px] table-fixed border-collapse text-left">
           <colgroup>
             <col className="w-56" />
             <col className="w-36" />
-            <col className="w-20" />
             <col className="w-28" />
             <col className="w-36" />
             <col className="w-16" />
@@ -164,8 +163,7 @@ export function DocsLibraryTable({
           <thead>
             <tr className="border-b border-[var(--color-nav-dropdown-border)] text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-nav-muted)]">
               <th className="py-2.5 pl-3 pr-2 font-medium">{t('columns.title')}</th>
-              <th className="py-2.5 px-2 font-medium">{t('columns.routeType')}</th>
-              <th className="py-2.5 px-2 font-medium">{t('columns.kind')}</th>
+              <th className="py-2.5 px-2 font-medium">{t('columns.type')}</th>
               <th className="py-2.5 px-2 font-medium">{t('columns.accessRole')}</th>
               <th className="py-2.5 px-2 font-medium">{t('columns.collection')}</th>
               <th className="py-2.5 px-2 text-center font-medium">{t('columns.position')}</th>
@@ -177,7 +175,7 @@ export function DocsLibraryTable({
             {filteredEntries.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="py-8 text-center text-xs text-[var(--color-nav-dropdown-description)]"
                 >
                   {t('table.empty')}
@@ -195,59 +193,17 @@ export function DocsLibraryTable({
                     <p className="font-mono text-[0.7rem] text-[var(--color-text-soft)] truncate">{entry.slug}</p>
                   </td>
 
-                  {/* 路由类型 */}
-                  <td className="py-3 px-2 align-middle">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.7rem] font-medium whitespace-nowrap ${
-                        entry.routeType === 'collectionArticle'
-                          ? 'border-[var(--badge-indigo-border)] bg-[var(--badge-indigo-bg)] text-[var(--badge-indigo-fg)]'
-                          : 'border-[var(--badge-sky-border)] bg-[var(--badge-sky-bg)] text-[var(--badge-sky-fg)]'
-                      }`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="size-1.5 shrink-0 rounded-full"
-                        style={{
-                          backgroundColor:
-                            entry.routeType === 'collectionArticle'
-                              ? 'var(--badge-indigo-dot)'
-                              : 'var(--badge-sky-dot)',
-                        }}
-                      />
-                      {t(`routeType.${entry.routeType}`)}
-                    </span>
-                  </td>
-
-                  {/* Kind */}
-                  <td className="py-3 px-2 align-middle text-[0.78rem] text-[var(--color-text-muted)] capitalize">
-                    {entry.kind}
+                  {/* 类型：路由类型，非普通文章时补充 kind */}
+                  <td className="py-3 px-2 align-middle text-[0.78rem] text-[var(--color-text-muted)]">
+                    <span className="text-[var(--color-text)]">{t(`routeType.${entry.routeType}`)}</span>
+                    {entry.kind !== 'article' ? (
+                      <span className="text-[var(--color-text-soft)]"> · {entry.kind}</span>
+                    ) : null}
                   </td>
 
                   {/* 访问权限 */}
-                  <td className="py-3 px-2 align-middle">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.7rem] font-medium whitespace-nowrap ${
-                        entry.accessRole === 'private'
-                          ? 'border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] text-[var(--badge-rose-fg)]'
-                          : entry.accessRole === 'pro'
-                            ? 'border-[var(--badge-amber-border)] bg-[var(--badge-amber-bg)] text-[var(--badge-amber-fg)]'
-                            : 'border-[var(--badge-emerald-border)] bg-[var(--badge-emerald-bg)] text-[var(--badge-emerald-fg)]'
-                      }`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="size-1.5 shrink-0 rounded-full"
-                        style={{
-                          backgroundColor:
-                            entry.accessRole === 'private'
-                              ? 'var(--badge-rose-dot)'
-                              : entry.accessRole === 'pro'
-                                ? 'var(--badge-amber-dot)'
-                                : 'var(--badge-emerald-dot)',
-                        }}
-                      />
-                      {t(`roles.${entry.accessRole}`)}
-                    </span>
+                  <td className="py-3 px-2 align-middle text-[0.78rem] text-[var(--color-text-muted)]">
+                    {t(`roles.${entry.accessRole}`)}
                   </td>
 
                   {/* 合集 */}

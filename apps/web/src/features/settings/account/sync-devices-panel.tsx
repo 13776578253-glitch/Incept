@@ -26,14 +26,15 @@ export function SyncDevicesPanel({language}:{language:'zh'|'en'}) {
     {error&&<p role="alert" className="text-xs">{error==='SYNC_DISABLED'?t('本地同步入口尚未启用。','Local sync is disabled.'):error==='reauthentication_required'?t('请先点击上方“验证身份”，再重试。','Verify your identity above, then retry.'):error}</p>}
     {devices&&<>
       <form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();void run(async()=>{const result=await request('','POST',{name,allowedSources,...(legacyId?{legacyDeviceId:legacyId}:{})});setName('');setLegacyId('');await load();setSecret(result.token);});}}>
-        <input aria-label={t('同步设备名称','Sync device name')} className={input} maxLength={80} value={name} onChange={e=>setName(e.target.value)} required/>
-        <input aria-label={t('已有 v1 设备 UUID（选填）','Existing v1 device UUID (optional)')} placeholder={t('已有 v1 设备 UUID（选填）','Existing v1 device UUID (optional)')} className={input} maxLength={36} value={legacyId} onChange={e=>setLegacyId(e.target.value)}/>
+        <input aria-label={t('同步设备名称','Sync device name')} placeholder={t('例如：Windows 台式机','e.g. Windows desktop')} className={input} maxLength={80} value={name} onChange={e=>setName(e.target.value)} required/>
+        <input aria-label={t('已有 v1 设备 UUID（选填）','Existing v1 device UUID (optional)')} className={input} maxLength={36} value={legacyId} onChange={e=>setLegacyId(e.target.value)}/>
+        <p className="w-full text-xs text-[var(--color-text-muted)]">{t('名称只是显示标签，之后可随时改名。v1 UUID 仅在接管旧设备时填写，通常留空。','The name is only a label and can be renamed later. Fill the v1 UUID only when taking over an existing device; usually leave it empty.')}</p>
         <fieldset className="flex w-full flex-wrap gap-3"><legend className="text-xs">{t('允许自动同步的数据源','Sources allowed to sync automatically')}</legend>{sources.map(item=><label key={item} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={allowedSources.includes(item)} onChange={e=>setAllowedSources(current=>e.target.checked?[...current,item]:current.filter(source=>source!==item))}/>{item}</label>)}</fieldset>
         <button className={button} disabled={busy||!allowedSources.length}>{t('登记设备','Register device')}</button>
       </form>
       {devices.map(device=><div key={device.id} className="space-y-2 rounded-lg border border-[var(--color-border)] p-3 text-xs">
         <p>{device.name} · {device.id} · …{device.tokenHint} {device.revokedAt?t('已吊销','Revoked'):''}</p>
-        <p>{t('已授权来源：','Allowed sources: ')}{device.allowedSources.join(', ')} · {t('新会话自动登记；历史冲突需审阅。','New sessions enroll automatically; historical conflicts need review.')}</p>
+        <p>{t('已授权来源：','Allowed sources: ')}{device.allowedSources.join(', ')}</p>
         <div className="flex flex-wrap gap-2">
           <button className={button} disabled={busy||!!device.revokedAt} onClick={()=>void run(async()=>{const result=await request('/'+device.id+'/rotate','POST');await load();setSecret(result.token);})}>{t('轮换凭据','Rotate token')}</button>
           <button className={button} disabled={busy||!!device.revokedAt} onClick={()=>void run(async()=>{await request('/'+device.id,'DELETE');await load();})}>{t('吊销','Revoke')}</button>

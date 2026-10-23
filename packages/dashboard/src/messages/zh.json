@@ -1,5 +1,5 @@
 {
-  "remote":{"online":"设备在线","offline":"设备离线","reading":"已提交，读取统计中","idle":"就绪","device":"同步设备","collected":"Agent 最后采集","reported":"上传","cloudCommitted":"云端最后提交","webUpdated":"Dashboard 最近读取","thisRefresh":"本次刷新","historyReviews":"历史待审阅","v1Imported":"v1 最后导入","requesting":"正在请求采集","collecting":"正在采集","uploading":"正在上传","committed":"已提交，图表已更新","committing":"正在核验回执","no_change":"数据无变化","partial":"部分同步","review":"需要审阅","review_required":"有冲突，需审阅","failed":"失败","expired":"已过期","cancelled":"已取消","stored_v2":"已同步到 v2，当前仍显示旧视图","queued":"排队中","dispatched":"已通知设备","running":"同步中","completed":"已提交，图表已更新","completed_no_change":"数据无变化"},
+  "remote":{"online":"设备在线","offline":"设备离线","unreachable":"远程未响应","reading":"已提交，读取统计中","idle":"就绪","device":"同步设备","collected":"采集","reported":"上传","cloudCommitted":"提交","webUpdated":"Dashboard 最近读取","thisRefresh":"刷新","historyReviews":"待审阅","v1Imported":"v1 最后导入","requesting":"正在请求采集","collecting":"正在采集","uploading":"正在上传","committed":"已提交，图表已更新","committing":"正在核验回执","no_change":"数据无变化","partial":"部分同步","review":"需要审阅","review_required":"有冲突，需审阅","failed":"失败","expired":"已过期","cancelled":"已取消","stored_v2":"已同步到 v2，当前仍显示旧视图","queued":"排队中","dispatched":"已通知设备","running":"同步中","completed":"已提交，图表已更新","completed_no_change":"数据无变化"},
   "imports": {
     "open": "导入", "title": "跨机器数据导入", "close": "关闭",
     "intro": "导入其他电脑的 Token 数据，校验后确认，可按批次回退",
@@ -129,8 +129,8 @@
   },
   "models": {
     "eyebrow": "MODELS & SOURCES",
-    "title": "按模型、客户端来源与 Token 类型拆解",
-    "description": "按实际会话中的模型标识拆解用量",
+    "title": "用量构成",
+    "description": "按模型、客户端来源与 Token 类型统计",
     "tokenTypes": {
       "title": "Token 类型拆解",
       "subtitle": "按计费属性拆解缓存读取、标准输入、模型输出与推理/写入差值",

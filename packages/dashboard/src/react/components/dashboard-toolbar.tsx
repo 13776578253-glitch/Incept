@@ -22,16 +22,17 @@ type DashboardToolbarProps = {
   hasSnapshot?: boolean;
   showingHistory?: boolean;
   remoteInfo?:RemoteStatus|null;remoteDevice?:string;setRemoteDevice?:(id:string)=>void;remoteState?:string;refreshInterval?:number;
-  lastPageUpdatedAt?:string;
-};
+  lastPageUpdatedAt?:string;};
 
 export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrendIndex,
-  data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport, hasSnapshot = true, showingHistory = false,remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval=DASHBOARD_REFRESH_INTERVAL,lastPageUpdatedAt }: DashboardToolbarProps) {
+  data, isRefreshing, refreshError, onRefresh, refreshCycle, isPollingPaused, onOpenImport, hasSnapshot = true, showingHistory = false,remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval=DASHBOARD_REFRESH_INTERVAL }: DashboardToolbarProps) {
   const t = useTranslations('dashboard');
   const selectedDevice=remoteInfo?.devices.find(d=>d.id===remoteDevice);
   const job=selectedDevice?.lastJob;
-  const remoteText=remoteInfo?[t(selectedDevice?.online?'remote.online':'remote.offline'),t('remote.'+(remoteState||'idle'))].join(' · '):'';
-  const refreshState=t('remote.'+(remoteState||job?.phase||'idle'));
+  // "offline" describes the remote link, not the device, so it gets its own wording.
+  const phaseLabel=(state?:string)=>t(state==='offline'?'remote.unreachable':'remote.'+(state||'idle'));
+  const remoteText=remoteInfo?[t(selectedDevice?.online?'remote.online':'remote.offline'),phaseLabel(remoteState)].join(' · '):'';
+  const refreshState=phaseLabel(remoteState||job?.phase);
   const historyReviews=job?.reviewTotal??0;
   const legacyImportedAt=data.sync?.readMode==='v2'?data.sync.legacyImportedAt:undefined;
 
@@ -69,13 +70,15 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {remoteInfo&&<select aria-label={t('remote.device')} className="dashboard-refresh-button" value={remoteDevice} disabled={isRefreshing} onChange={e=>setRemoteDevice?.(e.target.value)}>{remoteInfo.devices.map(d=><option key={d.id} value={d.id}>{d.name} · {t(d.online?'remote.online':'remote.offline')}</option>)}</select>}
+            {remoteInfo && (remoteInfo.devices.length > 1
+              ? <select aria-label={t('remote.device')} className="dashboard-refresh-button" value={remoteDevice} disabled={isRefreshing} onChange={e=>setRemoteDevice?.(e.target.value)}>{remoteInfo.devices.map(d=><option key={d.id} value={d.id}>{d.name} · {t(d.online?'remote.online':'remote.offline')}</option>)}</select>
+              : <span className="dashboard-refresh-button is-static" title={selectedDevice?.name}>{t('remote.device')} · {t(selectedDevice?.online?'remote.online':'remote.offline')}</span>)}
             {onOpenImport ? <button type="button" onClick={onOpenImport} className="dashboard-import-button">
               <span className="text-[var(--color-text-muted)]"><ImportIcon /></span>{t('imports.open')}
             </button> : null}
             <button type="button" onClick={onRefresh} disabled={isRefreshing}
               className="dashboard-refresh-button">
-              {isRefreshing&&remoteInfo&&remoteState?t('remote.'+remoteState):t(isRefreshing ? 'page.refreshing' : 'page.refresh')}
+              {isRefreshing&&remoteInfo&&remoteState?phaseLabel(remoteState):t(isRefreshing ? 'page.refreshing' : 'page.refresh')}
             </button>
           </div>
         </div>
@@ -84,12 +87,11 @@ export function DashboardToolbar({ rangePreset, setRangePreset, setSelectedTrend
         data-remote-online={remoteInfo?String(!!selectedDevice?.online):undefined}
         title={remoteText} className="h-5 truncate text-[0.72rem] leading-5 text-[var(--color-nav-muted)]">{remoteText}</p>
         {remoteInfo?<div data-testid="sync-timeline" className="flex flex-wrap gap-x-4 gap-y-1 text-[0.68rem] tabular-nums text-[var(--color-nav-muted)]">
-          <span>{t('remote.collected')}: {selectedDevice?.lastCollectedAt?formatDateTimeShort(selectedDevice.lastCollectedAt):'—'}</span>
-          <span>{t('remote.cloudCommitted')}: {selectedDevice?.lastCommittedAt?formatDateTimeShort(selectedDevice.lastCommittedAt):'—'}</span>
-          <span>{t('remote.webUpdated')}: {lastPageUpdatedAt?formatDateTimeShort(lastPageUpdatedAt):'—'}</span>
-          <span>{t('remote.thisRefresh')}: {refreshState}{job?.dataRevision!==null&&job?.dataRevision!==undefined?` · rev ${job.dataRevision}`:''}{job?.newTokens?` · +${job.newTokens} tokens`:''}</span>
-          <span>{t('remote.historyReviews')}: {historyReviews}</span>
-          {legacyImportedAt?<span>{t('remote.v1Imported')}: {formatDateTimeShort(legacyImportedAt)}</span>:null}
+          <span>{t('remote.collected')} {selectedDevice?.lastCollectedAt?formatDateTimeShort(selectedDevice.lastCollectedAt):'—'}</span>
+          <span>{t('remote.cloudCommitted')} {selectedDevice?.lastCommittedAt?formatDateTimeShort(selectedDevice.lastCommittedAt):'—'}</span>
+          <span>{t('remote.thisRefresh')} {refreshState}{job?.dataRevision!==null&&job?.dataRevision!==undefined?` · rev ${job.dataRevision}`:''}{job?.newTokens?` · +${job.newTokens} tokens`:''}</span>
+          {historyReviews>0?<span>{t('remote.historyReviews')} {historyReviews}</span>:null}
+          {legacyImportedAt?<span>{t('remote.v1Imported')} {formatDateTimeShort(legacyImportedAt)}</span>:null}
         </div>:null}
 
     </header>

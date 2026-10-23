@@ -112,8 +112,7 @@
     "columns": {
       "title": "Title",
       "locale": "Locale",
-      "routeType": "Route type",
-      "kind": "Kind",
+      "type": "Type",
       "accessRole": "Access role",
       "collection": "Current collection",
       "position": "Current position",

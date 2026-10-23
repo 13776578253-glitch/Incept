@@ -121,7 +121,7 @@ export function ModelDistributionPanel({
         })}
       </div>
 
-      <ExpandRowsButton expanded={showAllOverviewModels} count={data.models.length} limit={10}
+      <ExpandRowsButton preservePagePosition expanded={showAllOverviewModels} count={data.models.length} limit={10}
         onToggle={() => setShowAllOverviewModels(value => !value)}
         expandLabel={t('overview.distribution.showAllModels', { count: data.models.length })}
         collapseLabel={t('overview.distribution.showTopModels')} />
