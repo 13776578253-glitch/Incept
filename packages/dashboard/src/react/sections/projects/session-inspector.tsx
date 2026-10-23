@@ -39,15 +39,17 @@ export function SessionInspector({
                   id: inspectedSession.sessionId.slice(0, 8),
                 })}
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[0.72rem] text-[var(--color-text-muted)]">
-              <span>{t('projects.sessions.inspector.source')}</span>
-              <span className="rounded border border-[var(--color-border)] bg-[var(--color-row-bg)] px-1.5 py-0.5 font-mono text-[0.68rem] font-medium text-[var(--color-text)]">
-                {inspectedSession.source}
-              </span>
-            </div>
+            {Boolean(inspectedSession.source && inspectedSession.source.trim() && inspectedSession.source.trim() !== '—') && (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[0.72rem] text-[var(--color-text-muted)]">
+                <span>{t('projects.sessions.inspector.source')}</span>
+                <span className="rounded border border-[var(--color-border)] bg-[var(--color-row-bg)] px-1.5 py-0.5 font-mono text-[0.68rem] font-medium text-[var(--color-text)]">
+                  {inspectedSession.source}
+                </span>
+              </div>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-2 text-[0.72rem] text-[var(--color-text-muted)]">
               <span>{t('projects.sessions.inspector.project')}</span>
-              <span className="font-mono font-medium text-[var(--color-text)]">
+              <span className="max-w-[260px] truncate font-mono font-medium text-[var(--color-text)]" title={inspectedSession.projectName}>
                 {inspectedSession.projectName}
               </span>
             </div>

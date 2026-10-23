@@ -12,14 +12,29 @@ export function useModelsState(data: TokenDashboardData) {
   const modelSourceFilters = useMemo(() => {
     const counts = new Map<string, number>();
     for(const m of data.models) {
-      counts.set(m.source, (counts.get(m.source) ?? 0) + 1);
+      const sources = m.sourcesUsed && m.sourcesUsed.length > 0
+        ? m.sourcesUsed
+        : m.source
+          ? m.source.split(' / ').map((s) => s.trim()).filter(Boolean)
+          : [];
+      for(const src of sources) {
+        counts.set(src, (counts.get(src) ?? 0) + 1);
+      }
     }
-    return Array.from(counts.entries()).map(([source, count]) => ({ source, count }));
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([source, count]) => ({ source, count }));
   }, [data.models]);
 
   const sortedModels = useMemo(() => {
     return data.models
-      .filter((m) => selectedModelSource === 'all' || m.source === selectedModelSource)
+      .filter((m) => {
+        if(selectedModelSource === 'all') return true;
+        if(m.sourcesUsed?.includes(selectedModelSource)) return true;
+        if(m.source === selectedModelSource) return true;
+        if(m.source?.split(' / ').map((s) => s.trim()).includes(selectedModelSource)) return true;
+        return false;
+      })
       .sort((a, b) => {
         if(a.slotStatus !== b.slotStatus) {
           return a.slotStatus === 'measured' ? -1 : 1;

@@ -1,0 +1,11 @@
+{
+  "canonicalLedger": "v4.db",
+  "minRevision": 387,
+  "anchorBatchId": "b4efa79f-8ac3-41b2-8d99-cecceb5ca20c",
+  "anchorPayloadHash": "29e9ce198ff7c1273cdb83e9b6883472b0a5fdbf3ac98aa0993e50c3d996583c",
+  "minScopes": 362,
+  "minTokens": 4558021501,
+  "minVisibleRecords": 362,
+  "createdAt": "2026-10-20T00:00:00.000Z",
+  "updatedAt": "2026-10-23T00:00:00.000Z"
+}

@@ -2,6 +2,7 @@ import 'server-only';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ModelUsageSummary } from '../../../domain/index';
+import { resolveModelIdentity } from '../../../domain/index';
 import { type UnitPricing } from '../types';
 import { lookupPricing } from '../pricing';
 import { classifyProvider } from '../normalization';
@@ -20,13 +21,20 @@ export function appendConfiguredModels(home: string, pricingMap: Map<string, Uni
       };
       for(const item of rawCodexCache.models ?? []) {
         const slug = item.slug ? canonicalModelName(item.slug, aliases) : undefined;
-        if(!slug || existingModelNames.has(slug.toLowerCase())) continue;
+        if(!slug) continue;
+        const identity = resolveModelIdentity(slug, 'codex');
+        const canonicalId = identity.canonicalModelId;
+        if(existingModelNames.has(canonicalId.toLowerCase()) || existingModelNames.has(slug.toLowerCase())) continue;
+        existingModelNames.add(canonicalId.toLowerCase());
         existingModelNames.add(slug.toLowerCase());
-        const pricing = lookupPricing(pricingMap, slug);
+        const pricing = lookupPricing(pricingMap, canonicalId) ?? lookupPricing(pricingMap, slug);
         models.push({
-          modelName: slug,
-          displayName: item.display_name || slug,
-          provider: classifyProvider(slug),
+          modelName: canonicalId,
+          displayName: item.display_name || identity.displayName,
+          canonicalModelId: canonicalId,
+          provider: identity.providerFamily ?? classifyProvider(canonicalId),
+          providersUsed: identity.provider ? [identity.provider] : [],
+          rawModels: [slug],
           source: 'Codex CLI',
           sourcesUsed: ['Codex CLI'],
           inputTokens: 0,
@@ -67,18 +75,26 @@ export function appendConfiguredModels(home: string, pricingMap: Map<string, Uni
         const clean = canonicalModelName(candidate, aliases);
         if(!clean) continue;
         const shortName = clean.includes('/') ? clean.split('/').pop()! : clean;
+        const identity = resolveModelIdentity(clean, 'commandcode');
+        const canonicalId = identity.canonicalModelId;
         if(
+          existingModelNames.has(canonicalId.toLowerCase()) ||
           existingModelNames.has(clean.toLowerCase()) ||
           existingModelNames.has(shortName.toLowerCase())
         ) {
           continue;
         }
+        existingModelNames.add(canonicalId.toLowerCase());
         existingModelNames.add(clean.toLowerCase());
-        const pricing = lookupPricing(pricingMap, clean);
+        existingModelNames.add(shortName.toLowerCase());
+        const pricing = lookupPricing(pricingMap, canonicalId) ?? lookupPricing(pricingMap, clean);
         models.push({
-          modelName: clean,
-          displayName: clean,
-          provider: classifyProvider(clean),
+          modelName: canonicalId,
+          displayName: identity.displayName,
+          canonicalModelId: canonicalId,
+          provider: identity.providerFamily ?? classifyProvider(canonicalId),
+          providersUsed: identity.provider ? [identity.provider] : [],
+          rawModels: [clean],
           source: 'CommandCode',
           sourcesUsed: ['CommandCode'],
           inputTokens: 0,

@@ -6,6 +6,7 @@ import { openSqliteReadOnly } from './sqlite';
 import { loadCommandCodePricing } from './pricing-commandcode';
 import { TEMPORARY_MODEL_PRICES } from './pricing-temporary';
 import { canonicalModelName, DEFAULT_PRICING_ALIASES, readLocalOverrides, type LocalOverrides } from './overrides';
+import { resolveModelIdentity } from '../../domain/index';
 
 export function loadLocalPricingMap(home: string, overrides: LocalOverrides = readLocalOverrides()): Map<string, UnitPricing> {
   const pricingMap = new Map<string, UnitPricing>(Object.entries(TEMPORARY_MODEL_PRICES).map(([model, rates]) => [model, { ...rates }]));
@@ -97,15 +98,55 @@ export function lookupPricing(
   modelName: string,
 ): UnitPricing | undefined {
   const lower = modelName.trim().toLowerCase();
-  if(pricingMap.has(lower)) return pricingMap.get(lower);
-  const shortName = lower.includes('/') ? lower.split('/').pop()! : lower;
-  if(pricingMap.has(shortName)) return pricingMap.get(shortName);
-  const target = canonicalModelName(lower, DEFAULT_PRICING_ALIASES).toLowerCase();
-  if (target !== lower) {
-    const providerPrefix = lower.includes('/') ? lower.slice(0, lower.lastIndexOf('/') + 1) : '';
-    return pricingMap.get(target.includes('/') ? target : `${providerPrefix}${target}`)
-      ?? pricingMap.get(target);
+  if (!lower) return undefined;
+
+  const direct = pricingMap.get(lower);
+  if (direct) return direct;
+
+  const candidates = new Set<string>();
+  candidates.add(lower);
+
+  const shortName = lower.includes('/') ? lower.slice(lower.lastIndexOf('/') + 1) : lower;
+  candidates.add(shortName);
+
+  const identity = resolveModelIdentity(lower);
+  candidates.add(identity.canonicalModelId);
+
+  const shortIdentity = resolveModelIdentity(shortName);
+  candidates.add(shortIdentity.canonicalModelId);
+
+  for (const c of Array.from(candidates)) {
+    const target = canonicalModelName(c, DEFAULT_PRICING_ALIASES).toLowerCase();
+    if (target && target !== c) {
+      candidates.add(target);
+      const targetShort = target.includes('/') ? target.slice(target.lastIndexOf('/') + 1) : target;
+      candidates.add(targetShort);
+      candidates.add(resolveModelIdentity(target).canonicalModelId);
+    }
   }
+
+  for (const c of candidates) {
+    const p = pricingMap.get(c);
+    if (p) return p;
+  }
+
+  const vendorPrefixes = ['deepseek/', 'google/', 'openai/', 'anthropic/', 'xiaomi/'];
+  for (const c of candidates) {
+    if (!c.includes('/')) {
+      for (const prefix of vendorPrefixes) {
+        const p = pricingMap.get(prefix + c);
+        if (p) return p;
+      }
+    }
+  }
+
+  for (const c of candidates) {
+    const suffix = '/' + c;
+    for (const [key, price] of pricingMap.entries()) {
+      if (key.endsWith(suffix)) return price;
+    }
+  }
+
   return undefined;
 }
 

@@ -20,6 +20,15 @@ type SessionsTableProps = Pick<ProjectsState,
   | 'inspectedSession'
 >;
 
+function formatSessionProject(name: string): string {
+  if (!name) return '';
+  if (name.length <= 30) return name;
+  if (name.startsWith('Incept · Initial baseline enrollment:')) {
+    return 'Incept · Initial baseline enrollme...';
+  }
+  return `${name.slice(0, 30)}...`;
+}
+
 export function SessionsTable({
   sessionSearch,
   setSessionSearch,
@@ -118,12 +127,17 @@ export function SessionsTable({
                   </td>
                   <td className="px-2.5 py-3">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="inline-flex items-center rounded-md border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2 py-0.5 text-[0.7rem] font-medium text-[var(--color-text)]">
-                        {session.projectName}
+                      <span
+                        title={session.projectName}
+                        className="inline-flex items-center rounded-md border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2 py-0.5 text-[0.7rem] font-medium text-[var(--color-text)]"
+                      >
+                        {formatSessionProject(session.projectName)}
                       </span>
-                      <span className="rounded border border-[var(--color-border)] bg-[var(--color-row-bg)] px-1.5 py-0.5 font-mono text-[0.64rem] text-[var(--color-nav-muted)]">
-                        {session.source}
-                      </span>
+                      {Boolean(session.source && session.source.trim() && session.source.trim() !== '—') && (
+                        <span className="rounded border border-[var(--color-border)] bg-[var(--color-row-bg)] px-1.5 py-0.5 font-mono text-[0.64rem] text-[var(--color-nav-muted)]">
+                          {session.source}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-2.5 py-3 font-mono text-[0.7rem] text-[var(--color-text-muted)]">

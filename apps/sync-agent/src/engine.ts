@@ -9,6 +9,7 @@ import type {TransferSource} from '../../../packages/dashboard/src/domain';
 import {AgentState,scopeKey} from './state';
 import {AgentHttp,RemoteError} from './transport';
 import {classifyIssues} from './issues';
+import {resumeReviewed} from './review';
 export {AgentState,scopeKey} from './state';
 export {AgentHttp,RemoteError,validateEndpoint} from './transport';
 export {storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
@@ -136,7 +137,9 @@ export class SyncEngine {
       outcome,quarantineNew,sourceReports,...this.state.status()};
   }
   private async upload(signal?:AbortSignal){
-    this.state.set('activity','uploading');let sent=0,newTokens:number|null=0,uploadedTokens=0;for(let round=0;round<100&&!signal?.aborted;round++){
+    this.state.set('activity','uploading');let sent=0,newTokens:number|null=0,uploadedTokens=0;
+    for(const b of this.state.reviewBatches()){try{await resumeReviewed(this.state,this.http,b);this.state.set('lastErrorCode',null);}catch{}}
+    for(let round=0;round<100&&!signal?.aborted;round++){
       const pending=this.state.pending();if(!pending.length)break;let progress=false;
       for(const row of pending){const header=JSON.parse(String(row.header_json)),batch=String(row.batch),base='/batches/'+batch;
         try{

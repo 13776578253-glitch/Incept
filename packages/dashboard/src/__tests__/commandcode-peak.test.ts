@@ -12,6 +12,7 @@ import { publicDashboardSummary } from '../domain';
 import { modelSeries, modelShares } from '../react/sections/overview/trend-series';
 
 const model = 'deepseek/deepseek-v4.1-flash';
+const canonicalModel = 'deepseek-v4.1-flash';
 let home: string | undefined;
 afterEach(() => {
   if (home) {
@@ -61,9 +62,9 @@ describe('CommandCode quota and model identity', () => {
     }
     expect(data.totals.cost).toBeCloseTo(1.45);
     expect(data.costs.totalCost).toBeCloseTo(1.45);
-    expect(data.models.map(row => row.modelName)).toEqual([model]);
+    expect(data.models.map(row => row.modelName)).toEqual([canonicalModel]);
     expect(data.costs.totalModelCount).toBe(1);
-    expect(data.sessions[0].modelBreakdowns.map(row => row.modelName)).toEqual([model]);
+    expect(data.sessions[0].modelBreakdowns.map(row => row.modelName)).toEqual([canonicalModel]);
     const publicData = publicDashboardSummary(data);
     expect(publicData.models[0].billing).toEqual(data.models[0].billing);
     const parts = modelShares(publicData.daily[1], modelSeries(publicData.daily));
@@ -104,7 +105,9 @@ describe('CommandCode quota and model identity', () => {
     commitImport(previewImport(bundle, {}, options).previewId, options);
     const data = await loadTokenDashboardData({ home: importedHome, range: 'all', force: true });
     expect(data.totals.cost).toBeCloseTo(1.45);
-    expect(data.models.map(row => row.modelName)).toEqual([model]);
+    expect(data.models.map(row => row.modelName)).toEqual([canonicalModel]);
+    expect(data.models[0].canonicalModelId).toBe(canonicalModel);
+    expect(data.models[0].rawModels).toEqual([model]);
     expect(data.models[0].billing?.peak?.cost).toBeCloseTo(1.18);
   });
 });

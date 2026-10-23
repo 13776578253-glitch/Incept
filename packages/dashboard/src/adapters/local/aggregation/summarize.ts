@@ -79,13 +79,25 @@ export function summarizeUsageEvents(allEvents: RawUsageEvent[], home: string, p
   const models: ModelUsageSummary[] = Array.from(modelAggMap.values())
     .sort((a, b) => b.totalTokens - a.totalTokens)
     .map((m) => {
+      const rawModels = Array.from(m.rawModels);
+      const providersUsed = Array.from(m.providersUsed);
       const sourcesUsed = Array.from(m.sourcesUsed);
-      const pricing = lookupPricing(pricingMap, m.modelName);
+      let pricing = lookupPricing(pricingMap, m.canonicalModelId);
+      if (!pricing) {
+        for (const raw of rawModels) {
+          pricing = lookupPricing(pricingMap, raw);
+          if (pricing) break;
+        }
+      }
       const promptTotal = m.inputTokens + m.cacheCreationTokens + m.cacheReadTokens;
+      const isUnpriced = !pricing && m.cost === 0;
       return {
-        modelName: m.modelName,
-        displayName: m.modelName,
-        provider: classifyProvider(m.modelName),
+        modelName: m.canonicalModelId,
+        displayName: m.displayName,
+        canonicalModelId: m.canonicalModelId,
+        rawModels,
+        providersUsed,
+        provider: m.providerFamily ?? classifyProvider(m.canonicalModelId),
         source: sourcesUsed.join(' / '),
         sourcesUsed,
         inputTokens: m.inputTokens,

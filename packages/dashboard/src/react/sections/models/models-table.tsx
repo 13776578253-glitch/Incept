@@ -155,9 +155,21 @@ export function ModelsTable({
                     </div>
                   </td>
                   <td className="px-3 py-3">
-                    <span className="inline-flex items-center rounded-md border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2 py-0.5 font-mono text-[0.68rem] text-[var(--color-text)]">
-                      {model.source}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      {(model.sourcesUsed && model.sourcesUsed.length > 0
+                        ? model.sourcesUsed
+                        : model.source
+                          ? model.source.split(' / ')
+                          : []
+                      ).map((src) => (
+                        <span
+                          key={src}
+                          className="inline-flex items-center rounded-md border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2 py-0.5 font-mono text-[0.68rem] text-[var(--color-text)]"
+                        >
+                          {src}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-3 py-3 text-right font-mono text-[var(--color-text-muted)]">
                     {isSlot ? '—' : formatCompactTokens(model.inputTokens)}
@@ -208,7 +220,7 @@ export function ModelsTable({
                         label={t('models.table.slotBadge')}
                         tone="indigo"
                       />
-                    ) : model.missingPricing ? (
+                    ) : model.missingPricing && model.cost === 0 ? (
                       <span className="inline-flex items-center gap-1.5 text-[var(--color-nav-muted)]">
                         <span>—</span>
                         <CredibilityPill
@@ -218,7 +230,7 @@ export function ModelsTable({
                       </span>
                     ) : (
                       <span className="font-semibold text-[var(--color-text)]">
-                        {formatUsd(model.cost)}
+                        {formatKnownCost(model.cost, model.missingPricing)}
                       </span>
                     )}
                   </td>

@@ -66,3 +66,29 @@ it('an explicit Owner device+manifest+batch plan grants exact adoption without a
   const replay=await runMaintenance(args,env());expect(replay).toMatchObject({ok:true,receipt:{status:'committed'}});
   service=new CompatibleSyncService(sync);try{expect(readSyncView(service).events).toHaveLength(bundle.events.length);expect(service.db.prepare('SELECT COUNT(*) n FROM sync_adoptions').get()!.n).toBe(1);}finally{service.close();}
 });
+
+it('rolls back a committed generation through maintenance CLI with incremented revision and audit trail', async () => {
+  writePhase0Home(home); const bundle = phase0Export(home), old = phase0Import(bundle, legacy), owner = { role: 'owner' as const, subject: 'owner', reason: 'fixture' };
+  let service = new CompatibleSyncService(sync); service.migrateV1(legacy, owner); service.close();
+  const events = bundle.events.filter(e => e.source === 'claudeCode'), scope = { deviceId: bundle.device.id, source: 'claudeCode' as const, sessionId: events[0].sessionId, originId: 'rollback-origin' }, candidate = fromEvents(events, scope, undefined, 'rollback-plan'), file = join(directory, 'candidate-rollback.json');
+  writeFileSync(file, JSON.stringify(candidate));
+  const adoptArgs = ['adopt-exact', '--candidate=' + file, '--legacy-batches=' + old.id, '--device=' + scope.deviceId, '--manifest=' + candidate.header.manifest.manifestHash, '--owner-confirm=I_AM_THE_OWNER', '--reason=plan for rollback'];
+  const adopted = await runMaintenance(adoptArgs, env()) as { ok: boolean; receipt: { generationId: string } };
+  expect(adopted.ok).toBe(true);
+  const genId = adopted.receipt.generationId;
+
+  // Test rollback without confirmation fails
+  await expect(runMaintenance(['rollback', '--generation=' + genId], env())).rejects.toMatchObject({ code: 'OWNER_CONFIRMATION_REQUIRED' });
+
+  // Test rollback with confirmation succeeds
+  const res = await runMaintenance(['rollback', '--generation=' + genId, '--owner-confirm=I_AM_THE_OWNER', '--reason=Rollback test'], env()) as { ok: boolean; generation: string; revision: number };
+  expect(res.ok).toBe(true);
+  expect(res.generation).toBe(genId);
+
+  // Check audit and rolled state
+  service = new CompatibleSyncService(sync);
+  try {
+    expect(service.db.prepare('SELECT rolled FROM sync_generations WHERE id=?').get(genId)!.rolled).toBe(1);
+    expect(service.db.prepare("SELECT COUNT(*) n FROM sync_audit WHERE operation='rollback'").get()!.n).toBe(1);
+  } finally { service.close(); }
+});

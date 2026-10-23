@@ -19,7 +19,8 @@ export async function resumeHeld(state:AgentState,http:AgentHttp,config:Config,b
   const admission=await http.request<{scope:unknown;status?:string;code?:string;headManifest?:string|null;head?:SyncHeader|null}>('/scopes/resolve','POST',{source:scope.source,sessionId:scope.sessionId});
   if(admission.status==='review-required'||!admission.head)throw Error('REVIEW_NOT_RESOLVED');
   if(hash(admission.scope)!==hash(scope)||hash(admission.head.manifest.scope)!==hash(scope)||admission.head.manifest.manifestHash!==admission.headManifest)throw Error('REVIEW_HEAD_MISMATCH');
-  const parent:ParentCapture={header:admission.head,proofs:admission.head.manifest.ranges.map(range=>({range}))};
+  const localParent=state.tail(scopeKey(scope.source,scope.sessionId))?.parent;
+  const parent:ParentCapture={header:admission.head,proofs:admission.head.manifest.ranges.map(range=>({range,parts:localParent?.proofs.find(p=>p.range.locatorHash===range.locatorHash)?.parts}))};
   const snapshot=mkdtempSync(join(tmpdir(),'incept-resume-'));
   try{
     const captured=await captureHome(config.home,snapshot,config.allowedSources,[parent]);

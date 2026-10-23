@@ -56,6 +56,9 @@ export type ModelUsageSummary = TokenBreakdown & {
   billing?: BillingBreakdown;
   modelName: string;
   displayName: string;
+  canonicalModelId?: string;
+  rawModels?: string[];
+  providersUsed?: string[];
   provider: ModelProviderFamily;
   source: string;
   sourcesUsed?: string[];

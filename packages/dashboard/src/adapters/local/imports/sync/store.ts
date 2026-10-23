@@ -232,6 +232,66 @@ export class SyncStore {
       this.db.prepare('INSERT INTO sync_review_resolutions VALUES(?,?)').run(reviewId,JSON.stringify({actor,disposition:committedSuccessor?'accepted-successor':'dismissed',committedSuccessor}));this.bump();this.audit('review-resolved',String(review.scope_id),String(reviewId),actor);
     });
   }
+  acceptReview(reviewId:number,actor:SyncActor): {ok:boolean;id:number;disposition:string;committedSuccessor:string;revision:number;receipt:SyncReceipt} {
+    this.owner(actor);
+    return this.transaction(()=>{
+      const review=this.db.prepare('SELECT * FROM sync_reviews WHERE id=?').get(reviewId);
+      requireSync(review,'REVIEW_NOT_FOUND');
+      requireSync(!this.db.prepare('SELECT 1 FROM sync_review_resolutions WHERE review_id=?').get(reviewId),'REVIEW_ALREADY_RESOLVED');
+      const header=JSON.parse(String(review.header_json)) as SyncHeader;
+      const manifest=header.manifest;
+      const id=syncScopeId(manifest.scope);
+      const state=this.db.prepare('SELECT * FROM sync_scopes WHERE scope_id=?').get(id) as StoredScope;
+      requireSync(state,'SCOPE_NOT_FOUND');
+      requireSync(!state.fenced,'ROLLED_BACK_LINEAGE');
+      requireSync(String(review.manifest_id)===manifest.manifestHash,'REVIEW_MANIFEST_MISMATCH');
+      requireSync(manifest.parent?manifest.parent.manifestHash===state.head_manifest&&manifest.parent.generationId===state.head_generation:state.head_manifest===null,'PARENT_MISMATCH');
+      const records:SyncRecord[]=[];
+      for(const row of this.db.prepare('SELECT o.record_json FROM sync_review_members m JOIN sync_observations o ON o.id=m.observation_id WHERE m.review_id=? ORDER BY m.position').iterate(reviewId)) {
+        records.push(JSON.parse(String(row.record_json)));
+      }
+      requireSync(records.length===manifest.recordCount,'RECORD_COUNT_MISMATCH');
+      requireSync(sequenceHash(records)===manifest.sequenceHash,'SEQUENCE_HASH_MISMATCH');
+      const tokenTotal=qualifyRecords(this.current(id),records,manifest);
+      const others=Number(this.db.prepare('SELECT TOTAL(token_total) n FROM sync_scopes WHERE scope_id!=?').get(id)!.n);
+      requireSync(Number.isSafeInteger(others+tokenTotal),'TOKEN_TOTAL_OVERFLOW');
+      this.db.prepare('INSERT OR IGNORE INTO sync_manifests VALUES(?,?,?,?)').run(manifest.manifestHash,id,manifest.generationId,JSON.stringify(header));
+      this.db.prepare('INSERT INTO sync_generations(id,scope_id,parent_id,manifest_id,basis_json,mappings_json,token_total) VALUES(?,?,?,?,?,?,?)')
+        .run(manifest.generationId,id,state.visible_generation,manifest.manifestHash,JSON.stringify(header.basis),JSON.stringify(header.mappings),tokenTotal);
+      const putObservation=this.db.prepare('INSERT OR IGNORE INTO sync_observations VALUES(?,?,?,?,?)'),delta=this.db.prepare('INSERT INTO sync_changes VALUES(?,?,?,?)');
+      const putEntity=this.db.prepare('INSERT OR IGNORE INTO sync_entities VALUES(?,?,?)');
+      const old=this.db.prepare('SELECT observation_id FROM sync_current WHERE scope_id=? AND position=?'),upsert=this.db.prepare('INSERT INTO sync_current VALUES(?,?,?,?) ON CONFLICT(scope_id,position) DO UPDATE SET observation_id=excluded.observation_id,entity_id=excluded.entity_id');
+      let position=0;
+      for(const record of records) {
+        const observationId=hash(record),previous=old.get(id,position);
+        if(previous?.observation_id!==observationId) {
+          putObservation.run(observationId,JSON.stringify(record),record.event.timestampMs,record.event.source,record.event.sessionId);
+          const entity=syncEntityId(manifest.scope,record);putEntity.run(entity,id,record.nativeKey?.keyHash??null);
+          delta.run(manifest.generationId,position,observationId,entity);upsert.run(id,position,observationId,entity);
+        }
+        position++;
+      }
+      for(const row of this.db.prepare('SELECT position FROM sync_current WHERE scope_id=? AND position>=?').all(id,position))delta.run(manifest.generationId,row.position,null,null);
+      this.db.prepare('DELETE FROM sync_current WHERE scope_id=? AND position>=?').run(id,position);
+      this.bump();
+      this.db.prepare('UPDATE sync_scopes SET head_manifest=?,head_generation=?,visible_generation=?,fenced=0,token_total=? WHERE scope_id=?').run(manifest.manifestHash,manifest.generationId,manifest.generationId,tokenTotal,id);
+      const receipt:SyncReceipt={
+        batchId:header.batchId,
+        payloadHash:hash(header),
+        generationId:manifest.generationId,
+        manifestHash:manifest.manifestHash,
+        dataRevision:this.revision(),
+        status:'committed',
+        outcome:'updated',
+        code:'owner-reviewed'
+      };
+      this.db.prepare('INSERT OR REPLACE INTO sync_receipts VALUES(?,?,?,?)').run(manifest.scope.deviceId,header.batchId,hash(header),JSON.stringify(receipt));
+      this.db.prepare('INSERT OR REPLACE INTO sync_receipt_clock VALUES(?,?,?)').run(manifest.scope.deviceId,header.batchId,Date.now());
+      this.db.prepare('INSERT INTO sync_review_resolutions VALUES(?,?)').run(reviewId,JSON.stringify({actor,disposition:'accepted-successor',committedSuccessor:manifest.manifestHash}));
+      this.audit('review-accepted',id,manifest.manifestHash,actor);
+      return {ok:true,id:reviewId,disposition:'accepted-successor',committedSuccessor:manifest.manifestHash,revision:this.revision(),receipt};
+    });
+  }
   currentPage(scope:SyncScope,offset:number,limit:number,actor:SyncActor,expectedRevision?:number) {
     this.authorize(scope,actor);requireSync(Number.isSafeInteger(offset)&&offset>=0&&Number.isSafeInteger(limit)&&limit>0&&limit<=SYNC_LIMITS.pageRecords,'INVALID_READ_PAGE');
     this.db.exec('BEGIN');try{const dataRevision=this.revision();requireSync(expectedRevision===undefined||expectedRevision===dataRevision,'READ_REVISION_CHANGED');

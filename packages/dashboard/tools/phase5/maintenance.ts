@@ -208,12 +208,23 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
     }finally{service.close();}
   }
   if(command==='resolve-review'){
-    const actor=owner(options),service=new CompatibleSyncService(syncPath),id=Number(required(options,'id')),successor=typeof options.successor==='string'?options.successor:undefined;
-    try{service.resolveReview(id,actor,successor);return {ok:true,id,disposition:successor?'accepted-successor':'dismissed',revision:service.revision()};}finally{service.close();}
+    const actor=owner(options),service=new CompatibleSyncService(syncPath),id=Number(required(options,'id')),successor=typeof options.successor==='string'?options.successor:undefined,accept=options.accept===true||options['accept-proposal']===true;
+    try{
+      if(accept){
+        const res=service.acceptReview(id,actor);
+        return {ok:true,id,disposition:'accepted-successor',committedSuccessor:res.committedSuccessor,revision:service.revision()};
+      }
+      service.resolveReview(id,actor,successor);
+      return {ok:true,id,disposition:successor?'accepted-successor':'dismissed',committedSuccessor:successor,revision:service.revision()};
+    }finally{service.close();}
   }
   if(command==='maintain'){
     const actor=owner(options),service=new CompatibleSyncService(syncPath);
     try{service.owner(actor);const checkpoint=checkpointWal(service.db);return {ok:true,checkpoint,revision:service.revision()};}finally{service.close();}
+  }
+  if(command==='rollback'){
+    const actor=owner(options),service=new CompatibleSyncService(syncPath),generation=required(options,'generation');
+    try{service.rollback(generation,actor);return {ok:true,generation,revision:service.revision()};}finally{service.close();}
   }
   throw new MaintenanceError('UNKNOWN_COMMAND');
 }

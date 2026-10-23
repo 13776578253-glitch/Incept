@@ -43,6 +43,8 @@ export function publicDashboardSummary(data: TokenDashboardData, canViewDetails 
     daily: data.daily.map(day => ({ ...tokens(day), date: day.date, modelsUsed: [...day.modelsUsed], modelBreakdowns: modelBreakdowns(day.modelBreakdowns) })),
     monthly: data.monthly.map(month => ({ ...tokens(month), month: month.month, modelsUsed: [...month.modelsUsed], modelBreakdowns: modelBreakdowns(month.modelBreakdowns) })),
     models: data.models.map(model => ({ ...tokens(model), modelName: model.modelName, displayName: model.displayName,
+      canonicalModelId: model.canonicalModelId, rawModels: model.rawModels ? [...model.rawModels] : undefined,
+      providersUsed: model.providersUsed ? [...model.providersUsed] : undefined,
       provider: model.provider, source: model.source, billing: billingSummary(model.billing), sourcesUsed: model.sourcesUsed ? [...model.sourcesUsed] : undefined,
       shareOfTokens: model.shareOfTokens, shareOfCost: model.shareOfCost, cacheHitRate: model.cacheHitRate,
       missingPricing: model.missingPricing, slotStatus: model.slotStatus, sessionCount: model.sessionCount, activeDays: model.activeDays,

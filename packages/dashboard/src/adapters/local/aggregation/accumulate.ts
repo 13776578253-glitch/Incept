@@ -1,5 +1,6 @@
 import 'server-only';
-import type { BillingBreakdown, CcusageModelBreakdown, SourceDescriptionKey } from '../../../domain/index';
+import type { BillingBreakdown, CcusageModelBreakdown, SourceDescriptionKey, ModelProviderFamily } from '../../../domain/index';
+import { resolveModelIdentity } from '../../../domain/index';
 import { type RawUsageEvent } from '../types';
 import { SOURCE_META } from '../source-metadata';
 
@@ -50,6 +51,11 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     string,
     {
       modelName: string;
+      displayName: string;
+      canonicalModelId: string;
+      providerFamily?: ModelProviderFamily;
+      providersUsed: Set<string>;
+      rawModels: Set<string>;
       billing?: BillingBreakdown;
       sourcesUsed: Set<string>;
       inputTokens: number;
@@ -175,6 +181,9 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     totalTokens += evTotal;
     totalCost += ev.cost;
 
+    const identity = resolveModelIdentity(ev.modelName, ev.sourceId);
+    const canonicalModelId = identity.canonicalModelId;
+
     // 1. Daily
     let dayEntry = dailyMap.get(ev.dateKey);
     if(!dayEntry) {
@@ -198,9 +207,9 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     dayEntry.reasoningTokens += ev.reasoningTokens;
     dayEntry.totalTokens += evTotal;
     dayEntry.cost += ev.cost;
-    dayEntry.modelsUsed.add(ev.modelName);
-    const dayModel = dayEntry.modelMap.get(ev.modelName) ?? {
-      modelName: ev.modelName,
+    dayEntry.modelsUsed.add(canonicalModelId);
+    const dayModel = dayEntry.modelMap.get(canonicalModelId) ?? {
+      modelName: canonicalModelId,
       inputTokens: 0,
       outputTokens: 0,
       cacheCreationTokens: 0,
@@ -217,7 +226,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     dayModel.cacheReadTokens += ev.cacheReadTokens;
     dayModel.cost += ev.cost;
     addBilling(dayModel, ev, evTotal);
-    dayEntry.modelMap.set(ev.modelName, dayModel);
+    dayEntry.modelMap.set(canonicalModelId, dayModel);
 
     // 2. Monthly
     let monthEntry = monthlyMap.get(ev.monthKey);
@@ -242,9 +251,9 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     monthEntry.reasoningTokens += ev.reasoningTokens;
     monthEntry.totalTokens += evTotal;
     monthEntry.cost += ev.cost;
-    monthEntry.modelsUsed.add(ev.modelName);
-    const monthModel = monthEntry.modelMap.get(ev.modelName) ?? {
-      modelName: ev.modelName,
+    monthEntry.modelsUsed.add(canonicalModelId);
+    const monthModel = monthEntry.modelMap.get(canonicalModelId) ?? {
+      modelName: canonicalModelId,
       inputTokens: 0,
       outputTokens: 0,
       cacheCreationTokens: 0,
@@ -261,13 +270,18 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     monthModel.cacheReadTokens += ev.cacheReadTokens;
     monthModel.cost += ev.cost;
     addBilling(monthModel, ev, evTotal);
-    monthEntry.modelMap.set(ev.modelName, monthModel);
+    monthEntry.modelMap.set(canonicalModelId, monthModel);
 
     // 3. Model
-    let modelEntry = modelAggMap.get(ev.modelName);
+    let modelEntry = modelAggMap.get(canonicalModelId);
     if(!modelEntry) {
       modelEntry = {
-        modelName: ev.modelName,
+        modelName: canonicalModelId,
+        displayName: identity.displayName,
+        canonicalModelId,
+        providerFamily: identity.providerFamily,
+        providersUsed: new Set(),
+        rawModels: new Set(),
         sourcesUsed: new Set(),
         inputTokens: 0,
         outputTokens: 0,
@@ -280,9 +294,16 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
         sessions: new Set(),
         days: new Set(),
       };
-      modelAggMap.set(ev.modelName, modelEntry);
+      modelAggMap.set(canonicalModelId, modelEntry);
     }
     modelEntry.sourcesUsed.add(ev.sourceLabel);
+    if (ev.modelName.toLowerCase().startsWith('workbuddy/') || ev.modelName.toLowerCase().startsWith('workbuddy-ai/')) {
+      modelEntry.sourcesUsed.add('WorkBuddy');
+    }
+    if (identity.provider) {
+      modelEntry.providersUsed.add(identity.provider);
+    }
+    modelEntry.rawModels.add(ev.modelName);
     modelEntry.inputTokens += ev.inputTokens;
     modelEntry.outputTokens += ev.outputTokens;
     modelEntry.cacheCreationTokens += ev.cacheCreationTokens;
@@ -306,9 +327,9 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
       sourceEntry.reasoningTokens += ev.reasoningTokens;
       sourceEntry.totalTokens += evTotal;
       sourceEntry.cost += ev.cost;
-    sourceEntry.missingPricing ||= ev.missingPricing;
+      sourceEntry.missingPricing ||= ev.missingPricing;
       sourceEntry.sessions.add(scopedSessionKey);
-      sourceEntry.models.add(ev.modelName);
+      sourceEntry.models.add(canonicalModelId);
     }
 
     // 5. Session
@@ -352,9 +373,9 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     sessEntry.totalTokens += evTotal;
     sessEntry.cost += ev.cost;
     sessEntry.missingPricing ||= ev.missingPricing;
-    sessEntry.modelsUsed.add(ev.modelName);
-    const sessModel = sessEntry.modelMap.get(ev.modelName) ?? {
-      modelName: ev.modelName,
+    sessEntry.modelsUsed.add(canonicalModelId);
+    const sessModel = sessEntry.modelMap.get(canonicalModelId) ?? {
+      modelName: canonicalModelId,
       inputTokens: 0,
       outputTokens: 0,
       cacheCreationTokens: 0,
@@ -371,7 +392,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     sessModel.cacheReadTokens += ev.cacheReadTokens;
     sessModel.cost += ev.cost;
     addBilling(sessModel, ev, evTotal);
-    sessEntry.modelMap.set(ev.modelName, sessModel);
+    sessEntry.modelMap.set(canonicalModelId, sessModel);
 
     // 6. Project
     let projEntry = projectAggMap.get(ev.projectKey);
@@ -403,7 +424,7 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     projEntry.cost += ev.cost;
     projEntry.missingPricing ||= ev.missingPricing;
     if(ev.timestampMs > projEntry.lastTs) projEntry.lastTs = ev.timestampMs;
-    projEntry.modelsUsed.add(ev.modelName);
+    projEntry.modelsUsed.add(canonicalModelId);
   }
 
   return { dailyMap, monthlyMap, modelAggMap, sourceAggMap, sessionAggMap, projectAggMap, totalInput, totalOutput, totalCacheCreate, totalCacheRead, totalReasoning, totalTokens, totalCost };

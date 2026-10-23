@@ -1,11 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import {validateSyncConfiguration} from './sync-config.mjs';
+import {validateSyncConfiguration, validateAuthoritativeLedgerGate} from './sync-config.mjs';
 
 // Fail before accepting traffic when the production runtime contract is incomplete.
 function requireConfiguration() {
   validateSyncConfiguration();
+  validateAuthoritativeLedgerGate();
   const [major, minor] = process.versions.node.split('.').map(Number);
   if (major !== 24 || minor < 15) throw new Error('Node 24.15 or later on the 24 line is required.');
   if (process.env.NODE_ENV !== 'production') throw new Error('NODE_ENV must be production.');
@@ -26,7 +27,10 @@ function requireConfiguration() {
 }
 
 try { requireConfiguration(); }
-catch { console.error(JSON.stringify({ event: 'production_configuration_invalid' })); process.exit(1); }
+catch(err) {
+  console.error(JSON.stringify({ event: 'production_configuration_invalid', error: err?.message }));
+  process.exit(1);
+}
 
 const child = spawn(process.execPath, ['apps/web/node_modules/next/dist/bin/next', 'start', 'apps/web',
   '--hostname', process.env.INCEPT_BIND_ADDRESS ?? '0.0.0.0', '--port', process.env.PORT ?? '3000'], { stdio: 'inherit' });

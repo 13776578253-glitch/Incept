@@ -7,7 +7,7 @@ import {decodeHarnessZstd} from '../adapters/local/collectors/harness-zstd';
 import {join,relative,dirname,basename} from 'node:path';
 import {collectCommandCodeEvents} from '../adapters/local/collectors/commandcode';
 import {collectAiusageAndRawAgentEvents} from '../adapters/local/collectors/agents';
-import {loadLocalPricingMap} from '../adapters/local/pricing';
+import {loadLocalPricingMap, lookupPricing} from '../adapters/local/pricing';
 import {normalizeFile} from '../adapters/local/collectors/common';
 import {hash,nativeEventId} from '../adapters/local/imports/identity';
 import {normalizeCodexRecords} from './codex-normalize';
@@ -164,7 +164,11 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
       const counters=points.map(p=>({timestampMs:Date.parse(p.timestamp),total:p.payload?.info?.total_token_usage,last:p.payload?.info?.last_token_usage}));
       const normalized=source==='codex'&&reader==='codex'?normalizeCodexRecords(records,independentReview?[]:counters):records;
       if(normalized.length>SYNC_LIMITS.records||new Set(normalized.map(r=>r.event.eventId)).size!==normalized.length)throw Error('AMBIGUOUS_RECORD');
-      const rates=Object.fromEntries([...new Set(normalized.map(r=>r.event.modelName))].flatMap(name=>!isCodexAutoReviewModel(name)&&pricing.has(name)?[[name,pricing.get(name)!]]:[]));
+      const rates=Object.fromEntries([...new Set(normalized.map(r=>r.event.modelName))].flatMap(name=>{
+        if(isCodexAutoReviewModel(name))return [];
+        const price=lookupPricing(pricing,name)??(pricing.has(name)?pricing.get(name)!:undefined);
+        return price?[[name,price]]:[];
+      }));
       const prefixes:Record<string,string>={};for(const parent of parents.filter(p=>p.header.manifest.scope.source===source&&p.header.manifest.scope.sessionId===sessionId))for(const old of parent.proofs){const file=selected.find(f=>hash(f.locator)===old.range.locatorHash);if(file?.bytes&&file.bytes.length>=old.range.byteLength)prefixes[old.range.locatorHash+':'+old.range.byteLength]=hash(file.bytes.subarray(0,old.range.byteLength).toString('base64'));}
       const capture:Capture={source,sessionId,reader,records:normalized,proofs:selected.map(file=>({...fileProof(file,{source,sessionId},reader),
         ...(recoveryAfterTimestampMs!==undefined?{recoveryAfterTimestampMs}:{})})),rates,prefixes};
