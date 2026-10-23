@@ -69,50 +69,81 @@ export function validateAuthoritativeLedgerGate(env=process.env) {
   }
 }
 
-export function generateLedgerWatermark(dbFile, watermarkFile, options = {}) {
+// Floors the gate enforces, paired with the ledger metric each one is compared against.
+const WATERMARK_FLOORS = [
+  ['minRevision', 'revision'],
+  ['minScopes', 'scopes'],
+  ['minTokens', 'tokens'],
+  ['minVisibleRecords', 'visibleRecords']
+];
+
+// Read the authoritative baseline figures once, without mutating the ledger.
+export function readLedgerMetrics(dbFile, options = {}) {
   if(!dbFile||!existsSync(dbFile))throw Error('LEDGER_DATABASE_NOT_FOUND');
-  const targetFile = watermarkFile ?? resolve(dbFile, '..', 'ledger-watermark.json');
   const db = new DatabaseSync(dbFile, {readOnly: true});
   try {
     const integrity = db.prepare('PRAGMA quick_check').get();
     if(!integrity||integrity.quick_check!=='ok')throw Error('SQLITE_INTEGRITY_FAILED');
     const meta = db.prepare('SELECT data_revision FROM sync_meta WHERE id=1').get();
-    const rev = Number(meta?.data_revision ?? 0);
-    const scopes = Number(db.prepare('SELECT COUNT(*) c FROM sync_scopes').get()?.c ?? 0);
-    const tokens = Number(db.prepare('SELECT SUM(token_total) t FROM sync_scopes').get()?.t ?? 0);
-    const visible = Number(db.prepare('SELECT COUNT(*) c FROM sync_current').get()?.c ?? 0);
-
-    let anchorBatchId = options.anchorBatchId;
-    let anchorPayloadHash = options.anchorPayloadHash;
-    if(!anchorBatchId) {
-      const receipt = db.prepare('SELECT batch_id, payload_hash FROM sync_receipts ORDER BY rowid DESC LIMIT 1').get();
-      if(receipt) {
-        anchorBatchId = String(receipt.batch_id);
-        anchorPayloadHash = String(receipt.payload_hash);
-      }
-    } else if(!anchorPayloadHash) {
-      const receipt = db.prepare('SELECT payload_hash FROM sync_receipts WHERE batch_id=?').get(anchorBatchId);
-      if(receipt) anchorPayloadHash = String(receipt.payload_hash);
+    const latest = db.prepare('SELECT batch_id, payload_hash FROM sync_receipts ORDER BY rowid DESC LIMIT 1').get();
+    let anchor = null;
+    if(options.anchorBatchId) {
+      const receipt = db.prepare('SELECT batch_id, payload_hash FROM sync_receipts WHERE batch_id=?').get(options.anchorBatchId);
+      if(receipt) anchor = { batchId: String(receipt.batch_id), payloadHash: String(receipt.payload_hash) };
     }
-
-    const watermark = {
-      canonicalLedger: options.canonicalLedger ?? basename(dbFile),
-      minRevision: options.minRevision ?? rev,
-      ...(anchorBatchId ? { anchorBatchId, anchorPayloadHash } : {}),
-      minScopes: options.minScopes ?? scopes,
-      minTokens: options.minTokens ?? tokens,
-      minVisibleRecords: options.minVisibleRecords ?? visible,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    return {
+      revision: Number(meta?.data_revision ?? 0),
+      scopes: Number(db.prepare('SELECT COUNT(*) c FROM sync_scopes').get()?.c ?? 0),
+      tokens: Number(db.prepare('SELECT SUM(token_total) t FROM sync_scopes').get()?.t ?? 0),
+      visibleRecords: Number(db.prepare('SELECT COUNT(*) c FROM sync_current').get()?.c ?? 0),
+      latestReceipt: latest ? { batchId: String(latest.batch_id), payloadHash: String(latest.payload_hash) } : null,
+      anchor
     };
-
-    const tempFile = targetFile + '.tmp-' + process.pid;
-    writeFileSync(tempFile, JSON.stringify(watermark, null, 2) + '\n', { mode: 0o600 });
-    renameSync(tempFile, targetFile);
-    return watermark;
   } finally {
     db.close();
   }
+}
+
+// Every floor in an existing watermark must still hold, otherwise generating would weaken the guard.
+function assertNoDowngrade(existing, metrics) {
+  for (const [floor, metric] of WATERMARK_FLOORS) {
+    if (Number(existing?.[floor] ?? 0) > metrics[metric]) throw Error('WATERMARK_DOWNGRADE_REJECTED');
+  }
+}
+
+export function generateLedgerWatermark(dbFile, watermarkFile, options = {}) {
+  const targetFile = watermarkFile ?? resolve(dbFile, '..', 'ledger-watermark.json');
+  const metrics = readLedgerMetrics(dbFile, { anchorBatchId: options.anchorBatchId });
+  if (options.anchorBatchId && !metrics.anchor) throw Error('ANCHOR_RECEIPT_MISSING');
+  // Refuse to lower a live watermark unless the operator explicitly forces it: a silent
+  // downgrade would let a stale or rolled-back ledger re-baseline the startup gate.
+  if (existsSync(targetFile) && !options.force) {
+    let existing;
+    try { existing = JSON.parse(readFileSync(targetFile, 'utf8')); }
+    catch { throw Error('EXTERNAL_WATERMARK_CORRUPTED'); }
+    assertNoDowngrade(existing, metrics);
+  }
+
+  const anchorBatchId = options.anchorBatchId ?? metrics.latestReceipt?.batchId;
+  const anchorPayloadHash = options.anchorPayloadHash
+    ?? (options.anchorBatchId ? metrics.anchor?.payloadHash : metrics.latestReceipt?.payloadHash);
+
+  const watermark = {
+    canonicalLedger: options.canonicalLedger ?? basename(dbFile),
+    minRevision: options.minRevision ?? metrics.revision,
+    // Only anchor on a receipt the ledger actually holds; an unknown batch would fail the next startup.
+    ...(anchorBatchId && anchorPayloadHash ? { anchorBatchId, anchorPayloadHash } : {}),
+    minScopes: options.minScopes ?? metrics.scopes,
+    minTokens: options.minTokens ?? metrics.tokens,
+    minVisibleRecords: options.minVisibleRecords ?? metrics.visibleRecords,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const tempFile = targetFile + '.tmp-' + process.pid;
+  writeFileSync(tempFile, JSON.stringify(watermark, null, 2) + '\n', { mode: 0o600 });
+  renameSync(tempFile, targetFile);
+  return watermark;
 }
 
 export function advanceLedgerWatermark(dbFile, watermarkFile) {
@@ -120,38 +151,25 @@ export function advanceLedgerWatermark(dbFile, watermarkFile) {
   let current;
   try{current=JSON.parse(readFileSync(watermarkFile,'utf8'));}
   catch{throw Error('EXTERNAL_WATERMARK_CORRUPTED');}
-  if(!dbFile||!existsSync(dbFile))throw Error('LEDGER_DATABASE_NOT_FOUND');
-  const db=new DatabaseSync(dbFile,{readOnly:true});
-  try{
-    const integrity=db.prepare('PRAGMA quick_check').get();
-    if(!integrity||integrity.quick_check!=='ok')throw Error('SQLITE_INTEGRITY_FAILED');
-    const meta=db.prepare('SELECT data_revision FROM sync_meta WHERE id=1').get();
-    const rev=Number(meta?.data_revision??0);
-    const scopes=Number(db.prepare('SELECT COUNT(*) c FROM sync_scopes').get()?.c??0);
-    const tokens=Number(db.prepare('SELECT SUM(token_total) t FROM sync_scopes').get()?.t??0);
-    const visible=Number(db.prepare('SELECT COUNT(*) c FROM sync_current').get()?.c??0);
+  const metrics = readLedgerMetrics(dbFile);
 
-    // Monotonic regression guard: none of the metrics may regress below existing watermark
-    if(current.minRevision&&rev<current.minRevision)throw Error('WATERMARK_REGRESSION_REJECTED');
-    if(current.minScopes&&scopes<current.minScopes)throw Error('WATERMARK_REGRESSION_REJECTED');
-    if(current.minTokens&&tokens<current.minTokens)throw Error('WATERMARK_REGRESSION_REJECTED');
-    if(current.minVisibleRecords&&visible<current.minVisibleRecords)throw Error('WATERMARK_REGRESSION_REJECTED');
-
-    const updated={
-      ...current,
-      minRevision:Math.max(current.minRevision??0,rev),
-      minScopes:Math.max(current.minScopes??0,scopes),
-      minTokens:Math.max(current.minTokens??0,tokens),
-      minVisibleRecords:Math.max(current.minVisibleRecords??0,visible),
-      updatedAt:new Date().toISOString()
-    };
-
-    // Atomic write
-    const tempFile=watermarkFile+'.tmp-'+process.pid;
-    writeFileSync(tempFile,JSON.stringify(updated,null,2),{mode:0o600});
-    renameSync(tempFile,watermarkFile);
-    return updated;
-  }finally{
-    db.close();
+  // Monotonic regression guard: none of the metrics may regress below existing watermark
+  for (const [floor, metric] of WATERMARK_FLOORS) {
+    if (current[floor] && metrics[metric] < current[floor]) throw Error('WATERMARK_REGRESSION_REJECTED');
   }
+
+  const updated = {
+    ...current,
+    minRevision: Math.max(current.minRevision ?? 0, metrics.revision),
+    minScopes: Math.max(current.minScopes ?? 0, metrics.scopes),
+    minTokens: Math.max(current.minTokens ?? 0, metrics.tokens),
+    minVisibleRecords: Math.max(current.minVisibleRecords ?? 0, metrics.visibleRecords),
+    updatedAt: new Date().toISOString()
+  };
+
+  // Atomic write
+  const tempFile=watermarkFile+'.tmp-'+process.pid;
+  writeFileSync(tempFile,JSON.stringify(updated,null,2),{mode:0o600});
+  renameSync(tempFile,watermarkFile);
+  return updated;
 }

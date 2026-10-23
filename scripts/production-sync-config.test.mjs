@@ -1,10 +1,11 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync,writeFileSync} from 'node:fs';
+import {mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {spawnSync} from 'node:child_process';
 import {DatabaseSync} from 'node:sqlite';
-import {validateSyncConfiguration,validateAuthoritativeLedgerGate,advanceLedgerWatermark,generateLedgerWatermark} from './sync-config.mjs';
+import {validateSyncConfiguration,validateAuthoritativeLedgerGate,advanceLedgerWatermark,generateLedgerWatermark,readLedgerMetrics} from './sync-config.mjs';
 test('sync defaults are disabled/v1 and activation requires a separate database and exactly one canary',()=>{
   assert.doesNotThrow(()=>validateSyncConfiguration({}));
   assert.throws(()=>validateSyncConfiguration({INCEPT_SYNC_REMOTE_ENABLED:'1'}),/CONFLICT/);
@@ -193,6 +194,147 @@ test('generateLedgerWatermark inspects database, creates watermark and passes ga
 
     const env={INCEPT_SYNC_ENABLED:'1',INCEPT_SYNC_DATABASE_FILE:dbPath};
     assert.doesNotThrow(()=>validateAuthoritativeLedgerGate(env));
+  }finally{
+    rmSync(directory,{recursive:true,force:true});
+  }
+});
+
+test('generateLedgerWatermark refuses to lower a live watermark unless forced',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'incept-watermark-downgrade-'));
+  try{
+    const dbPath=join(directory,'v4.db');
+    const watermarkPath=join(directory,'ledger-watermark.json');
+    const db=new DatabaseSync(dbPath);
+    db.exec(`
+      CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, data_revision INTEGER NOT NULL);
+      CREATE TABLE sync_receipts (batch_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL);
+      CREATE TABLE sync_scopes (scope_id TEXT PRIMARY KEY, token_total INTEGER NOT NULL);
+      CREATE TABLE sync_current (scope_id TEXT, observation_id TEXT);
+      INSERT INTO sync_meta VALUES(1, 700);
+      INSERT INTO sync_receipts VALUES('batch-700', 'hash-700');
+      INSERT INTO sync_scopes VALUES('s1', 10),('s2', 20),('s3', 30);
+      INSERT INTO sync_current VALUES('s1','o1'),('s2','o2'),('s3','o3');
+    `);
+    db.close();
+
+    // A stale watermark from a higher revision must survive a naive regenerate.
+    const stale={canonicalLedger:'v4.db',minRevision:800,anchorBatchId:'batch-700',anchorPayloadHash:'hash-700',
+      minScopes:3,minTokens:60,minVisibleRecords:3};
+    writeFileSync(watermarkPath,JSON.stringify(stale));
+    assert.throws(()=>generateLedgerWatermark(dbPath,watermarkPath),/WATERMARK_DOWNGRADE_REJECTED/);
+    assert.equal(JSON.parse(readFileSync(watermarkPath,'utf8')).minRevision,800,'rejected generate must not touch the file');
+
+    // Any single regressing floor is enough to reject, not just the revision.
+    writeFileSync(watermarkPath,JSON.stringify({...stale,minRevision:1,minVisibleRecords:99}));
+    assert.throws(()=>generateLedgerWatermark(dbPath,watermarkPath),/WATERMARK_DOWNGRADE_REJECTED/);
+
+    // Forcing re-baselines and the result still satisfies the gate.
+    const forced=generateLedgerWatermark(dbPath,watermarkPath,{force:true});
+    assert.equal(forced.minRevision,700);
+    assert.equal(forced.minVisibleRecords,3);
+    assert.equal(JSON.parse(readFileSync(watermarkPath,'utf8')).minRevision,700);
+    assert.doesNotThrow(()=>validateAuthoritativeLedgerGate({INCEPT_SYNC_ENABLED:'1',INCEPT_SYNC_DATABASE_FILE:dbPath}));
+
+    // Regenerating at the same height is idempotent and needs no flag.
+    assert.doesNotThrow(()=>generateLedgerWatermark(dbPath,watermarkPath));
+
+    // A corrupt watermark is not silently replaced either.
+    writeFileSync(watermarkPath,'{not json');
+    assert.throws(()=>generateLedgerWatermark(dbPath,watermarkPath),/EXTERNAL_WATERMARK_CORRUPTED/);
+    assert.doesNotThrow(()=>generateLedgerWatermark(dbPath,watermarkPath,{force:true}));
+
+    // Pinning an anchor the ledger does not hold would make the next startup fail.
+    assert.throws(()=>generateLedgerWatermark(dbPath,watermarkPath,{anchorBatchId:'missing-batch',force:true}),/ANCHOR_RECEIPT_MISSING/);
+  }finally{
+    rmSync(directory,{recursive:true,force:true});
+  }
+});
+
+test('readLedgerMetrics reports ledger baselines and the latest receipt without mutating the ledger',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'incept-ledger-metrics-'));
+  try{
+    const dbPath=join(directory,'v4.db');
+    const db=new DatabaseSync(dbPath);
+    db.exec(`
+      CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, data_revision INTEGER NOT NULL);
+      CREATE TABLE sync_receipts (batch_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL);
+      CREATE TABLE sync_scopes (scope_id TEXT PRIMARY KEY, token_total INTEGER NOT NULL);
+      CREATE TABLE sync_current (scope_id TEXT, observation_id TEXT);
+      INSERT INTO sync_meta VALUES(1, 688);
+      INSERT INTO sync_receipts VALUES('batch-old','hash-old'),('batch-new','hash-new');
+      INSERT INTO sync_scopes VALUES('s1', 1000),('s2', 2500);
+      INSERT INTO sync_current VALUES('s1','o1'),('s2','o2'),('s2','o3');
+    `);
+    db.close();
+
+    const metrics=readLedgerMetrics(dbPath);
+    assert.equal(metrics.revision,688);
+    assert.equal(metrics.scopes,2);
+    assert.equal(metrics.tokens,3500);
+    assert.equal(metrics.visibleRecords,3);
+    assert.deepEqual(metrics.latestReceipt,{batchId:'batch-new',payloadHash:'hash-new'});
+    assert.equal(metrics.anchor,null);
+
+    // Explicit anchor lookup resolves the historical receipt instead of the latest one.
+    assert.deepEqual(readLedgerMetrics(dbPath,{anchorBatchId:'batch-old'}).anchor,{batchId:'batch-old',payloadHash:'hash-old'});
+    assert.equal(readLedgerMetrics(dbPath,{anchorBatchId:'missing-batch'}).anchor,null);
+    // Read-only: a second read must observe the identical ledger.
+    assert.deepEqual(readLedgerMetrics(dbPath),metrics);
+  }finally{
+    rmSync(directory,{recursive:true,force:true});
+  }
+});
+
+test('ledger-watermark CLI checks a ledger, reports metrics and gates the downgrade behind --force',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'incept-watermark-cli-'));
+  try{
+    const dbPath=join(directory,'v4.db');
+    const watermarkPath=join(directory,'ledger-watermark.json');
+    const cli=join(import.meta.dirname,'ledger-watermark.mjs');
+    const run=(...args)=>spawnSync(process.execPath,[cli,...args],{encoding:'utf8'});
+
+    const db=new DatabaseSync(dbPath);
+    db.exec(`
+      CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, data_revision INTEGER NOT NULL);
+      CREATE TABLE sync_receipts (batch_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL);
+      CREATE TABLE sync_scopes (scope_id TEXT PRIMARY KEY, token_total INTEGER NOT NULL);
+      CREATE TABLE sync_current (scope_id TEXT, observation_id TEXT);
+      INSERT INTO sync_meta VALUES(1, 700);
+      INSERT INTO sync_receipts VALUES('batch-700', 'hash-700');
+      INSERT INTO sync_scopes VALUES('s1', 10),('s2', 20);
+      INSERT INTO sync_current VALUES('s1','o1'),('s2','o2');
+    `);
+    db.close();
+
+    const first=run('generate',dbPath,watermarkPath);
+    assert.equal(first.status,0,first.stderr);
+
+    const checked=run('check',dbPath,watermarkPath);
+    assert.equal(checked.status,0,checked.stderr);
+    assert.match(checked.stdout,/\[PASS\] Authoritative ledger gate passed successfully!/);
+    assert.match(checked.stdout,/Revision\s+700\s+\(floor 700\)/);
+    assert.match(checked.stdout,/Visible records\s+2\s+\(floor 2\)/);
+    assert.match(checked.stdout,/Anchor batch\s+batch-700 \(verified\)/);
+
+    const lowered=new DatabaseSync(dbPath);
+    lowered.exec('UPDATE sync_meta SET data_revision = 650 WHERE id = 1');
+    lowered.close();
+    const rejected=run('generate',dbPath,watermarkPath);
+    assert.equal(rejected.status,1);
+    assert.match(rejected.stderr,/WATERMARK_DOWNGRADE_REJECTED/);
+    assert.equal(JSON.parse(readFileSync(watermarkPath,'utf8')).minRevision,700);
+
+    const forced=run('generate',dbPath,watermarkPath,'--force');
+    assert.equal(forced.status,0,forced.stderr);
+    assert.equal(JSON.parse(readFileSync(watermarkPath,'utf8')).minRevision,650);
+    assert.equal(run('check',dbPath,watermarkPath).status,0);
+
+    const raised=new DatabaseSync(dbPath);
+    raised.exec('UPDATE sync_meta SET data_revision = 720 WHERE id = 1');
+    raised.close();
+    const advanced=run('advance',dbPath,watermarkPath);
+    assert.equal(advanced.status,0,advanced.stderr);
+    assert.equal(JSON.parse(readFileSync(watermarkPath,'utf8')).minRevision,720);
   }finally{
     rmSync(directory,{recursive:true,force:true});
   }
