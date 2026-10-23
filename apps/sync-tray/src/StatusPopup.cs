@@ -47,13 +47,14 @@ namespace InceptSync
 
         public StatusPopup(AgentClient agent, StatusSnapshot snapshot)
         {
-            Text = "Incept Sync · 状态";
+            Text = Strings.StatusTitle;
             _snapshot = snapshot ?? new StatusSnapshot();
             Width = (int)Math.Round(WidthUnits * S);
             Height = (int)Math.Round(HeightUnits * S);
             CreateFonts();
             BuildRows();
             LayoutSurface();
+            Locale.Changed += OnLocaleChanged;
         }
 
         private void CreateFonts()
@@ -78,12 +79,22 @@ namespace InceptSync
 
         private void BuildRows()
         {
-            _rows.Add(new Row { Label = "立即同步", Glyph = "\uE895", Handler = delegate { if (SyncRequested != null) SyncRequested(); } });
-            _rows.Add(new Row { Label = "打开 Incept Dashboard", Glyph = "\uE774", Handler = delegate { if (DashboardRequested != null) DashboardRequested(); } });
-            _rows.Add(new Row { Label = _snapshot.Paused ? "恢复同步" : "暂停同步", Glyph = _snapshot.Paused ? "\uE768" : "\uE769", Handler = delegate { if (PauseRequested != null) PauseRequested(); } });
-            _rows.Add(new Row { Label = "查看日志", Glyph = "\uE7C3", Handler = delegate { if (LogRequested != null) LogRequested(); } });
-            _rows.Add(new Row { Label = "设置", Glyph = "\uE713", Handler = delegate { if (SettingsRequested != null) SettingsRequested(); } });
-            _rows.Add(new Row { Label = "退出 Incept Sync", Glyph = "\uE7E8", Handler = delegate { if (QuitRequested != null) QuitRequested(); }, Exit = true });
+            _rows.Add(new Row { Label = Strings.SyncNow, Glyph = "\uE895", Handler = delegate { if (SyncRequested != null) SyncRequested(); } });
+            _rows.Add(new Row { Label = Strings.OpenDashboard, Glyph = "\uE774", Handler = delegate { if (DashboardRequested != null) DashboardRequested(); } });
+            _rows.Add(new Row { Label = _snapshot.Paused ? Strings.ResumeSync : Strings.PauseSync, Glyph = _snapshot.Paused ? "\uE768" : "\uE769", Handler = delegate { if (PauseRequested != null) PauseRequested(); } });
+            _rows.Add(new Row { Label = Strings.ViewLog, Glyph = "\uE7C3", Handler = delegate { if (LogRequested != null) LogRequested(); } });
+            _rows.Add(new Row { Label = Strings.Settings, Glyph = "\uE713", Handler = delegate { if (SettingsRequested != null) SettingsRequested(); } });
+            _rows.Add(new Row { Label = Strings.QuitApp, Glyph = "\uE7E8", Handler = delegate { if (QuitRequested != null) QuitRequested(); }, Exit = true });
+        }
+
+        private void OnLocaleChanged(object sender, EventArgs e)
+        {
+            if (IsDisposed) return;
+            Text = Strings.StatusTitle;
+            _rows.Clear();
+            BuildRows();
+            LayoutSurface();
+            Render();
         }
 
         private void LayoutSurface()
@@ -121,15 +132,15 @@ namespace InceptSync
             }
             CardGraphics.DrawText(graphics, StateText(state), _smallFont, _statusRect, _palette.Muted, TextFormatFlags.EndEllipsis);
 
-            DrawInfo(graphics, "上次同步", _snapshot.LastSyncText(), _palette.Text, 0);
-            DrawInfo(graphics, "同步间隔", _snapshot.IntervalText(), _palette.Text, 1);
+            DrawInfo(graphics, Strings.LastSync, _snapshot.LastSyncText(), _palette.Text, 0);
+            DrawInfo(graphics, Strings.Interval, _snapshot.IntervalText(), _palette.Text, 1);
             if (state == AgentVisualState.Attention && !string.IsNullOrEmpty(_snapshot.LastErrorCode))
             {
-                DrawInfo(graphics, "最近错误", _snapshot.LastErrorCode, _palette.StateColor(AgentVisualState.Attention), 2);
+                DrawInfo(graphics, Strings.LastError, _snapshot.LastErrorCode, _palette.StateColor(AgentVisualState.Attention), 2);
             }
             else
             {
-                DrawInfo(graphics, "待上传", _snapshot.PendingText(), _palette.Text, 2);
+                DrawInfo(graphics, Strings.Pending, _snapshot.PendingText(), _palette.Text, 2);
             }
 
             using (Pen separator = new Pen(_palette.Separator))
@@ -173,11 +184,11 @@ namespace InceptSync
         {
             switch (state)
             {
-                case AgentVisualState.Connected: return _snapshot.Activity == "collecting" ? "正常运行 · 正在采集" : "正常运行";
-                case AgentVisualState.Syncing: return "上传中";
-                case AgentVisualState.Paused: return "已暂停 · 不会自动同步";
-                case AgentVisualState.Attention: return "需要处理 · " + (_snapshot.LastErrorCode ?? "未知错误");
-                default: return "未运行";
+                case AgentVisualState.Connected: return _snapshot.Activity == "collecting" ? Strings.StateCollecting : Strings.StateIdle;
+                case AgentVisualState.Syncing: return Strings.StateUploading;
+                case AgentVisualState.Paused: return Strings.StatePaused;
+                case AgentVisualState.Attention: return Strings.StateAttention + (_snapshot.LastErrorCode ?? Strings.UnknownError);
+                default: return Strings.StateOffline;
             }
         }
 
@@ -239,7 +250,7 @@ namespace InceptSync
             if (IsDisposed) return;
             _snapshot = snapshot ?? new StatusSnapshot();
             _animationFrame = animationFrame;
-            _rows[2].Label = _snapshot.Paused ? "恢复同步" : "暂停同步";
+            _rows[2].Label = _snapshot.Paused ? Strings.ResumeSync : Strings.PauseSync;
             _rows[2].Glyph = _snapshot.Paused ? "\uE768" : "\uE769";
             Render();
         }
@@ -276,6 +287,7 @@ namespace InceptSync
         {
             if (disposing)
             {
+                Locale.Changed -= OnLocaleChanged;
                 if (_titleFont != null) _titleFont.Dispose();
                 if (_bodyFont != null) _bodyFont.Dispose();
                 if (_smallFont != null) _smallFont.Dispose();

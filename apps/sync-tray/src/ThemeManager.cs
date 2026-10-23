@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using Microsoft.Win32;
 
 namespace InceptSync
@@ -10,7 +7,6 @@ namespace InceptSync
 
     internal static class ThemeManager
     {
-        private static string _preferencesPath;
         private static bool _systemDark = ReadSystemDark();
         public static ThemeMode Mode { get; private set; }
         public static event EventHandler Changed;
@@ -18,16 +14,12 @@ namespace InceptSync
 
         public static void Initialize(string stateDirectory)
         {
-            _preferencesPath = Path.Combine(stateDirectory, "tray-settings.json");
+            // Shared document with the language setting; reading never writes.
+            TrayPreferences.Initialize(stateDirectory);
             ThemeMode mode = ThemeMode.System;
-            try
-            {
-                Dictionary<string, object> preferences = Json.AsObject(Json.Parse(File.ReadAllText(_preferencesPath)));
-                string value = Json.Str(preferences, "theme");
-                if (value == "light") mode = ThemeMode.Light;
-                if (value == "dark") mode = ThemeMode.Dark;
-            }
-            catch { }
+            string value = TrayPreferences.Get("theme");
+            if (value == "light") mode = ThemeMode.Light;
+            if (value == "dark") mode = ThemeMode.Dark;
             Mode = mode;
             _systemDark = ReadSystemDark();
             RaiseChanged();
@@ -37,21 +29,7 @@ namespace InceptSync
         {
             if (!Enum.IsDefined(typeof(ThemeMode), mode)) throw new ArgumentOutOfRangeException("mode");
             if (Mode == mode) return;
-            if (!string.IsNullOrEmpty(_preferencesPath))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(_preferencesPath));
-                string temporary = _preferencesPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
-                try
-                {
-                    Dictionary<string, object> preferences = new Dictionary<string, object>();
-                    preferences["version"] = 1;
-                    preferences["theme"] = mode.ToString().ToLowerInvariant();
-                    File.WriteAllText(temporary, Json.Serialize(preferences), new UTF8Encoding(false));
-                    if (File.Exists(_preferencesPath)) File.Replace(temporary, _preferencesPath, null);
-                    else File.Move(temporary, _preferencesPath);
-                }
-                finally { if (File.Exists(temporary)) File.Delete(temporary); }
-            }
+            TrayPreferences.Set("theme", mode.ToString().ToLowerInvariant());
             Mode = mode;
             RaiseChanged();
         }

@@ -170,7 +170,7 @@ namespace InceptSync
             DateTime at = ParseTime(iso);
             if (at == DateTime.MinValue)
             {
-                return "尚无记录";
+                return Strings.NoRecord;
             }
             TimeSpan span = DateTime.UtcNow - at.ToUniversalTime();
             if (span.TotalSeconds < 0)
@@ -179,32 +179,32 @@ namespace InceptSync
             }
             if (span.TotalSeconds < 45)
             {
-                return "刚刚";
+                return Strings.JustNow;
             }
             if (span.TotalMinutes < 60)
             {
-                return string.Format("{0} 分钟前", Math.Max(1, (int)Math.Round(span.TotalMinutes)));
+                return string.Format(CultureInfo.InvariantCulture, Strings.MinutesAgo, Math.Max(1, (int)Math.Round(span.TotalMinutes)));
             }
             if (span.TotalHours < 24)
             {
-                return string.Format("{0} 小时前", (int)span.TotalHours);
+                return string.Format(CultureInfo.InvariantCulture, Strings.HoursAgo, (int)span.TotalHours);
             }
-            return string.Format("{0} 天前", (int)span.TotalDays);
+            return string.Format(CultureInfo.InvariantCulture, Strings.DaysAgo, (int)span.TotalDays);
         }
 
         public string IntervalText()
         {
             long minutes = Math.Max(1, IntervalMs / 60000);
-            return string.Format("{0} 分钟", minutes);
+            return string.Format(CultureInfo.InvariantCulture, Strings.MinutesShort, minutes);
         }
 
         public string PendingText()
         {
             if (PendingBatches > 0)
             {
-                return string.Format("{0} 个批次", PendingBatches);
+                return string.Format(CultureInfo.InvariantCulture, Strings.Batches, PendingBatches);
             }
-            return "无";
+            return Strings.None;
         }
     }
 }

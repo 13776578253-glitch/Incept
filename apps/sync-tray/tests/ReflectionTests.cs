@@ -71,9 +71,10 @@ internal static class ReflectionTests
             Test("eight distinct spinner frames and stable cyclic cache references", TestSpinner);
             Test("non-upload states do not grow either cache for arbitrary frames", TestStaticCache);
             Test("StatusPopup construction size and contained rows (never shown)", delegate { TestForm("StatusPopup", 360, 430, "_rows"); });
-            Test("SettingsForm construction size and contained zones (never shown)", delegate { TestForm("SettingsForm", 520, 430, "_zones"); });
+            Test("SettingsForm construction size and contained zones (never shown)", delegate { TestForm("SettingsForm", 540, 500, "_zones"); });
             Test("ExitDialog construction size and contained zones (never shown)", delegate { TestForm("ExitDialog", 440, 210, "_zones"); });
             ThemeTests.Run(target, Test);
+            LocaleTests.Run(target, Test);
             PlacementTests.Run(target, Test);
         }
         catch (Exception error)

@@ -41,7 +41,7 @@ cd C:\Incept\Incept Sync
 | 打开 Incept Dashboard | 用默认浏览器打开绑定时的 Endpoint |
 | 暂停 / 恢复同步 | 写入持久标记，Agent 重启后仍然生效 |
 | 查看日志 | 打开状态目录下的 `agent.log` |
-| 设置 | 设备 ID、端点、状态目录、登录自启开关、外观主题 |
+| 设置 | 设备 ID、端点、状态目录、已授权来源、登录自启开关、外观、语言、重启 Agent |
 | 退出 Incept Sync | 询问“仅退出托盘”或“停止 Agent 并退出” |
 
 图标使用提供的高清资源：正常运行（绿）、上传中（黄色 8 帧动画）、已暂停（黄）、
@@ -49,17 +49,31 @@ cd C:\Incept\Incept Sync
 其余状态停止动画。打开的卡片会每秒更新状态、时间和计数。
 
 卡片与弹窗采用紧凑尺寸，在 150% 缩放下状态卡片为 454×542px，宽度与
-Docker Desktop 默认托盘菜单接近。设置页为 655×542px，退出弹窗为 554×265px。
+Docker Desktop 默认托盘菜单接近。设置页为 680×630px，退出弹窗为 554×265px。
 
 左键、右键与第二次启动唤出都以托盘图标为锚点，卡片固定在图标左上方展开，
 右边缘对齐图标右侧。接近屏幕边缘时夹紧到所在屏幕工作区，不再跟随鼠标。
 Shell 暂时无法返回图标位置时复用最近锚点；首次无锚点时回退到主屏工作区右下。
 
-## 外观
+## 外观与语言
 
 设置页提供“跟随系统 / 浅色 / 深色”，切换后立即更新卡片和弹窗。
 选择保存在状态目录的 `tray-settings.json`，下次启动自动恢复；默认跟随系统。
 跟随系统时自动响应系统明暗变化。
+
+设置页同时提供“中文 / English”。托盘界面、弹窗与通知文案都会即时切换，
+无需重启；选择同样保存在 `tray-settings.json`，与外观写入同一份文档，
+修改其中一项不会覆盖另一项。未选择过时跟随 Windows 显示语言。
+
+## 来源与重启
+
+设置页列出该设备当前允许采集的来源（`config.json` 的 `allowedSources`）。
+这份清单由服务端下发并在 Agent 启动时刷新，设备令牌无权自行扩充，
+因此“编辑来源”用默认浏览器打开 Dashboard 的账户设置页，由 Owner 修改并保存。
+
+改完来源后需要重启 Agent 才会生效（策略只在启动时读取），“重启 Agent”按钮会
+先投递停止命令、等待实例锁释放，再启动新的守护进程，期间按钮不可重复点击。
+来源列表在 `tray-settings.json` 之外，只读展示，不会写回 `config.json`。
 
 按钮统一采用无彩色描边的圆角实心样式，保留绿色与蓝色配色。
 浅色模式采用柔和底色，深色模式采用深绿、深蓝底色与浅色文字。
@@ -95,7 +109,7 @@ Shell 暂时无法返回图标位置时复用最近锚点；首次无锚点时�
 # 需要先有 apps/sync-agent/dist/agent.mjs
 node apps/sync-agent/tools/build.mjs        # 在完整 pnpm 环境中
 powershell -File apps/sync-tray/tools/build.ps1
-powershell -File apps/sync-tray/tools/test.ps1 # 对构建产物运行 44 项回归
+powershell -File apps/sync-tray/tools/test.ps1 # 对构建产物运行 49 项回归
 node apps/sync-tray/tools/package.mjs       # 生成 dist/package/*.zip
 ```
 
@@ -113,7 +127,8 @@ node apps/sync-tray/tools/package.mjs       # 生成 dist/package/*.zip
 ## 已知限制
 
 - 尚未做 Authenticode 签名，首次运行可能出现 SmartScreen 提示。
-- 设置窗口只读展示端点与设备 ID；更换设备仍需重新运行 `Bind.ps1`。
+- 设置窗口只读展示来源清单，编辑需跳到 Dashboard（设备令牌无权修改自己的
+  采集范围）；更换设备仍需重新运行 `Bind.ps1`。
 - 托盘未接入远程 Job 的实时进度，只显示 Agent 上报的心跳与统计。
 
 ## 性能（空闲）

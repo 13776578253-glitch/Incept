@@ -2,41 +2,74 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace InceptSync
 {
     internal sealed class SettingsForm : LayeredCard
     {
+        private enum LabelKind
+        {
+            None,
+            Close,
+            EditSources,
+            OpenFolder,
+            RestartAgent,
+            Done,
+            Light,
+            Dark,
+            System,
+            Chinese,
+            English
+        }
+
         private sealed class Zone
         {
             public RectangleF Bounds;
-            public string Label;
+            public LabelKind Label;
             public Action Handler;
             public bool Primary;
+            public bool Glyph;
             public bool Checkbox;
             public ThemeMode? Theme;
+            public Language? Lang;
         }
 
-        private const float WidthUnits = 520f;
-        private const float HeightUnits = 430f;
+        private const float WidthUnits = 540f;
+        private const float HeightUnits = 500f;
 
         private readonly AgentClient _agent;
         private readonly Palette _palette = Palette.Current();
         private readonly List<Zone> _zones = new List<Zone>();
-        private readonly List<KeyValuePair<string, string>> _rows = new List<KeyValuePair<string, string>>();
+        private readonly List<Zone> _appearance = new List<Zone>();
+        private readonly List<Zone> _languages = new List<Zone>();
+        private string[] _sources;
+        private readonly string _deviceId;
+        private readonly string _endpoint;
+        private readonly string _stateDirectory;
+        private readonly string _interval;
         private Font _titleFont;
         private Font _bodyFont;
         private Font _tinyFont;
         private Font _glyphFont;
         private int _hover = -1;
         private bool _autoStart;
-        private string _error;
+        private bool _busy;
+        private string _message;
+        private bool _messageIsError;
 
         public SettingsForm(AgentClient agent)
         {
-            Text = "Incept Sync · 设置";
             _agent = agent;
+            Text = Strings.SettingsTitle;
+            _deviceId = agent.DeviceId();
+            _endpoint = agent.Endpoint();
+            _stateDirectory = agent.StateDirectory;
+            StatusSnapshot snapshot = StatusSnapshot.Load(agent.StateDirectory);
+            _interval = (snapshot ?? new StatusSnapshot()).IntervalText() + Strings.IntervalSuffix;
+            _sources = agent.AllowedSources().ToArray();
             StartPosition = FormStartPosition.CenterScreen;
             Width = (int)Math.Round(WidthUnits * S);
             Height = (int)Math.Round(HeightUnits * S);
@@ -46,78 +79,161 @@ namespace InceptSync
             _glyphFont = new Font("Segoe MDL2 Assets", 12f * S, FontStyle.Regular, GraphicsUnit.Pixel);
             _autoStart = AgentClient.IsAutoStartEnabled();
 
-            _rows.Add(new KeyValuePair<string, string>("设备 ID", agent.DeviceId()));
-            _rows.Add(new KeyValuePair<string, string>("服务端点", agent.Endpoint()));
-            _rows.Add(new KeyValuePair<string, string>("状态目录", agent.StateDirectory));
-            StatusSnapshot snapshot = StatusSnapshot.Load(agent.StateDirectory);
-            _rows.Add(new KeyValuePair<string, string>("同步间隔", (snapshot ?? new StatusSnapshot()).IntervalText() + "（由 Agent 控制）"));
+            _zones.Add(new Zone { Bounds = new RectangleF((WidthUnits - 50f) * S, 14f * S, 32f * S, 32f * S), Label = LabelKind.Close, Glyph = true, Handler = delegate { Close(); } });
+            _zones.Add(new Zone { Bounds = new RectangleF(26f * S, 278f * S, 150f * S, 34f * S), Label = LabelKind.EditSources, Handler = OpenSources });
+            _zones.Add(new Zone { Bounds = new RectangleF(186f * S, 278f * S, 150f * S, 34f * S), Label = LabelKind.OpenFolder, Handler = OpenStateDirectory });
+            _zones.Add(new Zone { Bounds = new RectangleF(346f * S, 278f * S, 150f * S, 34f * S), Label = LabelKind.RestartAgent, Handler = RestartAgent });
+            _zones.Add(new Zone { Bounds = new RectangleF(20f * S, 318f * S, 490f * S, 30f * S), Checkbox = true, Handler = ToggleAutoStart });
 
-            _zones.Add(new Zone { Bounds = new RectangleF((WidthUnits - 50f) * S, 14f * S, 32f * S, 32f * S), Handler = delegate { Close(); } });
-            _zones.Add(new Zone { Bounds = new RectangleF(20f * S, 262f * S, 480f * S, 30f * S), Checkbox = true, Handler = ToggleAutoStart });
-            _zones.Add(new Zone { Bounds = new RectangleF(26f * S, 366f * S, 140f * S, 36f * S), Label = "打开状态目录", Handler = OpenStateDirectory });
-            _zones.Add(new Zone { Bounds = new RectangleF(398f * S, 366f * S, 96f * S, 36f * S), Label = "完成", Primary = true, Handler = delegate { Close(); } });
-            _zones.Add(new Zone { Bounds = new RectangleF(194f * S, 306f * S, 88f * S, 32f * S), Label = "浅色", Theme = ThemeMode.Light, Handler = delegate { SetTheme(ThemeMode.Light); } });
-            _zones.Add(new Zone { Bounds = new RectangleF(290f * S, 306f * S, 88f * S, 32f * S), Label = "深色", Theme = ThemeMode.Dark, Handler = delegate { SetTheme(ThemeMode.Dark); } });
-            _zones.Add(new Zone { Bounds = new RectangleF(386f * S, 306f * S, 108f * S, 32f * S), Label = "跟随系统", Theme = ThemeMode.System, Handler = delegate { SetTheme(ThemeMode.System); } });
+            AddOption(_appearance, 194f, 360f, 88f, LabelKind.Light, ThemeMode.Light, null);
+            AddOption(_appearance, 290f, 360f, 88f, LabelKind.Dark, ThemeMode.Dark, null);
+            AddOption(_appearance, 386f, 360f, 108f, LabelKind.System, ThemeMode.System, null);
+            AddOption(_languages, 194f, 402f, 88f, LabelKind.Chinese, null, Language.Zh);
+            AddOption(_languages, 290f, 402f, 96f, LabelKind.English, null, Language.En);
+
+            _zones.Add(new Zone { Bounds = new RectangleF(418f * S, 430f * S, 96f * S, 36f * S), Label = LabelKind.Done, Primary = true, Handler = delegate { Close(); } });
+
+            Locale.Changed += OnLocaleChanged;
+        }
+
+        private void AddOption(List<Zone> group, float x, float y, float width, LabelKind label, ThemeMode? theme, Language? language)
+        {
+            Zone zone = new Zone { Bounds = new RectangleF(x * S, y * S, width * S, 32f * S), Label = label, Theme = theme, Lang = language };
+            if (theme.HasValue)
+            {
+                ThemeMode mode = theme.Value;
+                zone.Handler = delegate { SetTheme(mode); };
+            }
+            else
+            {
+                Language value = language.Value;
+                zone.Handler = delegate { SetLanguage(value); };
+            }
+            group.Add(zone);
+            _zones.Add(zone);
+        }
+
+        private void OnLocaleChanged(object sender, EventArgs e)
+        {
+            if (IsDisposed) return;
+            Text = Strings.SettingsTitle;
+            Render();
+        }
+
+        // The Owner edits sources in a browser; refresh when the dialog regains
+        // focus so the list reflects what the dashboard just saved.
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            string[] next = _agent.AllowedSources().ToArray();
+            if (string.Join(",", next) != string.Join(",", _sources))
+            {
+                _sources = next;
+                Render();
+            }
+        }
+
+        private static string LabelText(LabelKind kind)
+        {
+            switch (kind)
+            {
+                case LabelKind.EditSources: return Strings.EditSources;
+                case LabelKind.OpenFolder: return Strings.OpenFolder;
+                case LabelKind.RestartAgent: return Strings.RestartAgent;
+                case LabelKind.Done: return Strings.Done;
+                case LabelKind.Light: return Strings.Light;
+                case LabelKind.Dark: return Strings.Dark;
+                case LabelKind.System: return Strings.FollowSystem;
+                case LabelKind.Chinese: return "中文";
+                case LabelKind.English: return "English";
+            }
+            return string.Empty;
         }
 
         protected override void DrawSurface(Graphics graphics, Size size)
         {
             CardGraphics.DrawCard(graphics, new RectangleF(0, 0, Width, Height), _palette, 16f * S);
-            CardGraphics.DrawText(graphics, "设置", _titleFont, new RectangleF(26f * S, 18f * S, 200f * S, 26f * S), _palette.Text, TextFormatFlags.EndEllipsis);
+            CardGraphics.DrawText(graphics, Strings.SettingsTitle, _titleFont, new RectangleF(26f * S, 18f * S, 240f * S, 26f * S), _palette.Text, TextFormatFlags.EndEllipsis);
 
-            bool closeHover = _hover == 0;
-            if (closeHover)
-            {
-                using (System.Drawing.Drawing2D.GraphicsPath path = CardGraphics.Rounded(_zones[0].Bounds, 8f * S))
-                using (SolidBrush brush = new SolidBrush(_palette.Hover))
-                {
-                    graphics.FillPath(brush, path);
-                }
-            }
-            CardGraphics.DrawText(graphics, "\uE711", _glyphFont,
-                new RectangleF(_zones[0].Bounds.X, _zones[0].Bounds.Y, _zones[0].Bounds.Width, _zones[0].Bounds.Height),
-                closeHover ? _palette.Text : _palette.Muted, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            Zone close = _zones[0];
+            TextFormatFlags centered = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
+            CardGraphics.DrawText(graphics, "\uE711", _glyphFont, close.Bounds, _hover == 0 ? _palette.Text : _palette.Muted, centered);
 
             using (Pen separator = new Pen(_palette.Separator))
             {
                 graphics.DrawLine(separator, 26f * S, 56f * S, (WidthUnits - 26f) * S, 56f * S);
             }
 
-            for (int index = 0; index < _rows.Count; index++)
-            {
-                float y = (72f + index * 34f) * S;
-                CardGraphics.DrawText(graphics, _rows[index].Key, _bodyFont, new RectangleF(26f * S, y, 96f * S, 24f * S), _palette.Muted, TextFormatFlags.VerticalCenter);
-                CardGraphics.DrawText(graphics, _rows[index].Value, _bodyFont, new RectangleF(128f * S, y, 366f * S, 24f * S), _palette.Text, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
-            }
+            DrawRow(graphics, Strings.DeviceId, _deviceId, 0);
+            DrawRow(graphics, Strings.Endpoint, _endpoint, 1);
+            DrawRow(graphics, Strings.StateDirectory, _stateDirectory, 2);
+            DrawRow(graphics, Strings.SyncInterval, _interval, 3);
 
-            CardGraphics.DrawText(graphics, "设备信息来自绑定配置。更换设备或服务端点时，请重新绑定。", _tinyFont,
-                new RectangleF(26f * S, 214f * S, 468f * S, 40f * S), _palette.Muted, TextFormatFlags.WordBreak);
+            CardGraphics.DrawText(graphics, Strings.SourcesLabel, _bodyFont,
+                new RectangleF(26f * S, 204f * S, 116f * S, 24f * S), _palette.Muted, TextFormatFlags.VerticalCenter);
+            CardGraphics.DrawText(graphics, SourcesText(), _bodyFont,
+                new RectangleF(148f * S, 200f * S, 366f * S, 44f * S), _palette.Text, TextFormatFlags.WordBreak);
+
+            CardGraphics.DrawText(graphics, Strings.BindingHint, _tinyFont,
+                new RectangleF(26f * S, 246f * S, 488f * S, 28f * S), _palette.Muted, TextFormatFlags.WordBreak);
+
+            foreach (Zone zone in _zones)
+            {
+                if (zone.Glyph || zone.Checkbox || zone.Theme.HasValue || zone.Lang.HasValue) continue;
+                if (zone.Label == LabelKind.OpenFolder)
+                {
+                    CardGraphics.DrawNeutralButton(graphics, zone.Bounds, _palette, LabelText(zone.Label), _bodyFont, _hover == _zones.IndexOf(zone), S);
+                    continue;
+                }
+                CardGraphics.DrawButton(graphics, zone.Bounds, _palette, LabelText(zone.Label), _bodyFont,
+                    zone.Primary, false, _hover == _zones.IndexOf(zone), S);
+            }
 
             DrawCheckbox(graphics);
-            CardGraphics.DrawText(graphics, "外观", _bodyFont,
-                new RectangleF(26f * S, 306f * S, 96f * S, 32f * S), _palette.Muted, TextFormatFlags.VerticalCenter);
-            for (int index = 4; index < _zones.Count; index++)
+
+            CardGraphics.DrawText(graphics, Strings.Appearance, _bodyFont,
+                new RectangleF(26f * S, 360f * S, 120f * S, 32f * S), _palette.Muted, TextFormatFlags.VerticalCenter);
+            foreach (Zone zone in _appearance)
             {
-                Zone zone = _zones[index];
-                CardGraphics.DrawThemeOption(graphics, zone.Bounds, _palette, zone.Label, _bodyFont,
-                    zone.Theme == ThemeManager.Mode, _hover == index);
+                CardGraphics.DrawThemeOption(graphics, zone.Bounds, _palette, LabelText(zone.Label), _bodyFont,
+                    zone.Theme == ThemeManager.Mode, _hover == _zones.IndexOf(zone));
             }
 
-            bool openHover = _hover == 2;
-            bool doneHover = _hover == 3;
-            CardGraphics.DrawButton(graphics, _zones[2].Bounds, _palette, _zones[2].Label, _bodyFont, false, false, openHover, S);
-            CardGraphics.DrawButton(graphics, _zones[3].Bounds, _palette, _zones[3].Label, _bodyFont, true, false, doneHover, S);
-
-            if (_error != null)
+            CardGraphics.DrawText(graphics, Strings.LanguageLabel, _bodyFont,
+                new RectangleF(26f * S, 402f * S, 120f * S, 32f * S), _palette.Muted, TextFormatFlags.VerticalCenter);
+            foreach (Zone zone in _languages)
             {
-                CardGraphics.DrawText(graphics, _error, _tinyFont, new RectangleF(26f * S, 342f * S, 468f * S, 18f * S), _palette.StateColor(AgentVisualState.Attention), TextFormatFlags.EndEllipsis);
+                CardGraphics.DrawThemeOption(graphics, zone.Bounds, _palette, LabelText(zone.Label), _bodyFont,
+                    zone.Lang == Locale.Current, _hover == _zones.IndexOf(zone));
             }
+
+            if (!string.IsNullOrEmpty(_message))
+            {
+                Color color = _messageIsError ? _palette.StateColor(AgentVisualState.Attention) : _palette.Muted;
+                CardGraphics.DrawText(graphics, _message, _tinyFont,
+                    new RectangleF(26f * S, 440f * S, 380f * S, 20f * S), color, TextFormatFlags.EndEllipsis);
+            }
+        }
+
+        private void DrawRow(Graphics graphics, string label, string value, int index)
+        {
+            float y = (72f + index * 33f) * S;
+            CardGraphics.DrawText(graphics, label, _bodyFont, new RectangleF(26f * S, y, 116f * S, 24f * S), _palette.Muted, TextFormatFlags.VerticalCenter);
+            CardGraphics.DrawText(graphics, value, _bodyFont, new RectangleF(148f * S, y, 366f * S, 24f * S), _palette.Text, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        }
+
+        private string SourcesText()
+        {
+            if (_sources == null || _sources.Length == 0)
+            {
+                return Strings.SourcesUnknown;
+            }
+            return string.Join(", ", _sources);
         }
 
         private void DrawCheckbox(Graphics graphics)
         {
-            RectangleF box = new RectangleF(26f * S, 268f * S, 18f * S, 18f * S);
+            RectangleF box = new RectangleF(26f * S, 324f * S, 18f * S, 18f * S);
             using (System.Drawing.Drawing2D.GraphicsPath path = CardGraphics.Rounded(box, 5f * S))
             {
                 if (_autoStart)
@@ -138,8 +254,8 @@ namespace InceptSync
                     new RectangleF(box.X, box.Y, box.Width, box.Height), _palette.PrimaryText,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             }
-            CardGraphics.DrawText(graphics, "登录 Windows 时启动托盘（当前用户）", _bodyFont,
-                new RectangleF(54f * S, 262f * S, 440f * S, 30f * S), _palette.Text, TextFormatFlags.VerticalCenter);
+            CardGraphics.DrawText(graphics, Strings.AutoStart, _bodyFont,
+                new RectangleF(54f * S, 318f * S, 440f * S, 30f * S), _palette.Text, TextFormatFlags.VerticalCenter);
         }
 
         protected override bool HitsCard(Point point)
@@ -200,11 +316,12 @@ namespace InceptSync
             {
                 AgentClient.SetAutoStart(!_autoStart, Application.ExecutablePath);
                 _autoStart = !_autoStart;
-                _error = null;
+                _message = null;
             }
             catch (Exception failure)
             {
-                _error = "无法更新登录启动项：" + failure.Message;
+                _message = Strings.AutoStartFailedPrefix + failure.Message;
+                _messageIsError = true;
             }
             Render();
         }
@@ -214,9 +331,53 @@ namespace InceptSync
             try
             {
                 ThemeManager.SetMode(mode);
-                _error = null;
+                _message = null;
             }
-            catch { _error = "无法保存外观设置，请检查状态目录是否可写。"; }
+            catch
+            {
+                _message = Strings.ThemeFailed;
+                _messageIsError = true;
+            }
+            Render();
+        }
+
+        private void SetLanguage(Language language)
+        {
+            try
+            {
+                Locale.SetLanguage(language);
+                _message = null;
+            }
+            catch
+            {
+                _message = Strings.LanguageFailed;
+                _messageIsError = true;
+            }
+            Render();
+        }
+
+        // Sources are owned by the server: the device token may not widen its own
+        // policy, so the tray opens the dashboard where the Owner can edit it.
+        private void OpenSources()
+        {
+            string url = _agent.SettingsUrl(Locale.IsEnglish ? "en" : "zh");
+            if (string.IsNullOrEmpty(url))
+            {
+                _message = Strings.NoEndpoint;
+                _messageIsError = true;
+                Render();
+                return;
+            }
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                _message = null;
+            }
+            catch (Exception failure)
+            {
+                _message = Strings.BrowserFailedPrefix + failure.Message;
+                _messageIsError = true;
+            }
             Render();
         }
 
@@ -231,6 +392,70 @@ namespace InceptSync
             }
         }
 
+        // The Agent only refreshes its policy at startup, so a changed allowlist
+        // needs a restart; keep the work off the UI thread.
+        private void RestartAgent()
+        {
+            if (_busy)
+            {
+                return;
+            }
+            _busy = true;
+            _message = Strings.Restarting;
+            _messageIsError = false;
+            Render();
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                string error;
+                bool timedOut;
+                bool restarted = _agent.Restart(out error, out timedOut);
+                Post(delegate
+                {
+                    _busy = false;
+                    if (restarted)
+                    {
+                        _message = Strings.Restarted;
+                        _messageIsError = false;
+                    }
+                    else
+                    {
+                        _message = RestartMessage(error, timedOut);
+                        _messageIsError = true;
+                    }
+                    Render();
+                });
+            });
+        }
+
+        private static string RestartMessage(string error, bool timedOut)
+        {
+            // The common failure here is an Agent started from an elevated shell:
+            // its instance pipe is invisible to this process.
+            if (error == "AGENT_UNREACHABLE")
+            {
+                return Strings.AgentElevated;
+            }
+            if (timedOut)
+            {
+                return Strings.RestartTimeout;
+            }
+            return Strings.RestartFailedPrefix + error;
+        }
+
+        private void Post(Action action)
+        {
+            if (IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+            try
+            {
+                BeginInvoke(action);
+            }
+            catch
+            {
+            }
+        }
 
         protected override bool ProcessCmdKey(ref Message message, Keys keyData)
         {
@@ -246,6 +471,7 @@ namespace InceptSync
         {
             if (disposing)
             {
+                Locale.Changed -= OnLocaleChanged;
                 if (_titleFont != null) _titleFont.Dispose();
                 if (_bodyFont != null) _bodyFont.Dispose();
                 if (_tinyFont != null) _tinyFont.Dispose();

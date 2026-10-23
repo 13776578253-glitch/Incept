@@ -40,25 +40,25 @@ namespace InceptSync
 
         public ExitDialog(int pendingBatches)
         {
-            Text = "Incept Sync · 退出";
+            Text = Strings.ExitWindow;
             StartPosition = FormStartPosition.CenterScreen;
             Width = (int)Math.Round(WidthUnits * S);
             Height = (int)Math.Round(HeightUnits * S);
             _message = pendingBatches > 0
-                ? "还有 " + pendingBatches + " 个批次待上传。退出托盘不会丢失数据，Agent 会继续补传。"
-                : "选择退出方式。退出托盘后 Agent 仍在后台同步。";
+                ? string.Format(Strings.ExitPending, pendingBatches)
+                : Strings.ExitPrompt;
             _titleFont = new Font("Segoe UI Semibold", 16f * S, FontStyle.Regular, GraphicsUnit.Pixel);
             _bodyFont = new Font("Segoe UI", 13f * S, FontStyle.Regular, GraphicsUnit.Pixel);
             _messageRect = new RectangleF(24f * S, 58f * S, 392f * S, 56f * S);
-            _zones.Add(new Zone { Label = "仅退出托盘", Bounds = new RectangleF(24f * S, 150f * S, 108f * S, 36f * S), Choice = ExitChoice.TrayOnly });
-            _zones.Add(new Zone { Label = "停止 Agent 并退出", Bounds = new RectangleF(142f * S, 150f * S, 188f * S, 36f * S), Danger = true, Choice = ExitChoice.StopAgent });
-            _zones.Add(new Zone { Label = "取消", Bounds = new RectangleF(340f * S, 150f * S, 76f * S, 36f * S), Primary = false, Choice = ExitChoice.Cancel });
+            _zones.Add(new Zone { Label = Strings.ExitTrayOnly, Bounds = new RectangleF(24f * S, 150f * S, 108f * S, 36f * S), Choice = ExitChoice.TrayOnly });
+            _zones.Add(new Zone { Label = Strings.ExitStopAgent, Bounds = new RectangleF(142f * S, 150f * S, 188f * S, 36f * S), Danger = true, Choice = ExitChoice.StopAgent });
+            _zones.Add(new Zone { Label = Strings.ExitCancel, Bounds = new RectangleF(340f * S, 150f * S, 76f * S, 36f * S), Primary = false, Choice = ExitChoice.Cancel });
         }
 
         protected override void DrawSurface(Graphics graphics, Size size)
         {
             CardGraphics.DrawCard(graphics, new RectangleF(0, 0, Width, Height), _palette, 16f * S);
-            CardGraphics.DrawText(graphics, "退出 Incept Sync", _titleFont, new RectangleF(24f * S, 18f * S, 320f * S, 26f * S), _palette.Text, TextFormatFlags.EndEllipsis);
+            CardGraphics.DrawText(graphics, Strings.ExitTitle, _titleFont, new RectangleF(24f * S, 18f * S, 320f * S, 26f * S), _palette.Text, TextFormatFlags.EndEllipsis);
             CardGraphics.DrawText(graphics, _message, _bodyFont, _messageRect, _palette.Muted, TextFormatFlags.WordBreak);
             for (int index = 0; index < _zones.Count; index++)
             {

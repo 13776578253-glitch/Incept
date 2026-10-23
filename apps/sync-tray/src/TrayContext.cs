@@ -124,6 +124,7 @@ namespace InceptSync
             _icon.Visible = true;
             _icon.MouseClick += OnIconClick;
             ThemeManager.Changed += OnThemeChanged;
+            Locale.Changed += OnLocaleChanged;
 
             _timer = new System.Windows.Forms.Timer();
             _timer.Interval = 1000;
@@ -208,7 +209,7 @@ namespace InceptSync
             if (state == AgentVisualState.Attention && _snapshot.LastErrorCode != _lastError)
             {
                 _lastError = _snapshot.LastErrorCode;
-                Notify("同步需要处理", _snapshot.LastErrorCode + "，打开托盘查看详情。", ToolTipIcon.Warning);
+                Notify(Strings.AttentionTitle, _snapshot.LastErrorCode + Strings.AttentionSuffix, ToolTipIcon.Warning);
             }
             else if (state != AgentVisualState.Attention)
             {
@@ -222,16 +223,21 @@ namespace InceptSync
             _icon.Icon = IconFactory.For(_lastState, _palette.Dark, _animationFrame);
         }
 
+        private void OnLocaleChanged(object sender, EventArgs e)
+        {
+            _icon.Text = Tooltip(_lastState);
+        }
+
         private string Tooltip(AgentVisualState state)
         {
             string text;
             switch (state)
             {
-                case AgentVisualState.Connected: text = "正常运行"; break;
-                case AgentVisualState.Syncing: text = "上传中"; break;
-                case AgentVisualState.Paused: text = "已暂停"; break;
-                case AgentVisualState.Attention: text = "需要处理"; break;
-                default: text = "未运行"; break;
+                case AgentVisualState.Connected: text = Strings.TrayRunning; break;
+                case AgentVisualState.Syncing: text = Strings.TrayUploading; break;
+                case AgentVisualState.Paused: text = Strings.TrayPaused; break;
+                case AgentVisualState.Attention: text = Strings.TrayAttention; break;
+                default: text = Strings.TrayOffline; break;
             }
             string value = "Incept Sync · " + text;
             return value.Length > 63 ? value.Substring(0, 63) : value;
@@ -241,7 +247,7 @@ namespace InceptSync
         {
             if (!_agent.IsConfigured)
             {
-                Notify("尚未绑定设备", "请先运行 windows\\Bind.ps1 完成设备绑定。", ToolTipIcon.Info);
+                Notify(Strings.NotBoundTitle, Strings.NotBoundText, ToolTipIcon.Info);
                 return;
             }
             if (_snapshot != null && _snapshot.IsFresh(NowMs()))
@@ -256,11 +262,11 @@ namespace InceptSync
                     string error;
                     if (_agent.StartSupervisor(out error))
                     {
-                        Post(delegate { Notify("Incept Sync 已启动", "Agent 正在后台运行，图标会显示同步状态。", ToolTipIcon.Info); });
+                        Post(delegate { Notify(Strings.StartedTitle, Strings.StartedText, ToolTipIcon.Info); });
                     }
                     else
                     {
-                        Post(delegate { Notify("无法启动 Agent", error, ToolTipIcon.Error); });
+                        Post(delegate { Notify(Strings.StartFailedTitle, error, ToolTipIcon.Error); });
                     }
                 }
             });
@@ -324,13 +330,13 @@ namespace InceptSync
             if (_snapshot == null || !_snapshot.IsFresh(NowMs()))
             {
                 EnsureAgent();
-                Notify("Agent 未运行", "已请求启动 Agent，请稍后再点立即同步。", ToolTipIcon.Info);
+                Notify(Strings.AgentStoppedTitle, Strings.AgentStoppedText, ToolTipIcon.Info);
                 return;
             }
             _agent.RunAsync(new string[] { "sync-now", "--state", _agent.StateDirectory }, delegate(CliResult result)
             {
-                string message = result.Ok ? "已排队，稍后完成采集与上传。" : "立即同步失败：" + Describe(result);
-                Post(delegate { Notify("立即同步", message, result.Ok ? ToolTipIcon.Info : ToolTipIcon.Warning); });
+                string message = result.Ok ? Strings.SyncQueued : Strings.SyncFailedPrefix + Describe(result);
+                Post(delegate { Notify(Strings.SyncNow, message, result.Ok ? ToolTipIcon.Info : ToolTipIcon.Warning); });
             });
         }
 
@@ -342,8 +348,8 @@ namespace InceptSync
             {
                 Post(delegate
                 {
-                    Notify(pause ? "已暂停同步" : "已恢复同步",
-                        result.Ok ? (pause ? "自动同步已暂停，立即同步仍可用。" : "自动同步已恢复。") : Describe(result),
+                    Notify(pause ? Strings.PausedTitle : Strings.ResumedTitle,
+                        result.Ok ? (pause ? Strings.PausedText : Strings.ResumedText) : Describe(result),
                         result.Ok ? ToolTipIcon.Info : ToolTipIcon.Warning);
                 });
             });
@@ -354,7 +360,7 @@ namespace InceptSync
             string endpoint = _agent.Endpoint();
             if (string.IsNullOrEmpty(endpoint))
             {
-                Notify("没有可用的端点", "设备尚未绑定。", ToolTipIcon.Warning);
+                Notify(Strings.NoEndpointTitle, Strings.NoEndpointText, ToolTipIcon.Warning);
                 return;
             }
             try
@@ -363,7 +369,7 @@ namespace InceptSync
             }
             catch (Exception error)
             {
-                Notify("无法打开 Dashboard", error.Message, ToolTipIcon.Warning);
+                Notify(Strings.DashboardFailedPrefix, error.Message, ToolTipIcon.Warning);
             }
         }
 
@@ -372,7 +378,7 @@ namespace InceptSync
             string log = Path.Combine(_agent.StateDirectory, "agent.log");
             if (!File.Exists(log))
             {
-                Notify("没有日志", "Agent 尚未写入日志。", ToolTipIcon.Info);
+                Notify(Strings.NoLogTitle, Strings.NoLogText, ToolTipIcon.Info);
                 return;
             }
             try
@@ -436,7 +442,7 @@ namespace InceptSync
         {
             if (result.TimedOut)
             {
-                return "命令超时";
+                return Strings.CommandTimeout;
             }
             if (result.Error != null)
             {
@@ -451,7 +457,7 @@ namespace InceptSync
             {
                 text = text.Substring(0, 120);
             }
-            return text.Length == 0 ? "退出码 " + result.ExitCode : text;
+            return text.Length == 0 ? Strings.ExitCodePrefix + result.ExitCode : text;
         }
 
         private void StartPipeServer()
@@ -496,6 +502,7 @@ namespace InceptSync
             try
             {
                 ThemeManager.Changed -= OnThemeChanged;
+                Locale.Changed -= OnLocaleChanged;
                 _timer.Stop();
                 _timer.Dispose();
                 _animationTimer.Stop();

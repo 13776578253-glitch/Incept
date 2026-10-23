@@ -228,6 +228,152 @@ namespace InceptSync
             return Json.Str(config, "deviceId") ?? string.Empty;
         }
 
+        // The cached policy the Agent is running with. The server remains the
+        // authority: it overwrites this list on the next Agent start.
+        public List<string> AllowedSources()
+        {
+            List<string> sources = new List<string>();
+            Dictionary<string, object> config = ReadConfig();
+            if (config == null)
+            {
+                return sources;
+            }
+            List<object> values = Json.Arr(config, "allowedSources");
+            if (values == null)
+            {
+                return sources;
+            }
+            foreach (object value in values)
+            {
+                string name = value as string;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    sources.Add(name);
+                }
+            }
+            return sources;
+        }
+
+        // Only the Owner may widen the allowlist, so the tray deep-links to the
+        // dashboard instead of writing config.json behind the server's back.
+        public string SettingsUrl(string languageCode)
+        {
+            string endpoint = Endpoint();
+            if (string.IsNullOrEmpty(endpoint))
+            {
+                return null;
+            }
+            return endpoint.TrimEnd('/') + "/" + languageCode + "/settings?section=account";
+        }
+
+        public bool IsRunning()
+        {
+            CliResult status = Run(new string[] { "status", "--state", StateDirectory });
+            try
+            {
+                Dictionary<string, object> map = Json.AsObject(Json.Parse((status.StdOut ?? string.Empty).Trim()));
+                return Json.Bool(map, "running");
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // The CLI's `stop` is queued and only accepted while the instance pipe is
+        // reachable. A pipe owned by a higher-integrity process (an Agent started
+        // from an elevated shell) is invisible here, so report that case instead
+        // of waiting for a stop that cannot arrive.
+        public bool Restart(out string error, out bool timedOut)
+        {
+            error = null;
+            timedOut = false;
+            StatusSnapshot before = StatusSnapshot.Load(StateDirectory);
+            bool daemonAlive = before != null && before.IsFresh(NowMs());
+            CliResult stop = Run(new string[] { "stop", "--state", StateDirectory });
+            bool pipe = IsRunning();
+            if (!stop.Ok && pipe)
+            {
+                error = "AGENT_STOP_REJECTED";
+                return false;
+            }
+            if (!stop.Ok && daemonAlive && !pipe)
+            {
+                error = "AGENT_UNREACHABLE";
+                return false;
+            }
+
+            // The daemon writes running:false in its shutdown path, so the state
+            // file is a cheap and accurate "has it left" signal while it drains a
+            // collection cycle.
+            bool exited = !daemonAlive;
+            for (int attempt = 0; attempt < 120 && !exited; attempt++)
+            {
+                Thread.Sleep(750);
+                StatusSnapshot current = StatusSnapshot.Load(StateDirectory);
+                if (current == null || !current.Running)
+                {
+                    exited = true;
+                }
+            }
+            if (!exited)
+            {
+                timedOut = true;
+                error = "AGENT_DID_NOT_STOP";
+                return false;
+            }
+            Thread.Sleep(500);
+
+            // A supervisor exits immediately when the old daemon still holds the
+            // lock, so retry until one survives.
+            for (int attempt = 0; attempt < 8; attempt++)
+            {
+                if (StartSupervisorAlive(out error))
+                {
+                    return true;
+                }
+                Thread.Sleep(1500);
+            }
+            timedOut = true;
+            error = "AGENT_DID_NOT_START";
+            return false;
+        }
+
+        // The supervisor keeps running while its daemon lives; a supervisor that
+        // exits within two seconds means the instance lock was still taken.
+        private bool StartSupervisorAlive(out string error)
+        {
+            error = null;
+            try
+            {
+                string arguments = Quote(AgentScript) + " " + BuildArguments(new string[] { "supervise", "--state", StateDirectory });
+                ProcessStartInfo info = new ProcessStartInfo(NodePath, arguments);
+                info.CreateNoWindow = true;
+                info.UseShellExecute = false;
+                info.WindowStyle = ProcessWindowStyle.Hidden;
+                info.WorkingDirectory = AgentDirectory;
+                using (Process process = Process.Start(info))
+                {
+                    if (process == null)
+                    {
+                        error = "SUPERVISOR_NOT_STARTED";
+                        return false;
+                    }
+                    return !process.WaitForExit(2000);
+                }
+            }
+            catch (Exception failure)
+            {
+                error = failure.Message;
+                return false;
+            }
+        }
+
+        private static long NowMs()
+        {
+            return (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+        }
+
         private static string BuildArguments(string[] args)
         {
             StringBuilder builder = new StringBuilder();

@@ -14,6 +14,7 @@ namespace InceptSync
         {
             Options options = Options.Parse(args);
             ThemeManager.Initialize(options.StateDirectory);
+            Locale.Initialize(options.StateDirectory);
             if (!string.IsNullOrEmpty(options.SelfTestPath))
             {
                 return SelfTest.Run(options);
