@@ -43,6 +43,13 @@ export async function handleSyncRequest(request:Request) {
     const result=await handler(request);
     if(auditId)await finishSecurityAudit(auditId,result.ok?'success':'failure').catch(()=>{});
     return result;
-  }catch{if(auditId)await finishSecurityAudit(auditId,'failure').catch(()=>{});return response({error:'BACKEND_UNAVAILABLE'},503,undefined,2);}
+  }catch(error){
+    if(auditId)await finishSecurityAudit(auditId,'failure').catch(()=>{});
+    // Keep the client error generic, but record why so 503s are diagnosable.
+    const name=error instanceof Error?error.name:'unknown';
+    const message=(error instanceof Error?error.message:String(error)).slice(0,300);
+    console.error(JSON.stringify({event:'sync_request_failed',name,message}));
+    return response({error:'BACKEND_UNAVAILABLE'},503,undefined,2);
+  }
 }
 export function remoteSync(){if(process.env.INCEPT_SYNC_REMOTE_ENABLED!=='1')return undefined;return globalThis.__inceptRemoteSync??=(new RemoteSync({executor:syncExecutor(),secret:readRpcSecret(),gatewayBase:process.env.INCEPT_SYNC_GATEWAY_INTERNAL_URL??'',readMode:()=>process.env.INCEPT_SYNC_READ_MODE??'v1',pollMs:Number(process.env.INCEPT_SYNC_POLL_MS??300000),owner:async(req,mutating)=>{if(mutating&&!hasSameOrigin(req))throw new SyncTransportError('FORBIDDEN',403);const viewer=await getCurrentViewer();if(viewer.role!=='owner')throw new SyncTransportError('FORBIDDEN',403);return {sessionId:viewer.sessionId,ownerId:'owner'};}}));}

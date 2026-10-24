@@ -46,11 +46,11 @@ export function SyncDevicesPanel({language}:{language:'zh'|'en'}) {
           <fieldset className="flex flex-wrap gap-3"><legend className="text-xs">{t('允许自动同步的数据源','Sources allowed to sync automatically')}</legend>{sources.map(item=><label key={item} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={sourceDraft.includes(item)} onChange={e=>setSourceDraft(current=>e.target.checked?[...current,item]:current.filter(source=>source!==item))}/>{item}</label>)}</fieldset>
           <button className={button} disabled={busy||!sourceDraft.length}>{t('保存来源','Save sources')}</button>
         </form>}
-        {binding===device.id&&<form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();void run(async()=>{await request('/'+device.id+'/scopes','POST',{source,sessionId:session,originId:origin});setBinding('');setSession('');setOrigin('');});}}>
-          <select aria-label={t('来源','Source')} className={input} value={source} onChange={e=>setSource(e.target.value)}>{device.allowedSources.map(item=><option key={item}>{item}</option>)}</select>
-          <input aria-label="Session ID" className={input} value={session} onChange={e=>setSession(e.target.value)} required maxLength={512}/>
-          <input aria-label="Origin ID" className={input} value={origin} onChange={e=>setOrigin(e.target.value)} required maxLength={512}/>
-          <button className={button} disabled={busy}>{t('确认绑定','Confirm binding')}</button>
+        {binding===device.id&&<form className="flex w-full flex-wrap items-center gap-2" onSubmit={e=>{e.preventDefault();void run(async()=>{await request('/'+device.id+'/scopes','POST',{source,sessionId:session,originId:origin});setBinding('');setSession('');setOrigin('');});}}>
+          <select aria-label={t('来源','Source')} className={input+' min-w-0 flex-1 basis-32'} value={source} onChange={e=>setSource(e.target.value)}>{device.allowedSources.map(item=><option key={item}>{item}</option>)}</select>
+          <input aria-label="Session ID" className={input+' min-w-0 flex-1 basis-48'} value={session} onChange={e=>setSession(e.target.value)} required maxLength={512}/>
+          <input aria-label="Origin ID" className={input+' min-w-0 flex-1 basis-48'} value={origin} onChange={e=>setOrigin(e.target.value)} required maxLength={512}/>
+          <button className={button+' shrink-0'} disabled={busy}>{t('确认绑定','Confirm binding')}</button>
         </form>}
       </div>)}
     </>}
