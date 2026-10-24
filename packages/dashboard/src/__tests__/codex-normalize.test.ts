@@ -1,6 +1,6 @@
 import {expect,it} from 'vitest';
-import type {SyncRecord} from '../../domain/sync';
-import {normalizeCodexRecords} from '../../agent/codex-normalize';
+import type {SyncRecord} from '../domain/sync';
+import {normalizeCodexRecords} from '../agent/codex-normalize';
 
 const event=(timestampMs:number,inputTokens:number,cacheReadTokens:number,outputTokens:number,reasoningTokens:number):SyncRecord=>({
   event:{eventId:String(timestampMs),source:'codex',sessionId:'session-i',timestampMs,modelName:'gpt-5.5',projectKey:'p',projectName:'p',inputTokens,outputTokens,cacheReadTokens,cacheCreationTokens:0,reasoningTokens},
@@ -26,4 +26,3 @@ it('collapses duplicate cumulative snapshots and keeps a regressed branch on one
   ]);
   expect(normalized.map(r=>r.event.eventId)).toEqual(['1','2']);
 });
-

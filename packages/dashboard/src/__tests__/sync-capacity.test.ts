@@ -3,12 +3,12 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
-import {capacityState,guardCapacity,memoryPressure,checkpointWal} from '../../sync/capacity';
-import {DEFAULT_CAPACITY} from '../../sync/protocol';
-import {SyncExecutor} from '../../sync/executor';
-import {CompatibleSyncService} from '../../adapters/local/imports/sync/legacy';
-import {fromEvents} from '../phase1/fixtures';
-import {hash} from '../../adapters/local/imports/identity';
+import {capacityState,guardCapacity,memoryPressure,checkpointWal} from '../sync/capacity';
+import {DEFAULT_CAPACITY} from '../sync/protocol';
+import {SyncExecutor} from '../sync/executor';
+import {CompatibleSyncService} from '../adapters/local/imports/sync/legacy';
+import {fromEvents} from './phase1/fixtures';
+import {hash} from '../adapters/local/imports/identity';
 const owner={role:'owner' as const,subject:'owner',reason:'isolated Phase5 acceptance'};
 it('cgroup pressure and DB/WAL/SHM admission return retryable protection without changing records',()=>{
   expect(memoryPressure(p=>p.endsWith('current')?'90':'100')).toEqual({currentBytes:90,maximumBytes:100,percent:90});

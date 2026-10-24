@@ -3,10 +3,10 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { expect, it } from 'vitest';
-import { CODEX_AUTO_REVIEW_MODEL, isCodexAutoReviewModel } from '../../adapters/local/collectors/codex-purpose';
-import { collectIndexedAgentEvents } from '../../adapters/local/collectors/aiusage';
-import { priceSyncRecord } from '../../adapters/local/imports/sync/pricing';
-import type { SyncBasis, SyncRecord, SyncScope } from '../../domain/sync';
+import { CODEX_AUTO_REVIEW_MODEL, isCodexAutoReviewModel } from '../adapters/local/collectors/codex-purpose';
+import { collectIndexedAgentEvents } from '../adapters/local/collectors/aiusage';
+import { priceSyncRecord } from '../adapters/local/imports/sync/pricing';
+import type { SyncBasis, SyncRecord, SyncScope } from '../domain/sync';
 
 const scope: SyncScope = { deviceId: 'device', source: 'codex', sessionId: 'fixture', originId: 'origin' };
 const record = (modelName: string): SyncRecord => ({ envelopeHash: '', event: {

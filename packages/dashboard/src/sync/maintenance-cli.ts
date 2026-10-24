@@ -1,4 +1,4 @@
-import {runMaintenance} from '../../tools/phase5/maintenance';
+import {runMaintenance} from './maintenance';
 runMaintenance().then(result=>{
   console.log(JSON.stringify(result));
   if('ok' in result&&!result.ok)process.exitCode=2;

@@ -45,3 +45,18 @@ Agent A completed the DeepWiki-aligned redesign of Docs Home (`DocsHomeAddCard` 
 Owner approved the single-device gray rollout and selected **Plan A**: migrate v1 to v2, run the 7d/30d/all shadow comparison to zero, switch v2 reads, then start the one Windows Agent. The first Agent upload must be treated as new data when it is truly new; an overlap with unclaimed v1 history must enter `review_required` and keep the old statistics. Historical adoption stays explicit (Owner-given device UUID/source/manifest/legacy batches); no automatic bulk claim.
 
 The release is rebuilt from `codex/production-readiness` `1a44da2` rather than copied partially from the development worktree. Operations routes and mock data are **excluded** from this release; no Operations authentication work is included. See [the rollout runbook](./runbooks/sync-agent-production-rollout.md), [the authorization](./runbooks/sync-agent-phase5-owner-authorization.md), and [the Phase 5 proof](./research/sync-agent-phase5-rollout-proof.md).
+
+## 2026-10-24 Technical Debt: Pricing Adapters & Policy Consolidation
+
+Recorded debt from `packages/dashboard/src/adapters/local/` pricing modules. Currently operational with passing tests (`commandcode-peak.test.ts`, `integration.test.ts`), but accumulated ad-hoc patches require structural cleanup:
+
+1. **`pricing-temporary.ts` (Static fallback patch):**
+   - 10-line hardcoded rates for `gpt-5.3-codex` and `gpt-5.2-codex` added when `~/.aiusage/cache.db` had not yet indexed them.
+   - *Target:* Merge directly into `pricing.ts` as default fallback constant; delete standalone file.
+2. **`pricing-commandcode.ts` (CLI regex scrape patch):**
+   - Scrapes `node_modules/command-code/dist/cli.mjs` via regex to extract literal pricing tables without triggering CommandCode CLI telemetry or auth.
+   - *Target:* Encapsulate into a dedicated `pricing/providers/commandcode-catalog.ts` or unify catalog discovery.
+3. **`pricing-schedule.ts` (Peak/off-peak billing mutation rule):**
+   - Implements China State Council 2026 statutory holiday calendar (`HOLIDAYS_2026`) and UTC/Beijing off-peak multipliers (2x peak during working hours) for DeepSeek / Command Code models.
+   - *Misplacement:* This is a **domain billing policy / event mutator** (`applyCommandCodeQuota`), not a static price-fetching adapter, yet it sits flat in `adapters/local/` and is referenced across collectors, projection, loader, and sync readers.
+   - *Target:* Move to `packages/dashboard/src/domain/policies/peak-schedule.ts` (or `sync/policies/`) to separate data retrieval from business calculation rules.

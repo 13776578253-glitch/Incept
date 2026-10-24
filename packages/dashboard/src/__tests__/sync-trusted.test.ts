@@ -2,8 +2,8 @@ import {afterEach,expect,it} from 'vitest';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {CompatibleSyncService} from '../../adapters/local/imports/sync/legacy';
-import {resolveScope} from '../../sync/admission';
+import {CompatibleSyncService} from '../adapters/local/imports/sync/legacy';
+import {resolveScope} from '../sync/admission';
 
 const dirs:string[]=[];
 afterEach(()=>{for(const dir of dirs.splice(0))rmSync(dir,{recursive:true,force:true});});

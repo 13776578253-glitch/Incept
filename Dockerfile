@@ -26,7 +26,7 @@ RUN if test -d deployment/.prisma-engine-cache; then \
     fi \
     && NODE_USE_ENV_PROXY=1 DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build pnpm db:generate \
     && rm -rf /app/deployment/.prisma-engine-cache
-RUN pnpm --filter @incept/dashboard build:runtime && pnpm --filter @incept/sync-agent build && pnpm --filter @incept/sync-gateway build && node packages/dashboard/tools/phase5/build.mjs
+RUN pnpm --filter @incept/dashboard build:runtime && pnpm --filter @incept/sync-agent build && pnpm --filter @incept/sync-gateway build && pnpm --filter @incept/dashboard build:sync-maintenance
 RUN pnpm typecheck && pnpm lint && pnpm test && pnpm test:ops
 RUN DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build NEXT_TELEMETRY_DISABLED=1 pnpm build
 

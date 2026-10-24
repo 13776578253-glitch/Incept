@@ -3,12 +3,12 @@ import {existsSync,mkdtempSync,mkdirSync,rmSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {DatabaseSync} from 'node:sqlite';
-import {CompatibleSyncService} from '../../adapters/local/imports/sync/legacy';
-import {fromEvents} from '../phase1/fixtures';
-import {readSyncView} from '../../adapters/local/imports/sync/read';
+import {CompatibleSyncService} from '../adapters/local/imports/sync/legacy';
+import {fromEvents} from './phase1/fixtures';
+import {readSyncView} from '../adapters/local/imports/sync/read';
 vi.mock('server-only',()=>({}));
-import {backupSqlite,runMaintenance} from '../../../tools/phase5/maintenance';
-import {PHASE0_NOW,phase0Export,phase0Import,writePhase0Home} from '../fixtures/sync-agent-phase0';
+import {backupSqlite,runMaintenance} from '../sync/maintenance';
+import {PHASE0_NOW,phase0Export,phase0Import,writePhase0Home} from './fixtures/sync-agent-phase0';
 
 let directory:string,home:string,legacy:string,sync:string;
 beforeEach(()=>{

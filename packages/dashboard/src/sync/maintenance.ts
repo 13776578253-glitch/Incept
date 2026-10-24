@@ -2,16 +2,16 @@ import {createHash} from 'node:crypto';
 import {chmodSync,existsSync,mkdirSync,readFileSync,renameSync,rmSync,statSync,createReadStream,writeFileSync} from 'node:fs';
 import {basename,dirname,isAbsolute,resolve} from 'node:path';
 import {DatabaseSync,backup} from 'node:sqlite';
-import {CompatibleSyncService} from '../../src/adapters/local/imports/sync/legacy';
-import {syncScopeId} from '../../src/adapters/local/imports/sync/contract';
-import {checkpointWal,capacityState} from '../../src/sync/capacity';
-import {DEFAULT_CAPACITY} from '../../src/sync/protocol';
-import {projection} from '../../src/sync/projection';
-import {loadTokenDashboardData} from '../../src/adapters/local/loader';
-import {hash} from '../../src/adapters/local/imports/identity';
-import {listReviewSummaries} from '../../src/adapters/local/imports/sync/reviews';
-import type {SyncActor} from '../../src/domain/sync';
-import type {TokenDashboardData,UsageRange} from '../../src/domain';
+import {CompatibleSyncService} from '../adapters/local/imports/sync/legacy';
+import {syncScopeId} from '../adapters/local/imports/sync/contract';
+import {checkpointWal,capacityState} from './capacity';
+import {DEFAULT_CAPACITY} from './protocol';
+import {projection} from './projection';
+import {loadTokenDashboardData} from '../adapters/local/loader';
+import {hash} from '../adapters/local/imports/identity';
+import {listReviewSummaries} from '../adapters/local/imports/sync/reviews';
+import type {SyncActor} from '../domain/sync';
+import type {TokenDashboardData,UsageRange} from '../domain';
 
 const OWNER_CONFIRMATION='I_AM_THE_OWNER';
 type Options=Record<string,string|boolean>;
@@ -169,7 +169,7 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
   if(command==='adopt-exact'||command==='adopt-reviewed'){
     const actor=owner(options),file=absolute(options,'candidate');
     if(statSync(file).size>64*1024*1024)throw new MaintenanceError('CANDIDATE_LIMIT');
-    const candidate=JSON.parse(readFileSync(file,'utf8')) as {header:import('../../src/domain/sync').SyncHeader;records:import('../../src/domain/sync').SyncRecord[]};
+    const candidate=JSON.parse(readFileSync(file,'utf8')) as {header:import('../domain/sync').SyncHeader;records:import('../domain/sync').SyncRecord[]};
     if(!Array.isArray(candidate.records)||candidate.records.length>20000||candidate.header.manifest.intent!=='observe')throw new MaintenanceError('CANDIDATE_LIMIT');
     if(candidate.header.manifest.scope.deviceId!==required(options,'device')||candidate.header.manifest.manifestHash!==required(options,'manifest'))throw new MaintenanceError('EXPLICIT_SCOPE_CONFIRMATION_REQUIRED');
     if(command==='adopt-reviewed'&&required(options,'accept-reviewed-manifest')!==candidate.header.manifest.manifestHash)throw new MaintenanceError('REVIEWED_MANIFEST_CONFIRMATION_REQUIRED');

@@ -1,4 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "include": ["src/domain/sync.ts", "src/adapters/local/imports/sync/**/*.ts", "src/__tests__/phase1/**/*.ts"]
-}

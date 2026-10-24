@@ -4,11 +4,11 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 vi.mock('server-only',()=>({}));
-import {projection} from '../../sync/projection';
-import {CompatibleSyncService} from '../../adapters/local/imports/sync/legacy';
-import {hash} from '../../adapters/local/imports/identity';
-import {PHASE0_NOW,writePhase0Home,phase0Export,phase0Import} from '../fixtures/sync-agent-phase0';
-import {fromEvents} from '../phase1/fixtures';
+import {projection} from '../sync/projection';
+import {CompatibleSyncService} from '../adapters/local/imports/sync/legacy';
+import {hash} from '../adapters/local/imports/identity';
+import {PHASE0_NOW,writePhase0Home,phase0Export,phase0Import} from './fixtures/sync-agent-phase0';
+import {fromEvents} from './phase1/fixtures';
 
 let directory:string,home:string,legacy:string,service:CompatibleSyncService;
 const owner={role:'owner' as const,subject:'owner',reason:'isolated time projection'};
