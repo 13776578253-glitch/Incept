@@ -3,7 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./sync": {"types":"./src/sync/index.ts","default":"./src/sync/index.ts"},
+    "./sync": {
+      "types": "./src/sync/index.ts",
+      "default": "./src/sync/index.ts"
+    },
     "./endpoints": {
       "types": "./src/endpoints.ts",
       "default": "./src/endpoints.ts"
@@ -48,7 +51,7 @@
     "@types/react-dom": "^19",
     "esbuild": "^0.27.7",
     "jsdom": "^30.1.0",
-    "next": "16.4.0",
+    "next": "16.4.3",
     "next-intl": "4.11.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -56,7 +59,7 @@
     "vitest": "^5.0.1"
   },
   "dependencies": {
-    "server-only": "0.0.1",
-    "ccusage": "20.0.30"
+    "ccusage": "20.0.30",
+    "server-only": "0.0.1"
   }
 }

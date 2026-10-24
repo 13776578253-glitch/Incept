@@ -5,7 +5,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
-  experimental: { cpus: 2 },
+  experimental: { cpus: 2, agentUpgrade: 'security' },
   async rewrites() {
     return { beforeFiles: [
       { source: '/favicon.ico', destination: '/icon.svg' },

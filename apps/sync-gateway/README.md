@@ -10,7 +10,7 @@ node apps/sync-agent/tools/build.mjs
 node apps/sync-gateway/tools/build.mjs
 ```
 
-使用锁定的 Node `>=24.15 <25`、pnpm `10.30.3`。Gateway 复用现存 Next `16.4.0` 内锁定的 WebSocket 实现，构建后只运行便携 bundle，无新外部依赖版本。禁止把生产 `.env` 复制进隔离环境。
+使用锁定的 Node `>=24.15 <25`、pnpm `10.30.3`。Gateway 复用现存 Next `16.4.3` 内锁定的 WebSocket 实现，构建后只运行便携 bundle，无新外部依赖版本。禁止把生产 `.env` 复制进隔离环境。
 
 Web 配置（仅隔离环境显式启用）：
 
