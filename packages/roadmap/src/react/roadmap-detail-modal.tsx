@@ -15,6 +15,7 @@ import {
 
 import { roadmapEndpoints } from '../endpoints';
 import type { RoadmapChrome } from './copy';
+import { isDraftEntryKey } from './draft';
 import { IconChevronDown, IconLink, IconSparkle, typeIcons } from './icons';
 import { roadmapRequest } from './request';
 
@@ -25,6 +26,8 @@ type RoadmapDetailModalProps = {
   locale: RoadmapLocale;
   chrome: RoadmapChrome;
   canEdit: boolean;
+  // 新建列（板配置第一列）：只有落在这一列时，右侧浮条才给出「+」新增入口。
+  createStatus?: RoadmapStatus;
   undoStatus?: RoadmapStatus;
   onClose: () => void;
   onSelectEntry: (entry: RoadmapEntry) => void;
@@ -195,15 +198,21 @@ export function RoadmapDetailModal({
   locale,
   chrome,
   canEdit,
+  createStatus,
   undoStatus,
   onClose,
   onSelectEntry,
   onEntrySaved,
   onEntryDeleted,
 }: RoadmapDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<'details' | 'activity' | 'editor'>('activity');
-  const [mode, setMode] = useState<'view' | 'create'>('view');
+  // 草稿条目（key 带 draft: 前缀）= 直接进创建态，保存后看板会把它换成真实条目。
+  const draftEntry = isDraftEntryKey(entry.key);
+  const [activeTab, setActiveTab] = useState<'details' | 'activity' | 'editor'>(
+    draftEntry ? 'editor' : 'activity',
+  );
+  const [mode, setMode] = useState<'view' | 'create'>(draftEntry ? 'create' : 'view');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const isCreate = mode === 'create';
 
   const defaultBilingualTitle =
     entry.title.en === entry.title.zh
@@ -224,7 +233,7 @@ export function RoadmapDetailModal({
       entry.title.en === entry.title.zh
         ? entry.title.en
         : `${entry.title.en} / ${entry.title.zh}`;
-    setMode('view');
+    setMode(draftEntry ? 'create' : 'view');
     setSaveError(null);
     setEditedTitle(nextTitle);
     setEditedSummary(entry.summary[locale]);
@@ -233,7 +242,8 @@ export function RoadmapDetailModal({
     setSelectedType(entry.type ?? 'feature');
     setSelectedPriority(entry.priority);
     setOpenSelector(null);
-  }, [entry, locale]);
+    if (draftEntry) setActiveTab('editor');
+  }, [entry, locale, draftEntry]);
 
   const currentIndex = allEntries.findIndex((item) => item.key === entry.key);
   const prevEntry = currentIndex > 0 ? allEntries[currentIndex - 1] : undefined;
@@ -242,7 +252,7 @@ export function RoadmapDetailModal({
       ? allEntries[currentIndex + 1]
       : undefined;
 
-  const similarEntry = findSimilarEntry(entry, allEntries);
+  const similarEntry = isCreate ? null : findSimilarEntry(entry, allEntries);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -285,8 +295,10 @@ export function RoadmapDetailModal({
   const currentTypeStyle = typeSelectorStyles[selectedType];
   const CurrentTypeIcon = typeIcons[selectedType];
   const currentPriorityStyle = prioritySelectorStyles[selectedPriority];
-  const isBacklog = entry.status === 'reviewing';
-  const isCreate = mode === 'create';
+  // 新建列 = 板配置的第一列；不传时退回旧行为（Backlog = reviewing）。
+  const isFirstColumn = createStatus
+    ? entry.status === createStatus
+    : entry.status === 'reviewing';
   const isDirty =
     editedTitle !== defaultBilingualTitle ||
     editedSummary !== entry.summary[locale] ||
@@ -318,7 +330,7 @@ export function RoadmapDetailModal({
       const saved = isCreate
         ? await roadmapRequest<{ entry: RoadmapEntry }>(roadmapEndpoints.entries, 'POST', {
             roadmapKey: entry.roadmap,
-            status: 'reviewing',
+            status: createStatus ?? entry.status,
             type: selectedType,
             priority: selectedPriority,
             title,
@@ -451,7 +463,7 @@ export function RoadmapDetailModal({
         }}
         className="relative flex w-full max-w-[920px] flex-col overflow-visible rounded-[16px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-modal-bg,var(--color-bg))] shadow-[0_24px_64px_rgba(0,0,0,0.38)] md:flex-row"
       >
-        {/* 右侧外部上下条目切换浮动按钮 + 仅在展开弹窗且处于 Backlog 时显示的「+」新增条目按钮 */}
+        {/* 右侧外部上下条目切换浮动按钮 + 仅在新建列（路线图 Backlog / 规划图 Planned）展开时显示「+」新增条目按钮 */}
         <div className="-right-11 top-0 hidden flex-col gap-2 lg:absolute lg:flex">
           <div className="flex flex-col overflow-hidden rounded-[8px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-modal-bg,var(--color-bg))] shadow-md">
             <button
@@ -478,11 +490,11 @@ export function RoadmapDetailModal({
             </button>
           </div>
 
-          {canEdit && isBacklog && !isCreate && (
+          {canEdit && isFirstColumn && !isCreate && (
             <button
               type="button"
-              aria-label="Add Backlog entry"
-              title="Add entry to Backlog"
+              aria-label={`Add ${statusLabel} entry`}
+              title={`Add entry to ${statusLabel}`}
               onClick={enterCreateMode}
               className="flex size-8 items-center justify-center rounded-[8px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-modal-bg,var(--color-bg))] text-[var(--color-text-muted)] shadow-md transition-colors hover:border-[var(--roadmap-status-active,#2563eb)] hover:bg-[var(--roadmap-lane-bg)] hover:text-[var(--roadmap-status-active,#2563eb)]"
             >
@@ -684,20 +696,12 @@ export function RoadmapDetailModal({
                   )}
                 </div>
 
-                {/* 分栏紧凑表单字段 */}
+                {/* 分栏紧凑表单字段：字段名保持单语，序号与说明文字已按界面规格移除 */}
                 <div className="divide-y divide-[var(--roadmap-divider,var(--color-border))]">
                   <label className="flex flex-col gap-1.5 p-3.5 transition-colors focus-within:bg-[var(--roadmap-lane-bg)]/30">
-                    <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-[0.74rem] font-semibold text-[var(--color-text)]">
-                        <span className="rounded-[4px] bg-slate-200/70 px-1.5 py-0.5 font-mono text-[0.66rem] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          01
-                        </span>
-                        标题 · Title
-                      </span>
-                      <span className="text-[0.68rem] text-[var(--color-text-soft)]">
-                        EN / ZH 双语标题
-                      </span>
-                    </div>
+                    <span className="text-[0.74rem] font-semibold text-[var(--color-text)]">
+                      Title
+                    </span>
                     <input
                       type="text"
                       aria-label="Title"
@@ -712,11 +716,8 @@ export function RoadmapDetailModal({
 
                   <label className="flex flex-col gap-1.5 p-3.5 transition-colors focus-within:bg-[var(--roadmap-lane-bg)]/30">
                     <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-[0.74rem] font-semibold text-[var(--color-text)]">
-                        <span className="rounded-[4px] bg-slate-200/70 px-1.5 py-0.5 font-mono text-[0.66rem] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          02
-                        </span>
-                        小结 · Summary
+                      <span className="text-[0.74rem] font-semibold text-[var(--color-text)]">
+                        Summary
                       </span>
                       <span className="font-mono text-[0.68rem] text-[var(--color-text-soft)]">
                         {editedSummary.length} chars
@@ -735,17 +736,9 @@ export function RoadmapDetailModal({
                   </label>
 
                   <label className="flex flex-col gap-1.5 p-3.5 transition-colors focus-within:bg-[var(--roadmap-lane-bg)]/30">
-                    <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-[0.74rem] font-semibold text-[var(--color-text)]">
-                        <span className="rounded-[4px] bg-slate-200/70 px-1.5 py-0.5 font-mono text-[0.66rem] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          03
-                        </span>
-                        Detail · 具体内容
-                      </span>
-                      <span className="text-[0.68rem] text-[var(--color-text-soft)]">
-                        同步展示于 Details 栏
-                      </span>
-                    </div>
+                    <span className="text-[0.74rem] font-semibold text-[var(--color-text)]">
+                      Detail
+                    </span>
                     <textarea
                       rows={3}
                       aria-label="Detail"
@@ -782,7 +775,8 @@ export function RoadmapDetailModal({
                     <button
                       type="button"
                       onClick={() => void handleSave()}
-                      className="rounded-[6px] bg-[#5ba4cf] px-3 py-1 text-[0.73rem] font-medium text-white shadow-2xs transition-colors hover:bg-[#4a93be]"
+                      disabled={isCreate && editedTitle.trim() === ''}
+                      className="rounded-[6px] bg-[#5ba4cf] px-3 py-1 text-[0.73rem] font-medium text-white shadow-2xs transition-colors hover:bg-[#4a93be] disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       Save
                     </button>
@@ -1034,17 +1028,14 @@ export function RoadmapDetailModal({
           </div>
 
           {/* 状态回退与删除操作区：非 Owner 隐藏；回退目标状态由看板配置指定 */}
-          {canEdit && (
+          {canEdit && !isCreate && (
             <div className="border-t border-[var(--roadmap-divider,var(--color-border))] p-6">
               <h3 className="text-[0.86rem] font-semibold text-[var(--color-text)]">
                 Revert or delete
               </h3>
-              <p className="mt-1 text-[0.76rem] leading-relaxed text-[var(--color-text-muted)]">
-                删除或者回退此提议
-              </p>
               <div className="mt-3.5 flex items-center justify-between gap-2.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  {!isBacklog && undoStatus && (
+                  {!isFirstColumn && undoStatus && (
                     <button
                       type="button"
                       aria-label="Undo"

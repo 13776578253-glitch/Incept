@@ -24,6 +24,8 @@ export type RoadmapChrome = {
   pendingDetail: string;
   importLabel?: string;
   projectSelectLabel?: string;
+  // 空列里的「+ 新建第一条」按钮可读名称；缺省时组件回退到英文 New entry。
+  createEntryLabel?: string;
   importSuccessEyebrow?: string;
   importSuccessTitle?: string;
   importSuccessDescription?: string;

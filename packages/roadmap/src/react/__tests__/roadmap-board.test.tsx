@@ -43,6 +43,7 @@ const chrome: RoadmapChrome = {
   createdLabel: 'Created',
   pendingDetail: 'Pending specification',
   importLabel: 'Import',
+  createEntryLabel: 'New proposal',
   projectSelectLabel: 'Select project',
 };
 
@@ -327,6 +328,84 @@ describe('RoadmapBoard', () => {
     expect(init?.method).toBe('POST');
     expect(body.status).toBe('reviewing');
     expect(body.title).toEqual({ en: 'Fresh', zh: '新' });
+  });
+
+  // 新建列按板配置第一列判定：规划图的最左列是 Planned，加号必须跟着板走而不是写死 Backlog。
+  it('offers the add control on the Planning board leftmost column', async () => {
+    const board = await sampleBoard('sample-atlas');
+
+    render(<RoadmapBoard board={board} locale="en" chrome={chrome} canEdit />);
+    fireEvent.click(screen.getByText('Bilingual title sample').closest('article')!);
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByRole('button', { name: 'Add Planned entry' })).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: 'Undo' })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: 'Add Backlog entry' })).toBeNull();
+  });
+
+  // 空列自救：最左列没有条目时，列头右上角给出一条创建入口，保存后写入该列状态。
+  it('creates the first proposal from an empty leftmost column', async () => {
+    const board = await sampleBoard('sample-atlas');
+    const spy = stubFetchEcho({ ...board.entries[0], key: 'fresh-atlas' });
+
+    render(
+      <RoadmapBoard
+        board={{ roadmap: board.roadmap, entries: [] }}
+        locale="en"
+        chrome={chrome}
+        canEdit
+      />,
+    );
+
+    expect(screen.getAllByRole('button', { name: 'New proposal' })).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'New proposal' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByLabelText('Title').getAttribute('value')).toBe('');
+    expect(within(dialog).queryByRole('button', { name: 'Delete' })).toBeNull();
+    expect(within(dialog).queryByText('Revert or delete')).toBeNull();
+
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: 'First / 第一条' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+
+    const [url, init] = spy.mock.calls[0];
+    const body = JSON.parse(String(init?.body)) as {
+      status: string;
+      roadmapKey: string;
+      title: RoadmapEntry['title'];
+    };
+
+    expect(String(url)).toBe('/api/internal/roadmap/entries');
+    expect(init?.method).toBe('POST');
+    expect(body.status).toBe('unstarted');
+    expect(body.roadmapKey).toBe('sample-atlas');
+    expect(body.title).toEqual({ en: 'First', zh: '第一条' });
+  });
+
+  // 编辑器只留字段名：中文标签与说明句按界面规格删掉。
+  it('keeps the editor to plain field names', async () => {
+    const board = await sampleBoard('sample-roadmap');
+
+    render(<RoadmapBoard board={board} locale="en" chrome={chrome} canEdit />);
+    fireEvent.click(screen.getByText('Interest-based reply method').closest('article')!);
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Editor' }),
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Title')).toBeTruthy();
+    expect(within(dialog).getByText('Summary')).toBeTruthy();
+    expect(within(dialog).getByText('Detail')).toBeTruthy();
+    expect(within(dialog).queryByText(/标题/)).toBeNull();
+    expect(within(dialog).queryByText(/小结/)).toBeNull();
+    expect(within(dialog).queryByText(/具体内容/)).toBeNull();
+    expect(within(dialog).queryByText('同步展示于 Details 栏')).toBeNull();
+    expect(within(dialog).queryByText('删除或者回退此提议')).toBeNull();
   });
 
   // 条目删除：弹窗确认后调用 DELETE 端点删除条目。

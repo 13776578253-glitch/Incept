@@ -6,6 +6,7 @@ import type { RoadmapEntry, RoadmapLocale, RoadmapStatus } from '../domain';
 import type { RoadmapBoard as RoadmapBoardData } from '../ports';
 
 import type { RoadmapChrome } from './copy';
+import { createDraftEntryKey, isDraftEntryKey } from './draft';
 import { statusColors, statusIcons } from './icons';
 import { RoadmapDetailModal } from './roadmap-detail-modal';
 import { RoadmapLane } from './roadmap-lane';
@@ -48,12 +49,17 @@ export function RoadmapBoard({
   const [entries, setEntries] = useState<readonly RoadmapEntry[]>(board.entries);
   const [activeEntry, setActiveEntry] = useState<RoadmapEntry | null>(null);
 
+  // 新建列 = 板配置里的第一列（路线图 = Backlog，规划图 = Planned）；加号只在它上面出现。
+  const createStatus = columns[0]?.status;
+
   function handleEntrySaved(saved: RoadmapEntry) {
-    setEntries((prev) =>
-      prev.some((item) => item.key === saved.key)
-        ? prev.map((item) => (item.key === saved.key ? saved : item))
-        : [...prev, saved],
-    );
+    setEntries((prev) => {
+      const settled = prev.filter((item) => !isDraftEntryKey(item.key));
+
+      return settled.some((item) => item.key === saved.key)
+        ? settled.map((item) => (item.key === saved.key ? saved : item))
+        : [...settled, saved];
+    });
     setActiveEntry(saved);
     onChanged?.();
   }
@@ -62,6 +68,22 @@ export function RoadmapBoard({
     setEntries((prev) => prev.filter((item) => item.key !== key));
     setActiveEntry(null);
     onChanged?.();
+  }
+
+  // 空列创建：先落一条内存草稿，保存前不产生任何网络请求。
+  function handleCreateDraft() {
+    if (!createStatus) return;
+
+    setActiveEntry({
+      key: createDraftEntryKey(Date.now()),
+      roadmap: board.roadmap.key,
+      order: 0,
+      status: createStatus,
+      type: 'feature',
+      priority: 'none',
+      title: { en: '', zh: '' },
+      summary: { en: '', zh: '' },
+    });
   }
 
   const countByStatus = new Map<RoadmapStatus, number>();
@@ -113,7 +135,7 @@ export function RoadmapBoard({
         })}
       </div>
       <div className="flex flex-col gap-3.5 md:grid md:min-h-0 md:flex-1 md:grid-rows-[minmax(0,1fr)] md:auto-cols-[minmax(288px,1fr)] md:grid-flow-col md:items-start md:gap-4 md:snap-x md:overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        {columns.map((column) => {
+        {columns.map((column, index) => {
           const displayLabel = column.label.en || column.label[locale];
 
           return (
@@ -126,6 +148,8 @@ export function RoadmapBoard({
               chrome={chrome}
               mobileVisible={selected === column.status}
               onSelectEntry={(entry) => setActiveEntry(entry)}
+              onCreateEntry={canEdit && index === 0 ? handleCreateDraft : undefined}
+              createEntryLabel={chrome.createEntryLabel}
             />
           );
         })}
@@ -138,6 +162,7 @@ export function RoadmapBoard({
           locale={locale}
           chrome={chrome}
           canEdit={canEdit}
+          createStatus={createStatus}
           undoStatus={undoTargetFor(columns, activeEntry)}
           onClose={() => setActiveEntry(null)}
           onSelectEntry={(entry) => setActiveEntry(entry)}

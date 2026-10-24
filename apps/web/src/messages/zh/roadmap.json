@@ -8,6 +8,7 @@
   "boardLabel": "Roadmap board",
   "lanePickerLabel": "选择阶段列",
   "importLabel": "导入",
+  "createEntryLabel": "新建提议",
   "projectSelectLabel": "选择项目",
   "emptyState": "暂无包含看板的路线图项目。",
   "emptyLane": {

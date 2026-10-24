@@ -118,6 +118,7 @@ export default async function RoadmapMapPage({
     createdLabel: t('modal.createdLabel'),
     pendingDetail: t('modal.pendingDetail'),
     importLabel: t('importLabel'),
+    createEntryLabel: t('createEntryLabel'),
     projectSelectLabel: t('projectSelectLabel'),
   };
 

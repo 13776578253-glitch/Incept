@@ -8,6 +8,7 @@
   "boardLabel": "Roadmap board",
   "lanePickerLabel": "Choose a column",
   "importLabel": "Import",
+  "createEntryLabel": "New proposal",
   "projectSelectLabel": "Select project",
   "emptyState": "No roadmap project has a board yet.",
   "emptyLane": {
