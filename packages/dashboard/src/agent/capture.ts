@@ -33,7 +33,9 @@ function inventory(home:string){return Object.entries(roots).flatMap(([source,di
   .filter(r=>r.source==='aiusage'?r.locator.endsWith('cache.db'):r.source==='antigravity'?r.locator.endsWith('.db'):/\.(jsonl|json|db|sqlite|jsonl\.zst|jsonl\.zstd)$/.test(r.locator)).sort((a,b)=>a.locator.localeCompare(b.locator));}
 function dbRows(path:string,scope?:{source:TransferSource;sessionId:string},reader?:string,mask=false){
   const db=new DatabaseSync(path,{readOnly:true});
-  try{db.exec('BEGIN');return db.prepare("SELECT name,sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(table=>{
+  try{
+    if(scope?.source==='antigravity'){try{if(db.prepare("SELECT 1 FROM steps WHERE status = 2 LIMIT 1").get())throw Error('RUNNING_USAGE');}catch(e){if(e instanceof Error&&e.message==='RUNNING_USAGE')throw e;}}
+    db.exec('BEGIN');return db.prepare("SELECT name,sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(table=>{
     const name=String(table.name),rows:string[]=[],envelopes:string[]=[];
     for(const raw of db.prepare(`SELECT * FROM ${quote(name)} ORDER BY rowid`).iterate()){
       if(scope){if(reader==='aiusage'){const tool=String(raw.tool??'').toLowerCase(),source=tool==='claude'?'claudeCode':tool==='gemini'?'geminiCli':tool;if(name!=='records'||String(raw.session_id)!==scope.sessionId||source!==scope.source)continue;}
