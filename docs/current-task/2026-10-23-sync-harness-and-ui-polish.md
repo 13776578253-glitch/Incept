@@ -1,6 +1,6 @@
 # Sync 事件收尾、水位门禁、托盘 / Dashboard 修复与 20261023 发版
 
-更新：2026-10-24 00:15（Asia/Singapore）。状态：**新镜像 `20261023` 已上线并验证通过；`deepseekHarness` 的开启被一条未执行的 Prisma 迁移卡住，明天执行迁移后即可完成。工作区有 2 个未提交的代码文件 + 本记录。**
+更新：2026-10-24 21:00（Asia/Singapore）。状态：**20261023 镜像已上线；迁移已执行；`deepseekHarness` 已接通并完成首次补录（harness origins 9→43，账本 rev 689→741）；工作区干净。剩余一项性能问题：高负载时 dashboard 刷新失败。**
 
 ## 1. PREFIX_LOST 事件收尾（`fa0af85`）
 
@@ -81,7 +81,7 @@
 
 **注意**：`/srv/incept/current/deployment/compose.sh` 没有执行位，必须用 `sh ./deployment/compose.sh …` 调用。
 
-## 7. 当前阻塞：`BACKEND_UNAVAILABLE` = 缺一条迁移
+## 7. `BACKEND_UNAVAILABLE` = 缺一条迁移（已解决）
 
 现象：UI 保存来源返回 `503 BACKEND_UNAVAILABLE`。
 
@@ -97,7 +97,7 @@ Failing row: {codex,commandcode,claudeCode,geminiCli,antigravity,opencode,zcode,
 - `prisma migrate status` 确认：**只差这一条**未执行。
 - 路由最外层 catch 把任何异常都变成 503 泛化错误（诊断性改进见 §9）。
 
-修复（未执行，等确认）：
+修复（已于 2026-10-24 11:23 UTC 执行）：
 
 ```bash
 cd /srv/incept/current
@@ -106,23 +106,44 @@ sh ./deployment/compose.sh --profile ops run --rm --no-deps migrate
 
 预期 `Applying migration 20261020010000_deepseek_harness_source` → `All migrations have been successfully applied`。不需要重启 app。风险低（纯放宽约束，毫秒级 ACCESS EXCLUSIVE 锁）；回滚需先移除设备上的 `deepseekHarness` 再改回 7 来源。
 
-## 8. 明天（2026-10-24）的顺序
+结果：迁移记录写入 `_prisma_migrations`；`pg_get_constraintdef` 已变为 `cardinality BETWEEN 1 AND 8` 且包含 `'deepseekHarness'`。
 
-1. 执行上面的迁移，并核对 `pg_get_constraintdef` 已含 `deepseekHarness`。
-2. 网页端 设置 → 账户 → 同步设备 → `Edit sources` → 勾 `deepseekHarness` → 保存（应成功）。
-3. 托盘 → **重启 Agent**（Agent 为普通权限，按钮可用）。
-4. 观察首轮采集：`issues` 是否出现 `deepseekHarness:COLLECTOR_INCOMPLETE`；`session-9e520384`（v3+v4 双份）的 `INTERVAL_ISOLATED` 属 prefix 覆盖、不隔离整会话；预计 44 个会话 / 约 3,100 条记录分批上传。
-5. 提交 §9 里的 2 个未提交文件（建议单独一个 `fix(web): keep the bind form inside the card and log sync failures`）。
-6. 可选清理：`/srv/incept/incoming/incept-20261023.tar`（384 MB）与 `/data/sync/v4-dryrun-*.db`；保留 `v4-preaccept-20261023.db` 作审计。
+## 8. 2026-10-24 补录执行记录
 
-## 9. 未提交的改动（明天一起提交）
+1. 迁移执行完成（11:23 UTC）；设备 `allowedSources` 由 Owner 在 UI 加到 8 个来源（11:42 UTC）。
+2. Agent 重启后首次采集：43 个 harness 批次入队（最大单批 1457 条 / 0.91 MB，42 批合计 4.2 MB）。
+3. 首次上传停滞：客户端请求超时 **20s**，而服务端“取回执”实际要 **29.8s**（Caddy 记录 `499 @20.0s`），每次都被客户端掐断 → `NETWORK_UNAVAILABLE` → 引擎中断整轮。
+   - 修复：`transport.ts` 请求超时改为 **60s**（`38bf5d6`）。
+   - 关键坑：计划任务实际运行的是 **`apps/sync-tray/dist/Incept Sync/agent/agent.mjs`**（打包副本），只重建 `apps/sync-agent/dist/agent.mjs` 不会生效；两处都要更新。
+4. 14:38 UTC 补录完成，`outbox pending = 0`：
 
-- `apps/web/src/features/settings/account/sync-devices-panel.tsx`：绑定来源那一行改为 `flex w-full flex-wrap + min-w-0 + basis-*`，窄屏换行而不是把「Confirm binding」挤出卡片。
-- `apps/web/src/server/sync/next.ts`：兜底 catch 增加 `{"event":"sync_request_failed",name,message}` 日志，避免 503 无法定位。
+| 指标 | 启用前 | 补录后 |
+| :--- | ---: | ---: |
+| `data_revision` | 689 | **741** |
+| `sync_scopes` | 500 | **538** |
+| `sync_current` | 49,196 | **52,593** |
+| `token_total` 合计 | 8,047,638,210 | **8,785,528,406** |
+| harness origins | 9 | **43** |
+
+5. 补录期间 dashboard 出现 “Refresh failed; showing the previous data.”：app CPU **115%**（2 vCPU 打满），`projection` 与 sync 共用一个串行 worker，页面请求排队超时。补录结束后 `/api/dashboard/usage` 恢复到 0.18–0.74s。**该性能问题仍未修**（见 §9）。
+
+## 9. 已提交（`38bf5d6`，由 Gemini 一并提交）
+
+- `apps/sync-agent/src/transport.ts`：请求超时 20s → 60s（可用 `timeoutMs` 覆盖）。
+- `apps/web/src/features/settings/account/sync-devices-panel.tsx`：绑定来源行改为 `flex w-full flex-wrap + min-w-0 + basis-*`，窄屏换行而不是把「Confirm binding」挤出卡片。
+- `apps/web/src/server/sync/next.ts`：兜底 catch 增加 `{"event":"sync_request_failed",name,message}` 日志。
+- 本记录。
 
 验证：`web typecheck` 通过；`src/features/settings` 8 个测试文件 39 项通过。
 
-## 10. 环境事实
+## 10. 待办
+
+1. **性能**：单 worker 串行导致 `projection` 与 sync 互相阻塞，高负载时页面刷新失败。方向：投影结果缓存 / owner 与 device 分队列 / 降低每请求重建成本。
+2. `ledger-watermark.mjs check <db> <watermark>` 的第二个参数只影响打印，门禁仍取“DB 同目录”的文件；改法：给 `validateAuthoritativeLedgerGate(env, watermarkFile)` 增加可选参数。
+3. 托盘重启后未自启（启动快捷方式存在且目标有效），需要确认 Explorer 启动项为何没执行；可考虑改成计划任务。
+4. 可选清理：`/srv/incept/incoming/incept-20261023.tar`（384 MB）、`/data/sync/v4-dryrun-*.db`；保留 `v4-preaccept-20261023.db` 作审计。
+
+## 11. 环境事实
 
 | 项 | 值 |
 | :--- | :--- |
@@ -133,12 +154,12 @@ sh ./deployment/compose.sh --profile ops run --rm --no-deps migrate
 | 代理 | Caddy；覆盖文件 `/srv/incept/compose.content-20261014.yml` |
 | 数据库 | `postgres:16-alpine`，库 `incept`，超级用户 `incept_migrator`（容器内 socket 免密） |
 | Prisma CLI | 镜像内 `/app/packages/db/node_modules/.bin/prisma`（根 `node_modules/.bin` 不存在） |
-| 本地 Agent | 计划任务 `InceptSyncAgent-003492A2A077778A` 启动；重启后托盘未自启（启动快捷方式存在），已手动拉起 |
+| 本地 Agent | 计划任务 `InceptSyncAgent-003492A2A077778A` 启动；**实际运行的是 `apps/sync-tray/dist/Incept Sync/agent/agent.mjs`**（改代码后两处 bundle 都要更新）；重启后托盘未自启 |
 
-## 11. 关键命令备忘
+## 12. 关键命令备忘
 
 ```bash
-# 迁移（待执行）
+# 迁移（已于 2026-10-24 执行；再次执行前先看 status）
 cd /srv/incept/current && sh ./deployment/compose.sh --profile ops run --rm --no-deps migrate
 
 # 迁移状态（只读）
@@ -152,4 +173,9 @@ docker run --rm -v /srv/incept/shared:/data:ro --entrypoint node <image> \
 # 本地：托盘构建与回归
 pwsh -File apps/sync-tray/tools/build.ps1
 pwsh -File apps/sync-tray/tools/test.ps1
+
+# 本地：改完 agent 源码后，两处 bundle 都要更新（计划任务跑的是后者）
+pnpm --filter @incept/sync-agent build
+cp apps/sync-agent/dist/agent.mjs apps/sync-agent/dist/collect-worker.mjs \
+   "apps/sync-tray/dist/Incept Sync/agent/"
 ```
