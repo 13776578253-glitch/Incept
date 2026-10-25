@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { RoadmapEntry, RoadmapLocale, RoadmapStatus } from '../domain';
 import type { RoadmapBoard as RoadmapBoardData } from '../ports';
@@ -17,6 +17,8 @@ type RoadmapBoardProps = {
   chrome: RoadmapChrome;
   canEdit: boolean;
   onChanged?: () => void;
+  // 宿主工具栏的「+」每请求一次就自增；看板据此打开空白草稿。
+  createRequest?: number;
 };
 
 // Module C：Undo 目标 = 板列序上一档；状态不在板列时按 completed→active→unstarted→reviewing 回退一级。
@@ -43,6 +45,7 @@ export function RoadmapBoard({
   chrome,
   canEdit,
   onChanged,
+  createRequest = 0,
 }: RoadmapBoardProps) {
   const columns = board.roadmap.columns;
   const [selected, setSelected] = useState<RoadmapStatus | undefined>(columns[0]?.status);
@@ -85,6 +88,16 @@ export function RoadmapBoard({
       summary: { en: '', zh: '' },
     });
   }
+
+  // 工具栏「+」信号：只响应递增，挂载时保留当前值，避免切换看板就自动弹草稿。
+  const handledRequest = useRef(createRequest);
+
+  useEffect(() => {
+    if (createRequest === handledRequest.current) return;
+
+    handledRequest.current = createRequest;
+    if (canEdit) handleCreateDraft();
+  }, [createRequest, canEdit]);
 
   const countByStatus = new Map<RoadmapStatus, number>();
   for (const entry of entries) {
@@ -135,7 +148,7 @@ export function RoadmapBoard({
         })}
       </div>
       <div className="flex flex-col gap-3.5 md:grid md:min-h-0 md:flex-1 md:grid-rows-[minmax(0,1fr)] md:auto-cols-[minmax(288px,1fr)] md:grid-flow-col md:items-start md:gap-4 md:snap-x md:overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        {columns.map((column, index) => {
+        {columns.map((column) => {
           const displayLabel = column.label.en || column.label[locale];
 
           return (
@@ -148,8 +161,6 @@ export function RoadmapBoard({
               chrome={chrome}
               mobileVisible={selected === column.status}
               onSelectEntry={(entry) => setActiveEntry(entry)}
-              onCreateEntry={canEdit && index === 0 ? handleCreateDraft : undefined}
-              createEntryLabel={chrome.createEntryLabel}
             />
           );
         })}

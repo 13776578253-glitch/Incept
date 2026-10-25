@@ -42,6 +42,16 @@
 - `apps/web/src/messages/{en,zh}/roadmap.json`：`createEntryLabel` = `New proposal` / `新建提议`。
 - `apps/web/src/app/[locale]/roadmap/page.tsx` 注入该字段。
 
+### 2.5 后续调整（2026-10-25）：加号搬到工具条
+
+列头右上角的「+」上线后观感不对，按要求挪到 **Import 左侧**：
+
+- `roadmap-lane.tsx` 恢复原状，不再自带创建按钮。
+- `roadmap-toolbar.tsx` 新增 `onCreateEntry` / `createEntryLabel`：30px 圆形「+」，排在 Import 左边，只有宿主注入回调时渲染。
+- 工具条与看板是同级组件，创建信号只能由共同父级持有 → 新增客户端组合组件 `apps/web/src/features/roadmap/components/roadmap-surface.tsx`（`RoadmapSurface`），由它持有 `createRequest` 计数并同时渲染两者。
+- `RoadmapBoard` 收 `createRequest?: number`：只响应**递增**，挂载时记下当前值，避免切换看板时残留信号自动弹草稿。
+- 显示条件不变：`canEdit && 首个阶段列（Backlog / Planned）为空`。
+
 ## 3. 验证
 
 - `pnpm --filter @incept/roadmap test` → 7 files / **74 tests passed**（新增 3 条：规划图加号、空列建卡（断言 POST `status: 'unstarted'` + `roadmapKey: 'sample-atlas'`）、编辑器字段名与已删文案）。

@@ -19,9 +19,6 @@ type RoadmapLaneProps = {
   chrome: RoadmapChrome;
   mobileVisible: boolean;
   onSelectEntry?: (entry: RoadmapEntry) => void;
-  // 空列首个条目的创建入口：仅由看板注入给最左侧（新建列），其余列不渲染。
-  onCreateEntry?: () => void;
-  createEntryLabel?: string;
 };
 
 export function RoadmapLane({
@@ -32,8 +29,6 @@ export function RoadmapLane({
   chrome,
   mobileVisible,
   onSelectEntry,
-  onCreateEntry,
-  createEntryLabel,
 }: RoadmapLaneProps) {
   const [visible, setVisible] = useState(LANE_PAGE);
   const shown = entries.slice(0, visible);
@@ -55,28 +50,6 @@ export function RoadmapLane({
         <span className="text-[0.82rem] font-medium text-[var(--color-text-soft)] tabular-nums">
           {entries.length}
         </span>
-        {onCreateEntry && entries.length === 0 && (
-          <button
-            type="button"
-            onClick={onCreateEntry}
-            aria-label={createEntryLabel ?? 'New entry'}
-            title={createEntryLabel ?? 'New entry'}
-            className="ml-auto inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text-muted)] transition-colors hover:border-[var(--roadmap-status-active,#2563eb)] hover:text-[var(--roadmap-status-active,#2563eb)]"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 14 14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M7 2.75v8.5M2.75 7h8.5" />
-            </svg>
-          </button>
-        )}
       </header>
       {entries.length === 0 ? (
         <p className="rounded-xl border border-dashed border-[var(--roadmap-divider,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))]/40 px-3.5 py-4 text-[0.8rem] leading-6 text-[var(--color-text-soft)]">

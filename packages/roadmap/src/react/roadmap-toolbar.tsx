@@ -20,6 +20,9 @@ type RoadmapToolbarProps = {
   hrefs: Record<string, string>;
   onChanged?: () => void;
   showProjectSelector?: boolean;
+  // 空列新建入口：排在 Import 左侧，由宿主在“首个阶段列为空”时注入。
+  onCreateEntry?: () => void;
+  createEntryLabel?: string;
 };
 
 // 顶栏操作区：提供基于人工 JSON 清单的追加导入与项目切换功能。
@@ -35,6 +38,8 @@ export function RoadmapToolbar({
   hrefs,
   onChanged,
   showProjectSelector = true,
+  onCreateEntry,
+  createEntryLabel,
 }: RoadmapToolbarProps) {
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState<{
@@ -144,6 +149,28 @@ export function RoadmapToolbar({
             className="hidden"
             onChange={(event) => void handleImportFile(event)}
           />
+          {onCreateEntry && (
+            <button
+              type="button"
+              onClick={onCreateEntry}
+              aria-label={createEntryLabel ?? 'New entry'}
+              title={createEntryLabel ?? 'New entry'}
+              className="inline-flex size-[30px] shrink-0 items-center justify-center rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-status-active,#2563eb)] hover:text-[var(--roadmap-status-active,#2563eb)]"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M7 2.75v8.5M2.75 7h8.5" />
+              </svg>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}

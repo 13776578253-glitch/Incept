@@ -1,14 +1,13 @@
 import { getTranslations } from 'next-intl/server';
 
 import type { RoadmapChrome } from '@incept/roadmap/react';
-import { RoadmapBoard, RoadmapToolbar } from '@incept/roadmap/react';
 
 import { WorkspaceShell } from '@/components/layouts/containers/workspace-shell';
 import type { AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
 import { createRoadmapRepository, isRoadmapOwner } from '@/server/roadmap/assembly';
 import { isAtlasBoardKey } from '@/server/roadmap/resolve-selection';
-import { SurfaceNavigation } from '@/features/roadmap';
+import { RoadmapSurface, SurfaceNavigation } from '@/features/roadmap';
 
 // 路线图与规划图页面：由 ?project= 选定项目，?surface= 选定表面（roadmap | atlas），兼容 ?rd= 参数。
 // 列结构与显示名称由看板自身持有。非 Owner 用户隐藏全部写操作控件。
@@ -64,6 +63,11 @@ export default async function RoadmapMapPage({
   const current = (activeSurface === 'atlas' ? atlasBoard : roadmapBoard) ?? roadmapBoard ?? projectRoadmaps[0];
 
   const board = current ? await repository.listBoard(current.key) : null;
+
+  // 首个阶段列（路线图 Backlog / 规划图 Planned）为空时，才在工具条给「+」。
+  const createColumn = board?.roadmap.columns[0]?.status;
+  const canCreate =
+    canEdit && Boolean(createColumn) && !(board?.entries ?? []).some((entry) => entry.status === createColumn);
 
   const hrefs: Record<string, string> = {};
 
@@ -154,33 +158,19 @@ export default async function RoadmapMapPage({
         <h1 className="sr-only">
           {activeSurface === 'atlas' ? (current?.name[locale] ?? (locale === 'zh' ? '规划图' : 'Planning Board')) : t('page.title')}
         </h1>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 shrink-0 md:mb-5">
-          <SurfaceNavigation
-            projects={projects}
-            currentProject={currentProject}
-            locale={locale}
-            activeSurface={activeSurface}
-            roadmapHref={roadmapHref}
-            atlasHref={atlasHref}
-            showProjectSelector={false}
-          />
-          <RoadmapToolbar
-            projects={projects}
-            currentProjectKey={currentProject.key}
-            activeSurface={activeSurface}
-            currentRoadmapKey={current.key}
-            locale={locale}
-            chrome={chrome}
-            canEdit={canEdit}
-            hrefs={hrefs}
-          />
-        </div>
-        <RoadmapBoard
-          key={current.key}
-          board={board}
+        <RoadmapSurface
+          projects={projects}
+          currentProject={currentProject}
           locale={locale}
           chrome={chrome}
           canEdit={canEdit}
+          board={board}
+          hrefs={hrefs}
+          activeSurface={activeSurface}
+          currentRoadmapKey={current.key}
+          roadmapHref={roadmapHref}
+          atlasHref={atlasHref}
+          canCreate={canCreate}
         />
       </div>
     </WorkspaceShell>

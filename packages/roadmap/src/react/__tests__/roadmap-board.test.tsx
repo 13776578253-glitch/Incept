@@ -343,25 +343,25 @@ describe('RoadmapBoard', () => {
     expect(within(dialog).queryByRole('button', { name: 'Add Backlog entry' })).toBeNull();
   });
 
-  // 空列自救：最左列没有条目时，列头右上角给出一条创建入口，保存后写入该列状态。
-  it('creates the first proposal from an empty leftmost column', async () => {
+  // 空列自救：工具栏「+」发信号后，看板开空白草稿，保存写入最左列状态。
+  it('creates the first proposal when the toolbar requests it', async () => {
     const board = await sampleBoard('sample-atlas');
+    const emptyBoard = { roadmap: board.roadmap, entries: [] };
     const spy = stubFetchEcho({ ...board.entries[0], key: 'fresh-atlas' });
 
-    render(
-      <RoadmapBoard
-        board={{ roadmap: board.roadmap, entries: [] }}
-        locale="en"
-        chrome={chrome}
-        canEdit
-      />,
+    const view = render(
+      <RoadmapBoard board={emptyBoard} locale="en" chrome={chrome} canEdit createRequest={0} />,
     );
 
-    expect(screen.getAllByRole('button', { name: 'New proposal' })).toHaveLength(1);
+    // 列头不再自带创建按钮，入口只留在工具栏。
+    expect(screen.queryAllByRole('button', { name: 'New proposal' })).toHaveLength(0);
+    expect(screen.queryByRole('dialog')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'New proposal' }));
+    view.rerender(
+      <RoadmapBoard board={emptyBoard} locale="en" chrome={chrome} canEdit createRequest={1} />,
+    );
 
-    const dialog = screen.getByRole('dialog');
+    const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByLabelText('Title').getAttribute('value')).toBe('');
     expect(within(dialog).queryByRole('button', { name: 'Delete' })).toBeNull();
     expect(within(dialog).queryByText('Revert or delete')).toBeNull();
@@ -385,6 +385,23 @@ describe('RoadmapBoard', () => {
     expect(body.status).toBe('unstarted');
     expect(body.roadmapKey).toBe('sample-atlas');
     expect(body.title).toEqual({ en: 'First', zh: '第一条' });
+  });
+
+  // 切换看板时不能因为残留的信号自动弹草稿。
+  it('ignores the create signal that is already present on mount', async () => {
+    const board = await sampleBoard('sample-atlas');
+
+    render(
+      <RoadmapBoard
+        board={{ roadmap: board.roadmap, entries: [] }}
+        locale="en"
+        chrome={chrome}
+        canEdit
+        createRequest={3}
+      />,
+    );
+
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   // 编辑器只留字段名：中文标签与说明句按界面规格删掉。
@@ -536,5 +553,45 @@ describe('RoadmapToolbar', () => {
     expect(init?.method).toBe('POST');
     expect(await screen.findByText('导入完成。')).toBeTruthy();
     expect(await screen.findByText('已成功向当前看板追加 1 个条目。')).toBeTruthy();
+  });
+
+  // 新建入口固定在 Import 左侧，只有宿主注入回调时才渲染。
+  it('puts the create action immediately left of Import', async () => {
+    const repository = createFixtureRoadmapRepository();
+    const projects = await repository.listProjects();
+    const onCreateEntry = vi.fn();
+    const props = {
+      projects,
+      currentProjectKey: projects[0].key,
+      locale: 'zh' as const,
+      chrome: zhChrome,
+      hrefs: { 'project-one': '/zh/roadmap?project=project-one' },
+    };
+
+    const withoutCreate = render(<RoadmapToolbar {...props} canEdit />);
+    expect(withoutCreate.queryByRole('button', { name: '新建提议' })).toBeNull();
+    withoutCreate.unmount();
+
+    render(
+      <RoadmapToolbar
+        {...props}
+        canEdit
+        onCreateEntry={onCreateEntry}
+        createEntryLabel="新建提议"
+      />,
+    );
+
+    const createButton = screen.getByRole('button', { name: '新建提议' });
+    const importButton = screen.getByRole('button', { name: '导入' });
+
+    expect(
+      createButton.compareDocumentPosition(importButton) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      importButton.compareDocumentPosition(createButton) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+
+    fireEvent.click(createButton);
+    expect(onCreateEntry).toHaveBeenCalledTimes(1);
   });
 });

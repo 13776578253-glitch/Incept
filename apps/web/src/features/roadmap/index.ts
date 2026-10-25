@@ -1,1 +1,2 @@
-export { SurfaceNavigation, LockedSurface } from './components/surface-navigation';
+export { LockedSurface, SurfaceNavigation } from './components/surface-navigation';
+export { RoadmapSurface } from './components/roadmap-surface';
