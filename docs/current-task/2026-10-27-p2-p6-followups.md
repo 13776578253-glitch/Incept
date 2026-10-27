@@ -2,7 +2,7 @@
 
 ## Status
 
-P2, P3, P4, P5 and P6 are complete. P5’s Owner visual acceptance was confirmed on 2026-10-27. Nothing in this round was committed, pushed or deployed; production still runs `20261027` (`973e714`).
+P2, P3, P4, P5 and P6 are complete and committed in `cf1f9e1`; later cleanup/docs commits follow. P5’s Owner visual acceptance was confirmed on 2026-10-27. **Not deployed**; production still runs `20261027` (`973e714`).
 
 ## P2 — Ledger Watermark CLI Uses The Supplied Watermark Path
 
@@ -37,7 +37,7 @@ P2, P3, P4, P5 and P6 are complete. P5’s Owner visual acceptance was confirmed
   - `incept-v4-auto-refresh:20261020`
 - Kept the current and previous release images: `incept-v4-release:20261027` (`88aeaa4cc572`) and `incept-v4-release:20261025` (`55052cb2923e`). Running containers were not touched.
 - Disk result: `32G/39G` used (81%, 7.7G available) → `28G/39G` used (72%, 11G available), about 5.3G reclaimed.
-- Deliberately left for a later decision: `incept-sync-*` and `incept:*` historical images (about 9G) and the older `incoming` directories (`98b77ff`, `release-2-20261015-7bee9ad`, `release-2-fix-20261016-1a29a92`, `content-20261014`, about 1.3G). They are outside the “last two release generations” rule used here.
+- The later 2026-10-27 cleanup round removed the remaining historical images, local test containers/volumes and older incoming directories; see `2026-10-27-cleanup-round.md` for the final disk and Docker state.
 
 ## P5 — Roadmap “+” Visual Acceptance
 
@@ -66,4 +66,4 @@ P2, P3, P4, P5 and P6 are complete. P5’s Owner visual acceptance was confirmed
 
 1. P3: real reboot check; `tray.log` should show the startup source and any shell wait.
 2. P2/P6: include in the next image/release; P2’s CLI fix and P6’s lint dependency are not in the running production image today.
-3. P4: optional later cleanup of the historical `incept-sync-*` / `incept:*` images and old `incoming` directories.
+3. P4: the later cleanup round completed the historical image, container, volume and `incoming` cleanup; the current state is in the cleanup record.

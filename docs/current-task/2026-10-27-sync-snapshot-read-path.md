@@ -2,7 +2,7 @@
 
 ## Status
 
-Local implementation complete. Targeted suites, full workspace typecheck, lint and `git diff --check` pass. **Not committed and not deployed**; production still runs `20261027` (`973e714`). Remaining verification is a real deployment plus a load check with the Windows agent.
+Committed in `786ef96`. Targeted suites, full workspace typecheck, lint and `git diff --check` pass. **Not deployed**; production still runs `20261027` (`973e714`). Remaining verification is a real deployment plus a load check with the Windows agent.
 
 ## Problem
 

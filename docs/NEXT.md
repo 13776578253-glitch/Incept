@@ -19,8 +19,8 @@ This is the short entry point for active product work. Detailed source-code acce
 
 The 2026-10-16 post-launch plan was executed through the 2026-10-27 releases. The P1 snapshot
 read-path and P2–P6 follow-ups are implemented and committed; P5 is accepted. Remaining
-verification is the P1 deployment/load check, the P3 reboot check, and the optional Docker
-volume cleanup.
+verification is the P1 deployment/load check and the P3 reboot check; production Docker
+volumes remain an optional owner decision.
 
 - [P1 read path](./current-task/2026-10-27-sync-snapshot-read-path.md)
 - [P2–P6 follow-ups](./current-task/2026-10-27-p2-p6-followups.md)

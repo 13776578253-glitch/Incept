@@ -2,9 +2,11 @@
 
 更新：2026-10-27 16:35（Asia/Singapore）。写给接手的 AI：先读完本文，再动手。
 
+> **Post-cleanup update:** `main` is 16 commits ahead of `origin/main` and not pushed; the working tree is clean. P1-A (`786ef96`), P2–P6 (`cf1f9e1`) and the cleanup/docs commits are in place. Production remains `20261027`; P1/P2/P6 are not deployed, and the P3 reboot check is still pending. P5 is accepted. Six worktrees are removed and four branches remain. See `2026-10-27-cleanup-round.md` for the current state.
+
 ## 0. 一句话现状
 
-生产在线且健康（Next.js 16.4.3，镜像 `20261027`），仓库 `main` 与 `origin/main` 同步；**没有阻塞性故障**，剩下的是性能优化、若干小 bug 和运维清理。
+生产在线且健康（Next.js 16.4.3，镜像 `20261027`），仓库 `main` 领先 `origin/main` 16 个提交（未 push）；**没有阻塞性故障**，剩下的是部署/压测、性能优化、若干小 bug 和运维清理。
 
 ## 1. 项目是什么
 

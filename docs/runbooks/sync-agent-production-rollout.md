@@ -45,7 +45,6 @@ pnpm db:generate
 pnpm --filter @incept/dashboard build:runtime
 pnpm --filter @incept/sync-agent build
 pnpm --filter @incept/sync-gateway build
-node packages/dashboard/tools/phase5/build.mjs
 pnpm typecheck
 pnpm lint
 pnpm test
