@@ -34,7 +34,7 @@ function inventory(home:string){return Object.entries(roots).flatMap(([source,di
 function dbRows(path:string,scope?:{source:TransferSource;sessionId:string},reader?:string,mask=false){
   const db=new DatabaseSync(path,{readOnly:true});
   try{
-    if(scope?.source==='antigravity'){try{if(db.prepare("SELECT 1 FROM steps WHERE status = 2 LIMIT 1").get())throw Error('RUNNING_USAGE');}catch(e){if(e instanceof Error&&e.message==='RUNNING_USAGE')throw e;}}
+    if(scope?.source==='antigravity'){try{const latest=db.prepare("SELECT status FROM steps ORDER BY idx DESC LIMIT 1").get() as {status?:number}|undefined;if(latest?.status===2)throw Error('RUNNING_USAGE');}catch(e){if(e instanceof Error&&e.message==='RUNNING_USAGE')throw e;}}
     db.exec('BEGIN');return db.prepare("SELECT name,sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(table=>{
     const name=String(table.name),rows:string[]=[],envelopes:string[]=[];
     for(const raw of db.prepare(`SELECT * FROM ${quote(name)} ORDER BY rowid`).iterate()){
@@ -179,7 +179,7 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
         originId:hash(['incept-origin/1',source,sessionId])},parent,'00000000-0000-4000-8000-000000000000');
       if(source==='codex'&&reader==='codex')qualifyRanges(parent?.header.manifest,candidate.header.manifest);
       captures.push(capture);
-    }catch(error){if(process.env.INCEPT_CAPTURE_DEBUG)console.error('CAPTURE_GROUP_FAILED',source,sessionId,error instanceof Error?error.stack:String(error));
+    }catch(error){if(error instanceof Error&&error.message==='RUNNING_USAGE'){continue;}if(process.env.INCEPT_CAPTURE_DEBUG)console.error('CAPTURE_GROUP_FAILED',source,sessionId,error instanceof Error?error.stack:String(error));
       const reason=error instanceof Error&&/^[A-Z][A-Z0-9_]+$/.test(error.message)?error.message:'SOURCE_REVIEW_REQUIRED';
       isolations.push({source,sessionId,reason,affectedRecords:group.length,unattributedTokens:0,coverage:'session'});issues.push(source+':SESSION_ISOLATED');}
   }
