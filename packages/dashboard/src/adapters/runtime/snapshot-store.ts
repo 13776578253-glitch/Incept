@@ -16,7 +16,22 @@ type Context = ReturnType<typeof snapshotContext>;
 const memory = new Map<string, Cached>();
 const writes = new Map<string, Promise<void>>();
 const refreshes = new Map<string, Promise<void>>();
+const refreshTimers = new Map<string, {timer: ReturnType<typeof setTimeout>;deadline:number}>();
 const executors = new Map<string, SyncExecutor>();
+export const TRUSTED_SNAPSHOT_REFRESH_DEBOUNCE_MS = 1_500;
+export const TRUSTED_SNAPSHOT_REFRESH_MAX_WAIT_MS = 10_000;
+function scheduleTrustedDashboardRefresh(context: Context) {
+  const now = Date.now(), scheduled = refreshTimers.get(context.key);
+  if (scheduled) clearTimeout(scheduled.timer);
+  const deadline = scheduled?.deadline ?? now + TRUSTED_SNAPSHOT_REFRESH_MAX_WAIT_MS;
+  const delay = Math.min(TRUSTED_SNAPSHOT_REFRESH_DEBOUNCE_MS, Math.max(0, deadline - now));
+  const timer = setTimeout(() => {
+    refreshTimers.delete(context.key);
+    void refreshTrustedDashboardSnapshots().catch(() => {});
+  }, delay);
+  timer.unref?.();
+  refreshTimers.set(context.key, {timer, deadline});
+}
 
 export function trustedDashboardEnabled() {
   return process.env.INCEPT_SYNC_ENABLED === '1' && process.env.INCEPT_SYNC_TRUSTED_MODE === '1' && process.env.INCEPT_SYNC_READ_MODE === 'v2';
@@ -121,11 +136,12 @@ export function configureTrustedDashboardExecutor(executor: SyncExecutor) {
   executors.set(path, executor);
   executor.onCommitted(() => {
     const context = snapshotContext();
-    if (context.database === path) void refreshTrustedDashboardSnapshots().catch(() => {});
+    if (context.database === path) scheduleTrustedDashboardRefresh(context);
   });
 }
 export function refreshTrustedDashboardSnapshots(): Promise<void> {
-  const context = snapshotContext();
+  const context = snapshotContext(),scheduled=refreshTimers.get(context.key);
+  if(scheduled){clearTimeout(scheduled.timer);refreshTimers.delete(context.key);}
   if (!context.database) return Promise.resolve();
   const active = refreshes.get(context.key);
   if (active) return active;

@@ -72,6 +72,20 @@ it('merges concurrent public ranges into one atomic generation without collector
   expect(execute.mock.calls.every(([work]) => work.op === 'projection-snapshots')).toBe(true);
 });
 
+it('coalesces a burst of receipts into one snapshot projection', async () => {
+  const { cache, execute, commit } = await fake();
+  await cache.readDashboardSnapshot('all');
+  execute.mockClear();
+  revision(1); commit();
+  revision(2); commit();
+  revision(3); commit();
+  expect(execute).not.toHaveBeenCalled();
+  await vi.waitFor(() => expect(execute).toHaveBeenCalledTimes(1), { timeout: 3_000, interval: 25 });
+  expect(execute.mock.calls[0][0]).toMatchObject({ op: 'projection-snapshots', revision: 3 });
+  await cache.refreshTrustedDashboardSnapshots();
+  expect((await cache.readDashboardSnapshot('all'))?.sync?.dataRevision).toBe(3);
+});
+
 it('drops a candidate invalidated during projection and publishes only the rescheduled revision', async () => {
   const { cache, execute } = await fake();
   execute.mockImplementationOnce(async work => { revision(1); return batch(work, 11); }).mockImplementation(async work => batch(work, 22));
