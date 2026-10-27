@@ -154,7 +154,7 @@ Removing a directory and discarding a branch are two different decisions; one fl
 
 ## 8. Isolation risks
 
-- **`.env`**: the copied `apps/web/.env.local` and `packages/db/.env` hold real credentials (`DATABASE_URL`, `OWNER_ACCESS_SECRET`, `GITHUB_ACTIVITY_TOKEN`). Local development only: never commit them, never hand them to an external AI, never paste them into logs or tickets. When rotating (`pnpm auth:revoke-owner-sessions`) rotate every copy.
+- **`.env`**: the copied `apps/web/.env.local` and `packages/db/.env` hold real credentials (`DATABASE_URL`, `INCEPT_AUTH_ENCRYPTION_KEY`, `GITHUB_ACTIVITY_TOKEN`). Local development only: never commit them, never hand them to an external AI, never paste them into logs or tickets. When rotating (`pnpm auth:revoke-owner-sessions`) rotate every copy.
 - **Database schema**: `5432/incept` with the shared `public` schema by default → only one worktree may run `pnpm db:deploy` / `db:migrate` at a time. With `--db-schema`, each worktree runs its own `db:deploy` + `db:seed`; `migrate dev` additionally needs shadow-database rights.
 - **Ports**: when 3000 is taken, Next silently picks another one and you end up staring at the wrong instance. Allocate per section 5.
 - **Out-of-repo media directories**: `DOCS_CONTENT_ROOT` / `MUSIC_CONTENT_ROOT` are absolute paths outside the repo, shared by every worktree; two AIs running `docs:import` / `music:import` / `music:manifest` simultaneously overwrite each other.

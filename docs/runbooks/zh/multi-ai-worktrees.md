@@ -154,7 +154,7 @@ git branch -D feature/music
 
 ## 八、隔离风险
 
-- **`.env`**：复制出来的 `apps/web/.env.local`、`packages/db/.env` 含真实凭据（`DATABASE_URL`、`OWNER_ACCESS_SECRET`、`GITHUB_ACTIVITY_TOKEN`）。仅限本机开发使用：不要提交、不要交给外部 AI、不要贴进日志或工单。轮换密钥时（`pnpm auth:revoke-owner-sessions`）所有副本一起换。
+- **`.env`**：复制出来的 `apps/web/.env.local`、`packages/db/.env` 含真实凭据（`DATABASE_URL`、`INCEPT_AUTH_ENCRYPTION_KEY`、`GITHUB_ACTIVITY_TOKEN`）。仅限本机开发使用：不要提交、不要交给外部 AI、不要贴进日志或工单。轮换密钥时（`pnpm auth:revoke-owner-sessions`）所有副本一起换。
 - **数据库 schema**：默认共享 `5432/incept` 的 `public` schema → 同一时间只允许一个 worktree 跑 `pnpm db:deploy` / `db:migrate`。用 `--db-schema` 隔离后，每个 worktree 各自 `db:deploy` + `db:seed`；`migrate dev` 还需要 shadow db 权限。
 - **端口**：抢不到 3000 时 Next 会自动换端口，结果你打开的是另一个实例。按第五节分配。
 - **仓库外媒体目录**：`DOCS_CONTENT_ROOT` / `MUSIC_CONTENT_ROOT` 指向仓库外的绝对路径，所有 worktree 默认共享同一份，两个 AI 同时 `docs:import` / `music:import` / `music:manifest` 会互相覆盖。

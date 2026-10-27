@@ -179,17 +179,10 @@ section title 是页面结构的一部分，因此仍然不下沉进 block。
 
 它不再承担 block schema 定义职责。
 
-## style-lab 的定位
+## style-lab 的定位（已退役）
 
-`/[locale]/docs/style-lab` 已被批准为当前 block system 的标准验证面。
-
-它的职责是：
-
-- 在接近真实 docs 阅读壳层的环境里验证 block 样式
-- 逐条 review variant、间距、换行和阅读节奏
-- 为未来 create 和 AI 提供格式对照页
-
-它不是最终用户内容页，而是一个长期保留的内部样式实验页。
+`/[locale]/docs/style-lab` 已于 2026-10-15 退役，路由不再存在，也不是验证面；不要恢复旧路由。
+block 验证现在依赖包内 presets/测试与 Owner-only 预览流程。
 
 ## 当前不做什么
 

@@ -179,17 +179,11 @@ Responsibilities:
 
 It no longer owns block schema definition.
 
-## Style Lab Role
+## Style Lab Role (Retired)
 
-`/[locale]/docs/style-lab` is now the approved validation surface for the current block system.
-
-Its role is to:
-
-- validate block styles inside a shell close to real docs reading
-- review variants, spacing, wrapping, and rhythm one by one
-- serve as a visual reference surface for future create and AI workflows
-
-It is not end-user content. It is a long-lived internal style laboratory.
+`/[locale]/docs/style-lab` was retired on 2026-10-15 and no longer exists. It is not a
+validation surface; do not restore the old route. Block validation now lives in the package
+presets/tests and the Owner-only preview flow.
 
 ## Explicit Non-Goals For This Stage
 

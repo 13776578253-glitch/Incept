@@ -25,19 +25,9 @@ pnpm dev          # 启动站点（曲目与曲库管理在 设置 → 音乐，
 
 ## 成为 owner
 
-站点没有 owner 登录表单。打开任意页面，按 F12 在控制台执行一次：
-
-```js
-await fetch('/api/auth/owner/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    secret: '把 apps/web/.env.local 里的 OWNER_ACCESS_SECRET 填在这里',
-  }),
-});
-```
-
-返回 `204` 后刷新页面即成为 owner（会话 30 天，存在 httpOnly cookie 里）。管理区只对 owner 渲染，写接口另外校验 owner 会话与同源。
+在 `/{locale}/settings?section=account` 使用 Owner 账号密码与 TOTP 登录。原先通过浏览器
+控制台提交 `OWNER_ACCESS_SECRET` 的登录方式已于 2026-10-14 退役，不要把 master secret
+粘贴到 DevTools。管理区只对 owner 渲染，写接口另外校验 owner 会话与同源。
 
 ## 日常：上传
 

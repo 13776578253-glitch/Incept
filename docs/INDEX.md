@@ -66,6 +66,7 @@ docs/
   current-task/
   plans/
   finish-task/
+  research/
 
   history/
     dbml/
@@ -114,7 +115,9 @@ flight.
 - a plan that is finished has no home here; its outcome is recorded as a `finish-task/`
   record and any stable rule it produced moves to `decisions/`
 
-Currently active plan: `docs/plans/2026-10-16-post-launch-next-steps-plan.md`. Finished plans move to `docs/finish-task/`.
+No plan is currently active. The 2026-10-16 post-launch plan was executed through the
+2026-10-27 releases; its outcome is recorded in `finish-task/` and the remaining verification
+is in `current-task/`. Finished plans move to `docs/finish-task/`.
 
 ### `finish-task/`
 
@@ -125,6 +128,12 @@ Examples:
 - completed milestone archives
 - old AI execution history
 - previous task bundles moved out of `current-task/`
+
+### `research/`
+
+Stores phase proofs, benchmark/evidence artifacts and rollout research. They are read-only
+references, not plans or decisions. Evidence files keep their dated run names and may point at
+historical tools now kept under `scripts/archive/`.
 
 ### `history/`
 
@@ -201,6 +210,11 @@ Current workflow manuals:
 - `docs/runbooks/zh/multi-ai-worktrees.md`
 - `docs/runbooks/en/multi-ai-worktrees.md`
 
+Current flat runbooks (single-language, tracked in the bilingual gaps below):
+
+- `docs/runbooks/sync-agent-production-rollout.md`
+- `docs/runbooks/sync-agent-phase5-owner-authorization.md`
+
 ### `decisions/`
 
 Stores architectural and design decisions.
@@ -256,6 +270,8 @@ visible rather than silently tolerated; adding the missing version is the fix.
 | `docs/decisions/en/account-and-access-design.md` | Chinese | Decisions |
 | `docs/runbooks/zh/local-artifacts.md` | English | Runbooks |
 | `docs/runbooks/zh/owner-account-aegis.md` | English | Runbooks |
+| `docs/runbooks/sync-agent-production-rollout.md` | Bilingual counterpart | Runbooks |
+| `docs/runbooks/sync-agent-phase5-owner-authorization.md` | Bilingual counterpart | Runbooks |
 
 ## Legacy Rules
 

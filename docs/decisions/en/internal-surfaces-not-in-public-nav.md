@@ -70,24 +70,11 @@ Navigation code may keep the original entry behind a `// disabled` comment or a 
 
 ## Current Internal Surfaces
 
-### Docs Style Lab
+### Docs Style Lab (Retired)
 
-Local address:
-
-```text
-http://localhost:3000/en/docs/style-lab
-```
-
-Responsibilities:
-
-- validate the reading styles of the docs block system
-- compare how paragraph, heading, list, checklist, callout, quote, divider, code and image blocks render
-- act as the style baseline before create / AI format selection
-
-Public status:
-
-- not in public navigation
-- reachable only by direct link
+Retired on 2026-10-15. The former local address was
+`http://localhost:3000/en/docs/style-lab`; the route no longer exists and must not be restored
+as an internal surface. The old validation responsibilities are historical.
 
 ### Docs Import Preview
 
@@ -166,5 +153,5 @@ The first-stage public experience advances around the docs reading interface onl
 - Playback now lives with the music settings, reachable from the atlas dropdown but not part of the atlas. If a second non-map entry is ever wanted here, that is the point to reconsider whether the section is still coherent.
 - If an administrator entry point is needed later, decide then whether to expose `/studio` in a controlled position.
 - Decide when `Docs archive` re-enters public navigation.
-- Decide whether `style-lab` stays under `/docs` long term, or moves to an internal path.
+- Style Lab was retired on 2026-10-15; no placement decision remains.
 - Define a separate internal information architecture for the create/edit/publish workflow.

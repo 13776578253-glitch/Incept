@@ -70,24 +70,10 @@
 
 ## 当前内部界面
 
-### Docs Style Lab
+### Docs Style Lab（已退役）
 
-本地地址：
-
-```text
-http://localhost:3000/en/docs/style-lab
-```
-
-职责：
-
-- 用于验证 docs block system 的阅读样式。
-- 用于对比 paragraph、heading、list、checklist、callout、quote、divider、code、image 等 block 的渲染效果。
-- 用于 create / AI 格式选择前的样式基准验证。
-
-前台状态：
-
-- 不进入前台导航。
-- 仅通过直接链接访问。
+已于 2026-10-15 退役。旧的本地地址为 `http://localhost:3000/en/docs/style-lab`，路由已不存在，
+不得作为内部界面恢复；原有样式验证职责仅保留为历史。
 
 ### Docs Import Preview
 
@@ -166,5 +152,5 @@ http://localhost:3000/en/studio/docs/library
 - 回放现在归在音乐设置里，可从图谱下拉进入，但不属于图谱。若今后还想再放一个非"图"的条目，那就是该重新审视这个栏目是否仍然成立的时机。
 - 后续如需管理员入口，可再决定是否在受控位置暴露 `/studio`。
 - 决定 `Docs archive` 何时重新进入前台导航。
-- 决定 `style-lab` 是否长期保留在 `/docs` 下，还是迁移到内部路径。
+- style-lab 已于 2026-10-15 退役，不再保留位置决策。
 - 为 create/edit/publish 工作流单独定义内部信息架构。

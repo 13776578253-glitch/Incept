@@ -25,19 +25,10 @@ To add content you need **neither a content root nor a manifest**: open the sett
 
 ## Become the owner
 
-There is no owner login form on the site. Open any page and run this once in the browser console (F12):
-
-```js
-await fetch('/api/auth/owner/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    secret: 'paste OWNER_ACCESS_SECRET from apps/web/.env.local here',
-  }),
-});
-```
-
-A `204` sets the session cookie (30 days, httpOnly); reload the page and you are the owner. The block renders for the owner only, and the write routes re-check the owner session plus same-origin.
+Sign in at `/{locale}/settings?section=account` with the Owner account password and TOTP.
+The former browser-console `OWNER_ACCESS_SECRET` login was retired on 2026-10-14; do not
+paste a master secret into DevTools. The block renders for the owner only, and the write
+routes re-check the owner session plus same-origin.
 
 ## Everyday: uploading
 

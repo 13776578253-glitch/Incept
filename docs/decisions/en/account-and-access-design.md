@@ -1,8 +1,12 @@
 # Account And Access Design
 
+> **Updated 2026-10-27:** the master-secret login described below is historical. Current
+> Owner login uses the single Owner account with password + TOTP; `INCEPT_AUTH_ENCRYPTION_KEY`
+> is the credential-encryption key. The legacy `OWNER_ACCESS_SECRET` is retired.
+
 ## Status
 
-The database model, Principal identity layer, Owner server authentication, pro credential issuance/redemption, and Docs/Notes viewer checks are implemented. Owner secret login intentionally remains API-only; the settings surface exposes shared-code redemption, current access state, and logout rather than an Owner secret form.
+The database model, Principal identity layer, Owner server authentication, pro credential issuance/redemption, and Docs/Notes viewer checks are implemented. Owner login uses the single Owner account with password + TOTP; the settings surface exposes shared-code redemption, current access state, and logout.
 
 ## Goal
 
@@ -49,7 +53,7 @@ flowchart TD
   D -->|creates| F["pro Session"]
   E -->|identity for| F
 
-  G["OWNER_ACCESS_SECRET"] -->|creates| H["owner Session\nno Principal or Grant"]
+  G["Owner account + TOTP"] -->|creates| H["owner Session\nno Principal or Grant"]
 
   B -->|revoke: invalidates| A
   B -->|revoke: invalidates| C
@@ -72,7 +76,7 @@ The Owner implementation returns not found or requires authentication for protec
 
 The existing `User` table is content ownership infrastructure because the importer creates a `system` user. It remains separate from authentication.
 
-Owner identity is a deployment-only `OWNER_ACCESS_SECRET`, not a database account. The database now contains `AccessPrincipal`, `AccessGrant`, and `AccessSession` records. A grant is a hashed credential, a Principal is the revocable access identity, and a session is one browser/device binding. Pro sessions stay valid only while both their Principal and Grant remain active.
+Owner identity is the single `OwnerAccount` with password + TOTP; `INCEPT_AUTH_ENCRYPTION_KEY` encrypts the Owner credential material. The database also contains `AccessPrincipal`, `AccessGrant`, and `AccessSession` records. A grant is a hashed credential, a Principal is the revocable access identity, and a session is one browser/device binding. Pro sessions stay valid only while both their Principal and Grant remain active.
 
 Docs access uses `guest / pro / private`. Viewer identity and content access are separated in application code: `getCurrentViewer()` resolves the identity, and Docs/Notes loaders enforce the required content access level.
 

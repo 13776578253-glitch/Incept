@@ -34,8 +34,8 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 
 ### B-05 Structured Content Extensions
 
-- Source: `apps/web/src/features/docs/block-system/schema/docs-block-types.ts` (`DocsBlockType` union), `apps/web/src/features/docs/block-system/examples/docs-block-style-lab-page.ts:12-13`
-- Note: the former `docs-block-types.ts:1` marker is already an in-place `history:` note; `table` remains unimplemented across the block union, the renderers, and the importer.
+- Source: `apps/web/src/features/docs/block-system/schema/docs-block-types.ts` (`DocsBlockType` union)
+- Note: the former `docs-block-types.ts:1` marker is already an in-place `history:` note; `table` remains unimplemented across the block union, the renderers, and the importer. The `block-system/examples/` directory was retired with the Style Lab route on 2026-10-15.
 - Status: Active only after the authoring contract is designed.
 - Image support is complete. The remaining concrete candidate is `table`; embeds, video, timeline, and interactive blocks remain separate proposals rather than implicit additions.
 
@@ -102,6 +102,14 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 - Deliberately deferred until the roadmap write surface requires collaborative multi-user change auditing.
 
 
+
+### B-31 Pricing Adapter Consolidation
+
+- Source: `packages/dashboard/src/adapters/local/pricing-temporary.ts`, `pricing-commandcode.ts`, `pricing-schedule.ts`
+- Status: Deferred refactor; the current pricing tests pass (`commandcode-peak.test.ts`, `integration.test.ts`).
+- Merge the static fallback rates into `pricing.ts` as a default constant and delete the standalone file.
+- Encapsulate the CommandCode CLI catalog scrape under `pricing/providers/` or a unified catalog discovery module.
+- Move the peak/off-peak billing mutation (`applyCommandCodeQuota`) to `domain/policies/peak-schedule.ts` (or `sync/policies/`) so data retrieval and billing policy are separated.
 
 ## Code-Level Follow-Ups
 
@@ -235,12 +243,11 @@ Registered while verifying `NEXT.md` against the working tree. These are source 
 
 ## Review Before Any Code Decision
 
-### B-09 Retained Style Lab And Block Catalog
+### B-09 Retired Style Lab And Block Catalog
 
-- Sources: `apps/web/src/features/docs/block-system/catalog/`, `apps/web/src/features/docs/block-system/examples/`, `apps/web/src/app/[locale]/docs/style-lab`
-- Status: Retained Owner-only test surface.
-- Keep the source and route out of public navigation. Do not delete this original test layer during cleanup.
-- Only convert its completed real-media and syntax-highlighting TODOs to in-place `history:` notes; any future expansion needs a concrete regression-testing purpose.
+- Sources: `apps/web/src/features/docs/block-system/catalog/`, `schema/`, `presets/`
+- Status: Retired on 2026-10-15. The `/[locale]/docs/style-lab` route and `block-system/examples/` directory no longer exist; the route returns 404 in the production integration checks, and the empty directory was removed during the 2026-10-27 cleanup.
+- Do not restore the retired route or example directory. The catalog and presets remain the block-system reference; future visual validation needs a new, explicitly scoped surface.
 
 ## History Candidates
 
@@ -252,9 +259,8 @@ Verified against the working tree: these sources already carry the planned in-pl
 
 | Source | In-place note now present |
 | --- | --- |
-| `apps/web/src/features/docs/block-system/examples/docs-code-example-utils.ts:1-3` | `history:` Shiki highlighting note plus a `Deferred:` builder note. |
 | `apps/web/src/features/docs/block-system/schema/docs-block-types.ts:1` | `history: image blocks and local media publishing are implemented; table remains B-05.` |
-| `apps/web/src/features/docs/block-system/catalog/docs-block-catalog.ts:36-37` | `history:` real-media pipeline note plus the retained Style Lab fixture note. |
+| `apps/web/src/features/docs/block-system/catalog/docs-block-catalog.ts:36-37` | `history:` real-media pipeline note; the Style Lab fixture note was retired with the route on 2026-10-15. |
 | `apps/web/src/server/docs/mappers.ts:23-24` | `history:` annual-description removal and mapper-consolidation notes. |
 | `packages/db/src/docs/types.ts:10-11` | `history:` block-union note. The earlier `:6` reference pointed at an import statement, not a comment. |
 | `apps/web/src/features/docs/importer/parsers/markdown-like/document/state.ts:5` | `history: # creates a section and ## through #### already parse as body heading blocks.` |

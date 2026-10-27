@@ -1,5 +1,8 @@
 # Docs Markdown-like 写作语法说明
 
+> 历史说明（2026-10-27）：文中的 `style-lab` 指已退役的内部界面。
+> `/[locale]/docs/style-lab` 于 2026-10-15 退役，相关对照表仅保留为历史，不代表当前验证路由。
+
 ## 目标
 
 这份文档说明 `.docs.md` 原始文章如何书写，以及它如何映射到当前 docs block system。

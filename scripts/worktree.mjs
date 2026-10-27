@@ -438,7 +438,7 @@ AI:              <你自称的名字>
 - **数据库**：默认与主 checkout 共享 \`public\` schema，**同一时刻只能有一个 worktree 跑 \`db:deploy\` / \`db:migrate\`**。migration 属主控，未经明确授权不要跑。
 - **仓库外的媒体目录**：\`DOCS_CONTENT_ROOT\` / \`MUSIC_CONTENT_ROOT\` 指向仓库外绝对路径，所有 worktree 共用一份。同时跑 \`docs:import\` / \`music:import\` / \`music:manifest\` 会互相覆盖。
 - **git 的 refs / object store / hooks**：\`git push\`、\`git reset --hard\`、删分支会穿透隔离。这也是 push 与 merge 属于主控的原因。
-- **\`.env\` 里的凭据**：\`DATABASE_URL\`、\`OWNER_ACCESS_SECRET\`、\`GITHUB_ACTIVITY_TOKEN\` 是真凭据。不得提交、不得传给外部 AI、不得贴进日志或工单。
+- **\`.env\` 里的凭据**：\`DATABASE_URL\`、\`INCEPT_AUTH_ENCRYPTION_KEY\`、\`GITHUB_ACTIVITY_TOKEN\` 是真凭据。不得提交、不得传给外部 AI、不得贴进日志或工单。
 
 ## 开工自检（先执行，并把结果贴出来）
 
