@@ -3,8 +3,8 @@ import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { checkV4Isolation } from './check-v4-isolation.mjs';
-import { verifyR5ImageIdentity, R5_IMAGE } from '../apps/sync-agent/dist/library.mjs';
+import { checkV4Isolation } from '../check-v4-isolation.mjs';
+import { verifyR5ImageIdentity, R5_IMAGE } from '../../apps/sync-agent/dist/library.mjs';
 
 const project = 'incept-v4-acceptance';
 const directory = 'C:/Users/86139/AppData/Local/Incept/v4-acceptance-20261019';
@@ -42,7 +42,7 @@ try {
   check(verifyR5ImageIdentity(graph).passed, 'R5_RUNTIME_IMAGE_GRAPH_FAILED');
   for (const service of ['postgres','entry']) docker(['image','inspect','--platform','linux/amd64',config.services[service].image]);
   const version = JSON.parse(docker(['version','--format','{{json .Server}}']));
-  const files = [composeFile,'deployment/v4-http-entry.mjs','scripts/check-v4-isolation.mjs','scripts/local-r5-entry-preflight.mjs',
+  const files = [composeFile,'deployment/v4-http-entry.mjs','scripts/check-v4-isolation.mjs','scripts/archive/local-r5-entry-preflight.mjs',
     'scripts/production-v4-isolation.test.mjs','scripts/production-v4-proxy.test.mjs','docs/plans/2026-10-19-local-r5-entry-fix.md'];
   const report = {status:'prepared-awaiting-startup-approval',checkedAt:new Date().toISOString(),engine:version.Version,
     compose:docker(['compose','version','--short']).trim(),project,isolation,retainedVolumes,

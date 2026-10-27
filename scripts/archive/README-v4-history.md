@@ -1,5 +1,8 @@
 # Historical v4 recovery tools
 
+These files live under `scripts/archive/`; live operations tooling remains directly in
+`scripts/`. They are kept for audit and recovery history, not as a runnable workflow.
+
 The dated `local-r5-*`, `prepare-v4-*`, `release-clean-candidate`, and `freeze-*`
 utilities preserve the implementation and audit trail of the October 19–20
 recovery and release work. Their historical scope counts, image identities and

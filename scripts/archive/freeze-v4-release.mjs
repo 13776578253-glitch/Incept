@@ -29,7 +29,7 @@ const archive=app.archive;
 assert(archive?.path&&archive.sha256,'APP_ARCHIVE_REQUIRED');
 await add(archive.path,'app-image-archive',archive.sha256);
 const scriptDirectory=join(root,'final-scripts');mkdirSync(scriptDirectory,{recursive:true});
-for(const file of ['scripts/release-clean-candidate.mjs','scripts/local-r5-state-migration-rehearsal.mjs','scripts/production-sync-backup.mjs','scripts/check-release-incremental-handoff.mjs','scripts/freeze-v4-release.mjs']){
+for(const file of ['scripts/archive/release-clean-candidate.mjs','scripts/local-r5-state-migration-rehearsal.mjs','scripts/production-sync-backup.mjs','scripts/archive/check-release-incremental-handoff.mjs','scripts/archive/freeze-v4-release.mjs']){
  const target=join(scriptDirectory,basename(file));copyFileSync(file,target,constants.COPYFILE_EXCL);await add(target,'frozen-local-script');
 }
 for(const file of ['output/release-app-build-2026-10-20.json','output/release-app-source-2026-10-20.json','output/release-agent-build-2026-10-20.json','output/release-clean-candidate-2026-10-20.json','output/release-incremental-handoff-2026-10-20.json'])await add(file,'build-and-validation-evidence');

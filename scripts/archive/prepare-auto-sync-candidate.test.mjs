@@ -4,7 +4,7 @@ import {mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {scopeKey} from '../apps/sync-agent/dist/library.mjs';
+import {scopeKey} from '../../apps/sync-agent/dist/library.mjs';
 import {classifyMissingScopes,classifyMissingLocators,metadataInventory} from './prepare-auto-sync-candidate.mjs';
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 function row(sessionId,locatorHash='old-path',root='old-root',byteLength=0){return {scope:scopeKey('codex',sessionId),parent_json:JSON.stringify({header:{manifest:{scope:{source:'codex',sessionId}}},proofs:[{range:{locatorHash,root,byteLength,kind:'jsonl'}}]})};}

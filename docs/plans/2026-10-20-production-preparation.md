@@ -101,11 +101,11 @@ cd /srv/incept/v4-acceptance/20261020-r5
 # 此前通过受控传输放入经审阅制品、SHA256SUMS 和独立 env；不在命令行展开秘密。
 sha256sum -c SHA256SUMS
 docker load -i output/incept-r5-original.tar
-python3 scripts/prepare-r5-image-evidence.py \
+python3 scripts/archive/prepare-r5-image-evidence.py \
   --archive output/incept-r5-original.tar \
   --image '<已验证可运行的r5不可变引用>' \
   --output private-remote-image-evidence.json
-node scripts/check-r5-image.mjs private-remote-image-evidence.json
+node scripts/archive/check-r5-image.mjs private-remote-image-evidence.json
 docker compose --project-name incept-v4-acceptance --env-file private/acceptance.env \
   -f deployment/compose.v4-acceptance.json config --format json > private/compose.rendered.json
 node scripts/check-v4-isolation.mjs private/compose.rendered.json

@@ -63,7 +63,7 @@ Windows 请求 `http://127.0.0.1:3305/api/health/ready` 返回 `ECONNREFUSED`。
 
 配置更新为 acceptance（App/PG internal）、app_entry（App/entry internal）、ingress（仅 entry 普通 bridge），仅 entry 发布 localhost3305。entry 关闭 IP 转发，固定转发 App3000；不挂数据、秘密或 Docker socket。代理测试13/13、隔离配置测试121/121通过。使用既有私有 env 的真正 Compose render、保留卷和三层镜像身份检查均通过，3305无占用。当前本项目仍无容器，三个原卷均在；未重导数据库、未更换身份、未执行 E2E 或重复359/359。
 
-审阅方案：`docs/plans/2026-10-19-local-r5-entry-fix.md`；脱敏 SHA256 清单：`output/r5-entry-review.json`；只读复核脚本：`scripts/local-r5-entry-preflight.mjs`。等待用户单独批准启动该本地三服务项目及保留卷回滚。启动后先核对实际发布端口、Ready、服务/数据库身份、外网隔离，再执行尚未完成的 E2E。正式 Agent 停止，发布NO-GO。
+审阅方案：`docs/plans/2026-10-19-local-r5-entry-fix.md`；脱敏 SHA256 清单：`output/r5-entry-review.json`；只读复核脚本：`scripts/archive/local-r5-entry-preflight.mjs`。等待用户单独批准启动该本地三服务项目及保留卷回滚。启动后先核对实际发布端口、Ready、服务/数据库身份、外网隔离，再执行尚未完成的 E2E。正式 Agent 停止，发布NO-GO。
 
 ## 本次获批启动与完整本地合成验收结果
 

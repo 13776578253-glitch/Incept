@@ -45,7 +45,7 @@ Windows 127.0.0.1:3305
 
 ```powershell
 $env:INCEPT_V4_ACCEPTANCE_DIR = '%LOCALAPPDATA%\Incept\v4-acceptance-20261019'
-node scripts/local-r5-entry-preflight.mjs
+node scripts/archive/local-r5-entry-preflight.mjs
 ```
 
 脚本使用现有私有 env 在内存中执行真正的 Compose render 和隔离校验；不将包含密码的 render 写入 D 盘。检查卷归属、无项目容器、Docker 3305 无占用、三个缓存镜像及 r5 三层镜像身份图。Windows 监听端口另行只读检查。D 盘 `output/r5-entry-review.json` 只保存脱敏检查结果与文件 SHA256，供启动前核对。

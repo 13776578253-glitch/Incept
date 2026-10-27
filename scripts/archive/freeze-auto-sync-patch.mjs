@@ -35,8 +35,8 @@ await add(agent.zip.path, 'windows-agent', agent.zip.sha256);
 for (const file of candidate.artifacts) await add(join(candidate.candidateDirectory, file.path), 'private-candidate-and-audit', file.sha256);
 await add(join(candidate.candidateDirectory, 'CANDIDATE-MANIFEST.json'), 'private-candidate-manifest');
 for (const file of [appPath, agentPath, candidatePath, 'output/auto-refresh-targeted-validation-20261020.json',
-  'scripts/prepare-auto-sync-candidate.mjs', 'scripts/prepare-auto-sync-candidate.test.mjs',
-  'scripts/freeze-auto-sync-patch.mjs']) await add(file, 'local-evidence-and-tools');
+  'scripts/archive/prepare-auto-sync-candidate.mjs', 'scripts/archive/prepare-auto-sync-candidate.test.mjs',
+  'scripts/archive/freeze-auto-sync-patch.mjs']) await add(file, 'local-evidence-and-tools');
 const fixed = read('output/release-clean-candidate-2026-10-20.json');
 const snapshot = fixed.files.find(file => file.file === 'v4-release.db');
 await add(join(fixed.candidateDirectory, snapshot.file), 'unchanged-frozen-snapshot', snapshot.sha256);

@@ -9,7 +9,7 @@ assert.equal(resolve(process.env.INCEPT_V4_ACCEPTANCE_DIR??''),resolve(directory
 const {root}=JSON.parse(readFileSync(join(directory,'real-source-current.json'),'utf8'));
 assert(resolve(root).startsWith(resolve(directory)+'\\'),'PRIVATE_RUN_REQUIRED');
 const inventory=JSON.parse(readFileSync('output/r5-real-source-inventory.json','utf8'));
-const {build}=createRequire(new URL('../packages/dashboard/package.json',import.meta.url))('esbuild');
+const {build}=createRequire(new URL('../../packages/dashboard/package.json',import.meta.url))('esbuild');
 const file=join(root,'diagnose.mjs');
 await build({stdin:{contents:`export {collectCodexEvents} from ${JSON.stringify(resolve('packages/dashboard/src/adapters/local/collectors/codex.ts'))};`,resolveDir:process.cwd(),loader:'ts'},outfile:file,bundle:true,platform:'node',format:'esm',target:'node24',
  plugins:[{name:'read-only-node-collector',setup(b){b.onResolve({filter:/^server-only$/},()=>({path:'marker',namespace:'empty'}));b.onLoad({filter:/.*/,namespace:'empty'},()=>({contents:'',loader:'js'}));}}]});

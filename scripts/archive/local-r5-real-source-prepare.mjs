@@ -7,7 +7,7 @@ import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
 import {randomUUID} from 'node:crypto';
-import {workerCollector,buildCandidate,classifyIssues} from '../apps/sync-agent/dist/library.mjs';
+import {workerCollector,buildCandidate,classifyIssues} from '../../apps/sync-agent/dist/library.mjs';
 const directory='C:/Users/86139/AppData/Local/Incept/v4-acceptance-20261019';
 assert.equal(resolve(process.env.INCEPT_V4_ACCEPTANCE_DIR??''),resolve(directory));
 const inventory=JSON.parse(readFileSync('output/r5-real-source-inventory.json','utf8'));
@@ -23,7 +23,7 @@ assert(!existsSync(pointer),'REAL_SOURCE_RUN_ALREADY_EXISTS');
 writeFileSync(pointer,JSON.stringify({root}));
 const save=()=>{writeFileSync(join(root,'prepare-report.json'),JSON.stringify(report,null,2));writeFileSync('output/r5-real-source-preparation.json',JSON.stringify(report,null,2)+'\n');};
 try{
- const {build}=createRequire(new URL('../packages/dashboard/package.json',import.meta.url))('esbuild');
+ const {build}=createRequire(new URL('../../packages/dashboard/package.json',import.meta.url))('esbuild');
  const rules=join(root,'rules.mjs');
  await build({stdin:{contents:`export {hash} from ${JSON.stringify(resolve('packages/dashboard/src/adapters/local/imports/identity.ts'))};export {qualifyRanges,qualifyRecords,sequenceHash} from ${JSON.stringify(resolve('packages/dashboard/src/adapters/local/imports/sync/contract.ts'))};`,resolveDir:process.cwd(),loader:'ts'},outfile:rules,bundle:true,platform:'node',format:'esm',target:'node24'});
  const {hash,qualifyRanges}=await import(pathToFileURL(rules).href);

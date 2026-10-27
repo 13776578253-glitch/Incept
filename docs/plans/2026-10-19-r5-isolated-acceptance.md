@@ -45,7 +45,7 @@ Index 指向平台 manifest；平台 manifest 指向 config。这些是不同对
 
 验证：镜像身份 14/14，隔离配置 40/40，证据导出器 7/7，单项身份接入回归 1/1；类型检查通过。未使用真实 v4 数据重新执行离线对账。
 
-配置文件：`deployment/compose.v4-acceptance.json`。镜像工具：`scripts/prepare-r5-image-evidence.py`、`scripts/check-r5-image.mjs`。隔离门禁：`scripts/check-v4-isolation.mjs`。
+配置文件：`deployment/compose.v4-acceptance.json`。镜像工具：`scripts/archive/prepare-r5-image-evidence.py`、`scripts/archive/check-r5-image.mjs`。隔离门禁：`scripts/check-v4-isolation.mjs`。
 
 ## 3. 隔离结构
 

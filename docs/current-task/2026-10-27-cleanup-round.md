@@ -82,7 +82,7 @@ Recovery:
 ## Remaining Decisions
 
 1. **Unmerged local branches** (12): `backup/phase5-sync-hotfix-20261019`, `hotfix/phase5-sync-20261018`, `release/phase5-20261017`, `release/phase5-caddy-20261018`, `wip/phase5-snapshot-20261017`, `snapshot/2026-10-17-phase4-operations`, `feature/sync-agent-phase5`, `feature/sync-agent-v2` are historical phase5/snapshot branches; `codex/consolidate-v4-20261020`, `codex/production-readiness`, `feature/operations-console`, `feature/sync-tray` need a keep/delete ruling.
-2. **v4/R5 script suite**: 20 historical tools plus `scripts/README-v4-history.md` have no live callers. Decide whether to delete the closed subset or move the whole family to `scripts/archive/`.
+2. **v4/R5 script suite**: 20 historical tools plus `scripts/archive/README-v4-history.md` have no live callers. Decide whether to delete the closed subset or move the whole family to `scripts/archive/`.
 3. **Docs cleanup**: `docs/current-task/` is now above the 20-record threshold; the earlier audit identified 23 completed records for `finish-task/`, plus finished plans, `docs/research/` placement, `docs/audit_15_issues_report.md`, and stale B-09 / `OWNER_ACCESS_SECRET` / INDEX / NEXT references.
 4. **Remaining code-review items**: orphan tests (`owner-local.test.mjs`, `prepare-auto-sync-candidate.test.mjs`), the broken sync-gateway phase-4 harness, and the `pricing-temporary.ts` refactor.
 5. **Docker volumes**: three volumes remain (167.9 MB, 99.8 MB reclaimable). They were not deleted because they may contain content/recovery data.

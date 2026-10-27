@@ -8,8 +8,8 @@ import {createInterface} from 'node:readline';
 import {zstdDecompressSync} from 'node:zlib';
 import {pathToFileURL} from 'node:url';
 import {createConnection} from 'node:net';
-import {backupSqlite} from './production-sync-backup.mjs';
-import {AgentState,scopeKey,protectDirectory} from '../apps/sync-agent/dist/library.mjs';
+import {backupSqlite} from '../production-sync-backup.mjs';
+import {AgentState,scopeKey,protectDirectory} from '../../apps/sync-agent/dist/library.mjs';
 
 const root=resolve(import.meta.dirname,'..'),privateRoot='C:/Users/86139/AppData/Local/Incept/v4-acceptance-20261019';
 const parse=file=>JSON.parse(readFileSync(file,'utf8'));

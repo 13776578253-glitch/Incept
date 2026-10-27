@@ -5,8 +5,8 @@ import {createServer, request as httpRequest} from 'node:http';
 import {mkdirSync, readFileSync, writeFileSync, existsSync, realpathSync} from 'node:fs';
 import {join, resolve, relative, isAbsolute} from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {AgentState, SyncEngine, AgentHttp, captureHome} from '../apps/sync-agent/dist/library.mjs';
-import {fixtures as f} from '../apps/sync-agent/tests/helpers.mjs';
+import {AgentState, SyncEngine, AgentHttp, captureHome} from '../../apps/sync-agent/dist/library.mjs';
+import {fixtures as f} from '../../apps/sync-agent/tests/helpers.mjs';
 
 const sources = ['codex', 'commandcode', 'claudeCode', 'geminiCli', 'antigravity', 'opencode', 'zcode'];
 const target = 'http://127.0.0.1:3305';

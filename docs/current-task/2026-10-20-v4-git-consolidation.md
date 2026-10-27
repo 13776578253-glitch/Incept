@@ -17,7 +17,7 @@ are excluded. Source files and untracked artwork are included.
 All 125 trusted-sync items were reviewed. Private host/device/session literals
 were removed from new operational material; scripts now require explicit
 parameters where appropriate. No database, key, credential or real session log
-was added. Historical tools are documented in `scripts/README-v4-history.md`.
+was added. Historical tools are documented in `scripts/archive/README-v4-history.md`.
 
 ## Commit chain
 

@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {randomBytes,createHash,createCipheriv,scryptSync} from 'node:crypto';
-import {checkV4Isolation} from './check-v4-isolation.mjs';
-import {verifyR5ImageIdentity} from '../apps/sync-agent/dist/library.mjs';
+import {checkV4Isolation} from '../check-v4-isolation.mjs';
+import {verifyR5ImageIdentity} from '../../apps/sync-agent/dist/library.mjs';
 
 const directory = 'C:/Users/86139/AppData/Local/Incept/v4-acceptance-20261019';
 if (path.resolve(process.env.INCEPT_V4_ACCEPTANCE_DIR ?? '') !== path.resolve(directory)) throw Error('EXACT_PRIVATE_DIRECTORY_REQUIRED');

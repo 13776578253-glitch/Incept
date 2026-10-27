@@ -6,7 +6,7 @@ import {randomUUID,createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {spawnSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
-import {AgentState,SyncEngine,AgentHttp,workerCollector,buildCandidate,classifyIssues} from '../apps/sync-agent/dist/library.mjs';
+import {AgentState,SyncEngine,AgentHttp,workerCollector,buildCandidate,classifyIssues} from '../../apps/sync-agent/dist/library.mjs';
 const directory='C:/Users/86139/AppData/Local/Incept/v4-acceptance-20261019';
 assert.equal(resolve(process.env.INCEPT_V4_ACCEPTANCE_DIR??''),resolve(directory));
 const config=JSON.parse(readFileSync(join(directory,'config.json'),'utf8'));

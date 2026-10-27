@@ -7,7 +7,7 @@ import {spawnSync} from 'node:child_process';
 import {DatabaseSync} from 'node:sqlite';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
-import {backupSqlite} from './production-sync-backup.mjs';
+import {backupSqlite} from '../production-sync-backup.mjs';
 
 const sha = file => createHash('sha256').update(readFileSync(file)).digest('hex');
 const parse = text => JSON.parse(String(text));
@@ -57,8 +57,8 @@ export async function buildCleanCandidate(){
  const privateBase='C:/Users/86139/AppData/Local/Incept/v4-acceptance-20261019';
  const root=join(privateBase,'release-candidate-2026-10-20');
  assert(!existsSync(root),'RELEASE_TARGET_EXISTS');mkdirSync(root,{mode:0o700});
- const {protectDirectory}=await import('../apps/sync-agent/dist/library.mjs');await protectDirectory(root);
- const {build}=createRequire(new URL('../packages/dashboard/package.json',import.meta.url))('esbuild');
+ const {protectDirectory}=await import('../../apps/sync-agent/dist/library.mjs');await protectDirectory(root);
+ const {build}=createRequire(new URL('../../packages/dashboard/package.json',import.meta.url))('esbuild');
  const rulesFile=join(root,'release-rules.mjs');
  await build({stdin:{contents:`export {hash} from ${JSON.stringify(resolve('packages/dashboard/src/adapters/local/imports/identity.ts'))};export {validateHeader,validateRecords,qualifyRanges,qualifyRecords,sequenceHash,syncScopeId,syncEntityId} from ${JSON.stringify(resolve('packages/dashboard/src/adapters/local/imports/sync/contract.ts'))};`,resolveDir:process.cwd(),loader:'ts'},outfile:rulesFile,bundle:true,platform:'node',format:'esm',target:'node24'});
  const rules=await import(pathToFileURL(rulesFile).href);
