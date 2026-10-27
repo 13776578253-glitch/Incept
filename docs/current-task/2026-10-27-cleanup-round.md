@@ -68,7 +68,7 @@ Removed six clean worktrees, about 4.8 GB total: `consolidate-v4`, `phase5-caddy
 - `scripts/audit-commandcode-peak-reconciliation.mjs` and `scripts/parse-recent-usage.mjs`, both with zero callers.
 - Empty retired route directories: `create`, `resources`, `studio`, `docs/style-lab`, `workspace/docs/library`.
 - Stale local artifacts: `packages/dashboard/dist/phase2-fixtures.mjs`, `token-transfer.zip`, `.scratch/incept-20261023.tar`, the empty root `scratch/` directory, and stale Prisma engine `.tmp` files.
-- Moved 32 historical v4/R5 scripts and their README to `scripts/archive/`; `check-v4-isolation.mjs` and `local-r5-state-migration-rehearsal.mjs` remain live for `test:ops`. Relative imports and docs paths were updated; all archived `.mjs` files pass `node --check`.
+- Archived 32 historical v4/R5 scripts and their README, then deleted the archive on 2026-10-27. `check-v4-isolation.mjs` and `local-r5-state-migration-rehearsal.mjs` remain live for `test:ops`; historical docs may still name the old archive paths as history.
 - Archived 23 completed `current-task` records to `finish-task` and repaired directory-qualified and handover links; `current-task` now holds four active records.
 - Rewrote B-09 as retired and repointed B-05/B-31; replaced stale `OWNER_ACCESS_SECRET` guidance with the account + TOTP flow; registered `research/` and the flat runbooks in `INDEX.md`; trimmed the `NEXT.md` history.
 
@@ -102,7 +102,7 @@ Recovery:
 | `docs/current-task` | 4 active records (P1, P2–P6, handover, cleanup) |
 | `git worktree list` | only the main checkout |
 | `git branch` | `main` + 4 kept candidates |
-| Archived script syntax | all `scripts/archive/*.mjs` pass `node --check` |
+| Archived scripts | 32 archived scripts deleted; live `check-v4-isolation.mjs` and `local-r5-state-migration-rehearsal.mjs` remain |
 | Docs link check | 0 real broken links after ignoring fenced/inline code and URL-decoding; the 14 earlier findings were code-block/HTML false positives, and the 2 archived-plan links were fixed |
 | Local Docker | 45→17 images (70.01→39.9 GB), 68→9 containers (19.39→13.19 GB), 36→9 volumes (13.52→11.42 GB), build cache 48.29→0 |
 | Local DB proxy | `127.0.0.1:15432` reachable; `incept-pg-proxy` and `incept-postgres` running |
