@@ -51,6 +51,8 @@ Kept: `incept-v4-release:20261027` and `20261025`, `incept-postgres` (`postgres:
 
 After: 17 images / 39.9 GB, 9 containers / 13.19 GB, 36 volumes / 13.52 GB, build cache 0. The remaining large images are non-Incept personal projects (`fish-speech-webui` 23.2 GB, `ollama` 9.04 GB, `snowluma` 2.7 GB running, `muaw-web` 544 MB, `nvidia/cuda` 346 MB); they and their stopped containers were deliberately left for the owner to decide.
 
+Volume cleanup removed 20 zero-reference Incept test volumes and seven zero-reference anonymous volumes (27 total). Volumes went from 36 / 13.52 GB to 9 / 11.42 GB. The remaining volumes are `incept_postgres_data` (local dev DB), `muaw-*`, `ollama`, and `qq-deploy_*`.
+
 ## Worktree Cleanup
 
 Removed six clean worktrees, about 4.8 GB total: `consolidate-v4`, `phase5-caddy-release`, `phase5-release`, `sync-agent-phase5`, `sync-tray`, `trusted-sync`. `git worktree list` now contains only the main checkout, and `.worktrees/` is gone.
@@ -101,15 +103,15 @@ Recovery:
 | `git worktree list` | only the main checkout |
 | `git branch` | `main` + 4 kept candidates |
 | Archived script syntax | all `scripts/archive/*.mjs` pass `node --check` |
-| Docs link check | moved-record links repaired; 16 pre-existing broken links remain (missing assets / HTML false positives) |
-| Local Docker | 45→17 images (70.01→39.9 GB), 68→9 containers (19.39→13.19 GB), build cache 48.29 GB→0 |
+| Docs link check | 0 real broken links after ignoring fenced/inline code and URL-decoding; the 14 earlier findings were code-block/HTML false positives, and the 2 archived-plan links were fixed |
+| Local Docker | 45→17 images (70.01→39.9 GB), 68→9 containers (19.39→13.19 GB), 36→9 volumes (13.52→11.42 GB), build cache 48.29→0 |
 | Local DB proxy | `127.0.0.1:15432` reachable; `incept-pg-proxy` and `incept-postgres` running |
 | `git status` after cleanup commits | clean before this record |
 
 ## Remaining Follow-Ups
 
 1. **Deployment/reboot:** P1’s real deployment/load check, P2/P6’s next image, and the P3 Windows reboot check remain.
-2. **Docker volumes:** production keeps three volumes (167.9 MB, 99.8 MB reclaimable); local Docker has 36 volumes / 13.52 GB, including old Incept test volumes. They were not deleted because they may contain content/recovery/test data.
+2. **Docker volumes:** production keeps three volumes (167.9 MB, 99.8 MB reclaimable). Local Docker now has 9 volumes / 11.42 GB, all referenced by the local dev DB or non-Incept projects; no zero-reference Incept test volumes remain.
 3. **Remote branches:** `origin/codex/consolidate-v4-20261020` and `origin/codex/production-readiness` were kept; deleting them is a shared-state action.
 4. **Code-review items:** the orphan `scripts/owner-local.test.mjs`, the broken sync-gateway phase-4 harness, and B-31’s pricing adapter consolidation.
-5. **Docs residue:** 16 pre-existing broken links remain (missing assets / HTML false positives); finished plans and the flat audit report were left in place.
+5. **Docs residue:** the link check now reports 0 real broken links; the 16 earlier findings were 14 code-block/HTML false positives and 2 archived-plan links, both fixed. Finished plans and the flat audit report remain in place.
