@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32;
 
 namespace InceptSync
 {
@@ -397,6 +398,10 @@ namespace InceptSync
             return "\"" + value.Replace("\"", "\\\"") + "\"";
         }
 
+        public const string AutoStartArguments = "--no-show";
+        private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const string RunValueName = "InceptSync";
+
         public static string StartupShortcutPath()
         {
             string folder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
@@ -405,11 +410,54 @@ namespace InceptSync
 
         public static bool IsAutoStartEnabled()
         {
-            return File.Exists(StartupShortcutPath());
+            return File.Exists(StartupShortcutPath()) || RunEntryExists();
+        }
+
+        public static string BuildAutoStartCommand(string executablePath)
+        {
+            return Quote(executablePath) + " " + AutoStartArguments;
+        }
+
+        private static bool RunEntryExists()
+        {
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(RunKeyPath, false))
+                {
+                    if (key == null)
+                    {
+                        return false;
+                    }
+                    string value = key.GetValue(RunValueName) as string;
+                    return !string.IsNullOrEmpty(value);
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void DeleteRunEntry()
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true))
+            {
+                if (key != null)
+                {
+                    key.DeleteValue(RunValueName, false);
+                }
+            }
         }
 
         // User-initiated only: the settings dialog calls this when the checkbox
         // changes. Nothing installs a logon entry automatically.
+        //
+        // Both triggers are current-user only and need no administrator:
+        // - the Startup-folder shortcut is the existing mechanism;
+        // - the HKCU Run entry is a second trigger because Explorer has been
+        //   observed to skip the Startup folder on some logons.
+        // Both pass --no-show so the duplicate instance exits without popping
+        // the status card open.
         public static void SetAutoStart(bool enabled, string executablePath)
         {
             string shortcutPath = StartupShortcutPath();
@@ -419,6 +467,7 @@ namespace InceptSync
                 {
                     File.Delete(shortcutPath);
                 }
+                DeleteRunEntry();
                 return;
             }
             Type shellType = Type.GetTypeFromProgID("WScript.Shell");
@@ -430,10 +479,20 @@ namespace InceptSync
             object shortcut = shellType.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { shortcutPath });
             Type shortcutType = shortcut.GetType();
             shortcutType.InvokeMember("TargetPath", BindingFlags.SetProperty, null, shortcut, new object[] { executablePath });
+            shortcutType.InvokeMember("Arguments", BindingFlags.SetProperty, null, shortcut, new object[] { AutoStartArguments });
             shortcutType.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, shortcut, new object[] { Path.GetDirectoryName(executablePath) });
             shortcutType.InvokeMember("Description", BindingFlags.SetProperty, null, shortcut, new object[] { "Incept Sync Agent tray" });
             shortcutType.InvokeMember("IconLocation", BindingFlags.SetProperty, null, shortcut, new object[] { executablePath + ",0" });
             shortcutType.InvokeMember("Save", BindingFlags.InvokeMethod, null, shortcut, null);
+
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(RunKeyPath))
+            {
+                if (key == null)
+                {
+                    throw new InvalidOperationException("Run key unavailable");
+                }
+                key.SetValue(RunValueName, BuildAutoStartCommand(executablePath), RegistryValueKind.String);
+            }
         }
     }
 }

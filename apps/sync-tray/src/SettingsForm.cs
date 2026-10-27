@@ -315,13 +315,16 @@ namespace InceptSync
             try
             {
                 AgentClient.SetAutoStart(!_autoStart, Application.ExecutablePath);
-                _autoStart = !_autoStart;
                 _message = null;
             }
             catch (Exception failure)
             {
                 _message = Strings.AutoStartFailedPrefix + failure.Message;
                 _messageIsError = true;
+            }
+            finally
+            {
+                _autoStart = AgentClient.IsAutoStartEnabled();
             }
             Render();
         }

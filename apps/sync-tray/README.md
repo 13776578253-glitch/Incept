@@ -84,9 +84,18 @@ Shell 暂时无法返回图标位置时复用最近锚点；首次无锚点时�
 
 ## 登录自启
 
-默认不注册任何登录项。打开“设置”，勾选“登录 Windows 时启动托盘”，
-会在当前用户的启动文件夹创建一个快捷方式。取消勾选即删除。
-该操作不需要管理员权限，也不会修改现有 Agent 的计划任务。
+默认不注册任何登录项。打开“设置”，勾选“登录 Windows 时启动托盘”，会同时创建两个
+当前用户级别的入口：
+
+- 启动文件夹快捷方式 `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Incept Sync.lnk`
+- 当前用户 Run 项 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\InceptSync`
+
+两个入口都带 `--no-show`。如果 Explorer 同时启动了两次，第二个实例只唤醒单实例
+管道后立即退出，不会弹出状态卡片。取消勾选会同时删除两个入口。该操作不需要管理员
+权限，也不会修改现有 Agent 的计划任务；计划任务需要管理员权限，不作为托盘的默认方案。
+
+启动过程会追加到 `%LOCALAPPDATA%\Incept\sync-agent\tray.log`，包括启动参数、自启状态、
+单实例退出、Explorer 等待时间和未处理异常，便于排查登录时托盘未出现的问题。
 
 ## 退出与卸载
 
@@ -109,7 +118,7 @@ Shell 暂时无法返回图标位置时复用最近锚点；首次无锚点时�
 # 需要先有 apps/sync-agent/dist/agent.mjs
 node apps/sync-agent/tools/build.mjs        # 在完整 pnpm 环境中
 powershell -File apps/sync-tray/tools/build.ps1
-powershell -File apps/sync-tray/tools/test.ps1 # 对构建产物运行 49 项回归
+powershell -File apps/sync-tray/tools/test.ps1 # 对构建产物运行 51 项回归
 node apps/sync-tray/tools/package.mjs       # 生成 dist/package/*.zip
 ```
 

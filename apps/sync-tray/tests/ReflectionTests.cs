@@ -62,6 +62,8 @@ internal static class ReflectionTests
                 Console.WriteLine("DPI-aware bitmap graphics: {0} x {1}", graphics.DpiX, graphics.DpiY);
 
             TestStates();
+            Test("auto-start command quotes the executable and uses --no-show", TestAutoStartCommand);
+            Test("--no-show suppresses duplicate activation", TestNoShowOption);
             Test("eleven embedded 160px artwork resources", TestResources);
             foreach (int size in new int[] { 24, 32, 40, 60 })
             {
@@ -137,6 +139,25 @@ internal static class ReflectionTests
     {
         Set(snapshot, "LastErrorCode", "UPLOAD_FAILED");
         Set(snapshot, "LastErrorAt", DateTime.UtcNow.AddMinutes(-1).ToString("o"));
+    }
+
+    private static void TestAutoStartCommand()
+    {
+        Type client = TypeOf("AgentClient");
+        MethodInfo build = client.GetMethod("BuildAutoStartCommand", Members, null, new Type[] { typeof(string) }, null);
+        Require(build != null, "BuildAutoStartCommand missing");
+        string command = (string)build.Invoke(null, new object[] { @"C:\Program Files\Incept Sync\InceptSync.exe" });
+        Require(command == "\"C:\\Program Files\\Incept Sync\\InceptSync.exe\" --no-show", "unexpected command: " + command);
+    }
+
+    private static void TestNoShowOption()
+    {
+        Type optionsType = TypeOf("Options");
+        MethodInfo parse = optionsType.GetMethod("Parse", Members, null, new Type[] { typeof(string[]) }, null);
+        Require(parse != null, "Options.Parse missing");
+        object options = parse.Invoke(null, new object[] { new string[] { "--no-show" } });
+        FieldInfo noShow = optionsType.GetField("NoShow", Members);
+        Require(noShow != null && (bool)noShow.GetValue(options), "--no-show not parsed");
     }
 
     private static void TestStates()

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -9,32 +11,82 @@ namespace InceptSync
 {
     internal static class Program
     {
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetShellWindow();
+
         [STAThread]
         private static int Main(string[] args)
         {
             Options options = Options.Parse(args);
-            ThemeManager.Initialize(options.StateDirectory);
-            Locale.Initialize(options.StateDirectory);
-            if (!string.IsNullOrEmpty(options.SelfTestPath))
+            TrayLog.Write(options.StateDirectory, "start pid=" + Process.GetCurrentProcess().Id
+                + " exe=" + Application.ExecutablePath + " args=" + string.Join(" ", args)
+                + " autoStart=" + AgentClient.IsAutoStartEnabled());
+            try
             {
-                return SelfTest.Run(options);
-            }
-            string pipeName = Pipe.NameFor(options.StateDirectory);
-            bool created;
-            using (Mutex mutex = new Mutex(true, "Local\\" + pipeName + "-mutex", out created))
-            {
-                if (!created)
+                Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+                Application.ThreadException += delegate(object sender, ThreadExceptionEventArgs error)
                 {
-                    Pipe.Notify(pipeName);
-                    return 0;
+                    TrayLog.Write(options.StateDirectory, "thread-exception " + error.Exception);
+                };
+                AppDomain.CurrentDomain.UnhandledException += delegate(object sender, UnhandledExceptionEventArgs error)
+                {
+                    TrayLog.Write(options.StateDirectory, "unhandled " + error.ExceptionObject);
+                };
+                ThemeManager.Initialize(options.StateDirectory);
+                Locale.Initialize(options.StateDirectory);
+                if (!string.IsNullOrEmpty(options.SelfTestPath))
+                {
+                    return SelfTest.Run(options);
                 }
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
-                TrayContext context = new TrayContext(options);
-                context.Start();
-                Application.Run(context);
+                string pipeName = Pipe.NameFor(options.StateDirectory);
+                bool created;
+                using (Mutex mutex = new Mutex(true, "Local\\" + pipeName + "-mutex", out created))
+                {
+                    if (!created)
+                    {
+                        TrayLog.Write(options.StateDirectory, "already-running noShow=" + options.NoShow);
+                        if (!options.NoShow)
+                        {
+                            Pipe.Notify(pipeName);
+                        }
+                        return 0;
+                    }
+                    Application.EnableVisualStyles();
+                    Application.SetCompatibleTextRenderingDefault(false);
+                    if (Environment.GetEnvironmentVariable("INCEPT_TRAY_UI_TEST") != "1"
+                        && !options.NoAgentStart && !options.ShowPanel)
+                    {
+                        WaitForShell(options.StateDirectory);
+                    }
+                    TrayContext context = new TrayContext(options);
+                    context.Start();
+                    TrayLog.Write(options.StateDirectory, "started");
+                    Application.Run(context);
+                    TrayLog.Write(options.StateDirectory, "exit");
+                }
+                return 0;
             }
-            return 0;
+            catch (Exception error)
+            {
+                TrayLog.Write(options.StateDirectory, "fatal " + error);
+                return 1;
+            }
+        }
+
+        // Explorer may still be starting when the Startup folder launches the
+        // tray. Wait for the shell window so the notification icon has a home.
+        private static void WaitForShell(string stateDirectory)
+        {
+            if (GetShellWindow() != IntPtr.Zero)
+            {
+                return;
+            }
+            int started = Environment.TickCount;
+            while (GetShellWindow() == IntPtr.Zero && Environment.TickCount - started < 20000)
+            {
+                Thread.Sleep(250);
+            }
+            TrayLog.Write(stateDirectory, "shell-wait " + (Environment.TickCount - started) + "ms");
         }
     }
 

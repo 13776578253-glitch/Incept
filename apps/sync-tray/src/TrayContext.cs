@@ -15,6 +15,7 @@ namespace InceptSync
         public string StateDirectory;
         public string AgentDirectory;
         public bool ShowPanel;
+        public bool NoShow;
         public bool NoAgentStart;
         public string SelfTestPath;
         public string Dialog;
@@ -41,6 +42,10 @@ namespace InceptSync
                 else if (arg == "--show")
                 {
                     options.ShowPanel = true;
+                }
+                else if (arg == "--no-show")
+                {
+                    options.NoShow = true;
                 }
                 else if (arg == "--no-agent-start")
                 {
