@@ -10,7 +10,7 @@
 ## 缺陷索引与全景概览
 
 > 💡 **处理状态总览**：
-> - **表一（核心系统与代码缺陷）**：共 12 项，状态为 **`⏳ 待其他 Agent 处理`**，详细可执行交接指引见 [2026-10-16-agent-handover-remaining-issues.md](./current-task/2026-10-16-agent-handover-remaining-issues.md)。
+> - **表一（核心系统与代码缺陷）**：共 12 项，状态为 **`⏳ 待其他 Agent 处理`**，详细可执行交接指引见 [2026-10-16-agent-handover-remaining-issues.md](./finish-task/2026-10-16-agent-handover-remaining-issues.md)。
 > - **表二（文档体系与源码注释专项）**：共 12 项，状态为 **`✅ 本轮已全部完成修复并验收`**。
 
 ### 表一：核心系统架构、路由与代码级缺陷索引表 (✅ 经三批重构与实测已全数完成与验收)
@@ -433,9 +433,9 @@ export const config = {
 
 #### 4.1 DOC-10: 文档充斥“等待人工认可/不代表完成”的心理推脱套话与“取代前文”前后矛盾
 - **定位**：
-  - [docs/current-task/2026-10-14-owner-auth-implementation.md:84 vs 94](file:///d:/Desktop/code/code/Incept/docs/current-task/2026-10-14-owner-auth-implementation.md#L84-L94)
+  - [docs/finish-task/2026-10-14-owner-auth-implementation.md:84 vs 94](file:///d:/Desktop/code/code/Incept/docs/finish-task/2026-10-14-owner-auth-implementation.md#L84-L94)
   - [docs/BACKLOG.md:319](file:///d:/Desktop/code/code/Incept/docs/BACKLOG.md#L319)
-  - [docs/current-task/2026-10-14-owner-account-ui-preview.md:35-37](file:///d:/Desktop/code/code/Incept/docs/current-task/2026-10-14-owner-account-ui-preview.md#L35-L37)
+  - [docs/finish-task/2026-10-14-owner-account-ui-preview.md:35-37](file:///d:/Desktop/code/code/Incept/docs/finish-task/2026-10-14-owner-account-ui-preview.md#L35-L37)
 - **典型现象展示**：
   1. **自我否定叠加**：在 `owner-auth-implementation.md:84` 写下“前端最终修改与人工认可仍未完成...”，紧接着在同一文件的第 94 行追加：“本轮逻辑已获用户验收；此确认取代前文‘当前界面尚待人工认可’的状态”——典型的“用追加废话取代修改原文”的偷懒行为。
   2. **会话对话情绪污染 Backlog**：`BACKLOG.md:319` 记录：“用户要求逻辑完成就停，前端仍待修改，不制作推送服务器的包；六项整体验收框等待前端人工认可...”。临时性对话沟通要求被不加甄别地录入长期文档。

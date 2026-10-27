@@ -44,8 +44,8 @@ The maintainers answered that it was fixed and asked for confirmation on an upda
 
 ## Where development resumes
 
-- `docs/current-task/2026-09-16-music-source-and-import-pipeline.md` — pipeline state, not-delivered list, commit proposal.
-- `docs/current-task/2026-09-14-music-player-floating-plugin.md` — player and preference channel.
+- `docs/finish-task/2026-09-16-music-source-and-import-pipeline.md` — pipeline state, not-delivered list, commit proposal.
+- `docs/finish-task/2026-09-14-music-player-floating-plugin.md` — player and preference channel.
 - Open human decisions: none. Both questions recorded here were answered on 2026-09-17 — the React test environment was built (B-18) and the queue behaviour on a library switch was decided and implemented (B-19). Repository status at handoff: 48 changed files, nothing committed this session.
 
 Both task records above were archived to `docs/finish-task/` on 2026-09-21, and the music feature they describe was merged into `main` through PR #2 (`e35fccc`).

@@ -400,37 +400,37 @@ music 功能当前约 6,400 行实现 + 3,400 行测试、65 个文件散布在 
 - Commit 建议: [docs]: music 模块化迁移计划 v2 修订落档
 
 [2026-09-23 17:05] - Update by AI完成改动:
-- Phase 2 实施（含 B1/B2/B3 强制项与 R9 裁定执行）：packages/music 包骨架（六层 exports、分层 tsconfig 边界）、manage/upload 纯执行拆分（事务语义逐函数核对不变）、catalog 形状与选择常量入 domain、import.ts 选择并轨、MusicRepository 端口（11 用例方法）、10 文件 git mv + 3 测试随迁（27 用例）、18 条 import 原子改写（10 生产 + 6 测试）、db 移除 ./music、transpilePackages 与 web 依赖同轮、R10 类型强制（B1）、非空探针红→绿留档。详见 `docs/current-task/2026-09-23-music-migration-phase2.md`。
+- Phase 2 实施（含 B1/B2/B3 强制项与 R9 裁定执行）：packages/music 包骨架（六层 exports、分层 tsconfig 边界）、manage/upload 纯执行拆分（事务语义逐函数核对不变）、catalog 形状与选择常量入 domain、import.ts 选择并轨、MusicRepository 端口（11 用例方法）、10 文件 git mv + 3 测试随迁（27 用例）、18 条 import 原子改写（10 生产 + 6 测试）、db 移除 ./music、transpilePackages 与 web 依赖同轮、R10 类型强制（B1）、非空探针红→绿留档。详见 `docs/finish-task/2026-09-23-music-migration-phase2.md`。
 - 遗留问题: R-KEYS（node:path 归层，已就地桥接零行为变更）与 music-key.ts:1 旧包名注释（READAI 2.1 冻结）待裁定；Phase 3–8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 2 包骨架与数据层
 
 [2026-09-23 19:20] - Update by AI完成改动:
-- Phase 3 实施（服务端管线与端口）：6 实现 + import-runner/manifest-builder + music-admin + ncm-fixture + 6 测试 git mv 入包（import-runner 纯/编排拆分）；决策 5 路径注入（directory 必填、findRepoRoot 出包）；决策 6 鉴权端口 + 宿主 assembly；music-metadata 迁移；music-key shim 删除；三支 scripts 动态 import 同轮改写。验收：四包 typecheck 全绿、269/269 测试全绿（56 用例随迁、总数零漂移）、grep 全过。详见 `docs/current-task/2026-09-23-music-migration-phase3.md`。
+- Phase 3 实施（服务端管线与端口）：6 实现 + import-runner/manifest-builder + music-admin + ncm-fixture + 6 测试 git mv 入包（import-runner 纯/编排拆分）；决策 5 路径注入（directory 必填、findRepoRoot 出包）；决策 6 鉴权端口 + 宿主 assembly；music-metadata 迁移；music-key shim 删除；三支 scripts 动态 import 同轮改写。验收：四包 typecheck 全绿、269/269 测试全绿（56 用例随迁、总数零漂移）、grep 全过。详见 `docs/finish-task/2026-09-23-music-migration-phase3.md`。
 - 遗留问题: 修订 13 的 4 处计划修正待追认；`removeMusicMediaByUrl` 过时注释行（READAI 冻结 + 变更注记）待批并改；Phase 4–8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 3 服务端管线与端口
 
 [2026-09-23 20:40] - Update by AI完成改动:
-- Phase 5 实施（API 路由收编；Phase 4 未点名按范围规则跳过）：`src/endpoints.ts`（musicEndpoints）+ `src/next/` 5 个 route handler 工厂（authorizeOwner + MusicRepository Pick + paths 注入）；`PrismaMusicRepository` 接线端口（决策 4）；5 个 app/api stub 变 re-export（catalog 保留字面 dynamic）；`tracks/route.ts` 的 `path.extname` 改包内 POSIX 实现（修订 12）；2 个路由测试随迁（15 用例）+ 新增非 owner 404 回归（v2 增补）；next 以 peer+dev 声明。开放问题按 Next 16 文档定案（修订 15）。验收：四包 typecheck 全绿、**270/270** 测试全绿（269+1，对账精确）、stub 门禁/装配引用 grep 归零。详见 `docs/current-task/2026-09-23-music-migration-phase5.md`。
+- Phase 5 实施（API 路由收编；Phase 4 未点名按范围规则跳过）：`src/endpoints.ts`（musicEndpoints）+ `src/next/` 5 个 route handler 工厂（authorizeOwner + MusicRepository Pick + paths 注入）；`PrismaMusicRepository` 接线端口（决策 4）；5 个 app/api stub 变 re-export（catalog 保留字面 dynamic）；`tracks/route.ts` 的 `path.extname` 改包内 POSIX 实现（修订 12）；2 个路由测试随迁（15 用例）+ 新增非 owner 404 回归（v2 增补）；next 以 peer+dev 声明。开放问题按 Next 16 文档定案（修订 15）。验收：四包 typecheck 全绿、**270/270** 测试全绿（269+1，对账精确）、stub 门禁/装配引用 grep 归零。详见 `docs/finish-task/2026-09-23-music-migration-phase5.md`。
 - 遗留问题: Phase 4（CLI 迁入）未批准、其收敛项（镜像路径三处重复、resolveWebMusicPaths）一并顺延；Phase 6–8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 5 API 路由收编
 
 [2026-09-23 21:30] - Update by AI完成改动:
-- Phase 4（修订版）实施：CLI 三入口迁入 `src/cli/`（文案/参数逐字保留 + --env-file/--mirror plumbing）、纯转发脚本（基准 db→music）、exports 自引用（字面 src 路径归零）、镜像路径唯一定义（D.1 甲）、resolveWebMusicPaths 删除（D.2）、smoke 测试 6 例；R11 探针通过；C1 以 origin/main(a927a12) 临时 clone 基线对照达成（dry-run 行级 0 diff，兼证 R-KEYS）。详见 `docs/current-task/2026-09-23-music-migration-phase4.md`。
+- Phase 4（修订版）实施：CLI 三入口迁入 `src/cli/`（文案/参数逐字保留 + --env-file/--mirror plumbing）、纯转发脚本（基准 db→music）、exports 自引用（字面 src 路径归零）、镜像路径唯一定义（D.1 甲）、resolveWebMusicPaths 删除（D.2）、smoke 测试 6 例；R11 探针通过；C1 以 origin/main(a927a12) 临时 clone 基线对照达成（dry-run 行级 0 diff，兼证 R-KEYS）。详见 `docs/finish-task/2026-09-23-music-migration-phase4.md`。
 - 遗留问题: 无新增；Phase 4+5 就绪待合并提交；Phase 6–8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 4+5 CLI 迁入与 API 路由收编
 
 [2026-09-23 23:15] - Update by AI完成改动:
-- Phase 6 实施（React 层迁入）：42 项迁移、URL 收敛 7 处、policy 注入化、MusicLocale 落地、@source + CSS 断言、共享 setup 抽取、真 barrel；80 用例随迁、**270/270 全绿**、探针红→绿闭环、宿主导入 grep 归零。实施修正 4 项 + react 层 next/navigation 例外（修订 18 待追认）。详见 `docs/current-task/2026-09-23-music-migration-phase6.md`。
+- Phase 6 实施（React 层迁入）：42 项迁移、URL 收敛 7 处、policy 注入化、MusicLocale 落地、@source + CSS 断言、共享 setup 抽取、真 barrel；80 用例随迁、**270/270 全绿**、探针红→绿闭环、宿主导入 grep 归零。实施修正 4 项 + react 层 next/navigation 例外（修订 18 待追认）。详见 `docs/finish-task/2026-09-23-music-migration-phase6.md`。
 - 遗留问题: 浏览器 localStorage 实测待补（唯一验收缺口）；Phase 7–8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 6 React 层迁入
 
 [2026-09-23] - Update by AI完成改动:
-- Phase 7 实施（挂载收编与构建定形）：music 3 贡献位 + SettingsSectionContribution 注册进 manifest、设置框架 5 处硬编码切除（含 3 controlType/3 分支/7 props/music-schema/readMusicAdminData 直连）、`--z-feature-floating` 改名、构建复核 + 浏览器轮（5 分区顺序保全、非 owner 门控、**localStorage 偏好延续实测通过**）。构建复核抓获并修复 RSC 边界 bug（注册数据模块拆 `'use client'`）。271/271、四包 typecheck、build 全绿。详见 `docs/current-task/2026-09-23-music-migration-phase7.md`。
+- Phase 7 实施（挂载收编与构建定形）：music 3 贡献位 + SettingsSectionContribution 注册进 manifest、设置框架 5 处硬编码切除（含 3 controlType/3 分支/7 props/music-schema/readMusicAdminData 直连）、`--z-feature-floating` 改名、构建复核 + 浏览器轮（5 分区顺序保全、非 owner 门控、**localStorage 偏好延续实测通过**）。构建复核抓获并修复 RSC 边界 bug（注册数据模块拆 `'use client'`）。271/271、四包 typecheck、build 全绿。详见 `docs/finish-task/2026-09-23-music-migration-phase7.md`。
 - 遗留问题: 浮层 DOM 可见性与 owner 浏览器视角并入 Phase 8 全量浏览器验收；Phase 8 待批准。
 - Commit 建议: [feat]: music 迁移 Phase 7 挂载收编与构建定形
 
 [2026-09-24] - Update by AI完成改动:
-- Phase 8 实施（删除演练与冻结）：删除演练（摘包构建仅装配/注册 5 处报错，附录见下）、边界三件套留档（exports 封装/纯层独立编译/pnpm 隔离）、全量浏览器验收（owner 登录、管理面板、曲库 create/停用、上传双路径（新字节创建 + 同字节去重复用）、播放真实推进、浮层双向路由实测、偏好延续）、冻结声明入决策文档、BACKLOG 登记 B-26/27/28、两份 runbook×双语补 CLI 转发机制与包布局。**A1–A13 全核销**（详见 phase8 报告）。**副作用披露**：内容准备时 `pnpm music:import` 以权威模式实跑（非 dry-run），停用 7 曲目 + 2 曲库 + 11 归属（仅 deactivate 无删除）、复制 4 媒体进镜像——待裁定是否还原。详见 `docs/current-task/2026-09-24-music-migration-phase8.md`。
+- Phase 8 实施（删除演练与冻结）：删除演练（摘包构建仅装配/注册 5 处报错，附录见下）、边界三件套留档（exports 封装/纯层独立编译/pnpm 隔离）、全量浏览器验收（owner 登录、管理面板、曲库 create/停用、上传双路径（新字节创建 + 同字节去重复用）、播放真实推进、浮层双向路由实测、偏好延续）、冻结声明入决策文档、BACKLOG 登记 B-26/27/28、两份 runbook×双语补 CLI 转发机制与包布局。**A1–A13 全核销**（详见 phase8 报告）。**副作用披露**：内容准备时 `pnpm music:import` 以权威模式实跑（非 dry-run），停用 7 曲目 + 2 曲库 + 11 归属（仅 deactivate 无删除）、复制 4 媒体进镜像——待裁定是否还原。详见 `docs/finish-task/2026-09-24-music-migration-phase8.md`。
 - 遗留问题: NCM 上传浏览器实测未做（NCM 管线有 6 例单测覆盖）；曲目级 patch/删除 UI 回路未走浏览器（12 例单测 + 4 路由测试覆盖）；import 副作用待裁定。
 - Commit 建议: [chore]: music 迁移 Phase 8 删除演练、冻结与文档收尾
 

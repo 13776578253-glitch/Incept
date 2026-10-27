@@ -1,6 +1,6 @@
 # 生产部署准备草案：独立远端 r5 验收与 Plan A
 
-> 已被用户的固定快照发布策略取代。本文件保留历史方案，不再执行远端独立验收、额外资源门槛或种子环境构建。当前范围见 `docs/current-task/2026-10-20-final-release.md`：本机构建冻结，生产仅替换App并展示固定快照，正式Agent继续停止。
+> 已被用户的固定快照发布策略取代。本文件保留历史方案，不再执行远端独立验收、额外资源门槛或种子环境构建。当前范围见 `docs/finish-task/2026-10-20-final-release.md`：本机构建冻结，生产仅替换App并展示固定快照，正式Agent继续停止。
 
 2026-10-20，Asia/Singapore。已合并本地验收、state 副本迁移重演及今日远端只读预检。**发布 NO-GO，正式 Agent 保持停止。**远端部署、生产切换、正式授权变更和最终 Agent 启动须分别列明范围后申请授权。
 
@@ -17,7 +17,7 @@
 | 正式 state 副本迁移重演 | 39/39 旧 heads 相同，未解决 head 0、receipt 冲突 0；两批 review 的 72 条全部被既有 v4 精确覆盖，完整归档保留，待 Owner 确认处置 |
 | 正式七来源授权与 Owner | 尚未具备最终审批证据；测试设备七来源授权只用于独立验收 |
 
-真实来源与 Auto-review 证据分别见 `docs/current-task/2026-10-19-real-source-acceptance.md`、`output/r5-auto-review-acceptance.json`。本地服务证据见 `docs/current-task/2026-10-19-local-r5-execution.md`。这些结果不产生远端部署状态。
+真实来源与 Auto-review 证据分别见 `docs/finish-task/2026-10-19-real-source-acceptance.md`、`output/r5-auto-review-acceptance.json`。本地服务证据见 `docs/finish-task/2026-10-19-local-r5-execution.md`。这些结果不产生远端部署状态。
 
 ## 制品身份与版本冻结
 
@@ -55,7 +55,7 @@
 2. 两批 Outbox review 分别保留原 batch、原因、原记录与审阅状态；归档不等于已解决。逐批给出“已被可靠收据覆盖”“继续隔离”“等待 Owner 决策”等实际处置，禁止删记录或制造 receipt 清空 review。
 3. 若 receipt 同 batch 内容冲突、scope 身份冲突或未证明的前进覆盖，立即停止迁移并报告。候选中 pending review 的数量和原因必须进入上线门禁。
 4. 本地主机重开 candidate 并验证其可读、父链来源、隔离 ledger 与迁移 provenance；不得以重新执行已关闭的 359/359 全量对账代替旧 state 衔接审阅。
-5. 实际重演已完成，输入文件前后指纹一致。结果为 `prepared_pending_review`，不是正式切换就绪；详见 `docs/current-task/2026-10-20-state-migration-rehearsal.md`。Owner 待审具体处置：Claude Code 67 条、ZCode 5 条已被 v4 精确覆盖，保留旧 batch 与 records 归档，不再放入候选活跃上传队列，不制造旧 batch committed receipt。
+5. 实际重演已完成，输入文件前后指纹一致。结果为 `prepared_pending_review`，不是正式切换就绪；详见 `docs/finish-task/2026-10-20-state-migration-rehearsal.md`。Owner 待审具体处置：Claude Code 67 条、ZCode 5 条已被 v4 精确覆盖，保留旧 batch 与 records 归档，不再放入候选活跃上传队列，不制造旧 batch committed receipt。
 
 ## 远端资源选择与只读前置检查
 

@@ -748,7 +748,7 @@
     "deployment/compose.sh",
     "deployment/nginx.conf.template",
     "docs/NEXT.md",
-    "docs/current-task/2026-10-17-docs-redesign-and-agent-handoff.md",
+    "docs/finish-task/2026-10-17-docs-redesign-and-agent-handoff.md",
     "docs/research/sync-agent-phase5-evidence.json",
     "docs/research/sync-agent-phase5-rollout-proof.md",
     "docs/runbooks/sync-agent-phase5-owner-authorization.md",

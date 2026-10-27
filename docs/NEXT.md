@@ -17,7 +17,7 @@ This is the short entry point for active product work. Detailed source-code acce
 
 ## 2026-10-16 Current next steps
 
-The user requested carrying the remaining [post-launch tasks](./finish-task/2026-10-14-post-launch-operations-and-admin-todo.md) into the next plan. Production `7bee9ad`, 21 migrations, Owner/TOTP and public About/activity are now verified in [the production acceptance](./current-task/2026-10-16-release-2-production-acceptance.md). This section sets the current priority over the historical ordering above; existing content/parser tasks stay queued.
+The user requested carrying the remaining [post-launch tasks](./finish-task/2026-10-14-post-launch-operations-and-admin-todo.md) into the next plan. Production `7bee9ad`, 21 migrations, Owner/TOTP and public About/activity are now verified in [the production acceptance](./finish-task/2026-10-16-release-2-production-acceptance.md). This section sets the current priority over the historical ordering above; existing content/parser tasks stay queued.
 
 1. **Verify the recovery point:** check whether the latest successful backup includes the current TOTP binding and recovery codes; arrange a consistent backup if needed.
 2. **Prepare the next fix release:** resolve recorded-cost loss and indexed/native duplicate imports; deliver the seven-source exporter and receiver together; complete the 428 reauthentication dialog, validate Gemini's Edge/Docs/matrix fixes, and repair the reference redirect.
@@ -28,7 +28,7 @@ The user requested carrying the remaining [post-launch tasks](./finish-task/2026
 
 Detailed tasks, dependencies, acceptance and the full 31-ID mapping are in [the next-steps plan](./plans/2026-10-16-post-launch-next-steps-plan.md). This is a planning update; execution begins with the selected slice and its current-task record.
 
-2026-10-16 autonomous continuation: current baseline committed as `48a679a`. Recorded fees, indexed/native transfer matching, seven-source protocol/CLI, per-batch pricing, bounded history storage, and reference/integration-checker fixes are implemented and entering the complete release gate. The 03:04 production backup now covers the TOTP/recovery setup and all four archive hashes passed. Follow [the active fix-release record](./current-task/2026-10-16-autonomous-fix-release.md); actual data upload/local data refresh is the requested final handoff.
+2026-10-16 autonomous continuation: current baseline committed as `48a679a`. Recorded fees, indexed/native transfer matching, seven-source protocol/CLI, per-batch pricing, bounded history storage, and reference/integration-checker fixes are implemented and entering the complete release gate. The 03:04 production backup now covers the TOTP/recovery setup and all four archive hashes passed. Follow [the active fix-release record](./finish-task/2026-10-16-autonomous-fix-release.md); actual data upload/local data refresh is the requested final handoff.
 
 2026-10-16 fix-release gates complete: `48a679a` / `b0132d9` / `1a29a92` are committed. The exact `1a29a92` Linux/amd64 image passed 655 automated tests, real PostgreSQL and three-role HTTP checks, seven-source import/reauthentication/replay/rollback, trusted TLS, runtime audit (0 vulnerabilities) and empty-target restore. No migrations changed. A paired server/tool release is prepared; production remains `7bee9ad` pending the runbook's human release review. After cutover and smoke checks, hand off data export/upload and local refresh. REC-01 is complete based on the 03:04 backup. Detailed evidence is appended to the active fix-release record.
 
@@ -36,7 +36,7 @@ Detailed tasks, dependencies, acceptance and the full 31-ID mapping are in [the 
 
 Agent A completed the DeepWiki-aligned redesign of Docs Home (`DocsHomeAddCard` steel-slate palette, bare `+` icon, uniform card dimensions, clean hover state, and centered search) and successfully merged `feature/docs-redesign` into `codex/production-readiness` at commit `d9ab52a`.
 
-- **Current Progress & Handoff Record:** See [2026-10-17 Docs Redesign and Agent Handoff](./current-task/2026-10-17-docs-redesign-and-agent-handoff.md) and [.scratch/handoff-2026-10-17-branch-split.md](../.scratch/handoff-2026-10-17-branch-split.md).
+- **Current Progress & Handoff Record:** See [2026-10-17 Docs Redesign and Agent Handoff](./finish-task/2026-10-17-docs-redesign-and-agent-handoff.md) and [.scratch/handoff-2026-10-17-branch-split.md](../.scratch/handoff-2026-10-17-branch-split.md).
 - **Next Stage Plan (Agent B):** Merge `feature/sync-agent-v2` resolving the 3 expected conflicts in `messages` and `dashboard-toolbar.tsx`, followed by `pnpm install` and full verification gates.
 - **Subsequent Waves:** Agent C (disk and artifact cleanup), Agent D (`feature/sync-agent-phase5` implementation), and Agent E (`feature/operations-console` integration).
 

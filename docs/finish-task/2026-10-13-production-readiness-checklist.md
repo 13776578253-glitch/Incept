@@ -1,6 +1,6 @@
 # 项目生产环境上线准备逐项处理清单
 
-- **关联报告**：[2026-10-13-production-readiness-audit.md](file:///d:/Desktop/code/code/Incept/docs/current-task/2026-10-13-production-readiness-audit.md)
+- **关联报告**：[2026-10-13-production-readiness-audit.md](file:///d:/Desktop/code/code/Incept/docs/finish-task/2026-10-13-production-readiness-audit.md)
 - **创建日期**：2026-10-13
 - **目标周期**：3 天内达到 CONDITIONAL GO / GO 状态并完成安全上线
 - **核心策略**：收缩首发范围（限制公开用量与私密媒体） + 最小闭环运维（单机 Nginx + PostgreSQL + systemd）

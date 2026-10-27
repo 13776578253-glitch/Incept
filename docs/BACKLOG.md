@@ -276,7 +276,7 @@ Two further claims that used to live in this file are also resolved, and are rec
 
 ### Cleaned On 2026-09-21 During The Comment Pass
 
-The music comments added by `0d2f532` / `e48ab21` / `8d34309` were reviewed and reduced to one-line flow notes: rationale was moved into `docs/current-task/2026-09-21-music-upload-dedup.md` and `docs/decisions/{en,zh}/music-authoring-in-the-web.md`, and the `history:`-prefixed design notes in that subsystem were removed because they recorded change history rather than replacing a TODO.
+The music comments added by `0d2f532` / `e48ab21` / `8d34309` were reviewed and reduced to one-line flow notes: rationale was moved into `docs/finish-task/2026-09-21-music-upload-dedup.md` and `docs/decisions/{en,zh}/music-authoring-in-the-web.md`, and the `history:`-prefixed design notes in that subsystem were removed because they recorded change history rather than replacing a TODO.
 
 | Source | What it carried | Outcome |
 | --- | --- | --- |

@@ -24,7 +24,7 @@
 - `packages/music/src/domain/keys.ts`：纯实现化（-node:path/-@ts-ignore，+baseNameOf/+extensionOf）。
 - `packages/music/src/__tests__/music-keys.test.ts`：新增，55 行 `path.posix` 等价语料锁。
 - `apps/web/src/server/music/music-key.ts`：注释修正（批准项）。
-- `docs/current-task/2026-09-23-music-package-migration-plan-v2.md`：修订记录 10–12、Phase 3 music-admin 点名、Phase 5 扩展名统一注记。
+- `docs/finish-task/2026-09-23-music-package-migration-plan-v2.md`：修订记录 10–12、Phase 3 music-admin 点名、Phase 5 扩展名统一注记。
 - 本记录。
 
 ## 检查与结果（本机执行）

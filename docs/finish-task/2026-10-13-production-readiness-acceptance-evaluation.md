@@ -5,9 +5,9 @@
 - **评估日期**：2026-10-13
 - **评估原则**：严格只读受控运维（Controlled Read-Only Operations）、防作弊真实性审查（Anti-Cheating Integrity Forensics）、全量自动化验证（100% Automated Testing）
 - **关联参考资料**：
-  - 审查报告：`docs/current-task/2026-10-13-production-readiness-audit.md`
-  - 整改记录：`docs/current-task/2026-10-13-production-readiness-remediation.md`
-  - 任务清单：`docs/current-task/2026-10-13-production-readiness-checklist.md`
+  - 审查报告：`docs/finish-task/2026-10-13-production-readiness-audit.md`
+  - 整改记录：`docs/finish-task/2026-10-13-production-readiness-remediation.md`
+  - 任务清单：`docs/finish-task/2026-10-13-production-readiness-checklist.md`
   - 验证证据：`output/production-readiness-2026-10-13/`（共 87 项测试与演练日志）
 
 ---

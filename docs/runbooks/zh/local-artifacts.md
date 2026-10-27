@@ -28,4 +28,4 @@
 
 当前保留的本地认证验收入口是 `.scratch/owner-auth-2026-10-14/verify-db.cjs`，同目录保留专用测试库配置及建库脚本。真实内容迁移包、真实库备份和账号恢复材料不属于本轮测试垃圾，仍保留；`output` 发布包和正式运维脚本未动。
 
-清理结果与路由盘点见 `docs/current-task/2026-10-15-scratch-cleanup-and-route-audit.md`。精确文件清单仅保存在本轮私有临时目录中。
+清理结果与路由盘点见 `docs/finish-task/2026-10-15-scratch-cleanup-and-route-audit.md`。精确文件清单仅保存在本轮私有临时目录中。

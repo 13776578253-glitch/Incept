@@ -194,7 +194,7 @@ The two markers sit in the same replace transaction:
   still needs.
 
 Acceptance should follow the six items already listed in
-`docs/current-task/2026-09-01-docs-collection-navigation-milestone.md`, using
+`docs/finish-task/2026-09-01-docs-collection-navigation-milestone.md`, using
 `docs/runbooks/en/docs-content-import.md` §5 as the statement of expected behaviour. Note the
 question that runbook leaves open: a node whose parent **and** position both change may be
 read as a move or as a new node replacing an old one, and that has never been pinned down.

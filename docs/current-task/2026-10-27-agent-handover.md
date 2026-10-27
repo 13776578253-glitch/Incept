@@ -123,10 +123,10 @@ pnpm dev    # http://localhost:3000
 
 - 生产发布与恢复：[docs/runbooks/zh/production-deployment.md](../runbooks/zh/production-deployment.md)
 - 最近三轮发布记录：
-  - [2026-10-27 路线图「+」移动](./2026-10-27-release-20261027.md)
-  - [2026-10-25 Next 16.4.3 安全升级](./2026-10-24-nextjs-16.4.3-security-upgrade.md)
-  - [2026-10-25 路线图建卡修复](./2026-10-24-roadmap-create-and-editor.md)
-- 同步链路历史（harness、水位、499 超时、托盘）：[2026-10-23-sync-harness-and-ui-polish.md](./2026-10-23-sync-harness-and-ui-polish.md)
+  - [2026-10-27 路线图「+」移动](../finish-task/2026-10-27-release-20261027.md)
+  - [2026-10-25 Next 16.4.3 安全升级](../finish-task/2026-10-24-nextjs-16.4.3-security-upgrade.md)
+  - [2026-10-25 路线图建卡修复](../finish-task/2026-10-24-roadmap-create-and-editor.md)
+- 同步链路历史（harness、水位、499 超时、托盘）：[2026-10-23-sync-harness-and-ui-polish.md](../finish-task/2026-10-23-sync-harness-and-ui-polish.md)
 - 水位门禁说明：[deployment/ledger-watermark.md](../../deployment/ledger-watermark.md)
 
 ## 8. 交接时最快的自检

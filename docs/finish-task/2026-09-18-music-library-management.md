@@ -1,6 +1,6 @@
 # Music Library Management
 
-> **Archived and superseded on 2026-09-18.** The screen described here edited `music.json` and imported afterwards; the next round replaced it with direct database writes (upload, track and library CRUD) — see `docs/current-task/2026-09-18-music-web-management.md` and `docs/decisions/en/music-authoring-in-the-web.md`. Kept as history: it records what the manifest-editor round did and how it was verified, including the browser pass that could not exercise membership editing.
+> **Archived and superseded on 2026-09-18.** The screen described here edited `music.json` and imported afterwards; the next round replaced it with direct database writes (upload, track and library CRUD) — see `docs/finish-task/2026-09-18-music-web-management.md` and `docs/decisions/en/music-authoring-in-the-web.md`. Kept as history: it records what the manifest-editor round did and how it was verified, including the browser pass that could not exercise membership editing.
 
 ## Status
 

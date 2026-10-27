@@ -17,7 +17,7 @@
 
 ## 改动清单
 
-**计划修订（`docs/current-task/2026-09-23-music-package-migration-plan-v2.md`，新增）**
+**计划修订（`docs/finish-task/2026-09-23-music-package-migration-plan-v2.md`，新增）**
 
 - 7 处修正：db/music 7→8 文件（漏 index.ts）、`@incept/db/music` 引用 14→18 语句/16 文件、settings props 6→7、URL 散写 6 处/4 类→7 处/5 类、music-player 行数 1,925+881→2,123+896、测试归属（library-consistency 归 Phase 3；Phase 2=3 个、Phase 3=6 个）、A2 口径限定为 music CLI。
 - 增补：Phase 1 保留字 id 防劫持与双渲染路径；Phase 2 事务不变式清单（plan/校验在事务内、P2002 整事务重试、RepeatableRead 原样保留）与类型归属（MusicCatalogRecord 先入 domain）；Phase 7 变量清单含 `use-floating-position.ts:225` JS 读取点；R9/R10。

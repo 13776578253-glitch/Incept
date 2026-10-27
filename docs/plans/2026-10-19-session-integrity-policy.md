@@ -43,7 +43,7 @@ newTokens 为相对已确认会话总量的差值，uploadedTokens 为整批观�
 
 15项新增策略测试覆盖：坏/好会话隔离、全部损坏、重复报警与重启、跨日期前缀、有效区间与parent恢复、旧head保护、新健康会话增量、异常时间/JSON/counter/协议字段、修复后审计保留、Token差值及旧state未知量、未核实轮换状态。另有17项既有Agent回归、10项loader/normalizer回归及Agent/Dashboard源码类型检查。
 
-真实本地 r5 验收见 `docs/current-task/2026-10-19-real-source-acceptance.md`。最终回归为 Agent/迁移 45 项、loader/normalizer/purpose 15 项通过，Agent 与 Dashboard 两组源码类型检查通过。生产未修改，正式 Agent 停止，发布 NO-GO。
+真实本地 r5 验收见 `docs/finish-task/2026-10-19-real-source-acceptance.md`。最终回归为 Agent/迁移 45 项、loader/normalizer/purpose 15 项通过，Agent 与 Dashboard 两组源码类型检查通过。生产未修改，正式 Agent 停止，发布 NO-GO。
 
 ## Auto-review 用量与缺价政策（2026-10-20）
 

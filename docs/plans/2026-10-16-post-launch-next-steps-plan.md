@@ -1,6 +1,6 @@
 # 第二版上线后的下一步计划
 
-2026-10-16 / Asia/Singapore。主控计划，来源为 [上线后主清单](../current-task/2026-10-14-post-launch-operations-and-admin-todo.md) 和 [第二版线上验收与 Git 审查](../current-task/2026-10-16-release-2-production-acceptance.md)。活跃入口为 [NEXT.md](../NEXT.md)。
+2026-10-16 / Asia/Singapore。主控计划，来源为 [上线后主清单](../finish-task/2026-10-14-post-launch-operations-and-admin-todo.md) 和 [第二版线上验收与 Git 审查](../finish-task/2026-10-16-release-2-production-acceptance.md)。活跃入口为 [NEXT.md](../NEXT.md)。
 
 本轮只整理计划。执行状态取最近一次验收记录，开始每项生产操作前刷新对应状态；尤其先检查每日备份是否已经覆盖验证器绑定，避免重复安排维护窗口。
 
@@ -136,4 +136,4 @@ REC-01 已完成：03:04 成功备份覆盖当前 Owner/TOTP 与恢复码建立�
 
 批次 1 的全部代码修复已提交，状态为“隔离通过、待生产发布评审”：费用保留、索引/原始身份与旧批次兼容、七来源协议/CLI/工具说明、费率覆盖与回退、428 就地认证、最近十条历史、Edge/Docs/矩阵样式、reference 双语跳转均包含于精确应用提交 `1a29a92`。候选通过 655 项自动测试、真实库权限/事务、三身份 HTTP、七来源导入/认证/回滚、TLS 与空目标恢复，生产依赖审计 0 漏洞。
 
-服务端镜像与便携工具已按同版打包。线上仍为 `7bee9ad`；按发布手册完成切换前人工评审、短维护窗口一致备份及切换后验收，再交接数据电脑导出、Owner 上传和本地数据刷新。当前剩余外部运维任务与输入要求维持原计划，详情见 [自主修复记录](../current-task/2026-10-16-autonomous-fix-release.md)。
+服务端镜像与便携工具已按同版打包。线上仍为 `7bee9ad`；按发布手册完成切换前人工评审、短维护窗口一致备份及切换后验收，再交接数据电脑导出、Owner 上传和本地数据刷新。当前剩余外部运维任务与输入要求维持原计划，详情见 [自主修复记录](../finish-task/2026-10-16-autonomous-fix-release.md)。

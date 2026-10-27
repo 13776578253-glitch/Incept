@@ -1,6 +1,6 @@
 # 单机生产发布与恢复
 
-本方案只面向一个 Linux 实例：Nginx → 非 root Next.js → 内网 PostgreSQL。上传及 Dashboard SQLite 位于共享目录，使用鉴权 Route Handler 提供媒体，不能给受限媒体添加 Nginx 静态 alias。隔离验证结果见 [整改记录](../../current-task/2026-10-13-production-readiness-remediation.md)；公网验收另行执行。
+本方案只面向一个 Linux 实例：Nginx → 非 root Next.js → 内网 PostgreSQL。上传及 Dashboard SQLite 位于共享目录，使用鉴权 Route Handler 提供媒体，不能给受限媒体添加 Nginx 静态 alias。隔离验证结果见 [整改记录](../../finish-task/2026-10-13-production-readiness-remediation.md)；公网验收另行执行。
 
 ## 主机与目录
 
@@ -145,7 +145,7 @@ SSH 使用 `deployment/ssh-hardening.sh` 的两步事务。先从独立终端以
 
 生效值应为 PasswordAuthentication=no、KbdInteractiveAuthentication=no、PermitRootLogin=prohibit-password（`sshd -T` 可能显示等价值 without-password）、PubkeyAuthentication=yes。以 `sshd -T -C ...` 和新连接为准；OpenSSH 优先采用先读到的值，不能只在配置末尾追加。现有 authorized_keys 已可登录时不重复写入。见 [OpenSSH 配置手册](https://man.openbsd.org/sshd_config)。
 
-这套 Compose 当前仍是已验收的 Nginx 路径。Caddy 自动 HTTPS 的配置、证书持久卷、运维脚本接入与真实 sslip.io 域名验证在部署阶段完成；不要同时运行两个占用 80/443 的代理或将 Next 3000、PG 5432 暴露公网。SSH/小内存实测结果见 [加固记录](../../current-task/2026-10-13-lighthouse-security-memory-hardening.md)。
+这套 Compose 当前仍是已验收的 Nginx 路径。Caddy 自动 HTTPS 的配置、证书持久卷、运维脚本接入与真实 sslip.io 域名验证在部署阶段完成；不要同时运行两个占用 80/443 的代理或将 Next 3000、PG 5432 暴露公网。SSH/小内存实测结果见 [加固记录](../../finish-task/2026-10-13-lighthouse-security-memory-hardening.md)。
 
 ## 2026-10-14 最终 Caddy 交付（取代上文 Nginx 首发步骤）
 
@@ -172,6 +172,6 @@ sh deployment/compose.sh up -d --wait --wait-timeout 120
 
 真实离机目标仍需另一个故障域，SFTP固定known_hosts与专用账户/密钥，或配置可信TLS的S3兼容存储。不要把同机SFTP测试当作灾备已经落地；没有实际存储、告警接收与恢复验证时不启用名义上的生产timer或宣称GO。
 
-只读主机核查发现security来源待升级包含内核6.12.111；今晚未更新系统。明天先审阅/安装适用更新、必要重启后复验Docker/SSH/Swap，再确认云防火墙、公网ACME/续期及外网设备。详细事实/边界和最终镜像见 [最终交付记录](../../current-task/2026-10-14-final-caddy-release-readiness.md)。
+只读主机核查发现security来源待升级包含内核6.12.111；今晚未更新系统。明天先审阅/安装适用更新、必要重启后复验Docker/SSH/Swap，再确认云防火墙、公网ACME/续期及外网设备。详细事实/边界和最终镜像见 [最终交付记录](../../finish-task/2026-10-14-final-caddy-release-readiness.md)。
 
 更新迁移必须在停app的维护窗口执行：新版本的挂载路径/PG配置可能触发数据库容器重建，旧应用连接会中断。备份完成后明确 `sh deployment/compose.sh stop app`，停止其他写入者，再切换部署目录/执行migrate，最后启动新app并等待ready、检查HTTPS和业务后恢复写入。隔离夹具已观察并恢复这一连接中断，不能拿迁移命令成功替代应用恢复验收。
