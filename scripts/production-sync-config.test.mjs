@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
+import {mkdirSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -335,6 +335,46 @@ test('ledger-watermark CLI checks a ledger, reports metrics and gates the downgr
     const advanced=run('advance',dbPath,watermarkPath);
     assert.equal(advanced.status,0,advanced.stderr);
     assert.equal(JSON.parse(readFileSync(watermarkPath,'utf8')).minRevision,720);
+  }finally{
+    rmSync(directory,{recursive:true,force:true});
+  }
+});
+
+test('ledger-watermark CLI honors an explicit watermark path outside the ledger directory',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'incept-watermark-explicit-'));
+  try{
+    const dbDir=join(directory,'db'),stateDir=join(directory,'state');
+    mkdirSync(dbDir);mkdirSync(stateDir);
+    const dbPath=join(dbDir,'v4.db'),adjacent=join(dbDir,'ledger-watermark.json'),explicit=join(stateDir,'ledger-watermark.json');
+    const cli=join(import.meta.dirname,'ledger-watermark.mjs');
+    const run=(...args)=>spawnSync(process.execPath,[cli,...args],{encoding:'utf8'});
+
+    const db=new DatabaseSync(dbPath);
+    db.exec(`
+      CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, data_revision INTEGER NOT NULL);
+      CREATE TABLE sync_receipts (batch_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL);
+      CREATE TABLE sync_scopes (scope_id TEXT PRIMARY KEY, token_total INTEGER NOT NULL);
+      CREATE TABLE sync_current (scope_id TEXT, observation_id TEXT);
+      INSERT INTO sync_meta VALUES(1, 700);
+    `);
+    db.close();
+    // The adjacent file would reject the ledger; the explicit path must win.
+    writeFileSync(adjacent,JSON.stringify({canonicalLedger:'v4.db',minRevision:9999}));
+
+    const generated=run('generate',dbPath,explicit);
+    assert.equal(generated.status,0,generated.stderr);
+    assert.equal(JSON.parse(readFileSync(explicit,'utf8')).minRevision,700);
+
+    const checked=run('check',dbPath,explicit);
+    assert.equal(checked.status,0,checked.stderr);
+    assert.ok(checked.stdout.includes(explicit));
+
+    const advanced=run('advance',dbPath,explicit);
+    assert.equal(advanced.status,0,advanced.stderr);
+
+    const defaulted=run('check',dbPath);
+    assert.equal(defaulted.status,1);
+    assert.match(defaulted.stderr,/REVISION_BELOW_WATERMARK/);
   }finally{
     rmSync(directory,{recursive:true,force:true});
   }

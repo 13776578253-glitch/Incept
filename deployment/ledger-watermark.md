@@ -79,6 +79,9 @@ node scripts/ledger-watermark.mjs advance  [dbFile] [watermarkFile]
 Defaults: `dbFile` is `$INCEPT_SYNC_DATABASE_FILE` or `/data/sync/v4.db`; `watermarkFile`
 is `ledger-watermark.json` beside the ledger.
 
+All three actions use the explicitly supplied `watermarkFile`; only when it is omitted do
+they fall back to the file beside the ledger.
+
 - `check` runs the real startup gate, then prints the live metrics next to each floor.
 - `generate` snapshots the ledger: revision, scope count, token total, visible records
   and the newest receipt as the anchor. It **refuses** to lower any existing floor

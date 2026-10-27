@@ -28,14 +28,14 @@ export function validateSyncConfiguration(env=process.env) {
   }
 }
 
-export function validateAuthoritativeLedgerGate(env=process.env) {
+export function validateAuthoritativeLedgerGate(env=process.env, watermarkFile) {
   if(env.INCEPT_SYNC_ENABLED!=='1')return;
   const dbFile=env.INCEPT_SYNC_DATABASE_FILE;
   if(!dbFile||!isAbsolute(dbFile))throw Error('SYNC_DATABASE_NOT_CONFIGURED');
-  const watermarkFile=resolve(dbFile,'..','ledger-watermark.json');
-  if(!existsSync(watermarkFile))throw Error('EXTERNAL_WATERMARK_MISSING');
+  const resolvedWatermark=watermarkFile?resolve(watermarkFile):resolve(dbFile,'..','ledger-watermark.json');
+  if(!existsSync(resolvedWatermark))throw Error('EXTERNAL_WATERMARK_MISSING');
   let watermark;
-  try{watermark=JSON.parse(readFileSync(watermarkFile,'utf8'));}
+  try{watermark=JSON.parse(readFileSync(resolvedWatermark,'utf8'));}
   catch{throw Error('EXTERNAL_WATERMARK_CORRUPTED');}
   if(watermark.canonicalLedger&&!dbFile.endsWith(watermark.canonicalLedger))throw Error('CANONICAL_LEDGER_MISMATCH');
   if(!existsSync(dbFile))throw Error('LEDGER_DATABASE_NOT_FOUND');

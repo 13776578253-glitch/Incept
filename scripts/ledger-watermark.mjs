@@ -74,7 +74,7 @@ try {
       console.error(`[FAIL] Watermark file not found at: ${watermarkFile}`);
       process.exit(1);
     }
-    validateAuthoritativeLedgerGate({ INCEPT_SYNC_ENABLED: '1', INCEPT_SYNC_DATABASE_FILE: dbFile });
+    validateAuthoritativeLedgerGate({ INCEPT_SYNC_ENABLED: '1', INCEPT_SYNC_DATABASE_FILE: dbFile }, watermarkFile);
     report(JSON.parse(readFileSync(watermarkFile, 'utf8')));
   } else if (action === 'generate') {
     if (!existsSync(dbFile)) {
@@ -85,7 +85,7 @@ try {
     const created = generateLedgerWatermark(dbFile, watermarkFile, { force: flags.has('--force') });
     console.log('[OK] Generated ledger watermark:');
     console.log(JSON.stringify(created, null, 2));
-    validateAuthoritativeLedgerGate({ INCEPT_SYNC_ENABLED: '1', INCEPT_SYNC_DATABASE_FILE: dbFile });
+    validateAuthoritativeLedgerGate({ INCEPT_SYNC_ENABLED: '1', INCEPT_SYNC_DATABASE_FILE: dbFile }, watermarkFile);
     report(created);
   } else if (action === 'advance') {
     if (!existsSync(dbFile)) {
@@ -99,7 +99,7 @@ try {
     const updated = advanceLedgerWatermark(dbFile, watermarkFile);
     console.log('[OK] Advanced ledger watermark:');
     console.log(JSON.stringify(updated, null, 2));
-    validateAuthoritativeLedgerGate({ INCEPT_SYNC_ENABLED: '1', INCEPT_SYNC_DATABASE_FILE: dbFile });
+    validateAuthoritativeLedgerGate({ INCEPT_SYNC_ENABLED: '1', INCEPT_SYNC_DATABASE_FILE: dbFile }, watermarkFile);
     report(updated);
   }
 } catch (err) {
