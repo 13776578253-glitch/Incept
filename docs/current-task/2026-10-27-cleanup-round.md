@@ -39,6 +39,18 @@ Kept:
 
 Result: disk `32G/39G` used (81%, 7.7G free) → `17G/39G` used (43%, 23G free). Four images, four running containers, zero build cache. `/api/health/ready` remains 200.
 
+### Local Docker Cleanup (2026-10-27)
+
+The local Docker Desktop had 45 images / 70.01 GB, 68 containers / 19.39 GB and 48.29 GB of build cache. Removed:
+
+- 59 exited Incept test containers.
+- 28 old Incept images, including all `incept-sync-*`, `incept-readiness:*`, `incept-owner-auth`, `incept-final`, `incept:20261015/20261016`, `incept-v4-release:20261023/20261020`, `incept-v4-auto-*` and the phase2e/4/5 build images.
+- The full build cache.
+
+Kept: `incept-v4-release:20261027` and `20261025`, `incept-postgres` (`postgres:16-alpine`), `incept-pg-proxy` (`alpine/socat`), and the unrelated running `snowluma`. The proxy is the local DB entry point: `socat` listens on `127.0.0.1:15432` and forwards to `incept-postgres` at `172.19.0.2:5432`; keep it while local development uses port 15432. `Test-NetConnection 127.0.0.1:15432` succeeds.
+
+After: 17 images / 39.9 GB, 9 containers / 13.19 GB, 36 volumes / 13.52 GB, build cache 0. The remaining large images are non-Incept personal projects (`fish-speech-webui` 23.2 GB, `ollama` 9.04 GB, `snowluma` 2.7 GB running, `muaw-web` 544 MB, `nvidia/cuda` 346 MB); they and their stopped containers were deliberately left for the owner to decide.
+
 ## Worktree Cleanup
 
 Removed six clean worktrees, about 4.8 GB total: `consolidate-v4`, `phase5-caddy-release`, `phase5-release`, `sync-agent-phase5`, `sync-tray`, `trusted-sync`. `git worktree list` now contains only the main checkout, and `.worktrees/` is gone.
@@ -90,12 +102,14 @@ Recovery:
 | `git branch` | `main` + 4 kept candidates |
 | Archived script syntax | all `scripts/archive/*.mjs` pass `node --check` |
 | Docs link check | moved-record links repaired; 16 pre-existing broken links remain (missing assets / HTML false positives) |
+| Local Docker | 45→17 images (70.01→39.9 GB), 68→9 containers (19.39→13.19 GB), build cache 48.29 GB→0 |
+| Local DB proxy | `127.0.0.1:15432` reachable; `incept-pg-proxy` and `incept-postgres` running |
 | `git status` after cleanup commits | clean before this record |
 
 ## Remaining Follow-Ups
 
 1. **Deployment/reboot:** P1’s real deployment/load check, P2/P6’s next image, and the P3 Windows reboot check remain.
-2. **Docker volumes:** three volumes remain (167.9 MB, 99.8 MB reclaimable); they were not deleted because they may contain content/recovery data.
+2. **Docker volumes:** production keeps three volumes (167.9 MB, 99.8 MB reclaimable); local Docker has 36 volumes / 13.52 GB, including old Incept test volumes. They were not deleted because they may contain content/recovery/test data.
 3. **Remote branches:** `origin/codex/consolidate-v4-20261020` and `origin/codex/production-readiness` were kept; deleting them is a shared-state action.
 4. **Code-review items:** the orphan `scripts/owner-local.test.mjs`, the broken sync-gateway phase-4 harness, and B-31’s pricing adapter consolidation.
 5. **Docs residue:** 16 pre-existing broken links remain (missing assets / HTML false positives); finished plans and the flat audit report were left in place.
