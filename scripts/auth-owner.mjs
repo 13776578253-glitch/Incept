@@ -58,7 +58,34 @@ async function main() {
     else if (command === 'status') {
       const account = await prisma.ownerAccount.findUnique({ where: { id: 'owner' }, select: { username: true, totpCiphertext: true } });
       result = { initialized: !!account, username: account?.username, totpConfigured: !!account?.totpCiphertext };
-    } else throw new Error('Usage: pnpm auth:owner init|reset|setup-code|approve|status [--username NAME] [--password-file PATH] [--challenge ID] [--confirm] [--output PATH]');
+    } else if (command === 'dev-session') {
+      if (!args.includes('--confirm')) throw new Error('dev-session requires --confirm.');
+      const databaseUrl = process.env.DATABASE_URL;
+      if (!databaseUrl) throw new Error('DATABASE_URL is required.');
+      const host = new URL(databaseUrl).hostname;
+      if (!['localhost', '127.0.0.1', '::1'].includes(host)) throw new Error('dev-session is local-only.');
+      const days = Number(option('--days') ?? 30);
+      if (!Number.isInteger(days) || days < 1 || days > 90) throw new Error('--days must be 1-90.');
+      const security = await import('../packages/db/src/owner/security.ts');
+      let account = await prisma.ownerAccount.findUnique({ where: { id: 'owner' } });
+      if (!account) {
+        account = await prisma.ownerAccount.create({ data: { id: 'owner', username: 'owner',
+          passwordHash: await security.hashPassword(security.randomCredential()),
+          totpCiphertext: security.encryptTotp(security.createTotpSecret()) } });
+      } else if (!account.totpCiphertext) {
+        account = await prisma.ownerAccount.update({ where: { id: 'owner' }, data: {
+          totpCiphertext: security.encryptTotp(security.createTotpSecret()), totpLastStep: -1 } });
+      }
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + days * 86400000);
+      const token = security.randomCredential();
+      const session = await prisma.accessSession.create({ data: { role: 'owner', tokenHash: security.hashCredential(token),
+        ownerAccountId: account.id, credentialVersion: account.credentialVersion, authenticatedAt: expiresAt,
+        lastUsedAt: now, expiresAt, deviceLabel: 'local dev session' } });
+      await owner.writeSecurityAudit('owner.dev-session', 'success', account.id, session.id);
+      result = { username: account.username, cookieName: 'incept-access-session', cookieValue: token,
+        cookie: `incept-access-session=${token}`, expiresAt: expiresAt.toISOString(), sessionId: session.id };
+    } else throw new Error('Usage: pnpm auth:owner init|reset|setup-code|approve|status|dev-session --confirm [--days N] [--username NAME] [--password-file PATH] [--challenge ID] [--output PATH]');
     if (output) { await fs.writeFile(output, JSON.stringify(result, null, 2) + '\n', { mode: 0o600, flag: 'wx' }); console.log('Owner operation completed; one-time material saved to the specified file.'); }
     else console.log(JSON.stringify(result, null, 2));
   } finally { await prisma.$disconnect(); }
