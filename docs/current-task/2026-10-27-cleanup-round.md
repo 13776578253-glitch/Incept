@@ -60,8 +60,9 @@ Recovery:
 
 - `git restore --source=HEAD -- packages/dashboard packages/db/.env.example` restored 198 tracked files.
 - 131 files initially appeared as `M`; their worktree and index hashes matched, so the status was a CRLF/stat-cache artifact. `git add -- packages/dashboard packages/db/.env.example` refreshed the index without staging content changes.
-- `packages/db/.env` was recreated locally from `apps/web/.env.local` with the local proxy port `15432`; it is ignored and not committed.
+- `packages/db/.env` was recreated locally from `apps/web/.env.local` with the local proxy port `15432`; it is ignored and not committed. It contains only `DATABASE_URL`; restore any additional local keys if the original file had them.
 - `pnpm install --force --prefer-offline` restored 707 packages; `pnpm --filter @incept/dashboard build:runtime` rebuilt both workers.
+- The forced install reported ignored build scripts for `@parcel/watcher`, `@prisma/client`, `@prisma/engines`, `@swc/core`, `esbuild`, `prisma` and `unrs-resolver`. Typecheck, dashboard tests and `build:runtime` pass; run `pnpm approve-builds` if a native/Web build later fails.
 - `pnpm db:generate` failed with `EPERM` because the running `next dev` process holds `query_engine-windows.dll.node`. The existing generated client works and typecheck/tests pass. Rerun generation after stopping the dev server; seven stale `.tmp` engine files were removed.
 - The running `next dev` process was not stopped.
 
