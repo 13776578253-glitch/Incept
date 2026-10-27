@@ -2,7 +2,7 @@
 
 ## Status
 
-The P2–P6 fixes and the cleanup commits are committed on `main`; `origin/main` has not been updated. Docker and worktrees are cleaned, and the safe code residue is removed. Unmerged branches, the v4/R5 script archive and the docs archival still need an owner decision. Production remains on `20261027` (`88aeaa4c`) and all four containers are healthy.
+The P2–P6 fixes and the full cleanup are committed on `main`; `origin/main` has not been updated. Docker, worktrees, the selected branches, the v4/R5 script archive and the docs cleanup are done. Production remains on `20261027` (`88aeaa4c`) and all four containers are healthy. The remaining items are deployment/reboot verification and a few deferred code-review decisions.
 
 ## Commits
 
@@ -15,8 +15,11 @@ The P2–P6 fixes and the cleanup commits are committed on `main`; `origin/main`
 | `cf1f9e1` | `docs(current-task): record the P2-P6 follow-ups and P5 acceptance` |
 | `75a5d06` | `refactor(web): remove unused mock data` |
 | `5a06fde` | `chore(scripts): remove unreferenced usage analysis scripts` |
+| `1c4f7fd` | `chore(scripts): archive the historical v4/r5 tooling` |
+| `71ac2d2` | `docs(current-task): archive completed task records` |
+| `4cef4c6` | `docs: retire stale style lab and owner-secret references` |
 
-P5’s Owner visual acceptance was confirmed before this round.
+The final record update is committed separately; the repository log contains its hash. P5’s Owner visual acceptance was confirmed before this round.
 
 ## Docker Cleanup
 
@@ -41,7 +44,9 @@ Result: disk `32G/39G` used (81%, 7.7G free) → `17G/39G` used (43%, 23G free).
 Removed six clean worktrees, about 4.8 GB total: `consolidate-v4`, `phase5-caddy-release`, `phase5-release`, `sync-agent-phase5`, `sync-tray`, `trusted-sync`. `git worktree list` now contains only the main checkout, and `.worktrees/` is gone.
 
 - `feature/trusted-sync` and `backup/trusted-sync-20261019` were fully merged and were deleted with `git branch -d`.
-- The other worktree branches were deliberately kept; see “Remaining Decisions”.
+- Per the owner ruling, deleted eight historical branches and kept four candidates:
+  - deleted: `backup/phase5-sync-hotfix-20261019` (`b732076`), `hotfix/phase5-sync-20261018` (`b732076`), `release/phase5-20261017` (`4a0ba1a`), `release/phase5-caddy-20261018` (`ecf2421`), `wip/phase5-snapshot-20261017` (`350d878`), `snapshot/2026-10-17-phase4-operations` (`7021583`), `feature/sync-agent-phase5` (`834f8a9`), `feature/sync-agent-v2` (`834f8a9`).
+  - kept: `codex/consolidate-v4-20261020`, `codex/production-readiness`, `feature/operations-console`, `feature/sync-tray`.
 
 ## Code Residue Removed
 
@@ -49,6 +54,9 @@ Removed six clean worktrees, about 4.8 GB total: `consolidate-v4`, `phase5-caddy
 - `scripts/audit-commandcode-peak-reconciliation.mjs` and `scripts/parse-recent-usage.mjs`, both with zero callers.
 - Empty retired route directories: `create`, `resources`, `studio`, `docs/style-lab`, `workspace/docs/library`.
 - Stale local artifacts: `packages/dashboard/dist/phase2-fixtures.mjs`, `token-transfer.zip`, `.scratch/incept-20261023.tar`, the empty root `scratch/` directory, and stale Prisma engine `.tmp` files.
+- Moved 32 historical v4/R5 scripts and their README to `scripts/archive/`; `check-v4-isolation.mjs` and `local-r5-state-migration-rehearsal.mjs` remain live for `test:ops`. Relative imports and docs paths were updated; all archived `.mjs` files pass `node --check`.
+- Archived 23 completed `current-task` records to `finish-task` and repaired directory-qualified and handover links; `current-task` now holds four active records.
+- Rewrote B-09 as retired and repointed B-05/B-31; replaced stale `OWNER_ACCESS_SECRET` guidance with the account + TOTP flow; registered `research/` and the flat runbooks in `INDEX.md`; trimmed the `NEXT.md` history.
 
 Local-only personal data was left untouched: `token-export-2026-10-21T14-23-48-055Z.json`, `.docs-import-drafts/`, `output/`, and `.scratch/owner-local-private/`.
 
@@ -77,13 +85,17 @@ Recovery:
 | `pnpm test:ops` | 157 passed / 1 skipped |
 | Tray `tools/test.ps1` | 51 passed / 0 failed |
 | Production `/api/health/ready` | 200; app, gateway, proxy and postgres healthy |
+| `docs/current-task` | 4 active records (P1, P2–P6, handover, cleanup) |
+| `git worktree list` | only the main checkout |
+| `git branch` | `main` + 4 kept candidates |
+| Archived script syntax | all `scripts/archive/*.mjs` pass `node --check` |
+| Docs link check | moved-record links repaired; 16 pre-existing broken links remain (missing assets / HTML false positives) |
 | `git status` after cleanup commits | clean before this record |
 
-## Remaining Decisions
+## Remaining Follow-Ups
 
-1. **Unmerged local branches** (12): `backup/phase5-sync-hotfix-20261019`, `hotfix/phase5-sync-20261018`, `release/phase5-20261017`, `release/phase5-caddy-20261018`, `wip/phase5-snapshot-20261017`, `snapshot/2026-10-17-phase4-operations`, `feature/sync-agent-phase5`, `feature/sync-agent-v2` are historical phase5/snapshot branches; `codex/consolidate-v4-20261020`, `codex/production-readiness`, `feature/operations-console`, `feature/sync-tray` need a keep/delete ruling.
-2. **v4/R5 script suite**: 20 historical tools plus `scripts/archive/README-v4-history.md` have no live callers. Decide whether to delete the closed subset or move the whole family to `scripts/archive/`.
-3. **Docs cleanup**: `docs/current-task/` is now above the 20-record threshold; the earlier audit identified 23 completed records for `finish-task/`, plus finished plans, `docs/research/` placement, `docs/audit_15_issues_report.md`, and stale B-09 / `OWNER_ACCESS_SECRET` / INDEX / NEXT references.
-4. **Remaining code-review items**: orphan tests (`owner-local.test.mjs`, `prepare-auto-sync-candidate.test.mjs`), the broken sync-gateway phase-4 harness, and the `pricing-temporary.ts` refactor.
-5. **Docker volumes**: three volumes remain (167.9 MB, 99.8 MB reclaimable). They were not deleted because they may contain content/recovery data.
-6. **Remote branches**: `origin/codex/consolidate-v4-20261020` and `origin/codex/production-readiness` were kept; deleting them is a shared-state action.
+1. **Deployment/reboot:** P1’s real deployment/load check, P2/P6’s next image, and the P3 Windows reboot check remain.
+2. **Docker volumes:** three volumes remain (167.9 MB, 99.8 MB reclaimable); they were not deleted because they may contain content/recovery data.
+3. **Remote branches:** `origin/codex/consolidate-v4-20261020` and `origin/codex/production-readiness` were kept; deleting them is a shared-state action.
+4. **Code-review items:** the orphan `scripts/owner-local.test.mjs`, the broken sync-gateway phase-4 harness, and B-31’s pricing adapter consolidation.
+5. **Docs residue:** 16 pre-existing broken links remain (missing assets / HTML false positives); finished plans and the flat audit report were left in place.
