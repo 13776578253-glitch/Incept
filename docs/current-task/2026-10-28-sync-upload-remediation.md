@@ -61,8 +61,11 @@ Ran `audit-accepted-reviews` against a local copy of `/srv/incept/shared/sync/ph
 - Follow-up agent reconciliation: after the owner rebase, the local lineage still pointed at the pre-rebase heads, so replay candidates hit `LOCAL_PARENT_MISMATCH` and stale staging consumed the four-batch device limit. Stale staging was verified to have no receipts and was removed; the affected scopes were re-captured against the server heads, their local lineage was reset to the committed heads, and the remaining candidates uploaded successfully. The local outbox now has no active entries.
 - Canary: local agent restarted on the new build; `run-once` captured 152 antigravity sessions with no `CAPTURE_LIMIT`, and the commandcode recovery added only new auditable generations. No duplicate commits and no old evidence were rewritten. The former “Unknown error” tray label was also caused by a stale local tray executable: the installed binary was built at 13:25, before the 18:27 attention-label source change. Rebuilding and restarting the tray produces the correct `Lineage conflict` label; after review #35 was rebased, the lineage/pending pair cleared and the local outbox has no active entries.
 
+## Schema rollback drill
+
+Ran on isolated copies under `/srv/incept/drills/schema3-rollback`; production was not touched. Schema-2 backup `v4.db` (revision 869) starts, checkpoints and writes under old image `sha256:9f0d…`. Old image can read schema 3 in `status`, but its write path fails `SCHEMA_VERSION_MISMATCH`; image-only rollback is therefore unsafe. Current image `sha256:51e38a56…` migrates the schema-2 copy to schema 3 with revision unchanged. Full procedure and restore steps: `docs/runbooks/sync-schema-rollback.md`.
+
 ## Remaining work
 
 1. **Large-capture split**: the 20,000-record guard is enforced, but a single session above that limit needs a future delta/Merkle protocol; cumulative chunks cannot satisfy the current `recordCount >= parent.recordCount` rule without exceeding the server batch limit.
 2. **Source matrix**: `docs/research/sync-source-semantics-matrix.md` was approved by the Owner on 2026-10-28; opencode/zcode/aiusage remain on the existing review path until their mutation rules are exercised.
-3. **Rollback note**: production SQLite is schema 3. The previous image expects schema 2, so a code rollback requires the pre-deploy database backup or a compatibility layer.
