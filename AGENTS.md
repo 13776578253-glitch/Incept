@@ -24,7 +24,7 @@ Use Node.js 24.15+ (below 25) and pnpm 10.30.3.
 
 ## Coding Style & Naming Conventions
 
-Follow surrounding TypeScript: two-space indentation, single quotes, semicolons, and explicit types at boundaries. Use PascalCase for React components/types, camelCase for functions/variables, and existing kebab-case file conventions. Web linting uses ESLint's Next.js Core Web Vitals and TypeScript presets. Preserve English/Chinese localization pairs. Read `apps/web/AGENTS.md` and installed Next.js guides before web changes.
+Follow surrounding TypeScript: two-space indentation, single quotes, semicolons, and explicit types at boundaries. Use PascalCase for React components/types, camelCase for functions/variables, and existing kebab-case file conventions. Web linting uses ESLint's Next.js Core Web Vitals and TypeScript presets. Preserve English/Chinese localization pairs. For frontend Chinese copy, omit Chinese full stops (。) unless explicitly requested. Read `apps/web/AGENTS.md` and installed Next.js guides before web changes.
 
 ## Testing Guidelines
 

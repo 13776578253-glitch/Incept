@@ -48,9 +48,10 @@ export function SurfaceNavigation({
             type="button"
             disabled
             aria-disabled="true"
-            className={`${tabClass} cursor-not-allowed border border-transparent text-[var(--color-text-muted)] opacity-65`}
+            title={locale === 'zh' ? '该功能已在项目设置中关闭' : 'This surface is disabled in project settings'}
+            className={`${tabClass} cursor-not-allowed border border-transparent text-[var(--color-text-muted)]`}
           >
-            <span aria-hidden="true">🔒</span>{locale === 'zh' ? '路线图' : 'Roadmap'}
+            {locale === 'zh' ? '路线图' : 'Roadmap'}
           </button>
         )}
         {atlasEnabled ? (
@@ -66,9 +67,10 @@ export function SurfaceNavigation({
             type="button"
             disabled
             aria-disabled="true"
-            className={`${tabClass} cursor-not-allowed border border-transparent text-[var(--color-text-muted)] opacity-65`}
+            title={locale === 'zh' ? '该功能已在项目设置中关闭' : 'This surface is disabled in project settings'}
+            className={`${tabClass} cursor-not-allowed border border-transparent text-[var(--color-text-muted)]`}
           >
-            <span aria-hidden="true">🔒</span>{locale === 'zh' ? '规划图' : 'Planning'}
+            {locale === 'zh' ? '规划图' : 'Planning'}
           </button>
         )}
       </nav>
@@ -154,7 +156,7 @@ export function LockedSurface({ locale, surface }: { locale: AppLocale; surface:
       <section role="status" className="max-w-2xl rounded-2xl border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-6">
         <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">{locale === 'zh' ? '功能已锁定' : 'Surface locked'}</p>
         <h1 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-text)]">{locale === 'zh' ? `${label}当前未启用` : `${label} is currently disabled`}</h1>
-        <p className="mt-2 text-[0.9rem] leading-7 text-[var(--color-nav-dropdown-description)]">{locale === 'zh' ? '此项目已在设置中关闭该功能。请切换到已启用的功能，或由管理员在设置中重新开启。' : 'This surface is disabled for this project. Switch to an enabled surface, or ask an administrator to enable it in Settings.'}</p>
+        <p className="mt-2 text-[0.9rem] leading-7 text-[var(--color-nav-dropdown-description)]">{locale === 'zh' ? '此项目已在设置中关闭该功能，请切换到已启用的功能，或由管理员在设置中重新开启' : 'This surface is disabled for this project. Switch to an enabled surface, or ask an administrator to enable it in Settings.'}</p>
       </section>
     </div>
   );
