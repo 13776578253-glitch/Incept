@@ -31,6 +31,8 @@ Date: 2026-10-28 (Asia/Singapore). Branch `fix/sync-safety` in `.worktrees/sync-
 | Tray `tools/test.ps1` | 56 passed / 0 failed |
 | Windows package | built; manifest hash verified; tamper rejected with `AGENT_PACKAGE_HASH_MISMATCH` |
 
+The remote WSS fixture now derives its counts from `TRANSFER_SOURCES` (8 sources), writes recent timestamps so 7d/30d/all use the same data, and ignores the transaction-only `status` field when replaying a stored completion. Its local test certificate was regenerated for IP `127.0.0.1`/`localhost`; the previous `.scratch` certificate expired on 2026-10-19.
+
 ## Offline production audit
 
 Ran `audit-accepted-reviews` against a local copy of `/srv/incept/shared/sync/phase0b-audit.db`:
