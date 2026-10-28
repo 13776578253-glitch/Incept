@@ -10,7 +10,7 @@ export class AgentHttp {
     // The server serializes sync jobs on one worker; a queued page commit can make a
     // single request wait well past 20s. Give the server room before declaring a
     // transport failure, which would otherwise abort the whole upload round.
-    const timeout=AbortSignal.timeout(this.options.timeoutMs??60_000);
+    const timeout=AbortSignal.timeout(this.options.timeoutMs??120_000);
     try{response=await fetch(this.endpoint+'/api/dashboard/sync'+path,{method,redirect:'error',headers:{authorization:'Bearer '+this.token,...(body===undefined?{}:{'content-type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body),signal:this.options.signal?AbortSignal.any([this.options.signal,timeout]):timeout});}catch{throw new RemoteError('NETWORK_UNAVAILABLE',503);}
     let bytes=0,text='';const decoder=new TextDecoder();if(response.body)for await(const chunk of response.body as unknown as AsyncIterable<Uint8Array>){bytes+=chunk.byteLength;if(bytes>256*1024)throw new RemoteError('INVALID_RESPONSE',502);text+=decoder.decode(chunk,{stream:true});}text+=decoder.decode();
     let value;try{value=JSON.parse(text);}catch{throw new RemoteError('INVALID_RESPONSE',502);}
