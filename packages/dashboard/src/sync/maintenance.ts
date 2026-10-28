@@ -3,7 +3,8 @@ import {chmodSync,existsSync,mkdirSync,readFileSync,renameSync,rmSync,statSync,c
 import {basename,dirname,isAbsolute,resolve} from 'node:path';
 import {DatabaseSync,backup} from 'node:sqlite';
 import {CompatibleSyncService} from '../adapters/local/imports/sync/legacy';
-import {syncScopeId} from '../adapters/local/imports/sync/contract';
+import {makeManifest,syncScopeId,validateHeader,validateRecords,sequenceHash,SYNC_LIMITS,requireSync} from '../adapters/local/imports/sync/contract';
+import {validateEvidence} from '../adapters/local/imports/sync/validation';
 import {assertReviewAcceptanceAllowed} from '../adapters/local/imports/sync/store';
 import {checkpointWal,capacityState} from './capacity';
 import {DEFAULT_CAPACITY} from './protocol';
@@ -11,6 +12,7 @@ import {projection} from './projection';
 import {loadTokenDashboardData} from '../adapters/local/loader';
 import {hash} from '../adapters/local/imports/identity';
 import {listReviewSummaries} from '../adapters/local/imports/sync/reviews';
+import {auditAcceptedReviews,auditDigest,auditReport} from './review-audit';
 import type {SyncActor} from '../domain/sync';
 import type {TokenDashboardData,UsageRange} from '../domain';
 
@@ -129,6 +131,17 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
   if(command==='backup'){
     return backupSqlite(absolute(options,'source'),absolute(options,'output'));
   }
+  if(command==='audit-accepted-reviews'){
+    const source=absolute(options,'source'),id=options.id===undefined?undefined:Number(options.id);
+    if(id!==undefined&&(!Number.isSafeInteger(id)||id<1))throw new MaintenanceError('INVALID_REVIEW_ID');
+    const db=new DatabaseSync(source,{readOnly:true});
+    try{
+      db.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=5000;');integrity(db);
+      const rows=auditAcceptedReviews(db,{id,includeDismissed:options['include-dismissed']===true}),report=auditReport(rows),result={...report,digest:auditDigest(rows)};
+      if(options.report)writeFileSync(absolute(options,'report'),JSON.stringify(result,null,2),{flag:'wx',mode:0o600});
+      return result;
+    }finally{db.close();}
+  }
   if(!syncPath||!isAbsolute(syncPath))throw new MaintenanceError('SYNC_DATABASE_NOT_CONFIGURED');
   if(!legacyPath||!isAbsolute(legacyPath))throw new MaintenanceError('V1_DATABASE_NOT_CONFIGURED');
   if(!home||!isAbsolute(home))throw new MaintenanceError('DASHBOARD_HOME_NOT_CONFIGURED');
@@ -198,6 +211,45 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
       const receipt=service.commit(candidate.header.manifest.scope.deviceId,candidate.header.batchId,actor);
       if(receipt.status==='committed')admit();
       return {ok:receipt.status==='committed',receipt};
+    }finally{service.close();}
+  }
+  if(command==='rebase-scope'){
+    const actor=owner(options),file=absolute(options,'candidate');
+    if(statSync(file).size>64*1024*1024)throw new MaintenanceError('CANDIDATE_LIMIT');
+    const candidate=JSON.parse(readFileSync(file,'utf8')) as {header:import('../domain/sync').SyncHeader;records:import('../domain/sync').SyncRecord[]};
+    if(!candidate.header||!Array.isArray(candidate.records)||candidate.records.length>SYNC_LIMITS.records||candidate.header.manifest.intent!=='observe')throw new MaintenanceError('INVALID_REBASE_CANDIDATE');
+    const device=required(options,'device'),source=required(options,'source'),sessionId=required(options,'session'),candidateManifest=required(options,'manifest');
+    if(candidate.header.manifest.manifestHash!==candidateManifest)throw new MaintenanceError('REBASE_MANIFEST_MISMATCH');
+    const service=new CompatibleSyncService(syncPath);
+    try{
+      const origin=service.db.prepare("SELECT scope_json FROM sync_origins WHERE json_extract(scope_json,'$.deviceId')=? AND json_extract(scope_json,'$.source')=? AND json_extract(scope_json,'$.sessionId')=?").get(device,source,sessionId) as {scope_json:string}|undefined;
+      requireSync(origin,'REBASE_SCOPE_NOT_FOUND');
+      const scope=JSON.parse(String(origin!.scope_json)) as import('../domain/sync').SyncScope,id=syncScopeId(scope),head=service.parent(id);
+      requireSync(head,'REBASE_HEAD_REQUIRED');
+      if(required(options,'expect-head')!==head!.manifestHash)throw new MaintenanceError('REBASE_HEAD_CHANGED');
+      const candidateScope=candidate.header.manifest.scope;
+      if(candidateScope.deviceId!==scope.deviceId||candidateScope.source!==scope.source||candidateScope.sessionId!==scope.sessionId)throw new MaintenanceError('REBASE_SCOPE_MISMATCH');
+      if(candidate.records.length!==candidate.header.manifest.recordCount||sequenceHash(candidate.records)!==candidate.header.manifest.sequenceHash)throw new MaintenanceError('REBASE_RECORD_MISMATCH');
+      const headHeader=JSON.parse(String(service.db.prepare('SELECT header_json FROM sync_manifests WHERE id=?').get(head!.manifestHash)!.header_json)) as import('../domain/sync').SyncHeader;
+      const {generationId:_generation,manifestHash:_manifest,...body}=candidate.header.manifest;
+      const ranges=body.ranges.map(({previous:_previous,...range})=>range);
+      const basis=headHeader.basis,mappings=headHeader.mappings;
+      const manifest=makeManifest({...body,scope,ranges,basisHash:hash(basis),mappingsHash:hash(mappings),epoch:head!.epoch+1,
+        parent:{generationId:head!.generationId,manifestHash:head!.manifestHash},intent:'rebase'});
+      const header={batchId:candidate.header.batchId,basis,mappings,manifest};
+      validateHeader(header);for(let i=0;i<candidate.records.length;i+=500)validateRecords(candidate.records.slice(i,i+500),header);
+      const state=service.db.prepare('SELECT fenced FROM sync_scopes WHERE scope_id=?').get(id) as {fenced:number}|undefined;
+      const others=Number(service.db.prepare('SELECT TOTAL(token_total) n FROM sync_scopes WHERE scope_id!=?').get(id)!.n);
+      const evidence=validateEvidence({manifest,records:candidate.records,current:service.current(id),parent:service.parent(id),fenced:!!state?.fenced,
+        otherScopeTokenTotal:others,beforeVisible:()=>service.beforeVisible?.(header,actor)});
+      const plan={ok:true,dryRun:options.apply!==true,scopeId:id,oldHead:head!.manifestHash,newHead:manifest.manifestHash,newGeneration:manifest.generationId,records:candidate.records.length,tokenTotal:evidence.tokenTotal,commitment:ranges.map(range=>range.commitment??null)};
+      if(options.apply!==true)return plan;
+      service.begin(header,actor);
+      for(let offset=0;offset<candidate.records.length;offset+=500)service.stage(scope.deviceId,header.batchId,offset,candidate.records.slice(offset,offset+500),actor);
+      const receipt=service.commit(scope.deviceId,header.batchId,actor);
+      if(receipt.status!=='committed')throw new MaintenanceError('REBASE_REVIEW_REQUIRED:'+receipt.code);
+      service.audit('owner-repair-rebase',id,manifest.manifestHash,actor);
+      return {...plan,dryRun:false,receipt,revision:service.revision()};
     }finally{service.close();}
   }
   if(command==='review'){

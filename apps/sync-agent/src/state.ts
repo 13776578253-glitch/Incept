@@ -89,10 +89,10 @@ export class AgentState {
   }
   parents():ParentCapture[]{const all=new Map<string,ParentCapture>();for(const row of this.db.prepare('SELECT scope,parent_json FROM lineage').all())all.set(String(row.scope),JSON.parse(String(row.parent_json)));
     for(const row of this.db.prepare('SELECT scope,parent_json FROM heads').all())all.set(String(row.scope),JSON.parse(String(row.parent_json)));
-    for(const row of this.db.prepare("SELECT scope,header_json,proof_json FROM outbox WHERE state IN ('pending','review','held') ORDER BY serial").all())all.set(String(row.scope),{header:JSON.parse(String(row.header_json)),proofs:JSON.parse(String(row.proof_json))});return [...all.values()];}
-  tail(scope:string):{parent:ParentCapture;signature:string}|undefined {const row=this.db.prepare("SELECT header_json,proof_json,signature FROM outbox WHERE scope=? AND state IN ('pending','review','held') ORDER BY serial DESC LIMIT 1").get(scope);if(row)return {parent:{header:JSON.parse(String(row.header_json)),proofs:JSON.parse(String(row.proof_json))},signature:String(row.signature)};
+    for(const row of this.db.prepare("SELECT scope,header_json,proof_json FROM outbox WHERE state IN ('pending','review','held','quarantined','lineage') ORDER BY serial").all())all.set(String(row.scope),{header:JSON.parse(String(row.header_json)),proofs:JSON.parse(String(row.proof_json))});return [...all.values()];}
+  tail(scope:string):{parent:ParentCapture;signature:string}|undefined {const row=this.db.prepare("SELECT header_json,proof_json,signature FROM outbox WHERE scope=? AND state IN ('pending','review','held','quarantined','lineage') ORDER BY serial DESC LIMIT 1").get(scope);if(row)return {parent:{header:JSON.parse(String(row.header_json)),proofs:JSON.parse(String(row.proof_json))},signature:String(row.signature)};
     const head=this.db.prepare('SELECT parent_json,signature FROM lineage WHERE scope=?').get(scope)??this.db.prepare('SELECT parent_json,signature FROM heads WHERE scope=?').get(scope);return head?{parent:JSON.parse(String(head.parent_json)),signature:String(head.signature)}:undefined;}
-  blocked(scope:string){return !!this.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state IN ('review','held') LIMIT 1").get(scope);}
+  blocked(scope:string){return !!this.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state IN ('review','held','quarantined','lineage') LIMIT 1").get(scope);}
   reviewBatches(){return this.db.prepare("SELECT batch FROM outbox WHERE state='review' ORDER BY serial").all().map(row=>String(row.batch));}
   reviewCount(){return Number(this.db.prepare("SELECT COUNT(*) n FROM outbox WHERE state='review'").get()!.n);}
   heldCount(){return Number(this.db.prepare("SELECT COUNT(*) n FROM outbox WHERE state='held'").get()!.n);}
@@ -102,6 +102,7 @@ export class AgentState {
     const used=exclude?.length?this.db.prepare(`SELECT COALESCE(SUM(length(CAST(json AS BLOB))),0) bytes FROM records WHERE batch NOT IN (${slots})`).get(...exclude):this.db.prepare('SELECT COALESCE(SUM(length(CAST(json AS BLOB))),0) bytes FROM records').get();
     return size<=128*1024**2&&size+Number(used!.bytes)<=256*1024**2;}
   private put(c:Candidate,signature:string,state:'pending'|'held'){const scope=scopeKey(c.header.manifest.scope.source,c.header.manifest.scope.sessionId);
+    if(c.records.length>20_000)throw Error('CANDIDATE_RECORD_LIMIT');
     const policy=this.db.prepare('SELECT seal_json FROM historical_seals WHERE scope=?').get(scope);
     if(policy)throw Error(JSON.parse(String(policy.seal_json)).disposition==='isolated'?'HISTORICAL_CONTINUATION_UNVERIFIED':'HISTORICAL_SCOPE_SEALED');
     if(!this.fits(c))throw Error('OUTBOX_CAPACITY');
@@ -119,7 +120,7 @@ export class AgentState {
     if(!this.fits(c,batches))throw Error('OUTBOX_CAPACITY');for(const row of rows){this.db.prepare("UPDATE outbox SET state='superseded' WHERE batch=?").run(row.batch);this.db.prepare('DELETE FROM records WHERE batch=?').run(row.batch);}
     if(head&&!this.db.prepare('SELECT 1 FROM lineage WHERE scope=?').get(scope))this.db.prepare('INSERT INTO heads VALUES(?,?,?) ON CONFLICT(scope) DO UPDATE SET parent_json=excluded.parent_json,signature=excluded.signature').run(scope,JSON.stringify(head),hash(head.header.manifest.manifestHash));
     this.put(c,signature,'pending');return rows.length;});}
-  pending(){return this.db.prepare("SELECT o.* FROM outbox o WHERE state='pending' AND next_retry<=? AND NOT EXISTS(SELECT 1 FROM outbox p WHERE p.scope=o.scope AND p.serial<o.serial AND p.state IN ('pending','review','held')) ORDER BY serial").all(Date.now());}
+  pending(){return this.db.prepare("SELECT o.* FROM outbox o WHERE state='pending' AND next_retry<=? AND NOT EXISTS(SELECT 1 FROM outbox p WHERE p.scope=o.scope AND p.serial<o.serial AND p.state IN ('pending','review','held','quarantined','lineage')) ORDER BY serial").all(Date.now());}
   renewExpired(batch:string,newBatch:string){this.tx(()=>{const row=this.db.prepare("SELECT header_json FROM outbox WHERE batch=? AND state='pending'").get(batch);if(!row)throw Error('OUTBOX_MISSING');const header=JSON.parse(String(row.header_json));header.batchId=newBatch;
     this.db.prepare('UPDATE records SET batch=? WHERE batch=?').run(newBatch,batch);this.db.prepare('UPDATE outbox SET batch=?,header_json=?,next_retry=0 WHERE batch=?').run(newBatch,JSON.stringify(header),batch);});}
   page(batch:string,offset:number){const page=[];let bytes=2;for(const row of this.db.prepare('SELECT json FROM records WHERE batch=? AND position>=? ORDER BY position LIMIT 500').iterate(batch,offset)){
@@ -134,8 +135,17 @@ export class AgentState {
     this.db.prepare('INSERT OR IGNORE INTO receipts VALUES(?,?)').run(batch,JSON.stringify(receipt));this.db.prepare('DELETE FROM records WHERE batch=?').run(batch);this.db.prepare('DELETE FROM outbox WHERE batch=?').run(batch);this.db.prepare("UPDATE outbox SET state='superseded' WHERE scope=? AND serial<?").run(row.scope,row.serial);
     this.set('lastSuccessfulSyncAt',new Date().toISOString());this.set('dataRevision',receipt.dataRevision);
   });}
-  fail(batch:string,code:string,permanent=false,retryMs=1000){this.tx(()=>{const row=this.db.prepare('SELECT scope FROM outbox WHERE batch=?').get(batch);this.db.prepare("UPDATE outbox SET attempts=attempts+1,next_retry=?,error=?,state=? WHERE batch=?").run(Date.now()+retryMs,code,permanent?'review':'pending',batch);
-    if(permanent&&row)this.db.prepare("UPDATE outbox SET state='review',error=COALESCE(error,'PARENT_REVIEW_REQUIRED') WHERE scope=? AND serial>(SELECT serial FROM outbox WHERE batch=?)").run(row.scope,batch);this.set('lastErrorCode',code);this.set('lastErrorAt',new Date().toISOString());});}
+  markReviewRequired(batch:string,receipt:SyncReceipt,code=receipt.code){this.tx(()=>{const row=this.db.prepare('SELECT header_json FROM outbox WHERE batch=?').get(batch);if(!row)throw Error('OUTBOX_MISSING');
+    const header=JSON.parse(String(row.header_json));if(receipt.status!=='review-required'||receipt.batchId!==batch||receipt.payloadHash!==hash(header)
+      ||receipt.generationId!==header.manifest.generationId||receipt.manifestHash!==header.manifest.manifestHash)throw Error('REVIEW_RECEIPT_MISMATCH');
+    this.db.prepare("UPDATE outbox SET state='review',error=?,attempts=attempts+1,next_retry=0 WHERE batch=?").run(code,batch);
+    this.set('lastErrorCode',code);this.set('lastErrorAt',new Date().toISOString());});}
+  quarantine(batch:string,code:string){this.tx(()=>{this.db.prepare("UPDATE outbox SET state='quarantined',error=?,attempts=attempts+1,next_retry=0 WHERE batch=?").run(code,batch);
+    this.set('lastErrorCode',code);this.set('lastErrorAt',new Date().toISOString());});}
+  markLineageRecovery(batch:string,code:string){this.tx(()=>{this.db.prepare("UPDATE outbox SET state='lineage',error=?,attempts=attempts+1,next_retry=0 WHERE batch=?").run(code,batch);
+    this.set('lastErrorCode',code);this.set('lastErrorAt',new Date().toISOString());});}
+  fail(batch:string,code:string,permanent=false,retryMs=1000){this.tx(()=>{this.db.prepare("UPDATE outbox SET attempts=attempts+1,next_retry=?,error=?,state=? WHERE batch=?").run(Date.now()+retryMs,code,permanent?'review':'pending',batch);
+    this.set('lastErrorCode',code);this.set('lastErrorAt',new Date().toISOString());});}
   status(){return {outbox:this.db.prepare('SELECT state,COUNT(*) count FROM outbox GROUP BY state').all(),confirmedScopes:Number(this.db.prepare('SELECT COUNT(*) n FROM lineage').get()!.n),receiptCount:Number(this.db.prepare('SELECT COUNT(*) n FROM receipts').get()!.n),
     historicalSealedScopes:Number(this.db.prepare("SELECT COUNT(*) n FROM historical_seals WHERE COALESCE(json_extract(seal_json,'$.disposition'),'sealed')='sealed'").get()!.n),
     historicalHeldScopes:Number(this.db.prepare("SELECT COUNT(*) n FROM historical_seals WHERE json_extract(seal_json,'$.disposition')='isolated'").get()!.n),

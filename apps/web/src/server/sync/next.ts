@@ -5,10 +5,11 @@ import {requireRecentOwnerSession,writeSecurityAudit,finishSecurityAudit} from '
 import {getCurrentViewer} from '../auth/viewer';
 import {hasSameOrigin} from '../auth/request-origin';
 import {createSyncHandler} from './controller';
-import {response,DeviceRequestLimiter} from './http';
+import {response,DeviceRequestLimiter,PreAuthRequestLimiter} from './http';
 import {RemoteSync} from './remote';
 import {configureTrustedDashboardExecutor, trustedDashboardEnabled} from '@incept/dashboard/adapters';
 const limiter=new DeviceRequestLimiter();
+const preAuthLimiter=new PreAuthRequestLimiter();
 
 declare global {var __inceptSyncExecutor: {path:string;executor:SyncExecutor}|undefined;}
 declare global {var __inceptRemoteSync:RemoteSync|undefined;}
@@ -39,7 +40,7 @@ export async function handleSyncRequest(request:Request) {
       if(mutating)auditId=(await writeSecurityAudit('sync.owner.manage','started',undefined,viewer.sessionId)).id;
       return {sessionId:viewer.sessionId,ownerId:'owner'};
     };
-    const handler=createSyncHandler({enabled:()=>true,executor:syncExecutor(),limiter,owner,remote:remoteSync()});
+    const handler=createSyncHandler({enabled:()=>true,executor:syncExecutor(),limiter,preAuth:preAuthLimiter,owner,remote:remoteSync()});
     const result=await handler(request);
     if(auditId)await finishSecurityAudit(auditId,result.ok?'success':'failure').catch(()=>{});
     return result;
@@ -52,4 +53,4 @@ export async function handleSyncRequest(request:Request) {
     return response({error:'BACKEND_UNAVAILABLE'},503,undefined,2);
   }
 }
-export function remoteSync(){if(process.env.INCEPT_SYNC_REMOTE_ENABLED!=='1')return undefined;return globalThis.__inceptRemoteSync??=(new RemoteSync({executor:syncExecutor(),secret:readRpcSecret(),gatewayBase:process.env.INCEPT_SYNC_GATEWAY_INTERNAL_URL??'',readMode:()=>process.env.INCEPT_SYNC_READ_MODE??'v1',pollMs:Number(process.env.INCEPT_SYNC_POLL_MS??300000),owner:async(req,mutating)=>{if(mutating&&!hasSameOrigin(req))throw new SyncTransportError('FORBIDDEN',403);const viewer=await getCurrentViewer();if(viewer.role!=='owner')throw new SyncTransportError('FORBIDDEN',403);return {sessionId:viewer.sessionId,ownerId:'owner'};}}));}
+export function remoteSync(){if(process.env.INCEPT_SYNC_REMOTE_ENABLED!=='1')return undefined;return globalThis.__inceptRemoteSync??=(new RemoteSync({executor:syncExecutor(),secret:readRpcSecret(),gatewayBase:process.env.INCEPT_SYNC_GATEWAY_INTERNAL_URL??'',readMode:()=>process.env.INCEPT_SYNC_READ_MODE??'v1',pollMs:Number(process.env.INCEPT_SYNC_POLL_MS??300000),owner:async(req,mutating)=>{if(mutating&&!hasSameOrigin(req))throw new SyncTransportError('FORBIDDEN',403);const viewer=await getCurrentViewer();if(viewer.role!=='owner')throw new SyncTransportError('FORBIDDEN',403);await requireRecentOwnerSession(viewer.sessionId);if(mutating)await writeSecurityAudit('sync.remote.owner.manage','started',undefined,viewer.sessionId);return {sessionId:viewer.sessionId,ownerId:'owner'};}}));}

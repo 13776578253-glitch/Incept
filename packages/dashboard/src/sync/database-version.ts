@@ -14,7 +14,7 @@ export function readSyncDatabaseVersion(path: string) {
   try {
     db.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=25;');
     const row = db.prepare('SELECT schema_version,data_revision FROM sync_meta WHERE id=1').get();
-    if (!row || Number(row.schema_version) !== 2 || !Number.isSafeInteger(Number(row.data_revision))) throw Error('INVALID_SYNC_DATABASE');
+    if (!row || ![2, 3].includes(Number(row.schema_version)) || !Number.isSafeInteger(Number(row.data_revision))) throw Error('INVALID_SYNC_DATABASE');
     const origin = db.prepare("SELECT json_extract(scope_json,'$.deviceId') device FROM sync_origins ORDER BY origin_id LIMIT 1").get();
     if (identity !== syncDatabaseFileIdentity(path)) throw Error('SYNC_DATABASE_REPLACED');
     const databaseIdentity = createHash('sha256').update(JSON.stringify([identity, origin?.device ?? null])).digest('hex');

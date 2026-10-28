@@ -3,23 +3,30 @@ import {prisma} from '../client';
 import type {AgentIdentity} from './index';
 import type {Prisma,SyncJob} from '../../generated/client/index.js';
 export const activeJobStates=['queued','dispatched','running'];
+export const JOB_TTL_MS=15*60_000;
+export const JOB_RUNNING_GRACE_MS=30*60_000;
 export const isSyncJobId=(value:unknown):value is string=>typeof value==='string'&&/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(value);
 export const policyHash=(sources:string[])=>createHash('sha256').update(JSON.stringify([...sources].sort())).digest('hex');
 export class JobError extends Error{constructor(readonly code:string,readonly status=409){super(code);}}
 const ensure=(test:unknown,code:string,status=409)=>{if(!test)throw new JobError(code,status);};
 export const publicJob=(job:SyncJob)=>({...job,startRevision:job.startRevision===null?null:Number(job.startRevision),dataRevision:job.dataRevision===null?null:Number(job.dataRevision)});
 export async function requireSyncOwner(sessionId:string,tx:Prisma.TransactionClient=prisma){const s=await tx.accessSession.findUnique({where:{id:sessionId},include:{ownerAccount:true}});ensure(s?.role==='owner'&&!s.revokedAt&&s.expiresAt&&s.expiresAt>new Date()&&s.ownerAccount?.totpCiphertext&&s.credentialVersion===s.ownerAccount.credentialVersion,'FORBIDDEN',403);return s!.ownerAccountId!;}
-export async function expireJobs(deviceId?:string){await prisma.syncJob.updateMany({where:{...(deviceId?{deviceId}:{}),status:{in:activeJobStates},expiresAt:{lte:new Date()}},data:{status:'expired',activeKey:null,finishedAt:new Date(),errorCode:'JOB_EXPIRED'}});}
+export async function expireJobs(deviceId?:string){
+  const now=new Date();
+  await prisma.syncJob.updateMany({where:{...(deviceId?{deviceId}:{}),status:{in:['queued','dispatched']},expiresAt:{lte:now}},data:{status:'expired',activeKey:null,finishedAt:now,errorCode:'JOB_EXPIRED'}});
+  await prisma.syncJob.updateMany({where:{...(deviceId?{deviceId}:{}),status:'running',startedAt:{lte:new Date(now.getTime()-JOB_RUNNING_GRACE_MS)}},data:{status:'expired',activeKey:null,finishedAt:now,errorCode:'JOB_EXPIRED'}});
+}
 export async function createSyncJob(sessionId:string,deviceId:string,idempotencyKey:string,online:boolean){
   ensure(isSyncJobId(deviceId)&&isSyncJobId(idempotencyKey),'INVALID_JOB_REQUEST',400);
   return prisma.$transaction(async tx=>{
     const owner=await requireSyncOwner(sessionId,tx);await tx.$queryRaw`SELECT id FROM agent_devices WHERE id=${deviceId} FOR UPDATE`;
     const device=await tx.agentDevice.findFirst({where:{id:deviceId,ownerAccountId:owner,revokedAt:null}});ensure(device,'DEVICE_NOT_FOUND',404);
     const previous=await tx.syncJob.findUnique({where:{ownerAccountId_idempotencyKey:{ownerAccountId:owner,idempotencyKey}}});if(previous){ensure(previous.deviceId===deviceId,'IDEMPOTENCY_CONFLICT');return publicJob(previous);}
-    await tx.syncJob.updateMany({where:{deviceId,status:{in:activeJobStates},expiresAt:{lte:new Date()}},data:{status:'expired',activeKey:null,finishedAt:new Date(),errorCode:'JOB_EXPIRED'}});
+    await tx.syncJob.updateMany({where:{deviceId,status:{in:['queued','dispatched']},expiresAt:{lte:new Date()}},data:{status:'expired',activeKey:null,finishedAt:new Date(),errorCode:'JOB_EXPIRED'}});
+    await tx.syncJob.updateMany({where:{deviceId,status:'running',startedAt:{lte:new Date(Date.now()-JOB_RUNNING_GRACE_MS)}},data:{status:'expired',activeKey:null,finishedAt:new Date(),errorCode:'JOB_EXPIRED'}});
     const pending=await tx.syncJob.findUnique({where:{activeKey:deviceId}});if(pending)return publicJob(pending);
     const recent=await tx.syncJob.count({where:{deviceId,createdAt:{gt:new Date(Date.now()-60000)}}});ensure(recent<12,'JOB_RATE_LIMIT',429);
-    const job=await tx.syncJob.create({data:{id:randomUUID(),ownerAccountId:owner,deviceId,idempotencyKey,status:online?'queued':'offline',activeKey:online?deviceId:null,credentialVersion:device!.credentialVersion,policyHash:policyHash(device!.allowedSources),expiresAt:new Date(Date.now()+180000),...(online?{}:{finishedAt:new Date(),errorCode:'DEVICE_OFFLINE'})}});
+    const job=await tx.syncJob.create({data:{id:randomUUID(),ownerAccountId:owner,deviceId,idempotencyKey,status:online?'queued':'offline',activeKey:online?deviceId:null,credentialVersion:device!.credentialVersion,policyHash:policyHash(device!.allowedSources),expiresAt:new Date(Date.now()+JOB_TTL_MS),...(online?{}:{finishedAt:new Date(),errorCode:'DEVICE_OFFLINE'})}});
     await tx.securityAudit.create({data:{actorId:owner,sessionId,action:'sync.job.create',targetId:job.id,result:job.status}});return publicJob(job);
   });
 }
@@ -47,7 +54,7 @@ export async function finishSyncJob(id:string,identity:AgentIdentity,completion:
     await tx.$queryRaw`SELECT id FROM sync_jobs WHERE id=${id}::uuid FOR UPDATE`;const job=await deviceJob(id,identity,tx),device=await tx.agentDevice.findUnique({where:{id:identity.deviceId}});
     ensure(device&&!device.revokedAt&&device.credentialVersion===identity.version&&policyHash(device.allowedSources)===job.policyHash,'JOB_AUTH_CHANGED',403);
     if(job.completionHash){ensure(job.completionHash===completionHash,'COMPLETION_REPLAY_CONFLICT');return publicJob(job);}
-    ensure(job.status==='running'&&job.expiresAt>new Date(),'JOB_TERMINAL');
+    ensure(job.status==='running','JOB_TERMINAL');
     ensure(Date.parse(completion.collectedAt)>=job.startedAt!.getTime()-1000&&Date.parse(completion.collectedAt)<=Date.now()+30000,'INVALID_SCAN_TIME',400);
     const prior=await tx.syncJob.findFirst({where:{deviceId:identity.deviceId,ownerAccountId:identity.ownerAccountId,finishedAt:{lt:job.startedAt!},status:{notIn:activeJobStates}},orderBy:{finishedAt:'desc'},select:{result:true}});
     const priorResult=prior?.result as Partial<JobCompletion>|null|undefined;

@@ -202,7 +202,7 @@ suite('seven-source HTTP adoption, resumable Worker migration and v1 rollback ha
       expect((await http('/batches/'+c.header.batchId+'/commit','POST')).status).toBe(200);parity();
     }
     rollbackImport(first.id,legacyPath);await executor.execute({op:'migrate',sourcePath:legacyPath,maxBatches:1,actor:ownerActor});parity();
-    expect(readSyncView(verifier).events.length).toBe(21);
+    expect(readSyncView(verifier).events.length).toBe(bundle.events.length);
   }finally{verifier.close();}
 },30_000);
 suite('Owner explicitly binds an existing v1 UUID, with no heuristic adoption or duplicate takeover',async()=>{

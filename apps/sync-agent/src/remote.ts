@@ -50,7 +50,7 @@ export class RemoteLink {
           reviewTotal:total('review'),reviewNew:summary.reviewNew??0,held:total('held'),warnings:summary.warnings??0,blockingIssues:summary.blockingIssues??issues.length,newTokens:summary.newTokens??0};
         this.state.db.prepare("UPDATE remote_jobs SET state='reporting',result_json=? WHERE id=?").run(JSON.stringify(completion),id);
       }
-      const result=await this.http.request<{job:{status:string;dataRevision:number}}>('/agent/jobs/'+id+'/complete','POST',completion);this.state.db.prepare('UPDATE remote_jobs SET state=? WHERE id=?').run(result.job.status,id);this.state.set('lastRemoteJob',{id,status:result.job.status,dataRevision:result.job.dataRevision});
+      const result=await this.http.request<{job:{status:string;dataRevision:number}}>('/agent/jobs/'+id+'/complete','POST',completion);this.state.db.prepare('UPDATE remote_jobs SET state=? WHERE id=?').run(result.job.status,id);this.state.set('lastRemoteJob',{id,status:result.job.status,dataRevision:result.job.dataRevision,reviewTotal:completion.reviewTotal??completion.review??0,reviewNew:completion.reviewNew??0,held:completion.held??0});
     }catch(error){const terminal=error instanceof RemoteError&&[400,403,404,409].includes(error.status);this.state.db.prepare('UPDATE remote_jobs SET state=?,attempts=attempts+1,next_retry=? WHERE id=?').run(terminal?'rejected':String(row.state),Date.now()+Math.max(error instanceof RemoteError?error.retryMs:1000,Math.min(60000,1000*2**Math.min(Number(row.attempts),6))),id);this.state.set('remoteError',error instanceof RemoteError?error.code:'REMOTE_JOB_RETRY');}
     finally{clearInterval(telemetry);}
   }

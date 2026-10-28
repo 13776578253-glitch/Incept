@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { SyncHeader, SyncManifest, SyncRecord, SyncScope, SyncBasis } from '../../../../domain/sync';
+import type { SyncHeader, SyncManifest, SyncRecord, SyncRange, SyncScope, SyncBasis } from '../../../../domain/sync';
 import { TRANSFER_SOURCES } from '../../../../domain';
 import { hash, stableJson } from '../identity';
 import { validateBundle } from '../validation';
@@ -17,6 +17,12 @@ export function sequenceHash(records: Iterable<SyncRecord>) {
   const digest = createHash('sha256'); digest.update('['); let first = true;
   for (const record of records) { if (!first) digest.update(','); digest.update(stableJson(record)); first = false; }
   return digest.update(']').digest('hex');
+}
+export function usageKeyRoot(records: Iterable<SyncRecord>) {
+  const keys: string[] = [];
+  for (const record of records) if (record.nativeKey) keys.push(record.nativeKey.keyHash);
+  keys.sort();
+  return { keyRoot: hash(keys), count: keys.length };
 }
 export function makeManifest(body: Omit<SyncManifest, 'generationId' | 'manifestHash'>): SyncManifest {
   const { generationId: oldGeneration, manifestHash: oldHash, ...clean } = body as SyncManifest;
@@ -50,7 +56,7 @@ export function validateHeader(value: unknown): SyncHeader {
   for (const key of ['inventoryHash','beforeRoot','afterRoot','snapshotRoot']) digest(manifest.read[key]);
   requireSync(Array.isArray(manifest.ranges) && manifest.ranges.length > 0 && manifest.ranges.length <= 128, 'INVALID_RANGES');
   for (const range of manifest.ranges) {
-    fields(range, ['locatorHash','identityHash','root','envelopeRoot','byteLength','kind','sessionAnchorHash','previous']);
+    fields(range, ['locatorHash','identityHash','root','envelopeRoot','byteLength','kind','sessionAnchorHash','commitment','previous']);
     for (const key of ['locatorHash','identityHash','root','envelopeRoot']) digest(range[key]); count(range.byteLength);
     requireSync(['jsonl','json','sqlite','compressed'].includes(String(range.kind)), 'INVALID_RANGE_KIND');
     const kinds:Record<string,string[]>={codex:['jsonl','compressed'],commandcode:['jsonl','json'],claudeCode:['jsonl'],geminiCli:['json'],antigravity:['sqlite'],opencode:['sqlite'],zcode:['sqlite'],deepseekHarness:['jsonl'],aiusage:['sqlite']};
@@ -58,6 +64,11 @@ export function validateHeader(value: unknown): SyncHeader {
     // review path available; qualifyRanges never admits it automatically.
     requireSync(range.kind==='compressed'||kinds[String(manifest.reader)].includes(String(range.kind)),'SOURCE_FORMAT_MISMATCH');
     if (range.sessionAnchorHash !== undefined) digest(range.sessionAnchorHash);
+    if (range.commitment !== undefined) {
+      fields(range.commitment, ['version','kind','keyRoot','count','schemaHash']);
+      requireSync(range.commitment.version === 1 && range.commitment.kind === 'stable-key-set', 'UNSUPPORTED_EVIDENCE');
+      digest(range.commitment.keyRoot); count(range.commitment.count, SYNC_LIMITS.records); digest(range.commitment.schemaHash);
+    }
     if (range.previous !== undefined) { fields(range.previous, ['locatorHash','root','retainedRoot','retainedBytes','change']);
       for (const key of ['locatorHash','root','retainedRoot']) digest(range.previous[key]); count(range.previous.retainedBytes);
       requireSync(['append','usage-revision','rotation'].includes(String(range.previous.change)), 'INVALID_CHANGE'); }
@@ -114,8 +125,16 @@ export function qualifyRanges(parent: SyncManifest | undefined, next: SyncManife
   if (!parent) { requireSync(next.parent === null, 'PARENT_MISMATCH');requireSync(next.ranges.every(range=>!range.previous),'ROTATION_UNVERIFIED');requireSync(next.recordCount>0||next.intent==='rebase','EMPTY_BASELINE_SCOPE_UNVERIFIED');return; }
   requireSync(hash(next.scope) === hash(parent.scope) && next.reader === parent.reader && next.collectorVersion === parent.collectorVersion, 'SCOPE_MISMATCH');
   requireSync(next.parent?.generationId === parent.generationId && next.parent.manifestHash === parent.manifestHash, 'PARENT_MISMATCH');
-  requireSync(next.recordCount >= parent.recordCount, 'PREFIX_LOST');
-  for(const range of next.ranges) if(range.previous) {
+  const stable=(range:SyncRange)=>range.commitment?.kind==='stable-key-set';
+  const stableScope=next.ranges.some(stable)||parent.ranges.some(stable);
+  const verifyStable=(old:SyncRange,current:SyncRange)=>{
+    requireSync(next.scope.source==='antigravity','UNSUPPORTED_EVIDENCE');
+    requireSync(old.commitment&&current.commitment,'UNSUPPORTED_EVIDENCE');
+    requireSync(old.commitment.schemaHash===current.commitment.schemaHash,'SOURCE_REVISION_UNVERIFIED');
+    requireSync(current.commitment.count>=old.commitment.count,'PREFIX_LOST');
+  };
+  if(!stableScope)requireSync(next.recordCount >= parent.recordCount, 'PREFIX_LOST');
+  for(const range of next.ranges){if(stable(range))continue;if(range.previous) {
     const proof=range.previous,old=parent.ranges.find(row=>row.locatorHash===proof.locatorHash);
     requireSync(old&&old.root===proof.root,'ROTATION_UNVERIFIED');requireSync(old.kind===range.kind,'UNSUPPORTED_EVIDENCE');
     if(proof.change==='rotation') requireSync(range.sessionAnchorHash&&range.sessionAnchorHash===old.sessionAnchorHash&&proof.retainedRoot===old.root&&proof.retainedBytes===old.byteLength
@@ -125,11 +144,12 @@ export function qualifyRanges(parent: SyncManifest | undefined, next: SyncManife
       if(proof.change==='append')requireSync(proof.retainedRoot===old.root&&proof.retainedBytes===old.byteLength&&(range.kind!=='jsonl'||range.byteLength>=old.byteLength),'PREFIX_LOST');
       else requireSync(range.envelopeRoot===old.envelopeRoot&&next.scope.source!=='antigravity'&&next.reader!=='aiusage','SOURCE_REVISION_UNVERIFIED');
     }
-  }
+  }}
   for (const old of parent.ranges) {
     const current = next.ranges.find(row => row.locatorHash === old.locatorHash || row.previous?.locatorHash === old.locatorHash);
     requireSync(current, 'ROTATION_UNVERIFIED');
     requireSync(current.kind===old.kind,'UNSUPPORTED_EVIDENCE');
+    if(stable(old)||stable(current)){verifyStable(old,current);continue;}
     if (current.locatorHash === old.locatorHash && current.identityHash !== old.identityHash) throw new SyncError(old.kind === 'sqlite' ? 'DB_REPLACED_UNVERIFIED' : 'ROTATION_UNVERIFIED');
     if (current.root === old.root && current.identityHash === old.identityHash && current.locatorHash === old.locatorHash) continue;
     const proof = current.previous;

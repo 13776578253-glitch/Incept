@@ -19,14 +19,44 @@ test('local status never calls a stopped Agent online based on a persisted old h
   const status=JSON.parse(execFileSync(process.execPath,[fileURLToPath(new URL('../dist/agent.mjs',import.meta.url)),'status','--state',join(dir,'state')],{encoding:'utf8',windowsHide:true}));assert.equal(status.running,false);assert.equal(status.remoteOnline,false);
 }));
 
-test('review recovery requires a matching current committed receipt and cannot cross a rollback/head fence',()=>sandbox(async dir=>{
+test('review recovery confirms the exact committed receipt without requiring the current head',()=>sandbox(async dir=>{
   const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode'),candidate=buildCandidate(capture,scope(capture),undefined,'review-recovery'),state=new AgentState(join(dir,'state')),service=new f.CompatibleSyncService(join(dir,'cloud.db'));
   try{state.enqueue(candidate,'signature');state.fail(candidate.header.batchId,'V1_ADOPTION_REVIEW_REQUIRED',true);
     service.register(candidate.header.manifest.scope,'Synthetic',{role:'owner',subject:'owner',reason:'fixture'});const receipt=service.ingest(candidate.header,candidate.records,actor);
-    const rejected={request:async()=>({scope:candidate.header.manifest.scope,headManifest:'different'})};await assert.rejects(()=>resumeReviewed(state,rejected,candidate.header.batchId),/REVIEW_NOT_CURRENT_COMMITTED/);assert.equal(state.status().confirmedScopes,0);assert.equal(state.status().outbox[0].count,1);
-    const approved={request:async path=>path==='/scopes/resolve'?{scope:candidate.header.manifest.scope,headManifest:candidate.header.manifest.manifestHash}:{receipt}};
+    const missing={request:async path=>path==='/scopes/resolve'?{scope:candidate.header.manifest.scope,headManifest:'different'}:{}};await assert.rejects(()=>resumeReviewed(state,missing,candidate.header.batchId),/REVIEW_RECEIPT_REQUIRED/);assert.equal(state.status().confirmedScopes,0);assert.equal(state.status().outbox[0].count,1);
+    const approved={request:async path=>path==='/scopes/resolve'?{scope:candidate.header.manifest.scope,headManifest:'later-head'}:{receipt}};
     assert.equal((await resumeReviewed(state,approved,candidate.header.batchId)).confirmed,true);assert.equal(state.status().confirmedScopes,1);assert.equal(state.status().receiptCount,1);
   }finally{state.close();service.close();}
+}));
+test('a review-required receipt becomes a durable review state and never returns to pending',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode'),candidate=buildCandidate(capture,scope(capture),undefined,'review-required'),state=new AgentState(join(dir,'state'));
+  try{state.enqueue(candidate,'signature');state.fail(candidate.header.batchId,'V1_ADOPTION_REVIEW_REQUIRED',true);
+    const receipt={batchId:candidate.header.batchId,payloadHash:f.hash(candidate.header),generationId:candidate.header.manifest.generationId,
+      manifestHash:candidate.header.manifest.manifestHash,dataRevision:7,status:'review-required',outcome:'conflict',code:'PREFIX_LOST'};
+    const http={request:async path=>path==='/scopes/resolve'?{scope:candidate.header.manifest.scope,headManifest:candidate.header.manifest.parent?.manifestHash??null}:{receipt}};
+    const result=await resumeReviewed(state,http,candidate.header.batchId);
+    assert.equal(result.confirmed,false);assert.equal(result.reviewRequired,true);assert.equal(state.reviewCount(),1);assert.equal(state.pending().length,0);
+    assert.equal(state.db.prepare("SELECT state,error FROM outbox WHERE batch=?").get(candidate.header.batchId).state,'review');
+  }finally{state.close();}
+}));
+test('permanent 4xx quarantines only the failed batch and 409 enters lineage recovery',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode'),candidate=buildCandidate(capture,scope(capture),undefined,'rejection'),state=new AgentState(join(dir,'state'));
+  try{state.enqueue(candidate,'signature');state.db.prepare('UPDATE outbox SET admitted=1 WHERE batch=?').run(candidate.header.batchId);
+    const bad={request:async()=>{throw new RemoteError('INVALID_HEADER',400);}};
+    await new SyncEngine(state,{version:1,endpoint:'https://synthetic.invalid',deviceId,home,allowedSources:['claudeCode']},bad,async()=>{throw Error('NO_CAPTURE');}).flush();
+    assert.equal(state.db.prepare("SELECT state FROM outbox WHERE batch=?").get(candidate.header.batchId).state,'quarantined');
+    state.db.prepare("UPDATE outbox SET state='pending' WHERE batch=?").run(candidate.header.batchId);
+    const conflict={request:async()=>{throw new RemoteError('PARENT_MISMATCH',409);}};
+    await new SyncEngine(state,{version:1,endpoint:'https://synthetic.invalid',deviceId,home,allowedSources:['claudeCode']},conflict,async()=>{throw Error('NO_CAPTURE');}).flush();
+    assert.equal(state.db.prepare("SELECT state FROM outbox WHERE batch=?").get(candidate.header.batchId).state,'lineage');
+    assert.equal(state.reviewCount(),0);
+  }finally{state.close();}
+}));
+test('Antigravity capture emits a stable-key commitment and retains it across a parent',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Source(home,'antigravity',{count:2});const first=await scan(home,dir);const capture=first.captures.find(c=>c.source==='antigravity');
+  assert(capture);const commitment=capture.proofs[0].range.commitment;assert.equal(commitment.kind,'stable-key-set');assert(commitment.count>0);assert.match(commitment.keyRoot,/^[a-f0-9]{64}$/);
+  const parent=buildCandidate(capture,scope(capture),undefined,'antigravity-parent');const second=await scan(home,dir,[parent]);const next=second.captures.find(c=>c.source==='antigravity');
+  assert(next);assert(next.proofs[0].range.commitment.count>=commitment.count);
 }));
 test('seven REAL collectors: baseline and ordinary append preserve all old records',()=>sandbox(async dir=>{
   const home=join(dir,'home');f.writePhase0Home(home,1);const service=new f.CompatibleSyncService(join(dir,'cloud.db'));

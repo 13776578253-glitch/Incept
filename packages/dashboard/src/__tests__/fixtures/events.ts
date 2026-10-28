@@ -1,5 +1,5 @@
 import { hash } from '../../adapters/local/imports/identity';
-import { makeManifest, sequenceHash, syncEnvelope } from '../../adapters/local/imports/sync/contract';
+import { makeManifest, sequenceHash, syncEnvelope, usageKeyRoot } from '../../adapters/local/imports/sync/contract';
 import type { SyncHeader, SyncRange, SyncRecord, SyncScope } from '../../domain/sync';
 import type { TransferEvent } from '../../domain';
 
@@ -30,6 +30,10 @@ export function fromEvents(events: TransferEvent[], scope: SyncScope, parent?: S
     byteLength: records.length * 1024,
     sessionAnchorHash: hash(scope.sessionId),
   };
+  if (scope.source === 'antigravity') {
+    const usage = usageKeyRoot(records);
+    range.commitment = { version: 1, kind: 'stable-key-set', keyRoot: usage.keyRoot, count: usage.count, schemaHash: hash(['fixture-schema']) };
+  }
   if (old && old.root !== root) {
     range.previous = {
       locatorHash: old.locatorHash,

@@ -62,8 +62,9 @@ export class SyncEngine {
     this.state.set('lastCollectedAt',new Date().toISOString());this.state.set('issues',[...new Set(captured.issues)]);
     const reviewBefore=new Set(this.state.reviewBatches());
     const seen=new Set<string>(),allSeen=new Set(captured.captures.map(c=>scopeKey(c.source,c.sessionId))),oldParents=this.state.parents();
+    const capacityBlocked=new Set<string>();
     const activeIsolated=this.state.sessionIsolations().filter(item=>item.active&&this.config.allowedSources.includes(item.source));
-    for(const capture of captured.captures){const key=scopeKey(capture.source,capture.sessionId);seen.add(key);const previous=this.state.tail(key);
+    for(const capture of captured.captures){if(capacityBlocked.has(capture.source))continue;const key=scopeKey(capture.source,capture.sessionId);seen.add(key);const previous=this.state.tail(key);
       // An unavailable/empty source is not a zero baseline and must not create a scope.
       if(!capture.records.length)continue;
       const signature=hash([capture.reader,capture.records,capture.proofs.map(p=>[p.range.locatorHash,p.range.identityHash,p.range.root])]);
@@ -73,7 +74,10 @@ export class SyncEngine {
         // new observation as a durable successor, but do not upload it.
         try{const scope=previous?.parent.header.manifest.scope??{deviceId:this.config.deviceId,source:capture.source,sessionId:capture.sessionId,originId:hash(['incept-origin/1',capture.source,capture.sessionId])};
           this.state.hold(buildCandidate(capture,scope,previous?.parent,randomUUID()),signature);}
-        catch(error){if(error instanceof Error&&error.message==='RUNNING_USAGE')continue;const code=error instanceof Error&&error.message==='OUTBOX_CAPACITY'?'HELD_CAPACITY':'HELD_WRITE_FAILED';this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),code]);}
+        catch(error){if(error instanceof Error&&error.message==='RUNNING_USAGE')continue;
+          if(error instanceof Error&&error.message==='OUTBOX_CAPACITY'){capacityBlocked.add(capture.source);if(sourceReports[capture.source])sourceReports[capture.source].failed=true;
+            this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),capture.source+':OUTBOX_CAPACITY']);continue;}
+          this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),'HELD_WRITE_FAILED']);}
         continue;
       }
       // A native, session-anchored Codex log has its own identity. Missing unrelated
@@ -91,7 +95,9 @@ export class SyncEngine {
         this.state.enqueue(buildCandidate(capture,scope,previous?.parent,randomUUID()),signature);
         if(sourceReports[capture.source])sourceReports[capture.source].changedSessions=(sourceReports[capture.source].changedSessions??0)+1;
       }catch(error){
-        if(error instanceof Error&&error.message==='RUNNING_USAGE')continue;if(error instanceof Error&&error.message==='OUTBOX_CAPACITY')throw error;
+        if(error instanceof Error&&error.message==='RUNNING_USAGE')continue;
+        if(error instanceof Error&&error.message==='OUTBOX_CAPACITY'){capacityBlocked.add(capture.source);if(sourceReports[capture.source])sourceReports[capture.source].failed=true;
+          this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),capture.source+':OUTBOX_CAPACITY']);continue;}
         const isolation:SessionIsolation={source:capture.source,sessionId:capture.sessionId,
           reason:error instanceof Error&&/^[A-Z][A-Z0-9_]+$/.test(error.message)?error.message:'CANDIDATE_VALIDATION_FAILED',
           affectedRecords:capture.records.length,unattributedTokens:0,coverage:'session'};
@@ -145,6 +151,13 @@ export class SyncEngine {
     for(let round=0;round<100&&!signal?.aborted;round++){
       const pending=this.state.pending();if(!pending.length)break;let progress=false;
       for(const row of pending){const header=JSON.parse(String(row.header_json)),batch=String(row.batch),base='/batches/'+batch;
+        const acknowledgeCommitted=async(receipt:any)=>{
+          const confirmed=await this.http.request(base);if(!confirmed.receipt||hash(confirmed.receipt)!==hash(receipt))throw Error('RECEIPT_MISMATCH');
+          const tokens=this.state.batchTokens(batch),previousTokens=this.state.confirmedTokenTotal(String(row.scope))??(header.manifest.parent?undefined:0);
+          this.state.acknowledge(batch,confirmed.receipt);uploadedTokens+=tokens;
+          if(previousTokens===undefined)newTokens=null;else if(newTokens!==null)newTokens+=tokens-previousTokens;
+          this.state.set('lastReportAt',new Date().toISOString());this.state.set('lastErrorCode',null);sent++;progress=true;
+        };
         try{
           if(!row.admitted){const admission=await this.http.request('/scopes/resolve','POST',{source:header.manifest.scope.source,sessionId:header.manifest.scope.sessionId});
             if(hash(admission.scope)!==hash(header.manifest.scope))throw new RemoteError('MANUAL_SCOPE_REVIEW_REQUIRED',409);
@@ -153,19 +166,32 @@ export class SyncEngine {
           }
           let status=await this.http.request(base,'GET',undefined,[200,404]);
           if(status.state==='expired'){this.state.renewExpired(batch,randomUUID());progress=true;continue;}
-          if(!status.receipt){status=await this.http.request('/batches','POST',{header});let offset=status.nextOffset??0;
-            if(!Number.isSafeInteger(offset)||offset<0||offset>header.manifest.recordCount)throw Error('INVALID_REMOTE_OFFSET');
-            while(offset<header.manifest.recordCount){const page=this.state.page(batch,offset);const next=await this.http.request(base+'/pages/'+offset,'PUT',{records:page});if(next.nextOffset!==offset+page.length)throw Error('INVALID_REMOTE_OFFSET');offset=next.nextOffset;}
-            status=await this.http.request(base+'/commit','POST');
+          if(status.receipt){
+            if(status.receipt.status==='review-required'){this.state.markReviewRequired(batch,status.receipt,status.receipt.code);progress=true;continue;}
+            if(status.receipt.status!=='committed')throw new RemoteError('INVALID_RECEIPT_STATUS',502);
+            await acknowledgeCommitted(status.receipt);continue;
           }
-          const confirmed=await this.http.request(base);if(!confirmed.receipt||hash(confirmed.receipt)!==hash(status.receipt))throw Error('RECEIPT_MISMATCH');
-          const tokens=this.state.batchTokens(batch),previousTokens=this.state.confirmedTokenTotal(String(row.scope))??(header.manifest.parent?undefined:0);
-          this.state.acknowledge(batch,confirmed.receipt);uploadedTokens+=tokens;
-          if(previousTokens===undefined)newTokens=null;else if(newTokens!==null)newTokens+=tokens-previousTokens;
-          this.state.set('lastReportAt',new Date().toISOString());this.state.set('lastErrorCode',null);sent++;progress=true;
-        }catch(error){const remote=error instanceof RemoteError?error:undefined,code=remote?.code??'LOCAL_SYNC_FAILED';
-          const permanent=!!remote&&[400,403,409,413].includes(remote.status);const retry=Math.max(remote?.retryMs??0,Math.min(300000,1000*2**Math.min(Number(row.attempts),8))*(1+Math.random()*.2));
-          this.state.fail(batch,code,permanent,retry);if(remote?.status===401||remote?.status===429||remote?.status===503)break;
+          status=await this.http.request('/batches','POST',{header});
+          if(status.receipt){
+            if(status.receipt.status==='review-required'){this.state.markReviewRequired(batch,status.receipt,status.receipt.code);progress=true;continue;}
+            if(status.receipt.status!=='committed')throw new RemoteError('INVALID_RECEIPT_STATUS',502);
+            await acknowledgeCommitted(status.receipt);continue;
+          }
+          let offset=status.nextOffset??0;
+          if(!Number.isSafeInteger(offset)||offset<0||offset>header.manifest.recordCount)throw Error('INVALID_REMOTE_OFFSET');
+          while(offset<header.manifest.recordCount){const page=this.state.page(batch,offset);const next=await this.http.request(base+'/pages/'+offset,'PUT',{records:page});if(next.nextOffset!==offset+page.length)throw Error('INVALID_REMOTE_OFFSET');offset=next.nextOffset;}
+          status=await this.http.request(base+'/commit','POST');
+          const committed=status.receipt;if(!committed)throw new RemoteError('INVALID_RECEIPT_STATUS',502);
+          if(committed.status==='review-required'){this.state.markReviewRequired(batch,committed,committed.code);progress=true;continue;}
+          if(committed.status!=='committed')throw new RemoteError('INVALID_RECEIPT_STATUS',502);
+          await acknowledgeCommitted(committed);
+        }catch(error){const remote=error instanceof RemoteError?error:undefined,code=remote?.code??(error instanceof Error?error.message:'LOCAL_SYNC_FAILED');
+          const retry=Math.max(remote?.retryMs??0,Math.min(300000,1000*2**Math.min(Number(row.attempts),8))*(1+Math.random()*.2));
+          if(remote&&[400,413].includes(remote.status)){this.state.quarantine(batch,code);progress=true;continue;}
+          if(remote&&remote.status===409){this.state.markLineageRecovery(batch,code);progress=true;continue;}
+          if(code==='RECEIPT_MISMATCH'||code==='REVIEW_RECEIPT_MISMATCH'){this.state.quarantine(batch,code);progress=true;continue;}
+          if(code==='LOCAL_PARENT_MISMATCH'||code==='LOCAL_LINEAGE_RECOVERY_REQUIRED'){this.state.markLineageRecovery(batch,code);progress=true;continue;}
+          this.state.fail(batch,code,false,retry);if(remote?.status===401||remote?.status===403||remote?.status===429||remote?.status===503)break;
         }
       }if(!progress)break;
     }

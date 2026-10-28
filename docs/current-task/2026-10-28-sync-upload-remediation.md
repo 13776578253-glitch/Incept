@@ -1,0 +1,53 @@
+# Sync Upload Remediation — Offline Implementation Record
+
+Date: 2026-10-28 (Asia/Singapore). Branch `fix/sync-safety` in `.worktrees/sync-safety`, based on deployed sync baseline `17ffd36`. No production deploy, no production DB write, no push/merge.
+
+## Implemented
+
+- **Phase 0B audit**: `packages/dashboard/src/sync/review-audit.ts` and `sync-maintenance audit-accepted-reviews`.
+  - Reconstructs the historical parent/current from `sync_generations` + `sync_changes`, not the current head.
+  - Reports per review: members, sequenceHash, range/records/tokens/commitment/legacy stages, dependencies, later committed descendants, current head, and `repairRecommendation` (`none` / `owner-rebase` / `fence`).
+  - Read-only; accepts `--source` and optional `--report`; refuses writes.
+- **Phase 1 safe acceptance**: `validation.ts` pure evidence validation; `acceptReview` one `BEGIN IMMEDIATE` transaction with parent/head re-check, contiguous members, full sequenceHash, range/record/legacy validation, generation/manifest collision typing, receipt payload/status idempotency, resolution idempotency, and atomic rollback. Normal `commit` uses the same validation.
+- **Schema**: schema version 3; unique `(scope_id, manifest_id)` guards for generations/reviews after duplicate scan. A duplicate existing ledger fails closed as `SYNC_SCHEMA_DUPLICATE_REVIEW_REQUIRED` rather than deleting rows.
+- **Phase 2 client recovery**: exact committed-batch acknowledgement without requiring the current head; review-required receipts become durable `review` state; 400/413 quarantine only the failed batch; 409 enters `lineage`; review is never the fallback for permanent validation errors; no cascade review to later batches; 20,000-record client guard; OUTBOX capacity stops only the affected source.
+- **Phase 3 Antigravity semantics**: compact `stable-key-set` commitment (`keyRoot`, `count`, `schemaHash`); metadata/status in-place changes no longer produce false `PREFIX_LOST`; missing old usage keys still review; schema changes review; old manifests without commitments are `UNSUPPORTED_EVIDENCE`, never silent passes. The old `schemasMatch && noRowsDeleted && records.length >= parent.recordCount` shortcut is removed. Capture uses one SQLite backup snapshot, `busy_timeout`, a 1 GiB budget, zstd output bounds, and no whole-home inventory abort. Owner approved the source-semantics matrix on 2026-10-28.
+- **Repair tooling**: `sync-agent export-rebase` exports a fresh source snapshot for one or more sessions; `sync-maintenance rebase-scope` constructs an Owner-approved `rebase` manifest against the current head, validates it, stages pages, commits a new auditable generation, and writes `owner-repair-rebase` audit evidence. Rehearsed on a production backup: 11 scopes, revision 869→880, all committed, all parents correct, and all visible record sequences byte-for-byte identical before/after.
+- **Phase 4**: job TTL 15 minutes with a 30-minute running grace; `/complete` no longer rejects a running job solely because its expiry passed; remote owner callbacks require recent authentication and write a start audit; pre-auth rate limiter; tray restarts a stale agent on a 15s health interval and keeps `Attention` while review/held/quarantine/lineage values remain; Windows package carries a SHA-256 manifest and the launcher verifies it before starting Node.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| `pnpm typecheck` | passed (all workspaces + scripts) |
+| `pnpm lint` | 0 errors, 8 pre-existing warnings |
+| `pnpm --filter @incept/dashboard test` | 297 passed / 2 skipped (49 files) |
+| `pnpm --filter @incept/sync-agent test` | 101 passed / 0 failed (includes new Antigravity commitment test) |
+| `pnpm --filter web test` | 137 passed / 55 skipped; integration suites gated by DB env |
+| `pnpm --filter web exec vitest run src/server/sync/__tests__/integration.test.ts` (isolated `incept_sync_phase2`) | 15 passed / 0 failed |
+| `pnpm --filter web exec vitest run src/server/sync/__tests__/agent.integration.test.ts` (isolated `incept_sync_phase3`, test TLS fixture) | 3 passed / 1 five-minute test skipped |
+| `pnpm --filter web exec vitest run src/server/sync/__tests__/remote.integration.test.ts` (isolated `incept_sync_phase4`) | not accepted as green: the suite still assumes the older seven-source fixture and a PHASE0_NOW-relative window; it is a pre-existing stale acceptance fixture, not used as evidence |
+| `pnpm test:ops` | 157 passed / 1 skipped |
+| Tray `tools/test.ps1` | 56 passed / 0 failed |
+| Windows package | built; manifest hash verified; tamper rejected with `AGENT_PACKAGE_HASH_MISMATCH` |
+
+## Offline production audit
+
+Ran `audit-accepted-reviews` against a local copy of `/srv/incept/shared/sync/phase0b-audit.db`:
+
+- 22 accepted-successor reviews; **0 pass, 22 fail, 0 unprovable**.
+- All 22 failures are the range stage `PREFIX_LOST`; every record stage passes and every member sequenceHash matches.
+- Repair summary: `none=0`, `owner-rebase=22`, `fence=0`. Report digest `3ab4313d394f48122274984d5eceeea667211b3b9c149c3e682f2e17ebfbb5fd`.
+- #28: 22 members, range fail, records pass.
+- #29: 2974 members, range fail, records pass.
+- #30: 2999 members, range fail, records pass.
+- #31: 3021 members, range fail, records pass.
+- All 22 are `repairRecommendation = owner-rebase`: records are valid, but the historical range proof predates the stable-key commitment and cannot be re-certified offline.
+- Later committed descendants are listed per review; the audit does not propose deleting or restoring over them.
+
+## Remaining owner-gated work
+
+1. **Historical review repair**: the 22 accepted reviews need an Owner-approved rebase/new auditable generation with a fresh source capture (or scope fencing). No offline tool should rewrite the ledger in place.
+2. **Large-capture split**: the 20,000-record guard is enforced, but a single session above that limit needs a future delta/Merkle protocol; cumulative chunks cannot satisfy the current `recordCount >= parent.recordCount` rule without exceeding the server batch limit.
+3. **Source matrix approval**: `docs/research/sync-source-semantics-matrix.md` is proposed; opencode/zcode/aiusage remain on the existing review path.
+4. **Production rollout**: backup, deploy, canary, and Owner acceptance were not performed. The isolated sync and agent integration suites pass; the remote WSS suite is not green because its fixture still assumes the older seven-source/last-completion shape, and the remaining auth/remote env-gated suites were not treated as acceptance evidence.

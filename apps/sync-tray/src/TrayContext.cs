@@ -117,6 +117,7 @@ namespace InceptSync
         private string _lastError;
         private StatusPopup _popup;
         private int _animationFrame;
+        private long _lastEnsureMs;
 
         public TrayContext(Options options)
         {
@@ -201,6 +202,11 @@ namespace InceptSync
             ThemeManager.RefreshSystem();
             _snapshot = StatusSnapshot.Load(_agent.StateDirectory);
             long now = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+            if (now - _lastEnsureMs >= 15000)
+            {
+                _lastEnsureMs = now;
+                EnsureAgent();
+            }
             AgentVisualState state = _snapshot == null ? AgentVisualState.Offline : _snapshot.VisualState(now);
             if (state != _lastState)
             {
@@ -211,10 +217,11 @@ namespace InceptSync
             _animationTimer.Enabled = state == AgentVisualState.Syncing;
             if (_popup != null && !_popup.IsDisposed) _popup.UpdateSnapshot(_snapshot, _animationFrame);
             _icon.Text = Tooltip(state);
-            if (state == AgentVisualState.Attention && _snapshot.LastErrorCode != _lastError)
+            string attention = _snapshot == null ? null : (_snapshot.LastErrorCode ?? (state == AgentVisualState.Attention ? "REVIEW_REQUIRED" : null));
+            if (state == AgentVisualState.Attention && attention != _lastError)
             {
-                _lastError = _snapshot.LastErrorCode;
-                Notify(Strings.AttentionTitle, _snapshot.LastErrorCode + Strings.AttentionSuffix, ToolTipIcon.Warning);
+                _lastError = attention;
+                Notify(Strings.AttentionTitle, (attention ?? "REVIEW_REQUIRED") + Strings.AttentionSuffix, ToolTipIcon.Warning);
             }
             else if (state != AgentVisualState.Attention)
             {

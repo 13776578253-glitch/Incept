@@ -3,12 +3,12 @@ import {AgentAuthError,authenticateAgent,manageAgentDevices,type AgentIdentity} 
 import {OwnerAuthError} from '@incept/db/owner';
 import {SyncTransportError,isSyncTransportError,type SyncActor,type SyncScope,type SyncHeader,type SyncRecord,type SyncWork} from '@incept/dashboard/sync';
 import type {SyncExecutor} from '@incept/dashboard/sync';
-import {boundedJson,exactFields,safeId,response,HTTP_LIMITS,DeviceRequestLimiter} from './http';
+import {boundedJson,exactFields,safeId,response,HTTP_LIMITS,DeviceRequestLimiter,PreAuthRequestLimiter} from './http';
 
 export type OwnerContext={sessionId:string;ownerId:string};
 type Dependencies={executor:SyncExecutor;owner:(request:Request,mutating:boolean)=>Promise<OwnerContext>;enabled:()=>boolean;
   remote?:{handle:(request:Request)=>Promise<Response|undefined>;invalidate?:(device:string)=>Promise<void>};
-  authenticate?:typeof authenticateAgent;manage?:typeof manageAgentDevices;limiter?:DeviceRequestLimiter};
+  authenticate?:typeof authenticateAgent;manage?:typeof manageAgentDevices;limiter?:DeviceRequestLimiter;preAuth?:PreAuthRequestLimiter};
 // Factory keeps tests on the same real HTTP/auth/service path. Only Owner browser
 // cookie acquisition is framework-specific and injected by the Next adapter.
 export function createSyncHandler(deps:Dependencies) {
@@ -17,6 +17,8 @@ export function createSyncHandler(deps:Dependencies) {
     const requestId=randomUUID();
     try {
       if(!deps.enabled())return response({error:'SYNC_DISABLED'},404,requestId);
+      const client=request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||request.headers.get('x-real-ip')||'unknown';
+      deps.preAuth?.check(client);
       const remote=await deps.remote?.handle(request);if(remote)return remote;
       const url=new URL(request.url);if(url.search)throw new SyncTransportError('QUERY_NOT_ALLOWED',400,0);
       const path=url.pathname.replace(/^\/api\/dashboard\/sync\/?/,'').split('/').filter(Boolean);

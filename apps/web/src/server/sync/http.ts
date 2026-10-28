@@ -40,3 +40,13 @@ export class DeviceRequestLimiter {
     this.buckets.set(device,{count:(row?.count??0)+1,until:row?.until??now+this.windowMs});
   }
 }
+export class PreAuthRequestLimiter {
+  private buckets=new Map<string,{count:number;until:number}>();
+  constructor(readonly maximum=600,readonly windowMs=60_000){}
+  check(client:string,now=Date.now()) {
+    for(const[key,row]of this.buckets)if(row.until<=now)this.buckets.delete(key);
+    const row=this.buckets.get(client);
+    if((!row&&this.buckets.size>=10_000)||row&&row.count>=this.maximum)throw new SyncTransportError('RATE_LIMITED',429,Math.max(1,Math.ceil(((row?.until??now+this.windowMs)-now)/1000)));
+    this.buckets.set(client,{count:(row?.count??0)+1,until:row?.until??now+this.windowMs});
+  }
+}

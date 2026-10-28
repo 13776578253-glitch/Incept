@@ -1,11 +1,12 @@
 import {join,resolve} from 'node:path';
-import {homedir} from 'node:os';
-import {existsSync,readdirSync,rmSync,appendFileSync,statSync,renameSync,readFileSync} from 'node:fs';
+import {homedir,tmpdir} from 'node:os';
+import {existsSync,readdirSync,rmSync,appendFileSync,statSync,renameSync,readFileSync,mkdtempSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {spawn} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {AgentState,SyncEngine,AgentHttp,validateEndpoint,scopeKey,type Config} from './engine';
+import {AgentState,SyncEngine,AgentHttp,validateEndpoint,scopeKey,captureHome,buildCandidate,type Config} from './engine';
+import {hash} from '../../../packages/dashboard/src/adapters/local/imports/identity';
 import {readConfig,storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
 import {acquireInstance,isRunning} from './lifecycle';
 import {RemoteLink} from './remote';
@@ -68,6 +69,29 @@ async function main(){
       atomicJson(join(directory,'review-'+batch+'.json'),{header,records});output({exported:true,manifest:header.manifest.manifestHash});
     }finally{state.close();}return;
   }
+  if(command==='export-rebase'){
+    if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
+    const config=readConfig<Config>(directory),source=option('source') as Config['allowedSources'][number]|undefined;
+    const sessions=(option('sessions')??option('session')??'').split(',').map(value=>value.trim()).filter(Boolean);
+    if(!source||!sessions.length||!config.allowedSources.includes(source))throw Error('REBASE_SCOPE_REQUIRED');
+    const singleOut=option('out')?resolve(option('out')!):undefined;
+    if(singleOut&&sessions.length!==1)throw Error('SINGLE_REBASE_OUTPUT_ONLY');
+    const snapshot=mkdtempSync(join(tmpdir(),'incept-rebase-'));
+    try{
+      const result=await captureHome(config.home,snapshot,[source],[],{sessionIds:sessions}),exported=[];
+      for(const sessionId of sessions){
+        const capture=result.captures.find(item=>item.source===source&&item.sessionId===sessionId);
+        if(!capture)throw Error('REBASE_SOURCE_UNAVAILABLE:'+sessionId);
+        const scope={deviceId:config.deviceId,source:capture.source,sessionId:capture.sessionId,originId:hash(['incept-origin/1',capture.source,capture.sessionId])};
+        const candidate=buildCandidate(capture,scope,undefined,randomUUID());
+        if(!candidate.records.length)throw Error('REBASE_SOURCE_EMPTY:'+sessionId);
+        const outPath=singleOut??join(directory,'rebase-'+source+'-'+hash([source,sessionId]).slice(0,12)+'.json');
+        atomicJson(outPath,{exportedAt:new Date().toISOString(),source:capture.source,sessionId:capture.sessionId,header:candidate.header,records:candidate.records,issues:result.issues});
+        exported.push({sessionId,path:outPath,records:candidate.records.length,manifest:candidate.header.manifest.manifestHash,commitment:candidate.header.manifest.ranges.map(range=>range.commitment??null)});
+      }
+      output({exported:exported.length,files:exported});
+    }finally{rmSync(snapshot,{recursive:true,force:true});}return;
+  }
   if(command==='sync-now'||command==='stop'){if(!await isRunning(directory))throw Error('AGENT_NOT_RUNNING');const state=new AgentState(directory);try{const id=randomUUID();state.db.prepare("INSERT INTO commands VALUES(?,?,'pending',?)").run(id,command==='stop'?'stop':'sync',Date.now());output({requestId:id,queued:true});}finally{state.close();}return;}
   if(command==='bind'){
     if(!argv.includes('--token-stdin'))throw Error('USE_BIND_POWERSHELL_OR_TOKEN_STDIN');
@@ -126,4 +150,4 @@ async function main(){
     else {if(config.remote){remote=new RemoteLink(state,config,http,token,()=>{next=0;});remote.start();}timer=setInterval(tick,1000);tick();while(!stopping)await new Promise(r=>setTimeout(r,100));await job;}
   }finally{remote?.stop();if(timer)clearInterval(timer);await job;state.set('heartbeat',null);publishStatus(state,false,true);state.close();await new Promise<void>(yes=>lock.close(()=>yes()));}
 }
-main().catch(error=>{const code=typeof error?.message==='string'&&/^[A-Z][A-Z0-9_]{0,80}$/.test(error.message)?error.message:'AGENT_COMMAND_FAILED';if(command==='daemon')log(code);output({error:code});process.exitCode=code==='ALREADY_RUNNING'&&command!=='verify-lineage'?0:1;});
+main().catch(error=>{const code=typeof error?.message==='string'&&/^[A-Z][A-Z0-9_]{0,80}$/.test(error.message)?error.message:'AGENT_COMMAND_FAILED';if(process.env.INCEPT_CAPTURE_DEBUG)console.error(error);if(command==='daemon')log(code);output({error:code});process.exitCode=code==='ALREADY_RUNNING'&&command!=='verify-lineage'?0:1;});

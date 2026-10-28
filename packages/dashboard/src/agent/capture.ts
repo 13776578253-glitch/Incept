@@ -23,7 +23,7 @@ export type ParentCapture={header:SyncHeader;proofs:RangeProof[]};
 export type SessionIsolation={source:TransferSource;sessionId:string;reason:string;affectedRecords:number;unattributedTokens:number;
   firstAffectedAtMs?:number;lastAffectedAtMs?:number;recoveryAfterTimestampMs?:number;locatorHashes?:string[];coverage:'session'|'prefix'};
 export type RecoveryRange={source:TransferSource;sessionId:string;afterTimestampMs:number};
-export type CaptureOptions={tolerantIncomplete?:boolean;recoveryRanges?:RecoveryRange[];autoReviewSessions?:string[]};
+export type CaptureOptions={tolerantIncomplete?:boolean;recoveryRanges?:RecoveryRange[];autoReviewSessions?:string[];sessionIds?:string[]};
 export type CaptureResult={captures:Capture[];issues:string[];isolations?:SessionIsolation[]};
 const roots:Record<string,string[]>={codex:['.codex/sessions','.codex/archived_sessions'],commandcode:['.commandcode/projects'],claudeCode:['.claude/projects'],geminiCli:['.gemini/tmp'],
   antigravity:['antigravity','antigravity-cli','antigravity-ide'].map(x=>'.gemini/'+x+'/conversations'),opencode:['.local/share/opencode'],zcode:['.zcode/cli/db'],deepseekHarness:['.dsh/sessions'],aiusage:['.aiusage']};
@@ -34,6 +34,7 @@ function inventory(home:string){return Object.entries(roots).flatMap(([source,di
 function dbRows(path:string,scope?:{source:TransferSource;sessionId:string},reader?:string,mask=false){
   const db=new DatabaseSync(path,{readOnly:true});
   try{
+    db.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=5000;');
     if(scope?.source==='antigravity'){try{const latest=db.prepare("SELECT status FROM steps ORDER BY idx DESC LIMIT 1").get() as {status?:number}|undefined;if(latest?.status===2)throw Error('RUNNING_USAGE');}catch(e){if(e instanceof Error&&e.message==='RUNNING_USAGE')throw e;}}
     db.exec('BEGIN');return db.prepare("SELECT name,sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(table=>{
     const name=String(table.name),rows:string[]=[],envelopes:string[]=[];
@@ -82,14 +83,14 @@ function fileProof(file:File,scope:{source:TransferSource;sessionId:string},read
 // Caller supplies a private disposable snapshot directory and cleans it even on worker termination.
 export async function captureHome(home:string,snapshot:string,allowed:TransferSource[],parents:ParentCapture[]=[],options:CaptureOptions={}):Promise<CaptureResult>{
   mkdirSync(snapshot,{recursive:true,mode:0o700});const files:File[]=[],issues:string[]=[],failed=new Set<string>(),isolations:SessionIsolation[]=[];let bytes=0;
-  const list=inventory(home);
+  const list=inventory(home).filter(item=>!options.sessionIds?.length||item.source!=='antigravity'||options.sessionIds.includes(basename(item.locator,'.db')));
   for(const item of list){if(item.source!=='aiusage'&&!allowed.includes(item.source as TransferSource))continue;
-    try{const input=join(home,item.locator),st=lstatSync(input);if(st.isSymbolicLink()||st.size>256*1024**2||(bytes+=st.size)>1536*1024**2)throw Error('CAPTURE_LIMIT');
+    try{const input=join(home,item.locator),st=lstatSync(input);if(st.isSymbolicLink()||st.size>256*1024**2||(bytes+=st.size)>1024*1024**2)throw Error('CAPTURE_LIMIT');
       const path=join(snapshot,item.locator);mkdirSync(dirname(path),{recursive:true,mode:0o700});
       let data:Buffer|undefined,root:string,filePath=path;
-      if(/\.(db|sqlite)$/.test(input)){const before=hash(dbRows(input));const db=new DatabaseSync(input,{readOnly:true});try{await backup(db,path);}finally{db.close();}root=hash(dbRows(path));if(before!==root||root!==hash(dbRows(input)))throw Error('CHANGED_DURING_READ');}
+      if(/\.(db|sqlite)$/.test(input)){const db=new DatabaseSync(input,{readOnly:true});try{db.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=5000;');await backup(db,path);}finally{db.close();}root=hash(dbRows(path));const after=lstatSync(input);if(after.size!==st.size||after.mtimeMs!==st.mtimeMs)throw Error('CHANGED_DURING_READ');}
       else {if(item.source==='deepseekHarness'&&input.endsWith('.zstd')){const compressed=readFileSync(input),decoded=decodeHarnessZstd(compressed);data=Buffer.from(decoded.text);filePath=path.replace(/\.zstd$/,'');writeFileSync(filePath,data,{mode:0o600});root=hash(data.toString('base64'));if(!compressed.equals(readFileSync(input)))throw Error('CHANGED_DURING_READ');if(decoded.error){isolations.push({source:'deepseekHarness',sessionId:'unidentified-file:'+hash(item.locator),reason:'UNREADABLE_COMPRESSED_SUFFIX',affectedRecords:0,unattributedTokens:0,coverage:'prefix',locatorHashes:[hash(item.locator)]});issues.push('deepseekHarness:INTERVAL_ISOLATED');}}
-        else if(input.endsWith('.jsonl.zst')){const compressed=readFileSync(input);data=zstdDecompressSync(compressed);filePath=path.replace(/\.zst$/,'');writeFileSync(filePath,data,{mode:0o600});root=hash(data.toString('base64'));}
+        else if(input.endsWith('.jsonl.zst')){const compressed=readFileSync(input);data=zstdDecompressSync(compressed,{maxOutputLength:256*1024**2});filePath=path.replace(/\.zst$/,'');writeFileSync(filePath,data,{mode:0o600});root=hash(data.toString('base64'));}
         else {if(input.endsWith('.zst'))throw Error('COMPRESSED_ARCHIVE_REVIEW');data=readFileSync(input);root=hash(data.toString('base64'));writeFileSync(path,data,{mode:0o600});if(root!==hash(readFileSync(input).toString('base64')))throw Error('CHANGED_DURING_READ');}
         if(filePath.endsWith('.jsonl')){if(item.source!=='codex'&&item.source!=='deepseekHarness')data.toString('utf8').split('\n').filter(r=>r.trim()).forEach(r=>JSON.parse(r));}else JSON.parse(data.toString('utf8'));}
       files.push({...item,path:filePath,identity:hash([String(st.dev),String(st.ino),st.birthtimeMs]),byteLength:data?.length??st.size,root,bytes:data});
@@ -98,7 +99,6 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
       const related=parents.filter(p=>p.header.manifest.scope.source===item.source&&p.proofs.some(p=>p.range.locatorHash===hash(item.locator)));
       for(const sessionId of related.length?related.map(p=>p.header.manifest.scope.sessionId):['unidentified-file:'+hash(item.locator)])isolations.push({source:item.source as TransferSource,sessionId,reason:'SOURCE_FILE_UNREADABLE',affectedRecords:0,unattributedTokens:0,coverage:'session',locatorHashes:[hash(item.locator)]});
       issues.push(item.source+':SESSION_ISOLATED');}}
-  if(hash(list)!==hash(inventory(home)))throw Error('CHANGED_DURING_READ');
   // Pricing configuration is read-only. It is never part of the uploaded raw snapshot.
   const pricing=loadLocalPricingMap(home,{aliases:{},prices:{},updatedAt:0});
   const cc=collectCommandCodeEvents(snapshot,pricing),agents=collectAiusageAndRawAgentEvents(snapshot,pricing,{autoReviewSessions:options.autoReviewSessions}),commandFiles=new Set(cc.events.flatMap(r=>r.sourceFile?[normalizeFile(r.sourceFile)]:[]));
@@ -172,8 +172,17 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
         return price?[[name,price]]:[];
       }));
       const prefixes:Record<string,string>={};for(const parent of parents.filter(p=>p.header.manifest.scope.source===source&&p.header.manifest.scope.sessionId===sessionId))for(const old of parent.proofs){const file=selected.find(f=>hash(f.locator)===old.range.locatorHash);if(file?.bytes&&file.bytes.length>=old.range.byteLength)prefixes[old.range.locatorHash+':'+old.range.byteLength]=hash(file.bytes.subarray(0,old.range.byteLength).toString('base64'));}
-      const capture:Capture={source,sessionId,reader,records:normalized,proofs:selected.map(file=>({...fileProof(file,{source,sessionId},reader),
-        ...(recoveryAfterTimestampMs!==undefined?{recoveryAfterTimestampMs}:{})})),rates,prefixes};
+      const keysByLocator=new Map<string,string[]>();
+      if(source==='antigravity')for(const raw of group){if(!raw.eventId)continue;const key=hash(raw.eventId);
+        for(const sourceFile of [...(raw.sourceFiles??[]),...(raw.sourceFile?[raw.sourceFile]:[])]){
+          const file=selected.find(f=>normalizeFile(sourceFile)===normalizeFile(f.path)||normalizeFile(sourceFile).endsWith('/'+normalizeFile(f.locator)));if(!file)continue;
+          const locator=hash(file.locator),keys=keysByLocator.get(locator)??[];if(!keys.includes(key))keys.push(key);keysByLocator.set(locator,keys);
+        }}
+      const proofs=selected.map(file=>{const proof=fileProof(file,{source,sessionId},reader);
+        if(source==='antigravity'&&proof.parts){const keys=keysByLocator.get(hash(file.locator))??[];
+          proof.range.commitment={version:1,kind:'stable-key-set',keyRoot:hash(keys.slice().sort()),count:keys.length,schemaHash:hash(proof.parts.map(part=>part.schema).sort())};}
+        return {...proof,...(recoveryAfterTimestampMs!==undefined?{recoveryAfterTimestampMs}:{})};});
+      const capture:Capture={source,sessionId,reader,records:normalized,proofs,rates,prefixes};
       const parent=parents.find(item=>item.header.manifest.scope.source===source&&item.header.manifest.scope.sessionId===sessionId);
       const candidate=buildCandidate(capture,parent?.header.manifest.scope??{deviceId:'00000000-0000-4000-8000-000000000000',source,sessionId,
         originId:hash(['incept-origin/1',source,sessionId])},parent,'00000000-0000-4000-8000-000000000000');
@@ -188,14 +197,10 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
 export function buildCandidate(capture:Capture,scope:SyncScope,parent:ParentCapture|undefined,batchId:string,readCurrentPrefix?:(locatorHash:string,length:number)=>string|undefined){
   const proofs=capture.proofs.map(p=>structuredClone(p));
   for(const proof of proofs){const next=proof.range,old=parent?.proofs.find(p=>p.range.locatorHash===next.locatorHash);
+    if(next.commitment?.kind==='stable-key-set')continue;
     if(old&&old.range.root!==next.root){let retained=false;
       if(proof.parts&&old.parts){
         retained=old.parts.every((part,i)=>part.schema===proof.parts![i]?.schema&&part.rows.every((h,n)=>h===proof.parts![i].rows[n]));
-        if(!retained&&scope.source==='antigravity'&&capture.records.length>=(parent?.header.manifest.recordCount??0)){
-          const schemasMatch=old.parts.every((part,i)=>part.schema===proof.parts![i]?.schema);
-          const noRowsDeleted=old.parts.every((part,i)=>(proof.parts![i]?.rows.length??0)>=part.rows.length);
-          if(schemasMatch&&noRowsDeleted)retained=true;
-        }
       }
       else retained=(readCurrentPrefix?.(next.locatorHash,old.range.byteLength)??capture.prefixes[next.locatorHash+':'+old.range.byteLength])===old.range.root;
       next.previous={locatorHash:old.range.locatorHash,root:old.range.root,retainedRoot:retained?old.range.root:hash('PREFIX_NOT_RETAINED'),retainedBytes:old.range.byteLength,change:retained?'append':next.envelopeRoot===old.range.envelopeRoot&&capture.reader!=='aiusage'&&scope.source!=='antigravity'?'usage-revision':'append'};
