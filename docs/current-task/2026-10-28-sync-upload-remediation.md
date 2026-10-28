@@ -21,7 +21,7 @@ Date: 2026-10-28 (Asia/Singapore). Branch `fix/sync-safety` in `.worktrees/sync-
 |---|---|
 | `pnpm typecheck` | passed (all workspaces + scripts) |
 | `pnpm lint` | 0 errors, 8 pre-existing warnings |
-| `pnpm --filter @incept/dashboard test` | 298 passed / 2 skipped (50 files) |
+| `pnpm --filter @incept/dashboard test` | 299 passed / 2 skipped (50 files; includes 25k Merkle batch) |
 | `pnpm --filter @incept/sync-agent test` | 103 passed / 0 failed (includes resolved-review, reconcile-heads and lineage/recovery tests) |
 | `pnpm --filter web test` | 137 passed / 55 skipped; integration suites gated by DB env |
 | `pnpm --filter web exec vitest run src/server/sync/__tests__/integration.test.ts` (isolated `incept_sync_phase2`) | 15 passed / 0 failed |
@@ -55,7 +55,7 @@ Ran `audit-accepted-reviews` against a local copy of `/srv/incept/shared/sync/ph
 - Dashboard refresh fix: `/api/dashboard/sync/devices/status` was returning 428 after the five-minute recent-auth window because read-only GETs also called `requireRecentOwnerSession`. Only mutating owner actions now require recent auth; read-only status/review reads keep the normal owner-session check. Image `sha256:51e38a56d5c2b15c442219d74315dd298737f628f9afb7f8083bf2cfd0a93203` from `a2327c2` is installed at `/srv/incept/releases/a2327c2` (env backup `.env.production.bak-pre-a2327c2`).
 - Rebase applied to 11 affected scopes (9 antigravity, 2 zcode) with fresh source captures: revision 869→880, 11 committed `rebase` generations, each parented to the old visible generation. All old rows remain; all 11 visible record sequences are byte-for-byte identical to the pre-rebase backup. Schema is now 3; `PRAGMA integrity_check` is `ok`.
 - Owner-approved commandcode rebase for #32–#34 used fresh captures of 445 / 10 / 16 records, created auditable `rebase` generations parented to the old heads, retained every old generation/manifest, and marked each review `accepted-successor`. Revision 880→883; resolutions 883→886.
-- App, gateway and proxy are healthy; `/api/health/ready` is 200; after the auth-fix rollout and review #35 repair, `sync-maintenance status` reports revision 900, 978 receipts, 0 open reviews, 0 incomplete staging.
+- App, gateway and proxy are healthy; `/api/health/ready` is 200; after the auth-fix rollout and review #35 repair, `sync-maintenance status` reports revision 906, 984 receipts, 0 open reviews, 0 incomplete staging.
 - Review #35 repair: antigravity session `015eea61-e793-4823-b93c-33ba15a20a50` was recaptured at 34 records, committed as a new `rebase` generation parented to the old head, and marked `accepted-successor`. The old generation/manifest remain auditable.
 - Owner rebase reconciliation is now scripted: `agent.mjs reconcile-heads --state <dir> --confirm-reviewed [--session=<id>]` (agent stopped) reads the committed server head, supersedes stale pending/review/held/lineage candidates, clears old lineage/token state, and adopts the server head so the next capture produces one fresh parented candidate. It refuses to run while the agent is running, skips quarantined scopes, and requires an explicit Owner confirmation.
 - Follow-up agent reconciliation: after the owner rebase, the local lineage still pointed at the pre-rebase heads, so replay candidates hit `LOCAL_PARENT_MISMATCH` and stale staging consumed the four-batch device limit. Stale staging was verified to have no receipts and was removed; the affected scopes were re-captured against the server heads, their local lineage was reset to the committed heads, and the remaining candidates uploaded successfully. The local outbox now has no active entries.
@@ -65,7 +65,13 @@ Ran `audit-accepted-reviews` against a local copy of `/srv/incept/shared/sync/ph
 
 Ran on isolated copies under `/srv/incept/drills/schema3-rollback`; production was not touched. Schema-2 backup `v4.db` (revision 869) starts, checkpoints and writes under old image `sha256:9f0d…`. Old image can read schema 3 in `status`, but its write path fails `SCHEMA_VERSION_MISMATCH`; image-only rollback is therefore unsafe. Current image `sha256:51e38a56…` migrates the schema-2 copy to schema 3 with revision unchanged. Full procedure and restore steps: `docs/runbooks/sync-schema-rollback.md`.
 
+## Large-session Merkle batches
+
+`SyncManifest` now has an optional `merkleRoot`; capture computes it, the server verifies it against the committed records, and old manifests without the field remain valid. The large-batch ceiling is 100,000 records while the existing 500-record/512 KiB page contract is unchanged. A 25,000-record synthetic session is covered end-to-end in `sync-executor.test.ts`. This is a Merkle-verified full-snapshot path, not a per-record delta; a true delta/segment protocol remains the next optimization if a session exceeds 100k or upload bandwidth becomes material.
+
+The deployment image `sha256:17c16ba5fbb7ddc1b5307bdfc90f955ececea40380394defb3548c6bfb4013e0` from `6c7c2d6` is installed at `/srv/incept/releases/6c7c2d6` with `INCEPT_SYNC_MAX_BATCH_RECORDS=100000`; local agent/tray were updated to the matching build.
+
 ## Remaining work
 
-1. **Large-capture split**: the 20,000-record guard is enforced, but a single session above that limit needs a future delta/Merkle protocol; cumulative chunks cannot satisfy the current `recordCount >= parent.recordCount` rule without exceeding the server batch limit.
+1. **True delta for very large sessions**: Merkle-verified full snapshots support up to 100k records; a segment/delta protocol remains future work if a session exceeds that or bandwidth becomes material.
 2. **Source matrix**: `docs/research/sync-source-semantics-matrix.md` was approved by the Owner on 2026-10-28; opencode/zcode/aiusage remain on the existing review path until their mutation rules are exercised.
