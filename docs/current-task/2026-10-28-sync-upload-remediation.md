@@ -22,11 +22,11 @@ Date: 2026-10-28 (Asia/Singapore). Branch `fix/sync-safety` in `.worktrees/sync-
 | `pnpm typecheck` | passed (all workspaces + scripts) |
 | `pnpm lint` | 0 errors, 8 pre-existing warnings |
 | `pnpm --filter @incept/dashboard test` | 298 passed / 2 skipped (50 files) |
-| `pnpm --filter @incept/sync-agent test` | 101 passed / 0 failed (includes new Antigravity commitment test) |
+| `pnpm --filter @incept/sync-agent test` | 102 passed / 0 failed (includes resolved-review and lineage/recovery tests) |
 | `pnpm --filter web test` | 137 passed / 55 skipped; integration suites gated by DB env |
 | `pnpm --filter web exec vitest run src/server/sync/__tests__/integration.test.ts` (isolated `incept_sync_phase2`) | 15 passed / 0 failed |
 | `pnpm --filter web exec vitest run src/server/sync/__tests__/agent.integration.test.ts` (isolated `incept_sync_phase3`, test TLS fixture) | 3 passed / 1 five-minute test skipped |
-| `pnpm --filter web exec vitest run src/server/sync/__tests__/remote.integration.test.ts` (isolated `incept_sync_phase4`) | not accepted as green: the suite still assumes the older seven-source fixture and a PHASE0_NOW-relative window; it is a pre-existing stale acceptance fixture, not used as evidence |
+| `pnpm --filter web exec vitest run src/server/sync/__tests__/remote.integration.test.ts` (isolated `incept_sync_phase4`) | 7 passed / 0 failed; eight-source recent-window fixture, fresh test certificate |
 | `pnpm test:ops` | 157 passed / 1 skipped |
 | Tray `tools/test.ps1` | 56 passed / 0 failed |
 | Windows package | built; manifest hash verified; tamper rejected with `AGENT_PACKAGE_HASH_MISMATCH` |
@@ -49,13 +49,15 @@ Ran `audit-accepted-reviews` against a local copy of `/srv/incept/shared/sync/ph
 
 - Backups: `/srv/incept/backups/phase0b-repair-20261028T061500Z/` containing `v4.db` (111,714,304 bytes, SHA-256 `d81586328c6b65025db17da447a82c60ad931fb14239eb5291421575513902f4`), `postgres.dump`, and `env.before`.
 - Release commit: `14d118e`; server image `sha256:2c03b477368ffa6b713612e5ef350db233354b91d6964e166a93071ed0992c93`; release dir `/srv/incept/releases/14d118e`. A follow-up agent-only commit `5143a77` splits the capture heap budget (SQLite snapshots no longer consume the JSON heap budget) and is installed in the local tray/agent package.
+- Final server image: `sha256:82a73becb271ca9168000e3a02ab54961fa16be6faa89a94dfffa543351a970b` from release commit `c5608d5`, installed at `/srv/incept/releases/c5608d5`; env backup `.env.production.bak-pre-c5608d5`. It adds resolved-review reporting on batch status and the tray attention wording.
 - Rebase applied to 11 affected scopes (9 antigravity, 2 zcode) with fresh source captures: revision 869→880, 11 committed `rebase` generations, each parented to the old visible generation. All old rows remain; all 11 visible record sequences are byte-for-byte identical to the pre-rebase backup. Schema is now 3; `PRAGMA integrity_check` is `ok`.
-- App, gateway and proxy are healthy; `/api/health/ready` is 200; `sync-maintenance status` reports revision 880, 956 receipts, 3 unresolved commandcode reviews (#32–#34, `REVISION_ENVELOPE_CHANGED`, created after Phase 0A).
-- Canary: local agent restarted on the new build; `run-once` captured 152 antigravity sessions with no `CAPTURE_LIMIT`, retained 3 review batches and 1 held batch, and made no duplicate commits. The local tray package now points at the new agent build.
+- Owner-approved commandcode rebase for #32–#34 used fresh captures of 445 / 10 / 16 records, created auditable `rebase` generations parented to the old heads, retained every old generation/manifest, and marked each review `accepted-successor`. Revision 880→883; resolutions 883→886.
+- App, gateway and proxy are healthy; `/api/health/ready` is 200; `sync-maintenance status` reports revision 886, 959 receipts, 0 unresolved reviews.
+- Canary: local agent restarted on the new build; `run-once` captured 152 antigravity sessions with no `CAPTURE_LIMIT`, retained 1 held batch, and made no duplicate commits. The local tray package points at the new agent build; the three stale review batches were cleared after their server successors were confirmed. The remaining held batch is an existing owner-visible historical hold, not an unknown error.
 
-## Remaining owner-gated work
+## Remaining work
 
-1. **Historical review repair**: the 22 accepted reviews were repaired by the Owner-approved rebase above. The remaining #32–#34 are new unresolved commandcode `REVISION_ENVELOPE_CHANGED` reviews created after Phase 0A; they were not part of the 22 accepted-review set and still require Owner disposition (rebase or review).
+1. **Held batch**: one existing historical held batch remains visible in the tray as “Held batches”; it is owner-gated and was not silently dismissed.
 2. **Large-capture split**: the 20,000-record guard is enforced, but a single session above that limit needs a future delta/Merkle protocol; cumulative chunks cannot satisfy the current `recordCount >= parent.recordCount` rule without exceeding the server batch limit.
 3. **Source matrix**: `docs/research/sync-source-semantics-matrix.md` was approved by the Owner on 2026-10-28; opencode/zcode/aiusage remain on the existing review path until their mutation rules are exercised.
-4. **Production rollout**: the app/gateway/proxy were deployed and are healthy; the canary is running. #32–#34 remain unresolved, and the remote WSS acceptance suite still uses a stale seven-source/PHASE0_NOW fixture, so it is not accepted as green evidence.
+4. **Rollback note**: production SQLite is schema 3. The previous image expects schema 2, so a code rollback requires the pre-deploy database backup or a compatibility layer.
