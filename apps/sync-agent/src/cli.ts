@@ -12,6 +12,7 @@ import {acquireInstance,isRunning} from './lifecycle';
 import {RemoteLink} from './remote';
 import {publishStatus} from './snapshot';
 import {resumeReviewed} from './review';
+import {reconcileHeads} from './review';
 import {resumeHeld} from './resume';
 import {verifyLineage} from './verify-lineage';
 const argv=process.argv.slice(2),command=argv[0],option=(key:string)=>{const i=argv.indexOf('--'+key);return i<0?undefined:argv[i+1];};
@@ -58,6 +59,12 @@ async function main(){
     const batch=option('batch');if(!batch||!/^[a-zA-Z0-9_-]{1,128}$/.test(batch))throw Error('BATCH_REQUIRED');
     const state=new AgentState(directory),config=readConfig<Config>(directory);
     try{output(await resumeHeld(state,new AgentHttp(config.endpoint,loadToken(directory),{allowLoopbackHttp:config.allowLoopbackHttp}),config,batch));}finally{state.close();}return;
+  }
+  if(command==='reconcile-heads'){
+    if(!argv.includes('--confirm-reviewed'))throw Error('OWNER_REVIEW_CONFIRMATION_REQUIRED');
+    if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
+    const state=new AgentState(directory),config=readConfig<Config>(directory);
+    try{output(await reconcileHeads(state,new AgentHttp(config.endpoint,loadToken(directory),{allowLoopbackHttp:config.allowLoopbackHttp}),{session:option('session')}));}finally{state.close();}return;
   }
   if(command==='export-review'){
     if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');

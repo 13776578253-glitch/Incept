@@ -6,7 +6,7 @@ import {join} from 'node:path';
 import {randomUUID,randomBytes} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {AgentState,SyncEngine,AgentHttp,RemoteError,RemoteLink,captureHome,buildCandidate,storeToken,loadToken,protectDirectory,validateEndpoint,resumeReviewed} from '../dist/library.mjs';
+import {AgentState,SyncEngine,AgentHttp,RemoteError,RemoteLink,captureHome,buildCandidate,storeToken,loadToken,protectDirectory,validateEndpoint,resumeReviewed,reconcileHeads} from '../dist/library.mjs';
 import {fixtures as f} from './helpers.mjs';
 const sources=['codex','commandcode','claudeCode','geminiCli','antigravity','opencode','zcode'];
 const deviceId='00000000-0000-4000-8000-000000000003',actor={role:'device',deviceId};
@@ -47,6 +47,15 @@ test('a resolved review marks its local batch superseded',()=>sandbox(async dir=
     const http={request:async path=>path==='/scopes/resolve'?{scope:candidate.header.manifest.scope,headManifest:'successor-head'}:{receipt,review:{id:1,resolution:{disposition:'accepted-successor',committedSuccessor:'successor-head'}}}};
     const result=await resumeReviewed(state,http,candidate.header.batchId);
     assert.equal(result.superseded,true);assert.equal(state.reviewCount(),0);assert.equal(state.db.prepare("SELECT state FROM outbox WHERE batch=?").get(candidate.header.batchId).state,'superseded');
+  }finally{state.close();}
+}));
+test('owner rebase reconciliation adopts the server head and supersedes stale candidates',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode'),scopeValue=scope(capture),old=buildCandidate(capture,scopeValue,undefined,'reconcile-old'),fresh=buildCandidate(capture,scopeValue,old,'reconcile-new'),state=new AgentState(join(dir,'state'));
+  try{state.enqueue(old,'signature');state.fail(old.header.batchId,'LOCAL_PARENT_MISMATCH',true);
+    const http={request:async path=>path==='/scopes/resolve'?{scope:old.header.manifest.scope,headManifest:fresh.header.manifest.manifestHash,head:fresh.header}:{}};
+    const result=await reconcileHeads(state,http);
+    assert.equal(result.reconciled.length,1);assert.equal(result.reconciled[0].superseded,1);assert.equal(state.reviewCount(),0);
+    assert.equal(state.parents().find(parent=>parent.header.manifest.scope.sessionId===capture.sessionId).header.manifest.manifestHash,fresh.header.manifest.manifestHash);
   }finally{state.close();}
 }));
 test('permanent 4xx quarantines only the failed batch and 409 enters lineage recovery',()=>sandbox(async dir=>{

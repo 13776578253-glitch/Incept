@@ -15,7 +15,7 @@ export {AgentState,scopeKey} from './state';
 export {AgentHttp,RemoteError,validateEndpoint} from './transport';
 export {storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
 export {RemoteLink} from './remote';
-export {resumeReviewed} from './review';
+export {resumeReviewed,reconcileHeads} from './review';
 export {resumeHeld} from './resume';
 export {classifyIssues} from './issues';
 export {verifyLineage,V4_BASELINE} from './verify-lineage';
