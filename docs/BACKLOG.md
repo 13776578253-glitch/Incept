@@ -14,10 +14,8 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 
 ### B-01 Home Uses Mock Content
 
-- Source: `apps/web/src/features/home/index.tsx:19`
-- Status: Active product work.
-- Replace the mock hero, `/test` links, mock cards, and mock image assets with real published content or a deliberately minimal landing page.
-- This is a separate Home milestone; do not partially wire one mock card to production data.
+- Source: removed 2026-10-27 (formerly `apps/web/src/features/home/index.tsx:19`).
+- Status: Superseded. The mock home, feature module, messages, mock types, and `/mock/home` assets were removed; the locale root redirects to `/docs` until a replacement home is designed.
 
 ### B-03 Markdown-like Heading And Section Model
 
