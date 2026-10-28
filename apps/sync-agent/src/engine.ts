@@ -131,16 +131,17 @@ export class SyncEngine {
     const issues=this.state.get<string[]>('issues')??[],classified=classifyIssues(issues,this.config.allowedSources);
     for(const source of this.config.allowedSources)if(sourceReports[source])sourceReports[source].isolatedSessions=new Set([...captured.isolations,...this.state.sessionIsolations().filter(item=>item.active)].filter(item=>item.source===source).map(item=>item.sessionId)).size;
     const reviewTotal=this.state.reviewCount(),reviewNew=this.state.reviewBatches().filter(batch=>!reviewBefore.has(batch)).length;
-    const uploadIncomplete=!!this.state.db.prepare("SELECT 1 FROM outbox WHERE state IN ('pending','review','held') LIMIT 1").get();
+    const lineage=Number(this.state.db.prepare("SELECT COUNT(*) n FROM outbox WHERE state='lineage'").get()!.n),quarantined=Number(this.state.db.prepare("SELECT COUNT(*) n FROM outbox WHERE state='quarantined'").get()!.n);
+    const uploadIncomplete=!!this.state.db.prepare("SELECT 1 FROM outbox WHERE state IN ('pending','review','held','lineage','quarantined') LIMIT 1").get();
     for(const source of this.config.allowedSources){const report=sourceReports[source];if(!report)continue;
-      const pending=!!this.state.db.prepare("SELECT 1 FROM outbox WHERE json_extract(header_json,'$.manifest.scope.source')=? AND state IN ('pending','review','held') LIMIT 1").get(source);
+      const pending=!!this.state.db.prepare("SELECT 1 FROM outbox WHERE json_extract(header_json,'$.manifest.scope.source')=? AND state IN ('pending','review','held','lineage','quarantined') LIMIT 1").get(source);
       const blocked=classifyIssues(issues,[source]).blocking.length>0;
       report.outcome=report.failed||pending||blocked||!report.capturedSessions&&report.isolatedSessions>0&&!report.sealedSessions&&!report.heldHistoricalSessions?'source_failed':report.isolatedSessions||report.sealedSessions||report.heldHistoricalSessions?'partial_success':report.changedSessions?'complete_success':'no_change';
     }
     const failed=Object.values(sourceReports).some(report=>report.outcome==='source_failed'),healthy=Object.values(sourceReports).some(report=>report.capturedSessions>0);
     const outcome=failed&&!healthy||uploadIncomplete&&!sent?'source_failed':currentPolicies.some(parent=>this.config.allowedSources.includes(parent.header.manifest.scope.source))||this.state.sessionIsolations().some(item=>item.active&&this.config.allowedSources.includes(item.source))||failed||classified.blocking.length||reviewTotal||uploadIncomplete?'partial_success':sent?'complete_success':'no_change';
     this.state.set('lastCollectionReport',{outcome,sourceReports,quarantineNew,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null});
-    return {sent,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null,reviewTotal,reviewNew,held:this.state.heldCount(),warnings:classified.warnings.length,blockingIssues:classified.blocking.length,
+    return {sent,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null,reviewTotal,reviewNew,held:this.state.heldCount(),warnings:classified.warnings.length,blockingIssues:classified.blocking.length+(failed?1:0)+(lineage||quarantined?1:0),
       outcome,quarantineNew,sourceReports,...this.state.status()};
   }
   private async upload(signal?:AbortSignal){
