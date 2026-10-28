@@ -36,8 +36,10 @@ export async function handleSyncRequest(request:Request) {
     const owner=async(req:Request,mutating:boolean)=>{
       if(mutating&&!hasSameOrigin(req))throw new SyncTransportError('FORBIDDEN',403,0);
       const viewer=await getCurrentViewer();if(viewer.role!=='owner')throw new SyncTransportError('FORBIDDEN',403,0);
-      await requireRecentOwnerSession(viewer.sessionId);
-      if(mutating)auditId=(await writeSecurityAudit('sync.owner.manage','started',undefined,viewer.sessionId)).id;
+      if(mutating){
+        await requireRecentOwnerSession(viewer.sessionId);
+        auditId=(await writeSecurityAudit('sync.owner.manage','started',undefined,viewer.sessionId)).id;
+      }
       return {sessionId:viewer.sessionId,ownerId:'owner'};
     };
     const handler=createSyncHandler({enabled:()=>true,executor:syncExecutor(),limiter,preAuth:preAuthLimiter,owner,remote:remoteSync()});
@@ -53,4 +55,4 @@ export async function handleSyncRequest(request:Request) {
     return response({error:'BACKEND_UNAVAILABLE'},503,undefined,2);
   }
 }
-export function remoteSync(){if(process.env.INCEPT_SYNC_REMOTE_ENABLED!=='1')return undefined;return globalThis.__inceptRemoteSync??=(new RemoteSync({executor:syncExecutor(),secret:readRpcSecret(),gatewayBase:process.env.INCEPT_SYNC_GATEWAY_INTERNAL_URL??'',readMode:()=>process.env.INCEPT_SYNC_READ_MODE??'v1',pollMs:Number(process.env.INCEPT_SYNC_POLL_MS??300000),owner:async(req,mutating)=>{if(mutating&&!hasSameOrigin(req))throw new SyncTransportError('FORBIDDEN',403);const viewer=await getCurrentViewer();if(viewer.role!=='owner')throw new SyncTransportError('FORBIDDEN',403);await requireRecentOwnerSession(viewer.sessionId);if(mutating)await writeSecurityAudit('sync.remote.owner.manage','started',undefined,viewer.sessionId);return {sessionId:viewer.sessionId,ownerId:'owner'};}}));}
+export function remoteSync(){if(process.env.INCEPT_SYNC_REMOTE_ENABLED!=='1')return undefined;return globalThis.__inceptRemoteSync??=(new RemoteSync({executor:syncExecutor(),secret:readRpcSecret(),gatewayBase:process.env.INCEPT_SYNC_GATEWAY_INTERNAL_URL??'',readMode:()=>process.env.INCEPT_SYNC_READ_MODE??'v1',pollMs:Number(process.env.INCEPT_SYNC_POLL_MS??300000),owner:async(req,mutating)=>{if(mutating&&!hasSameOrigin(req))throw new SyncTransportError('FORBIDDEN',403);const viewer=await getCurrentViewer();if(viewer.role!=='owner')throw new SyncTransportError('FORBIDDEN',403);if(mutating){await requireRecentOwnerSession(viewer.sessionId);await writeSecurityAudit('sync.remote.owner.manage','started',undefined,viewer.sessionId);}return {sessionId:viewer.sessionId,ownerId:'owner'};}}));}
