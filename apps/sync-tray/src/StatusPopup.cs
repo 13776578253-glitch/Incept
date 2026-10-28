@@ -187,9 +187,34 @@ namespace InceptSync
                 case AgentVisualState.Connected: return _snapshot.Activity == "collecting" ? Strings.StateCollecting : Strings.StateIdle;
                 case AgentVisualState.Syncing: return Strings.StateUploading;
                 case AgentVisualState.Paused: return Strings.StatePaused;
-                case AgentVisualState.Attention: return Strings.StateAttention + (_snapshot.LastErrorCode ?? Strings.UnknownError);
+                case AgentVisualState.Attention: return Strings.StateAttention + AttentionText();
                 default: return Strings.StateOffline;
             }
+        }
+
+        private string AttentionText()
+        {
+            if (!string.IsNullOrEmpty(_snapshot.LastErrorCode))
+            {
+                return _snapshot.LastErrorCode;
+            }
+            if (_snapshot.ReviewBatches > 0 || _snapshot.RemoteReviewTotal > 0)
+            {
+                return Strings.AttentionReview;
+            }
+            if (_snapshot.HeldBatches > 0 || _snapshot.RemoteHeld > 0)
+            {
+                return Strings.AttentionHeld;
+            }
+            if (_snapshot.QuarantinedBatches > 0)
+            {
+                return Strings.AttentionQuarantined;
+            }
+            if (_snapshot.LineageBatches > 0)
+            {
+                return Strings.AttentionLineage;
+            }
+            return Strings.UnknownError;
         }
 
         protected override bool HitsCard(Point point)

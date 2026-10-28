@@ -155,6 +155,10 @@ namespace InceptSync
         public static string StateUploading { get { return Locale.Pick("上传中", "Uploading"); } }
         public static string StatePaused { get { return Locale.Pick("已暂停 · 不会自动同步", "Paused · automatic sync off"); } }
         public static string StateAttention { get { return Locale.Pick("需要处理 · ", "Needs attention · "); } }
+        public static string AttentionReview { get { return Locale.Pick("审查待处理", "Review required"); } }
+        public static string AttentionHeld { get { return Locale.Pick("保留批次待处理", "Held batches"); } }
+        public static string AttentionQuarantined { get { return Locale.Pick("隔离批次待处理", "Quarantined batches"); } }
+        public static string AttentionLineage { get { return Locale.Pick("历史谱系冲突", "Lineage conflict"); } }
         public static string StateOffline { get { return Locale.Pick("未运行", "Not running"); } }
         public static string UnknownError { get { return Locale.Pick("未知错误", "Unknown error"); } }
 
