@@ -1,6 +1,6 @@
 # Sync Upload Remediation — Offline Implementation Record
 
-Date: 2026-10-28 (Asia/Singapore). Branch `fix/sync-safety` in `.worktrees/sync-safety`, based on deployed sync baseline `17ffd36`. No production deploy, no production DB write, no push/merge.
+Date: 2026-10-28 (Asia/Singapore). Branch `fix/sync-safety` in `.worktrees/sync-safety`, based on deployed sync baseline `17ffd36`. Production deployment and owner-approved historical rebase were executed; no push/merge.
 
 ## Implemented
 
@@ -21,7 +21,7 @@ Date: 2026-10-28 (Asia/Singapore). Branch `fix/sync-safety` in `.worktrees/sync-
 |---|---|
 | `pnpm typecheck` | passed (all workspaces + scripts) |
 | `pnpm lint` | 0 errors, 8 pre-existing warnings |
-| `pnpm --filter @incept/dashboard test` | 297 passed / 2 skipped (49 files) |
+| `pnpm --filter @incept/dashboard test` | 298 passed / 2 skipped (50 files) |
 | `pnpm --filter @incept/sync-agent test` | 101 passed / 0 failed (includes new Antigravity commitment test) |
 | `pnpm --filter web test` | 137 passed / 55 skipped; integration suites gated by DB env |
 | `pnpm --filter web exec vitest run src/server/sync/__tests__/integration.test.ts` (isolated `incept_sync_phase2`) | 15 passed / 0 failed |
@@ -45,9 +45,17 @@ Ran `audit-accepted-reviews` against a local copy of `/srv/incept/shared/sync/ph
 - All 22 are `repairRecommendation = owner-rebase`: records are valid, but the historical range proof predates the stable-key commitment and cannot be re-certified offline.
 - Later committed descendants are listed per review; the audit does not propose deleting or restoring over them.
 
+## Production deployment and rebase
+
+- Backups: `/srv/incept/backups/phase0b-repair-20261028T061500Z/` containing `v4.db` (111,714,304 bytes, SHA-256 `d81586328c6b65025db17da447a82c60ad931fb14239eb5291421575513902f4`), `postgres.dump`, and `env.before`.
+- Release commit: `14d118e`; server image `sha256:2c03b477368ffa6b713612e5ef350db233354b91d6964e166a93071ed0992c93`; release dir `/srv/incept/releases/14d118e`. A follow-up agent-only commit `5143a77` splits the capture heap budget (SQLite snapshots no longer consume the JSON heap budget) and is installed in the local tray/agent package.
+- Rebase applied to 11 affected scopes (9 antigravity, 2 zcode) with fresh source captures: revision 869→880, 11 committed `rebase` generations, each parented to the old visible generation. All old rows remain; all 11 visible record sequences are byte-for-byte identical to the pre-rebase backup. Schema is now 3; `PRAGMA integrity_check` is `ok`.
+- App, gateway and proxy are healthy; `/api/health/ready` is 200; `sync-maintenance status` reports revision 880, 956 receipts, 3 unresolved commandcode reviews (#32–#34, `REVISION_ENVELOPE_CHANGED`, created after Phase 0A).
+- Canary: local agent restarted on the new build; `run-once` captured 152 antigravity sessions with no `CAPTURE_LIMIT`, retained 3 review batches and 1 held batch, and made no duplicate commits. The local tray package now points at the new agent build.
+
 ## Remaining owner-gated work
 
-1. **Historical review repair**: the 22 accepted reviews need an Owner-approved rebase/new auditable generation with a fresh source capture (or scope fencing). No offline tool should rewrite the ledger in place.
+1. **Historical review repair**: the 22 accepted reviews were repaired by the Owner-approved rebase above. The remaining #32–#34 are new unresolved commandcode `REVISION_ENVELOPE_CHANGED` reviews created after Phase 0A; they were not part of the 22 accepted-review set and still require Owner disposition (rebase or review).
 2. **Large-capture split**: the 20,000-record guard is enforced, but a single session above that limit needs a future delta/Merkle protocol; cumulative chunks cannot satisfy the current `recordCount >= parent.recordCount` rule without exceeding the server batch limit.
-3. **Source matrix approval**: `docs/research/sync-source-semantics-matrix.md` is proposed; opencode/zcode/aiusage remain on the existing review path.
-4. **Production rollout**: backup, deploy, canary, and Owner acceptance were not performed. The isolated sync and agent integration suites pass; the remote WSS suite is not green because its fixture still assumes the older seven-source/last-completion shape, and the remaining auth/remote env-gated suites were not treated as acceptance evidence.
+3. **Source matrix**: `docs/research/sync-source-semantics-matrix.md` was approved by the Owner on 2026-10-28; opencode/zcode/aiusage remain on the existing review path until their mutation rules are exercised.
+4. **Production rollout**: the app/gateway/proxy were deployed and are healthy; the canary is running. #32–#34 remain unresolved, and the remote WSS acceptance suite still uses a stale seven-source/PHASE0_NOW fixture, so it is not accepted as green evidence.
