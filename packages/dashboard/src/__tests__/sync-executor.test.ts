@@ -51,6 +51,15 @@ it('low-space policy blocks new staging; warnings never erase committed history'
   await executor.execute({op:'register',scope,label:'Synthetic',actor:owner});await expect(executor.execute({op:'begin',header:c.header,actor:device})).rejects.toMatchObject({code:'INSUFFICIENT_STORAGE',status:503,retryAfter:60});
   const db=new DatabaseSync(join(home,'sync.db'));const state=capacityState(join(home,'sync.db'),db,{...DEFAULT_CAPACITY,warnBytes:1,reviewBytes:2},10*1024**3);expect(state.usage).toBe('review-required');guardCapacity(state);expect(db.prepare('SELECT COUNT(*) n FROM sync_scopes').get()!.n).toBe(1);db.close();
 });
+it('commits a Merkle-verified session above the old 20k ceiling',async()=>{
+  const events=Array.from({length:25_000},(_,index)=>({eventId:hash('large-'+index),source:scope.source,sessionId:scope.sessionId,timestampMs:Date.UTC(2026,9,16)+index,
+    modelName:'phase0-fixture-model',projectKey:'synthetic',projectName:'Synthetic',inputTokens:1,outputTokens:0,cacheReadTokens:0,cacheCreationTokens:0,reasoningTokens:0}));
+  const c=fromEvents(events,scope,undefined,'large-25k'),executor=make();
+  await executor.execute({op:'register',scope,label:'Synthetic',actor:owner});await executor.execute({op:'begin',header:c.header,actor:device});
+  for(let offset=0;offset<c.records.length;offset+=500)await executor.execute({op:'stage',device:device.deviceId,batch:c.header.batchId,offset,records:c.records.slice(offset,offset+500),actor:device});
+  const result=await executor.execute<{receipt:{status:string}}>({op:'commit',device:device.deviceId,batch:c.header.batchId,actor:device});expect(result.receipt.status).toBe('committed');
+  const db=new DatabaseSync(join(home,'sync.db'));expect(db.prepare('SELECT COUNT(*) n FROM sync_current').get()!.n).toBe(25_000);db.close();
+},120_000);
 it('four active batches per device, TTL cleanup and receipt retention remain independent',async()=>{
   const executor=make();await executor.execute({op:'register',scope,label:'Synthetic',actor:owner});
   for(let i=0;i<4;i++)await executor.execute({op:'begin',header:candidate('batch-'+i).header,actor:device});

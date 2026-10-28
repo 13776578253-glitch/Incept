@@ -7,6 +7,7 @@ import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {AgentState,SyncEngine,AgentHttp,validateEndpoint,scopeKey,captureHome,buildCandidate,type Config} from './engine';
 import {hash} from '../../../packages/dashboard/src/adapters/local/imports/identity';
+import {SYNC_LIMITS} from '../../../packages/dashboard/src/adapters/local/imports/sync/contract';
 import {readConfig,storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
 import {acquireInstance,isRunning} from './lifecycle';
 import {RemoteLink} from './remote';
@@ -71,7 +72,7 @@ async function main(){
     const batch=option('batch');if(!batch||!/^[a-zA-Z0-9_-]{1,128}$/.test(batch))throw Error('BATCH_REQUIRED');
     const state=new AgentState(directory);
     try{const row=state.db.prepare("SELECT header_json FROM outbox WHERE batch=? AND state='review'").get(batch);if(!row)throw Error('REVIEW_BATCH_REQUIRED');
-      const header=JSON.parse(String(row.header_json)),records=[];if(header.manifest.recordCount>20000)throw Error('REVIEW_EXPORT_LIMIT');
+      const header=JSON.parse(String(row.header_json)),records=[];if(header.manifest.recordCount>SYNC_LIMITS.largeBatchRecords)throw Error('REVIEW_EXPORT_LIMIT');
       for(let offset=0;offset<header.manifest.recordCount;){const page=state.page(batch,offset);if(!page.length)throw Error('REVIEW_RECORDS_MISSING');records.push(...page);offset+=page.length;}
       atomicJson(join(directory,'review-'+batch+'.json'),{header,records});output({exported:true,manifest:header.manifest.manifestHash});
     }finally{state.close();}return;

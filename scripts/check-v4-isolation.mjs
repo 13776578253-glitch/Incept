@@ -131,7 +131,7 @@ export function checkV4Isolation(config) {
     INCEPT_DOCS_DRAFTS_DIR: '/data/docs-drafts', INCEPT_MUSIC_MEDIA_DIR: '/data/music-media', INCEPT_DASHBOARD_HOME: '/data/dashboard',
     INCEPT_DASHBOARD_IMPORTS_FILE: '/data/dashboard/imports.db', INCEPT_DASHBOARD_CACHE_FILE: '/data/dashboard/snapshots.json',
     INCEPT_DASHBOARD_OVERRIDES_FILE: '/data/dashboard/overrides.json', INCEPT_SYNC_POLL_MS: '300000',
-    INCEPT_SYNC_MAX_QUEUE: '4', INCEPT_SYNC_MAX_BATCH_RECORDS: '20000', INCEPT_SYNC_MEMORY_PERCENT: '85',
+    INCEPT_SYNC_MAX_QUEUE: '4', INCEPT_SYNC_MAX_BATCH_RECORDS: '100000', INCEPT_SYNC_MEMORY_PERCENT: '85',
     NODE_OPTIONS: '--max-old-space-size=256 --max-semi-space-size=8' })) requireValue(env[key] === value, `ENV_${key}`);
   requireValue(/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(env.INCEPT_SYNC_DEVICE_ALLOWLIST ?? ''), 'DEVICE_ID');
   requireValue(/^[a-f0-9]{64}$/i.test(env.INCEPT_AUTH_ENCRYPTION_KEY ?? '') && !/^(.)\1+$/.test(env.INCEPT_AUTH_ENCRYPTION_KEY), 'AUTH_KEY');

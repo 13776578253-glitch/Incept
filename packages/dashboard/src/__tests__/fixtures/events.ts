@@ -1,5 +1,5 @@
 import { hash } from '../../adapters/local/imports/identity';
-import { makeManifest, sequenceHash, syncEnvelope, usageKeyRoot } from '../../adapters/local/imports/sync/contract';
+import { makeManifest, merkleRoot, sequenceHash, syncEnvelope, usageKeyRoot } from '../../adapters/local/imports/sync/contract';
 import type { SyncHeader, SyncRange, SyncRecord, SyncScope } from '../../domain/sync';
 import type { TransferEvent } from '../../domain';
 
@@ -57,6 +57,7 @@ export function fromEvents(events: TransferEvent[], scope: SyncScope, parent?: S
     read: { status: 'complete', beforeRoot: snapshotRoot, afterRoot: snapshotRoot, snapshotRoot, inventoryHash: hash([range.locatorHash]) },
     recordCount: records.length,
     sequenceHash: root,
+    merkleRoot: merkleRoot(records),
     basisHash: hash(basis),
     mappingsHash: hash(mappings),
     intent: 'observe',

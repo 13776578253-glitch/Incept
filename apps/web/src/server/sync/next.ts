@@ -23,7 +23,7 @@ export function syncExecutor() {
     const configured=(name:string,fallback:number)=>process.env[name]===undefined?fallback:Number(process.env[name]);
     const policy={warnBytes:configured('INCEPT_SYNC_WARN_BYTES',DEFAULT_CAPACITY.warnBytes),reviewBytes:configured('INCEPT_SYNC_REVIEW_BYTES',DEFAULT_CAPACITY.reviewBytes),
       warnFreeBytes:configured('INCEPT_SYNC_WARN_FREE_BYTES',DEFAULT_CAPACITY.warnFreeBytes),rejectFreeBytes:configured('INCEPT_SYNC_REJECT_FREE_BYTES',DEFAULT_CAPACITY.rejectFreeBytes),
-      maxStoreBytes:configured('INCEPT_SYNC_MAX_STORE_BYTES',DEFAULT_CAPACITY.maxStoreBytes!),memoryPercent:configured('INCEPT_SYNC_MEMORY_PERCENT',85),maxBatchRecords:configured('INCEPT_SYNC_MAX_BATCH_RECORDS',20000)};
+      maxStoreBytes:configured('INCEPT_SYNC_MAX_STORE_BYTES',DEFAULT_CAPACITY.maxStoreBytes!),memoryPercent:configured('INCEPT_SYNC_MEMORY_PERCENT',85),maxBatchRecords:configured('INCEPT_SYNC_MAX_BATCH_RECORDS',100_000)};
     globalThis.__inceptSyncExecutor={path,executor:new SyncExecutor(path,{legacyPath:trusted?undefined:legacyPath,trusted,policy,maxQueue:configured('INCEPT_SYNC_MAX_QUEUE',16),timeoutMs:configured('INCEPT_SYNC_TIMEOUT_MS',30_000)})};
   }
   if(trustedDashboardEnabled())configureTrustedDashboardExecutor(globalThis.__inceptSyncExecutor.executor);

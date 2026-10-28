@@ -4,7 +4,7 @@ import { TRANSFER_SOURCES } from '../../../../domain';
 import { hash, stableJson } from '../identity';
 import { validateBundle } from '../validation';
 
-export const SYNC_LIMITS = { pageRecords: 500, pageBytes: 512 * 1024, records: 250_000, headerBytes: 128 * 1024,
+export const SYNC_LIMITS = { pageRecords: 500, pageBytes: 512 * 1024, records: 250_000, largeBatchRecords: 100_000, headerBytes: 128 * 1024,
   stagedBytes: 128 * 1024 * 1024, ttlMs: 24 * 60 * 60_000 } as const;
 export class SyncError extends Error { constructor(public code: string) { super(code); } }
 export function requireSync(condition: unknown, code: string): asserts condition { if (!condition) throw new SyncError(code); }
@@ -17,6 +17,16 @@ export function sequenceHash(records: Iterable<SyncRecord>) {
   const digest = createHash('sha256'); digest.update('['); let first = true;
   for (const record of records) { if (!first) digest.update(','); digest.update(stableJson(record)); first = false; }
   return digest.update(']').digest('hex');
+}
+export function merkleRoot(records: Iterable<SyncRecord>) {
+  let level = [...records].map(record => hash(record));
+  if (!level.length) return hash([]);
+  while (level.length > 1) {
+    const next: string[] = [];
+    for (let index = 0; index < level.length; index += 2) next.push(hash([level[index], level[index + 1] ?? level[index]]));
+    level = next;
+  }
+  return level[0];
 }
 export function usageKeyRoot(records: Iterable<SyncRecord>) {
   const keys: string[] = [];
@@ -41,7 +51,7 @@ export function validateHeader(value: unknown): SyncHeader {
   requireSync(Buffer.byteLength(JSON.stringify(value)) <= SYNC_LIMITS.headerBytes, 'HEADER_TOO_LARGE');
   fields(value, ['batchId', 'manifest', 'basis', 'mappings']); text(value.batchId, 128);
   const manifest = value.manifest;
-  fields(manifest, ['version','scope','reader','collectorVersion','epoch','parent','read','ranges','recordCount','sequenceHash','basisHash','mappingsHash','generationId','manifestHash','intent']);
+  fields(manifest, ['version','scope','reader','collectorVersion','epoch','parent','read','ranges','recordCount','sequenceHash','basisHash','mappingsHash','merkleRoot','generationId','manifestHash','intent']);
   requireSync(manifest.version === 2 && manifest.collectorVersion === 'incept-collector/1', 'UNSUPPORTED_VERSION');
   fields(manifest.scope, ['deviceId','source','sessionId','originId']);
   for (const key of ['deviceId','source','sessionId','originId']) text(manifest.scope[key]);
@@ -49,6 +59,7 @@ export function validateHeader(value: unknown): SyncHeader {
   requireSync(manifest.reader === manifest.scope.source || manifest.reader === 'aiusage', 'UNKNOWN_READER');
   count(manifest.epoch, 1e6); count(manifest.recordCount, SYNC_LIMITS.records);
   for (const key of ['sequenceHash','basisHash','mappingsHash','generationId','manifestHash']) digest(manifest[key]);
+  if (manifest.merkleRoot !== undefined) digest(manifest.merkleRoot);
   requireSync(['observe','rebase','reprice'].includes(String(manifest.intent)), 'INVALID_INTENT');
   if (manifest.parent !== null) { fields(manifest.parent, ['generationId','manifestHash']); digest(manifest.parent.generationId); digest(manifest.parent.manifestHash); }
   fields(manifest.read, ['status','inventoryHash','beforeRoot','afterRoot','snapshotRoot']);

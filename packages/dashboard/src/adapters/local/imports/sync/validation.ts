@@ -1,5 +1,5 @@
 import type { SyncManifest, SyncRecord } from '../../../../domain/sync';
-import { qualifyRanges, qualifyRecords, requireSync, usageKeyRoot } from './contract';
+import { qualifyRanges, qualifyRecords, requireSync, usageKeyRoot, merkleRoot } from './contract';
 
 export type EvidenceValidation = { tokenTotal: number; changed: boolean };
 
@@ -18,6 +18,7 @@ export type EvidenceInput = {
 export function validateEvidence(input: EvidenceInput): EvidenceValidation {
   const { manifest, parent } = input;
   const records = [...input.records], current = [...input.current];
+  if (manifest.merkleRoot !== undefined) requireSync(manifest.merkleRoot === merkleRoot(records), 'MERKLE_ROOT_MISMATCH');
   const stable = manifest.ranges.filter(range => range.commitment);
   if (stable.length) {
     requireSync(manifest.ranges.length === 1, 'UNSUPPORTED_EVIDENCE');

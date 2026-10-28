@@ -2,7 +2,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync} from 'node:fs';
 import {join} from 'node:path';
 import {hash} from '../../../packages/dashboard/src/adapters/local/imports/identity';
-import {validateHeader} from '../../../packages/dashboard/src/adapters/local/imports/sync/contract';
+import {SYNC_LIMITS,validateHeader} from '../../../packages/dashboard/src/adapters/local/imports/sync/contract';
 import type {SyncReceipt} from '../../../packages/dashboard/src/domain/sync';
 import type {ParentCapture,SessionIsolation,RecoveryRange,buildCandidate} from '../../../packages/dashboard/src/agent/capture';
 export type Candidate=ReturnType<typeof buildCandidate>;
@@ -102,7 +102,7 @@ export class AgentState {
     const used=exclude?.length?this.db.prepare(`SELECT COALESCE(SUM(length(CAST(json AS BLOB))),0) bytes FROM records WHERE batch NOT IN (${slots})`).get(...exclude):this.db.prepare('SELECT COALESCE(SUM(length(CAST(json AS BLOB))),0) bytes FROM records').get();
     return size<=128*1024**2&&size+Number(used!.bytes)<=256*1024**2;}
   private put(c:Candidate,signature:string,state:'pending'|'held'){const scope=scopeKey(c.header.manifest.scope.source,c.header.manifest.scope.sessionId);
-    if(c.records.length>20_000)throw Error('CANDIDATE_RECORD_LIMIT');
+    if(c.records.length>SYNC_LIMITS.largeBatchRecords)throw Error('CANDIDATE_RECORD_LIMIT');
     const policy=this.db.prepare('SELECT seal_json FROM historical_seals WHERE scope=?').get(scope);
     if(policy)throw Error(JSON.parse(String(policy.seal_json)).disposition==='isolated'?'HISTORICAL_CONTINUATION_UNVERIFIED':'HISTORICAL_SCOPE_SEALED');
     if(!this.fits(c))throw Error('OUTBOX_CAPACITY');

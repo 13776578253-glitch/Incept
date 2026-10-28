@@ -9,10 +9,10 @@ export function validateSyncConfiguration(env=process.env) {
   if(!enabled){if(remote||(env.INCEPT_SYNC_READ_MODE??'v1')!=='v1')throw Error('SYNC_DISABLED_CONFIG_CONFLICT');return;}
   if(!env.INCEPT_SYNC_DATABASE_FILE||!isAbsolute(env.INCEPT_SYNC_DATABASE_FILE)||resolve(env.INCEPT_SYNC_DATABASE_FILE)===resolve(env.INCEPT_DASHBOARD_IMPORTS_FILE??''))throw Error('SYNC_DISTINCT_DATABASE_REQUIRED');
   if(!/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(env.INCEPT_SYNC_DEVICE_ALLOWLIST??''))throw Error('SYNC_SINGLE_CANARY_REQUIRED');
-  const poll=Number(env.INCEPT_SYNC_POLL_MS??300000),queue=Number(env.INCEPT_SYNC_MAX_QUEUE??4),batch=Number(env.INCEPT_SYNC_MAX_BATCH_RECORDS??20000),memory=Number(env.INCEPT_SYNC_MEMORY_PERCENT??85);
+  const poll=Number(env.INCEPT_SYNC_POLL_MS??300000),queue=Number(env.INCEPT_SYNC_MAX_QUEUE??4),batch=Number(env.INCEPT_SYNC_MAX_BATCH_RECORDS??100000),memory=Number(env.INCEPT_SYNC_MEMORY_PERCENT??85);
   if(!Number.isInteger(poll)||poll<300000||poll>600000)throw Error('SYNC_POLL_INVALID');
   if(!Number.isInteger(queue)||queue<1||queue>64)throw Error('SYNC_QUEUE_INVALID');
-  if(!Number.isInteger(batch)||batch<1||batch>20000)throw Error('SYNC_BATCH_INVALID');
+  if(!Number.isInteger(batch)||batch<1||batch>100000)throw Error('SYNC_BATCH_INVALID');
   if(!Number.isInteger(memory)||memory<50||memory>95)throw Error('SYNC_MEMORY_PERCENT_INVALID');
   const size=(name,fallback)=>{const value=Number(env[name]??fallback);if(!Number.isSafeInteger(value)||value<0)throw Error('SYNC_DISK_LIMIT_INVALID');return value;};
   const warn=size('INCEPT_SYNC_WARN_BYTES',1024**3),review=size('INCEPT_SYNC_REVIEW_BYTES',2*1024**3);

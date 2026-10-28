@@ -67,7 +67,7 @@ parentPort.on('message',({id,work}:{id:number;work:SyncWork})=>{
         service.transaction(()=>{for(const row of service.db.prepare('SELECT batch_id FROM sync_staging WHERE device_id=? AND expires_at<=?').all(device,Date.now()))service.clearStage(device,String(row.batch_id));});
         const existing=service.db.prepare('SELECT 1 FROM sync_staging WHERE device_id=? AND batch_id=?').get(work.actor.deviceId,work.header.batchId);
         if(!existing&&!service.receipt(work.actor.deviceId,work.header.batchId)) {
-          if(work.header.manifest.recordCount>(policy.maxBatchRecords??20000))throw new SyncTransportError('LARGE_BATCH_DEFERRED',429,300);
+          if(work.header.manifest.recordCount>(policy.maxBatchRecords??100_000))throw new SyncTransportError('LARGE_BATCH_DEFERRED',429,300);
           guardCapacity(capacityState(service.path,service.db,policy));
           const active=service.db.prepare('SELECT COUNT(*) n FROM sync_staging WHERE device_id=? AND expires_at>?').get(work.actor.deviceId,Date.now())!;
           if(Number(active.n)>=4)throw new SyncTransportError('DEVICE_BATCH_LIMIT',429,60);

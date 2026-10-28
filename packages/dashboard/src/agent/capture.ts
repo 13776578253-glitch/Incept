@@ -13,7 +13,7 @@ import {hash,nativeEventId} from '../adapters/local/imports/identity';
 import {normalizeCodexRecords} from './codex-normalize';
 import {isCodexAutoReviewModel} from '../adapters/local/collectors/codex-purpose';
 import {canonicalTransferId} from '../adapters/local/imports/matching';
-import {makeManifest,sequenceHash,syncEnvelope,SYNC_LIMITS,validateHeader,validateRecords,qualifyRanges} from '../adapters/local/imports/sync/contract';
+import {makeManifest,merkleRoot,sequenceHash,syncEnvelope,SYNC_LIMITS,validateHeader,validateRecords,qualifyRanges} from '../adapters/local/imports/sync/contract';
 import type {SyncScope,SyncHeader,SyncRecord,SyncRange} from '../domain/sync';
 import type {TransferSource,TransferEvent} from '../domain';
 
@@ -208,7 +208,7 @@ export function buildCandidate(capture:Capture,scope:SyncScope,parent:ParentCapt
     }}
   const ranges=proofs.map(p=>p.range),root=hash(ranges.map(r=>[r.locatorHash,r.root])),basis=parent?.header.basis??{rates:capture.rates,aliases:{},schedule:'commandcode-peak-v1' as const},mappings=parent?.header.mappings??{};
   const header:SyncHeader={batchId,basis,mappings,manifest:makeManifest({version:2,scope,reader:capture.reader,collectorVersion:'incept-collector/1',epoch:parent?.header.manifest.epoch??0,parent:parent?{generationId:parent.header.manifest.generationId,manifestHash:parent.header.manifest.manifestHash}:null,
-    read:{status:'complete',inventoryHash:hash(ranges.map(r=>r.locatorHash).sort()),beforeRoot:root,afterRoot:root,snapshotRoot:root},ranges,recordCount:capture.records.length,sequenceHash:sequenceHash(capture.records),basisHash:hash(basis),mappingsHash:hash(mappings),intent:'observe'})};
+    read:{status:'complete',inventoryHash:hash(ranges.map(r=>r.locatorHash).sort()),beforeRoot:root,afterRoot:root,snapshotRoot:root},ranges,recordCount:capture.records.length,sequenceHash:sequenceHash(capture.records),merkleRoot:merkleRoot(capture.records),basisHash:hash(basis),mappingsHash:hash(mappings),intent:'observe'})};
   validateHeader(header);for(let i=0;i<capture.records.length;i+=500)validateRecords(capture.records.slice(i,i+500),header);
   return {header,records:capture.records,proofs};
 }

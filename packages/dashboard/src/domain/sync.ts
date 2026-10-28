@@ -16,6 +16,7 @@ export type SyncManifest = { version: 2; scope: SyncScope; reader: TransferSourc
   parent: { generationId: string; manifestHash: string } | null; read: { status: 'complete' | 'partial' | 'unavailable' | 'failed';
     inventoryHash: string; beforeRoot: string; afterRoot: string; snapshotRoot: string };
   ranges: SyncRange[]; recordCount: number; sequenceHash: string; basisHash: string; mappingsHash: string;
+  merkleRoot?: string;
   generationId: string; manifestHash: string; intent: 'observe' | 'rebase' | 'reprice' };
 export type SyncHeader = { batchId: string; manifest: SyncManifest; basis: SyncBasis; mappings: Record<string, string | null> };
 export type SyncActor = { role: 'device'; deviceId: string } | { role: 'owner'; subject: string; reason: string };

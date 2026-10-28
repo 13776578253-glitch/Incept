@@ -184,7 +184,7 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
     const actor=owner(options),file=absolute(options,'candidate');
     if(statSync(file).size>64*1024*1024)throw new MaintenanceError('CANDIDATE_LIMIT');
     const candidate=JSON.parse(readFileSync(file,'utf8')) as {header:import('../domain/sync').SyncHeader;records:import('../domain/sync').SyncRecord[]};
-    if(!Array.isArray(candidate.records)||candidate.records.length>20000||candidate.header.manifest.intent!=='observe')throw new MaintenanceError('CANDIDATE_LIMIT');
+    if(!Array.isArray(candidate.records)||candidate.records.length>SYNC_LIMITS.largeBatchRecords||candidate.header.manifest.intent!=='observe')throw new MaintenanceError('CANDIDATE_LIMIT');
     if(candidate.header.manifest.scope.deviceId!==required(options,'device')||candidate.header.manifest.manifestHash!==required(options,'manifest'))throw new MaintenanceError('EXPLICIT_SCOPE_CONFIRMATION_REQUIRED');
     if(command==='adopt-reviewed'&&required(options,'accept-reviewed-manifest')!==candidate.header.manifest.manifestHash)throw new MaintenanceError('REVIEWED_MANIFEST_CONFIRMATION_REQUIRED');
     const batches=required(options,'legacy-batches').split(',');if(batches.length>100||batches.some(id=>!/^[a-zA-Z0-9_-]{1,128}$/.test(id)))throw new MaintenanceError('LEGACY_BATCH_LIMIT');
@@ -217,7 +217,7 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
     const actor=owner(options),file=absolute(options,'candidate');
     if(statSync(file).size>64*1024*1024)throw new MaintenanceError('CANDIDATE_LIMIT');
     const candidate=JSON.parse(readFileSync(file,'utf8')) as {header:import('../domain/sync').SyncHeader;records:import('../domain/sync').SyncRecord[]};
-    if(!candidate.header||!Array.isArray(candidate.records)||candidate.records.length>SYNC_LIMITS.records||candidate.header.manifest.intent!=='observe')throw new MaintenanceError('INVALID_REBASE_CANDIDATE');
+    if(!candidate.header||!Array.isArray(candidate.records)||candidate.records.length>SYNC_LIMITS.largeBatchRecords||candidate.header.manifest.intent!=='observe')throw new MaintenanceError('INVALID_REBASE_CANDIDATE');
     const device=required(options,'device'),source=required(options,'source'),sessionId=required(options,'session'),candidateManifest=required(options,'manifest');
     if(candidate.header.manifest.manifestHash!==candidateManifest)throw new MaintenanceError('REBASE_MANIFEST_MISMATCH');
     const service=new CompatibleSyncService(syncPath);

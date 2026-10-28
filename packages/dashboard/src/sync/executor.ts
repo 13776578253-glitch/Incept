@@ -25,7 +25,7 @@ export class SyncExecutor {
       ||!Number.isInteger(this.options.timeoutMs)||this.options.timeoutMs<100||this.options.timeoutMs>120_000)throw new SyncTransportError('INVALID_EXECUTOR_CONFIG');
     for(const value of Object.values(this.options.policy))if(!Number.isSafeInteger(value)||value<0)throw new SyncTransportError('INVALID_CAPACITY_CONFIG');
     if(this.options.policy.warnBytes>this.options.policy.reviewBytes||this.options.policy.rejectFreeBytes>this.options.policy.warnFreeBytes)throw new SyncTransportError('INVALID_CAPACITY_CONFIG');
-    if((this.options.policy.memoryPercent??85)<50||(this.options.policy.memoryPercent??85)>95||(this.options.policy.maxBatchRecords??20000)<1)throw new SyncTransportError('INVALID_CAPACITY_CONFIG');
+    if((this.options.policy.memoryPercent??85)<50||(this.options.policy.memoryPercent??85)>95||(this.options.policy.maxBatchRecords??100_000)<1)throw new SyncTransportError('INVALID_CAPACITY_CONFIG');
   }
   state(){return {queueLength:this.queue.length,running:!!this.running,...this.metrics};}
   onCommitted(listener:()=>void){this.commitListeners.add(listener);return ()=>this.commitListeners.delete(listener);}
