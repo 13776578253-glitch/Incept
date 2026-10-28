@@ -82,10 +82,11 @@ function fileProof(file:File,scope:{source:TransferSource;sessionId:string},read
 }
 // Caller supplies a private disposable snapshot directory and cleans it even on worker termination.
 export async function captureHome(home:string,snapshot:string,allowed:TransferSource[],parents:ParentCapture[]=[],options:CaptureOptions={}):Promise<CaptureResult>{
-  mkdirSync(snapshot,{recursive:true,mode:0o700});const files:File[]=[],issues:string[]=[],failed=new Set<string>(),isolations:SessionIsolation[]=[];let bytes=0;
+  mkdirSync(snapshot,{recursive:true,mode:0o700});const files:File[]=[],issues:string[]=[],failed=new Set<string>(),isolations:SessionIsolation[]=[];let bytes=0,snapshotBytes=0;
   const list=inventory(home).filter(item=>!options.sessionIds?.length||item.source!=='antigravity'||options.sessionIds.includes(basename(item.locator,'.db')));
   for(const item of list){if(item.source!=='aiusage'&&!allowed.includes(item.source as TransferSource))continue;
-    try{const input=join(home,item.locator),st=lstatSync(input);if(st.isSymbolicLink()||st.size>256*1024**2||(bytes+=st.size)>1024*1024**2)throw Error('CAPTURE_LIMIT');
+    try{const input=join(home,item.locator),st=lstatSync(input),database=/\.(db|sqlite)$/.test(input);
+      if(st.isSymbolicLink()||st.size>256*1024**2||(snapshotBytes+=st.size)>4*1024**3||(!database&&(bytes+=st.size)>1024*1024**2))throw Error('CAPTURE_LIMIT');
       const path=join(snapshot,item.locator);mkdirSync(dirname(path),{recursive:true,mode:0o700});
       let data:Buffer|undefined,root:string,filePath=path;
       if(/\.(db|sqlite)$/.test(input)){const db=new DatabaseSync(input,{readOnly:true});try{db.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=5000;');await backup(db,path);}finally{db.close();}root=hash(dbRows(path));const after=lstatSync(input);if(after.size!==st.size||after.mtimeMs!==st.mtimeMs)throw Error('CHANGED_DURING_READ');}
