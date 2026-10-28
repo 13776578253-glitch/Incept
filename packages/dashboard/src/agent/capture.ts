@@ -189,7 +189,14 @@ export function buildCandidate(capture:Capture,scope:SyncScope,parent:ParentCapt
   const proofs=capture.proofs.map(p=>structuredClone(p));
   for(const proof of proofs){const next=proof.range,old=parent?.proofs.find(p=>p.range.locatorHash===next.locatorHash);
     if(old&&old.range.root!==next.root){let retained=false;
-      if(proof.parts&&old.parts)retained=old.parts.every((part,i)=>part.schema===proof.parts![i]?.schema&&part.rows.every((h,n)=>h===proof.parts![i].rows[n]));
+      if(proof.parts&&old.parts){
+        retained=old.parts.every((part,i)=>part.schema===proof.parts![i]?.schema&&part.rows.every((h,n)=>h===proof.parts![i].rows[n]));
+        if(!retained&&scope.source==='antigravity'&&capture.records.length>=(parent?.header.manifest.recordCount??0)){
+          const schemasMatch=old.parts.every((part,i)=>part.schema===proof.parts![i]?.schema);
+          const noRowsDeleted=old.parts.every((part,i)=>(proof.parts![i]?.rows.length??0)>=part.rows.length);
+          if(schemasMatch&&noRowsDeleted)retained=true;
+        }
+      }
       else retained=(readCurrentPrefix?.(next.locatorHash,old.range.byteLength)??capture.prefixes[next.locatorHash+':'+old.range.byteLength])===old.range.root;
       next.previous={locatorHash:old.range.locatorHash,root:old.range.root,retainedRoot:retained?old.range.root:hash('PREFIX_NOT_RETAINED'),retainedBytes:old.range.byteLength,change:retained?'append':next.envelopeRoot===old.range.envelopeRoot&&capture.reader!=='aiusage'&&scope.source!=='antigravity'?'usage-revision':'append'};
     }}

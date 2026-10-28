@@ -10,6 +10,7 @@ import {AgentState,scopeKey} from './state';
 import {AgentHttp,RemoteError} from './transport';
 import {classifyIssues} from './issues';
 import {resumeReviewed} from './review';
+import {resumeHeld} from './resume';
 export {AgentState,scopeKey} from './state';
 export {AgentHttp,RemoteError,validateEndpoint} from './transport';
 export {storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
@@ -25,7 +26,7 @@ export type Collector=(home:string,allowed:TransferSource[],parents:ParentCaptur
 export function workerCollector(stateDirectory:string):Collector{return async(home,allowed,parents,signal,options)=>{
   const snapshot=resolve(stateDirectory,'capture-'+randomUUID());
   const worker=new Worker(fileURLToPath(new URL('./collect-worker.mjs',import.meta.url)),{workerData:{home,allowed,parents,snapshot,tolerantIncomplete:options?.tolerantIncomplete===true,recoveryRanges:options?.recoveryRanges,autoReviewSessions:options?.autoReviewSessions},resourceLimits:{maxOldGenerationSizeMb:1024}});
-  try{return await new Promise<CaptureResult>((yes,no)=>{const abort=()=>{clearTimeout(timer);void worker.terminate();no(Error('CAPTURE_STOPPED'));};const timer=setTimeout(abort,120_000);signal?.addEventListener('abort',abort,{once:true});
+  try{return await new Promise<CaptureResult>((yes,no)=>{const abort=()=>{clearTimeout(timer);void worker.terminate();no(Error('CAPTURE_STOPPED'));};const timer=setTimeout(abort,300_000);signal?.addEventListener('abort',abort,{once:true});
     const finish=(error?:Error,result?:CaptureResult)=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);if(error)no(error);else yes(result!);};
     worker.once('message',message=>message.error?finish(Error('SOURCE_CAPTURE_FAILED')):finish(undefined,message.result));worker.once('error',()=>finish(Error('SOURCE_CAPTURE_FAILED')));worker.once('exit',code=>{if(code)finish(Error('SOURCE_CAPTURE_FAILED'));});});
   }finally{await worker.terminate();if(snapshot.startsWith(resolve(stateDirectory)+ '/capture-')||snapshot.startsWith(resolve(stateDirectory)+'\\capture-'))rmSync(snapshot,{recursive:true,force:true});}
@@ -72,7 +73,7 @@ export class SyncEngine {
         // new observation as a durable successor, but do not upload it.
         try{const scope=previous?.parent.header.manifest.scope??{deviceId:this.config.deviceId,source:capture.source,sessionId:capture.sessionId,originId:hash(['incept-origin/1',capture.source,capture.sessionId])};
           this.state.hold(buildCandidate(capture,scope,previous?.parent,randomUUID()),signature);}
-        catch(error){const code=error instanceof Error&&error.message==='OUTBOX_CAPACITY'?'HELD_CAPACITY':'HELD_WRITE_FAILED';this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),code]);}
+        catch(error){if(error instanceof Error&&error.message==='RUNNING_USAGE')continue;const code=error instanceof Error&&error.message==='OUTBOX_CAPACITY'?'HELD_CAPACITY':'HELD_WRITE_FAILED';this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),code]);}
         continue;
       }
       // A native, session-anchored Codex log has its own identity. Missing unrelated
@@ -90,7 +91,7 @@ export class SyncEngine {
         this.state.enqueue(buildCandidate(capture,scope,previous?.parent,randomUUID()),signature);
         if(sourceReports[capture.source])sourceReports[capture.source].changedSessions=(sourceReports[capture.source].changedSessions??0)+1;
       }catch(error){
-        if(error instanceof Error&&error.message==='OUTBOX_CAPACITY')throw error;
+        if(error instanceof Error&&error.message==='RUNNING_USAGE')continue;if(error instanceof Error&&error.message==='OUTBOX_CAPACITY')throw error;
         const isolation:SessionIsolation={source:capture.source,sessionId:capture.sessionId,
           reason:error instanceof Error&&/^[A-Z][A-Z0-9_]+$/.test(error.message)?error.message:'CANDIDATE_VALIDATION_FAILED',
           affectedRecords:capture.records.length,unattributedTokens:0,coverage:'session'};
@@ -139,6 +140,8 @@ export class SyncEngine {
   private async upload(signal?:AbortSignal){
     this.state.set('activity','uploading');let sent=0,newTokens:number|null=0,uploadedTokens=0;
     for(const b of this.state.reviewBatches()){try{await resumeReviewed(this.state,this.http,b);this.state.set('lastErrorCode',null);}catch{}}
+    const heldRows=this.state.db.prepare("SELECT batch,scope FROM outbox WHERE state='held'").all() as {batch:string;scope:string}[];
+    for(const row of heldRows){if(!this.state.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state='review' LIMIT 1").get(row.scope)){try{await resumeHeld(this.state,this.http,this.config,row.batch);}catch{}}}
     for(let round=0;round<100&&!signal?.aborted;round++){
       const pending=this.state.pending();if(!pending.length)break;let progress=false;
       for(const row of pending){const header=JSON.parse(String(row.header_json)),batch=String(row.batch),base='/batches/'+batch;

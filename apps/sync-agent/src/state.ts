@@ -131,7 +131,7 @@ export class AgentState {
     this.db.prepare('INSERT INTO lineage VALUES(?,?,?,?) ON CONFLICT(scope) DO UPDATE SET parent_json=excluded.parent_json,signature=excluded.signature,receipt_json=excluded.receipt_json').run(row.scope,JSON.stringify({header,proofs:JSON.parse(String(row.proof_json))}),row.signature,JSON.stringify(receipt));
     this.db.prepare('DELETE FROM heads WHERE scope=?').run(row.scope);
     this.db.prepare('INSERT INTO lineage_tokens VALUES(?,?) ON CONFLICT(scope) DO UPDATE SET token_total=excluded.token_total').run(row.scope,tokenTotal);
-    this.db.prepare('INSERT OR IGNORE INTO receipts VALUES(?,?)').run(batch,JSON.stringify(receipt));this.db.prepare('DELETE FROM records WHERE batch=?').run(batch);this.db.prepare('DELETE FROM outbox WHERE batch=?').run(batch);
+    this.db.prepare('INSERT OR IGNORE INTO receipts VALUES(?,?)').run(batch,JSON.stringify(receipt));this.db.prepare('DELETE FROM records WHERE batch=?').run(batch);this.db.prepare('DELETE FROM outbox WHERE batch=?').run(batch);this.db.prepare("UPDATE outbox SET state='superseded' WHERE scope=? AND serial<?").run(row.scope,row.serial);
     this.set('lastSuccessfulSyncAt',new Date().toISOString());this.set('dataRevision',receipt.dataRevision);
   });}
   fail(batch:string,code:string,permanent=false,retryMs=1000){this.tx(()=>{const row=this.db.prepare('SELECT scope FROM outbox WHERE batch=?').get(batch);this.db.prepare("UPDATE outbox SET attempts=attempts+1,next_retry=?,error=?,state=? WHERE batch=?").run(Date.now()+retryMs,code,permanent?'review':'pending',batch);
