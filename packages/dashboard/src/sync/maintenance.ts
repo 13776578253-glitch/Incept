@@ -4,6 +4,7 @@ import {basename,dirname,isAbsolute,resolve} from 'node:path';
 import {DatabaseSync,backup} from 'node:sqlite';
 import {CompatibleSyncService} from '../adapters/local/imports/sync/legacy';
 import {syncScopeId} from '../adapters/local/imports/sync/contract';
+import {assertReviewAcceptanceAllowed} from '../adapters/local/imports/sync/store';
 import {checkpointWal,capacityState} from './capacity';
 import {DEFAULT_CAPACITY} from './protocol';
 import {projection} from './projection';
@@ -211,6 +212,8 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
     const actor=owner(options),service=new CompatibleSyncService(syncPath),id=Number(required(options,'id')),successor=typeof options.successor==='string'?options.successor:undefined,accept=options.accept===true||options['accept-proposal']===true;
     try{
       if(accept){
+        const page=service.reviewPage(id,0,1,actor);
+        try{assertReviewAcceptanceAllowed(page.code);}catch{throw new MaintenanceError('REVIEW_ACCEPTANCE_FROZEN:'+page.code);}
         const res=service.acceptReview(id,actor);
         return {ok:true,id,disposition:'accepted-successor',committedSuccessor:res.committedSuccessor,revision:service.revision()};
       }

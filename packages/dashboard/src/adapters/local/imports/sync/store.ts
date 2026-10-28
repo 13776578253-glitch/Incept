@@ -38,6 +38,13 @@ CREATE TABLE IF NOT EXISTS sync_adoptions(batch_id TEXT NOT NULL,position INTEGE
 CREATE INDEX IF NOT EXISTS sync_adoptions_scope ON sync_adoptions(scope_id,batch_id);
 CREATE TABLE IF NOT EXISTS sync_legacy_projection(variant_hash TEXT PRIMARY KEY,batch_id TEXT NOT NULL,position INTEGER NOT NULL,observation_id TEXT NOT NULL,canonical_id TEXT NOT NULL,project TEXT NOT NULL,source_order INTEGER NOT NULL);
 `;
+// Phase 0A: review acceptance stays frozen until the ledger validation path is repaired.
+const PHASE0_ACCEPTED_REVIEW_CODES = new Set<string>();
+
+export function assertReviewAcceptanceAllowed(code: string) {
+  requireSync(PHASE0_ACCEPTED_REVIEW_CODES.has(code), 'REVIEW_ACCEPTANCE_FROZEN');
+}
+
 type StoredScope = { head_manifest: string | null; head_generation: string | null; visible_generation: string | null; fenced: number };
 export class SyncStore {
   readonly db: DatabaseSync;
@@ -237,6 +244,7 @@ export class SyncStore {
     return this.transaction(()=>{
       const review=this.db.prepare('SELECT * FROM sync_reviews WHERE id=?').get(reviewId);
       requireSync(review,'REVIEW_NOT_FOUND');
+      assertReviewAcceptanceAllowed(String(review.code));
       requireSync(!this.db.prepare('SELECT 1 FROM sync_review_resolutions WHERE review_id=?').get(reviewId),'REVIEW_ALREADY_RESOLVED');
       const header=JSON.parse(String(review.header_json)) as SyncHeader;
       const manifest=header.manifest;

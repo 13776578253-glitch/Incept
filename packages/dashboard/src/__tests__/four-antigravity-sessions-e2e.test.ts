@@ -101,7 +101,7 @@ describe('All 4 Antigravity Sessions Protocol-Level Recovery', () => {
     } catch {}
   });
 
-  it('accepts review proposals via acceptReview, generating committed receipts and updating scope heads', () => {
+  it('freezes review acceptance at the store boundary during Phase 0A', () => {
     if (!service) throw new Error('Service not initialized');
     const owner = { role: 'owner' as const, subject: 'owner-cli', reason: 'Authorize compressed prefix' };
     const device = { role: 'device' as const, deviceId: '02421821-b6f6-4292-8271-9546f7d65ddd' };
@@ -130,28 +130,22 @@ describe('All 4 Antigravity Sessions Protocol-Level Recovery', () => {
       }
     }
 
-    // Accept all 4 reviews using acceptReview
-    for (let i = 0; i < SESSIONS.length; i++) {
-      const s = SESSIONS[i];
-      const res = service.acceptReview(s.id, owner);
-      expect(res.ok).toBe(true);
-      expect(res.disposition).toBe('accepted-successor');
-      expect(res.receipt.status).toBe('committed');
-      expect(res.receipt.code).toBe('owner-reviewed');
-      expect(service.revision()).toBe(598 + i);
-
-      // Verify the receipt is accessible via receipt API
-      const receipt = service.receipt(device.deviceId, 'held-batch-' + s.id);
-      expect(receipt).toBeDefined();
-      expect(receipt?.status).toBe('committed');
-      expect(receipt?.manifestHash).toBe(res.committedSuccessor);
-
-      // Verify scope head is advanced
-      const originRow = service.db.prepare("SELECT scope_id FROM sync_origins WHERE json_extract(scope_json, '$.sessionId') = ?").get(s.sessionId) as any;
-      const updatedScope = service.db.prepare('SELECT head_manifest, token_total FROM sync_scopes WHERE scope_id = ?').get(originRow.scope_id) as any;
-      expect(updatedScope.head_manifest).toBe(res.committedSuccessor);
-      expect(updatedScope.token_total).toBe(1600);
+    // The store-level guard must reject every caller while Phase 0A is active.
+    for (const s of SESSIONS) {
+      let error: unknown;
+      try { service.acceptReview(s.id, owner); } catch (caught) { error = caught; }
+      expect((error as { code?: string } | undefined)?.code).toBe('REVIEW_ACCEPTANCE_FROZEN');
     }
+
+    // Unknown codes are refused by the same empty allowlist.
+    service.db.prepare("UPDATE sync_reviews SET code='UNKNOWN_REVIEW_CODE' WHERE id=1").run();
+    let unknownError: unknown;
+    try { service.acceptReview(1, owner); } catch (caught) { unknownError = caught; }
+    expect((unknownError as { code?: string } | undefined)?.code).toBe('REVIEW_ACCEPTANCE_FROZEN');
+
+    expect(service.revision()).toBe(597);
+    expect(service.db.prepare('SELECT COUNT(*) n FROM sync_review_resolutions').get()).toMatchObject({ n: 0 });
+    expect(service.db.prepare("SELECT COUNT(*) n FROM sync_receipts WHERE batch_id LIKE 'held-batch-%'").get()).toMatchObject({ n: 0 });
   });
 
   it('resolves all 4 reviews and safely commits subsequent candidate delta batches', () => {
