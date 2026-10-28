@@ -79,7 +79,8 @@ parentPort.on('message',({id,work}:{id:number;work:SyncWork})=>{
       case 'status': {
         requireSync(work.actor.role==='device'&&work.actor.deviceId===work.device,'DEVICE_MISMATCH');
         const receipt=service.receipt(work.device,work.batch);
-        if(receipt){result={state:receipt.status,receipt,dataRevision:service.revision()};break;}
+        if(receipt){const review=service.db.prepare("SELECT r.id,x.resolution_json FROM sync_reviews r LEFT JOIN sync_review_resolutions x ON x.review_id=r.id WHERE json_extract(r.header_json,'$.batchId')=? LIMIT 1").get(work.batch);
+          result={state:receipt.status,receipt,dataRevision:service.revision(),review:review?{id:Number(review.id),resolution:review.resolution_json?JSON.parse(String(review.resolution_json)):null}:null};break;}
         const row=service.db.prepare('SELECT next_offset,expires_at FROM sync_staging WHERE device_id=? AND batch_id=?').get(work.device,work.batch);
         if(!row)throw new SyncTransportError('BATCH_NOT_FOUND',404,0);
         result={state:Number(row.expires_at)<=Date.now()?'expired':'staging',nextOffset:Number(row.next_offset),expiresAt:Number(row.expires_at),dataRevision:service.revision()};break;

@@ -9,8 +9,13 @@ export async function resumeReviewed(state:AgentState,http:AgentHttp,batch:strin
   const header=JSON.parse(String(row.header_json)) as SyncHeader,scope=header.manifest.scope;
   const binding=await http.request<{scope:unknown;headManifest:string}>('/scopes/resolve','POST',{source:scope.source,sessionId:scope.sessionId});
   if(hash(binding.scope)!==hash(scope))throw Error('REVIEW_SCOPE_MISMATCH');
-  const result=await http.request<{receipt?:SyncReceipt}>('/batches/'+batch);
+  const result=await http.request<{receipt?:SyncReceipt;review?:{id:number;resolution:{disposition:string;committedSuccessor?:string}|null}}>('/batches/'+batch);
   if(!result.receipt)throw Error('REVIEW_RECEIPT_REQUIRED');
+  if(result.review?.resolution){
+    const resolution=result.review.resolution;
+    state.supersedeBatch(batch,resolution.disposition==='accepted-successor'?'REVIEW_ACCEPTED_SUCCESSOR':'REVIEW_DISMISSED');
+    return {confirmed:false,superseded:true,dataRevision:result.receipt.dataRevision};
+  }
   if(result.receipt.status==='review-required'){
     state.markReviewRequired(batch,result.receipt,result.receipt.code);
     return {confirmed:false,reviewRequired:true,dataRevision:result.receipt.dataRevision};

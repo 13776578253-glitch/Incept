@@ -39,6 +39,16 @@ test('a review-required receipt becomes a durable review state and never returns
     assert.equal(state.db.prepare("SELECT state,error FROM outbox WHERE batch=?").get(candidate.header.batchId).state,'review');
   }finally{state.close();}
 }));
+test('a resolved review marks its local batch superseded',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode'),candidate=buildCandidate(capture,scope(capture),undefined,'review-resolved'),state=new AgentState(join(dir,'state'));
+  try{state.enqueue(candidate,'signature');state.fail(candidate.header.batchId,'V1_ADOPTION_REVIEW_REQUIRED',true);
+    const receipt={batchId:candidate.header.batchId,payloadHash:f.hash(candidate.header),generationId:candidate.header.manifest.generationId,
+      manifestHash:candidate.header.manifest.manifestHash,dataRevision:7,status:'review-required',outcome:'conflict',code:'PREFIX_LOST'};
+    const http={request:async path=>path==='/scopes/resolve'?{scope:candidate.header.manifest.scope,headManifest:'successor-head'}:{receipt,review:{id:1,resolution:{disposition:'accepted-successor',committedSuccessor:'successor-head'}}}};
+    const result=await resumeReviewed(state,http,candidate.header.batchId);
+    assert.equal(result.superseded,true);assert.equal(state.reviewCount(),0);assert.equal(state.db.prepare("SELECT state FROM outbox WHERE batch=?").get(candidate.header.batchId).state,'superseded');
+  }finally{state.close();}
+}));
 test('permanent 4xx quarantines only the failed batch and 409 enters lineage recovery',()=>sandbox(async dir=>{
   const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode'),candidate=buildCandidate(capture,scope(capture),undefined,'rejection'),state=new AgentState(join(dir,'state'));
   try{state.enqueue(candidate,'signature');state.db.prepare('UPDATE outbox SET admitted=1 WHERE batch=?').run(candidate.header.batchId);
