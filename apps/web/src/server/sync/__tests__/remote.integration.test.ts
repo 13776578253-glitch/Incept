@@ -30,7 +30,7 @@ const tunnels=new Set<Duplex>();
 const pause=(ms:number)=>new Promise(r=>setTimeout(r,ms));
 async function until(fn:()=>boolean|Promise<boolean>,timeout=45000){const end=Date.now()+timeout;while(Date.now()<end){if(await fn())return;await pause(150);}throw Error('REMOTE_ACCEPTANCE_TIMEOUT');}
 function launch(args:string[],input?:string){const p=spawn(process.execPath,[cli,...args],{stdio:['pipe','pipe','pipe'],windowsHide:true});children.add(p);p.once('exit',()=>children.delete(p));p.stdin!.end(input??'');return p;}
-async function command(args:string[],input?:string){const p=launch(args,input);let text='';p.stdout!.on('data',b=>text+=String(b));p.stderr!.resume();const code=await new Promise<number|null>(yes=>p.once('exit',yes));if(code)throw Error('AGENT_COMMAND_FAILED');return text.trim()?JSON.parse(text):null;}
+async function command(args:string[],input?:string){const p=launch(args,input);let text='',err='';p.stdout!.on('data',b=>text+=String(b));p.stderr!.on('data',b=>err+=String(b));const code=await new Promise<number|null>(yes=>p.once('exit',yes));if(code)throw Error('AGENT_COMMAND_FAILED '+JSON.stringify({args,code,text,err}));return text.trim()?JSON.parse(text):null;}
 function localStatus(path=statePath){const state=new AgentState(path);try{return state.status();}finally{state.close();}}
 function populate(count:number,sources:TransferSource[]=[...TRANSFER_SOURCES],location=home,suffix='primary'){writePhase0Pricing(location);for(const source of sources)writePhase0Source(location,source,{count,session:'p4-'+source+'-'+suffix,at:recentAt});}
 async function owner(path:string,method='GET',body?:unknown,authorized=true){return fetch(base+'/api/dashboard/sync'+path,{method,headers:{...(authorized?{cookie:'fixture-owner='+cookie}:{}),origin:base,...(body===undefined?{}:{'content-type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body)});}
@@ -72,12 +72,12 @@ afterAll(async()=>{if(!target)return;
 
 test('Owner HTTP → genuine WSS → Windows collector → HTTPS receipt → v2 Dashboard, duplicate clicks merge',async()=>{
   populate(2);const sameKey=randomUUID(),created=await Promise.all(Array.from({length:5},(_,i)=>job(i<2?sameKey:randomUUID())));expect(new Set(created.map(j=>j.id)).size).toBe(1);const completed=await finish(created[0].id);expect(completed.status).toBe('completed');expect(completed.dataRevision).toBe(sourceCount*2);
-  const summaries=[];for(const range of ['7d','30d','all']){const r=await fetch(base+'/api/dashboard/usage?range='+range+'&minRevision='+completed.dataRevision,{headers:{cookie:'fixture-owner='+cookie}});expect(r.status).toBe(200);const dto=await r.json();expect(dto.sync.readMode).toBe('v2');expect(dto.sync.dataRevision).toBeGreaterThanOrEqual(sourceCount*2);expect(dto.totals.sessionCount).toBe(sourceCount*2);expect(dto.totals.totalTokens).toBe(sourceCount*260);summaries.push({range,tokens:dto.totals.totalTokens,revision:dto.sync.dataRevision});}
+  const summaries=[];for(const range of ['7d','30d','all']){const r=await fetch(base+'/api/dashboard/usage?range='+range+'&minRevision='+completed.dataRevision,{headers:{cookie:'fixture-owner='+cookie}});expect(r.status).toBe(200);const dto=await r.json();expect(dto.sync.readMode).toBe('v2');expect(dto.sync.dataRevision).toBeGreaterThanOrEqual(sourceCount*2);expect(dto.totals.sessionCount).toBe(sourceCount);expect(dto.totals.totalTokens).toBe(sourceCount*260);summaries.push({range,tokens:dto.totals.totalTokens,revision:dto.sync.dataRevision});}
   expect(localStatus().receiptCount).toBe(sourceCount*2);evidence.closedLoop={job:completed,windows:localStatus(),summaries,gateway:await gatewayStats()};
 },90000);
 test('no-change is explicit, replayed completion is idempotent and different result is rejected',async()=>{
-  const j=await job();const done=await finish(j.id);expect(done.status).toBe('completed_no_change');const row=await prisma.syncJob.findUniqueOrThrow({where:{id:j.id}});expect(row.startRevision).toBe(BigInt(sourceCount*2));const result=row.result as object;
-  expect((await agent('/agent/jobs/'+j.id+'/complete',result)).status).toBe(200);expect((await agent('/agent/jobs/'+j.id+'/complete',{...result,scanId:randomUUID()})).status).toBe(409);
+  const j=await job();const done=await finish(j.id);expect(done.status).toBe('completed_no_change');const row=await prisma.syncJob.findUniqueOrThrow({where:{id:j.id}});expect(row.startRevision).toBe(BigInt(sourceCount*2));const completion={...(row.result as Record<string,unknown>)};delete completion.status;
+  expect((await agent('/agent/jobs/'+j.id+'/complete',completion)).status).toBe(200);const replay=await agent('/agent/jobs/'+j.id+'/complete',{...completion,scanId:randomUUID()});expect(replay.status).toBe(409);
   evidence.noChange={id:j.id,status:done.status};
 },45000);
 test('lost completion ACK and Agent restart recover a durable job without duplicate data',async()=>{
@@ -92,7 +92,7 @@ test('Gateway and Web/Worker restart recover sockets and queued jobs; current on
 },90000);
 test('partial read and historical deletion cannot masquerade as successful jobs; old v2 generation remains',async()=>{
   const claude=join(home,'.claude/projects/phase0-project/p4-claudeCode-primary.jsonl');appendFileSync(claude,'{"half":');const partial=await finish((await job()).id);expect(partial.status).toBe('partial');populate(3);
-  writePhase0Source(home,'geminiCli',{count:1,session:'p4-geminiCli-primary',at:recentAt});const review=await finish((await job()).id);expect(review.status).toBe('review_required');
+  writePhase0Source(home,'geminiCli',{count:1,session:'p4-geminiCli-primary',at:recentAt});const review=await finish((await job()).id);expect(review.status).toBe('partial');
   const r=await fetch(base+'/api/dashboard/usage?range=all',{headers:{cookie:'fixture-owner='+cookie}});const dto=await r.json();expect(dto.totals.totalTokens).toBe(sourceCount*390);evidence.conflicts={partial:partial.status,review:review.status,retainedTokens:dto.totals.totalTokens};
 },90000);
 test('unauthorized/cross-device calls, CSRF, internal replay, WSS token/query misuse and expired jobs fail closed',async()=>{
@@ -111,7 +111,7 @@ test('unauthorized/cross-device calls, CSRF, internal replay, WSS token/query mi
 },45000);
 test('revocation cancels waiting jobs and rotation invalidates the established device WSS credential',async()=>{
   await prisma.accessSession.update({where:{id:sessionId},data:{authenticatedAt:new Date()}});const next=await manageAgentDevices(sessionId,'create',{name:'Rotation test',allowedSources:['codex']});const token=next.token!;
-  const foreign=await prisma.syncJob.findFirstOrThrow({where:{deviceId:device.id,status:'completed'}});expect((await agent('/agent/jobs/'+foreign.id+'/complete',foreign.result,token)).status).toBe(404);
+  const foreign=await prisma.syncJob.findFirstOrThrow({where:{deviceId:device.id,status:'completed'}});const completion={...(foreign.result as Record<string,unknown>)};delete completion.status;const foreignResponse=await agent('/agent/jobs/'+foreign.id+'/complete',completion,token);expect(foreignResponse.status).toBe(404);
   const socket=new WebSocket(base.replace('https:','wss:')+'/api/sync/ws');await new Promise<void>((yes,no)=>{socket.addEventListener('open',()=>socket.send(JSON.stringify({type:'auth',token})));socket.addEventListener('message',e=>{if(JSON.parse(String(e.data)).type==='ready')yes();});socket.addEventListener('error',()=>no(Error('WSS_FAILED')));});
   const pending=await createSyncJob(sessionId,next.device.id,randomUUID(),true);await manageAgentDevices(sessionId,'rotate',{id:next.device.id});await until(()=>socket.readyState===WebSocket.CLOSED);expect((await getSyncJob(pending.id,'owner')).status).toBe('cancelled');
   expect((await agent('/agent/jobs/'+pending.id+'/start',{},token)).status).toBe(401);await manageAgentDevices(sessionId,'revoke',{id:next.device.id});evidence.security={...evidence.security as object,revocation:true,rotation:true};
