@@ -78,7 +78,7 @@ The deployment image `sha256:17c16ba5fbb7ddc1b5307bdfc90f955ececea40380394defb35
 
 ## Review #36 and envelope semantics
 
-Review #36 was a commandcode metadata change: 14 existing records gained only `sessionTitle: "Visualization Optimization"`; IDs, timestamps, model, project and usage counters were identical. Owner-approved rebase committed the 58-record candidate as generation `ad8ae3ab…` with new head `4b920397…` at revision 1109; review #36 was resolved as `accepted-successor` at revision 1110, local lineage was reconciled, and the batch was superseded. `syncEnvelope` now ignores `sessionTitle`, with canonical-equality acceptance for historical envelopes; regression test added; dashboard suite 300 passed / 2 skipped.
+Review #36 was a commandcode metadata change: 14 existing records gained only `sessionTitle: "Visualization Optimization"`; IDs, timestamps, model, project and usage counters were identical. Owner-approved rebase committed the 58-record candidate as generation `ad8ae3ab…` with new head `4b920397…` at revision 1109; review #36 was resolved as `accepted-successor` at revision 1110, local lineage was reconciled, and the batch was superseded. `syncEnvelope` now ignores `sessionTitle`, with canonical-equality acceptance for historical envelopes; regression test added; dashboard suite 300 passed / 2 skipped. The semantics image `83d90694…` from `1433891` is deployed; production revision 1113, receipts 1192, reviews 0, staging 0; local agent at 1113 with no active outbox.
 
 ## Remaining work
 
