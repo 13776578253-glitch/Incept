@@ -48,6 +48,18 @@ Review #36 was a metadata-only change, not a model or usage change:
 
 `sessionTitle` is now excluded from `syncEnvelope` because it is display-only metadata. `qualifyRecords` also accepts canonical envelope equality for a parent record whose stored `envelopeHash` predates this exclusion, so historical title-bearing records do not create another review wave. A regression test covers a commandcode record whose only change is `sessionTitle`; the full dashboard suite is 300 passed / 2 skipped.
 
+## Review #37/#38 — zcode parent mismatch
+
+Two stale-parent zcode batches (5 and 36 records) produced reviews #37/#38. Both were resolved by owner-approved rebase:
+
+- #37: session `sess_d001dd59…`, long head `f54e5f9a…` → `9baf2337…`, generation `d27a2374…`; review resolution revision 1170.
+- #38: session `session_a89c4eb3…`, long head `a1c05e67…` → `f6fc3580…`, generation `a6b50d08…`; review resolution revision 1172.
+- Local `reconcile-heads` adopted both heads and superseded the stale lineage batches. The local outbox is empty; zcode outcome is `complete_success`; server reviews 0 and staging 0.
+
+## Dashboard refresh diagnosis
+
+The reported `Refresh failed` was not a sync disconnect. During the upload backlog, Caddy recorded `/api/dashboard/sync/devices/status` as **499 after 3.58s** followed by **429s**, while `/api/dashboard/usage` returned 200 and the agent uploads continued to complete. `devices/status` calls `executor.execute({op:'device-summary'})`, which shares the single sync worker/queue with uploads; the dashboard read then aborts or gets a queue-full response. Recommended fix: serve `device-summary` from a direct read-only SQLite query (or a priority/cached read path) instead of the upload worker. This is separate from the sync data path and did not lose records.
+
 ## Remaining
 
 - True delta/segment protocol for sessions above the 100k Merkle-batch ceiling.
