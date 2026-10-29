@@ -51,8 +51,8 @@ const zhChrome: RoadmapChrome = {
   ...chrome,
   importLabel: '导入',
   projectSelectLabel: '选择项目',
-  importSucceeded: '导入完成。',
-  importFailed: '导入失败。',
+  importSucceeded: '导入完成',
+  importFailed: '导入失败',
 };
 
 afterEach(() => {
@@ -551,8 +551,8 @@ describe('RoadmapToolbar', () => {
 
     expect(String(url)).toBe('/api/internal/roadmap/import?projectKey=project-one');
     expect(init?.method).toBe('POST');
-    expect(await screen.findByText('导入完成。')).toBeTruthy();
-    expect(await screen.findByText('已成功向当前看板追加 1 个条目。')).toBeTruthy();
+    expect(await screen.findByText('导入完成')).toBeTruthy();
+    expect(await screen.findByText('已成功向当前看板追加 1 个条目')).toBeTruthy();
   });
 
   // 新建入口固定在 Import 左侧，只有宿主注入回调时才渲染。

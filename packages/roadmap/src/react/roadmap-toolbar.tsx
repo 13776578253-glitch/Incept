@@ -118,7 +118,7 @@ export function RoadmapToolbar({
         description:
           chrome.importSuccessDescription ??
           (locale === 'zh'
-            ? `已成功向当前看板追加 ${count} 个条目。`
+            ? `已成功向当前看板追加 ${count} 个条目`
             : `Successfully appended ${count} entries to the current board.`),
       });
       onChanged?.();
@@ -133,7 +133,7 @@ export function RoadmapToolbar({
         description:
           error instanceof Error && error.message
             ? error.message
-            : (chrome.importFailed ?? (locale === 'zh' ? '导入失败，请检查文件格式。' : 'Import failed.')),
+            : (chrome.importFailed ?? (locale === 'zh' ? '导入失败，请检查文件格式' : 'Import failed.')),
       });
     }
   }
@@ -155,7 +155,7 @@ export function RoadmapToolbar({
               onClick={onCreateEntry}
               aria-label={createEntryLabel ?? 'New entry'}
               title={createEntryLabel ?? 'New entry'}
-              className="inline-flex size-[30px] shrink-0 items-center justify-center rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-status-active,#2563eb)] hover:text-[var(--roadmap-status-active,#2563eb)]"
+              className="inline-flex size-[30px] shrink-0 items-center justify-center rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))] hover:text-[var(--color-text)]"
             >
               <svg
                 width="13"
