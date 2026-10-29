@@ -72,6 +72,10 @@ Ran on isolated copies under `/srv/incept/drills/schema3-rollback`; production w
 
 The deployment image `sha256:17c16ba5fbb7ddc1b5307bdfc90f955ececea40380394defb3548c6bfb4013e0` from `6c7c2d6` is installed at `/srv/incept/releases/6c7c2d6` with `INCEPT_SYNC_MAX_BATCH_RECORDS=100000`; local agent/tray were updated to the matching build.
 
+## Roadmap merge and combined release
+
+`main` (`8e5e084`) was merged into `fix/sync-safety` at `fb75fa8`; the merge was clean and the roadmap surface fix is now on the sync release line. Combined verification: roadmap 76, roadmap page 8, dashboard 299/2 skipped, sync-agent 103, phase 2 integration 15, phase 3 integration 3/1 skipped, typecheck and lint (0 errors). Image `sha256:a5003d4f…` (`20261028-sync6`) is the combined release image; deployment status is recorded in `2026-10-28-sync-roadmap-release.md`.
+
 ## Remaining work
 
 1. **True delta for very large sessions**: Merkle-verified full snapshots support up to 100k records; a segment/delta protocol remains future work if a session exceeds that or bandwidth becomes material.
