@@ -76,6 +76,10 @@ The deployment image `sha256:17c16ba5fbb7ddc1b5307bdfc90f955ececea40380394defb35
 
 `main` (`8e5e084`) was merged into `fix/sync-safety` at `fb75fa8`; the merge was clean and the roadmap surface fix is now on the sync release line. Combined verification: roadmap 76, roadmap page 8, dashboard 299/2 skipped, sync-agent 103, phase 2 integration 15, phase 3 integration 3/1 skipped, typecheck and lint (0 errors). Image `sha256:a5003d4f…` (`20261028-sync6`) is deployed from release `043bc5f`; production is revision 1096 with 1174 receipts, 0 reviews and 0 incomplete staging. Handover: `2026-10-27-agent-handover.md` now marks its 2026-10-27 status as historical.
 
+## Review #36 and envelope semantics
+
+Review #36 was a commandcode metadata change: 14 existing records gained only `sessionTitle: "Visualization Optimization"`; IDs, timestamps, model, project and usage counters were identical. Owner-approved rebase committed the 58-record candidate as generation `ad8ae3ab…` with new head `4b920397…` at revision 1109; review #36 was resolved as `accepted-successor` at revision 1110, local lineage was reconciled, and the batch was superseded. `syncEnvelope` now ignores `sessionTitle`, with canonical-equality acceptance for historical envelopes; regression test added; dashboard suite 300 passed / 2 skipped. The semantics image `83d90694…` from `1433891` is deployed; production revision 1113, receipts 1192, reviews 0, staging 0; local agent at 1113 with no active outbox.
+
 ## Remaining work
 
 1. **True delta for very large sessions**: Merkle-verified full snapshots support up to 100k records; a segment/delta protocol remains future work if a session exceeds that or bandwidth becomes material.
