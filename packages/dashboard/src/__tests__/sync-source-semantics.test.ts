@@ -101,3 +101,29 @@ describe('Antigravity stable-key-set source semantics', () => {
     } finally { oldService.close(); rmSync(oldDir, { recursive: true, force: true }); }
   });
 });
+
+describe('CommandCode envelope metadata', () => {
+  let dir: string, service: CompatibleSyncService, scope: SyncScope, baseline: SyncHeader;
+  function ccEvent(id: string, title?: string): TransferEvent {
+    return { eventId: hash(['cc-title', id]), source: 'commandcode', sessionId: 'cc-title-session', timestampMs: BASE + (id === 'a' ? 0 : 1000),
+      modelName: 'deepseek/deepseek-v4.1-flash', projectKey: 'p', projectName: 'P', workspacePath: 'P',
+      ...(title ? { sessionTitle: title } : {}), inputTokens: 100, outputTokens: 20, cacheReadTokens: 0, cacheCreationTokens: 0, reasoningTokens: 0 };
+  }
+  function ingest(header: SyncHeader, records: ReturnType<typeof fromEvents>['records']) {
+    service.begin(header, DEVICE); service.stage(DEVICE.deviceId, header.batchId, 0, records, DEVICE);
+    return service.commit(DEVICE.deviceId, header.batchId, DEVICE);
+  }
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'incept-commandcode-envelope-'));
+    service = new CompatibleSyncService(join(dir, 'sync.db'));
+    scope = { deviceId: DEVICE.deviceId, source: 'commandcode', sessionId: 'cc-title-session', originId: 'cc-title-origin' };
+    service.register(scope, 'commandcode scope', OWNER);
+    const first = fromEvents([ccEvent('a')], scope, undefined, 'cc-baseline'); ingest(first.header, first.records); baseline = first.header;
+  });
+  afterEach(() => { service.close(); rmSync(dir, { recursive: true, force: true }); });
+  it('accepts a sessionTitle-only update without REVIEW', () => {
+    const child = fromEvents([ccEvent('a', 'Visualization Optimization'), ccEvent('b')], scope, baseline, 'cc-title-change');
+    const receipt = ingest(child.header, child.records);
+    expect(receipt.status).toBe('committed');
+  });
+});

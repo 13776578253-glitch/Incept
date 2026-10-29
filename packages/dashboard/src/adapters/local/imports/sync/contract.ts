@@ -11,8 +11,9 @@ export function requireSync(condition: unknown, code: string): asserts condition
 export const syncScopeId = (scope: SyncScope) => hash(['sync-scope/2', scope.deviceId, scope.source, scope.sessionId]);
 export const syncEntityId = (scope: SyncScope, record?: SyncRecord) => hash(['sync-entity/2', syncScopeId(scope),
   scope.source !== 'codex' && record?.nativeKey ? record.nativeKey : 'session']);
-export const syncEnvelope = (record: SyncRecord) => hash({ ...record.event, eventId: undefined, inputTokens: undefined,
-  outputTokens: undefined, cacheReadTokens: undefined, cacheCreationTokens: undefined, reasoningTokens: undefined, recordedCost: undefined });
+export const syncEnvelope = (record: SyncRecord) => hash({ ...record.event, eventId: undefined, sessionTitle: undefined,
+  inputTokens: undefined, outputTokens: undefined, cacheReadTokens: undefined, cacheCreationTokens: undefined,
+  reasoningTokens: undefined, recordedCost: undefined });
 export function sequenceHash(records: Iterable<SyncRecord>) {
   const digest = createHash('sha256'); digest.update('['); let first = true;
   for (const record of records) { if (!first) digest.update(','); digest.update(stableJson(record)); first = false; }
@@ -189,7 +190,7 @@ export function qualifyRecords(parent: Iterable<SyncRecord>, next: Iterable<Sync
         if (old) {
           const relocated=['commandcode','geminiCli'].includes(manifest.scope.source)&&manifest.ranges.some(range=>range.previous?.change==='rotation');
           const unchangedUsage=(record:SyncRecord)=>hash({...record.event,projectKey:undefined,projectName:undefined,workspacePath:undefined});
-          requireSync(old.envelopeHash === row.envelopeHash || relocated&&unchangedUsage(old)===unchangedUsage(row),'REVISION_ENVELOPE_CHANGED');
+          requireSync(old.envelopeHash === row.envelopeHash || syncEnvelope(old) === syncEnvelope(row) || relocated&&unchangedUsage(old)===unchangedUsage(row),'REVISION_ENVELOPE_CHANGED');
           if (manifest.scope.source === 'antigravity') requireSync(hash(old) === hash(row),'SOURCE_REVISION_UNVERIFIED'); native.delete(row.nativeKey.keyHash); }
       } else { const key=hash(row), n=weak.get(key) ?? 0; if(n) weak.set(key,n-1); }
     }
