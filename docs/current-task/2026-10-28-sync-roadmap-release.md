@@ -26,13 +26,13 @@ The phase-3 Windows CLI test needed `PSExecutionPolicyPreference=Bypass` for the
 
 ## Deployment
 
-- Image tag: `incept-v4-release:20261029-sync7`
-- Image digest: `sha256:83d906947ebff0161bc00a5739087f241554d8220dfb62c57eff382a32f82d7c`
-- Release directory: `/srv/incept/releases/1433891`
-- Production image: `sha256:83d90694…`; `current -> /srv/incept/releases/1433891`
-- Production status: `/api/health/ready` 200; revision 1113, receipts 1192, reviews 0, incomplete staging 0
+- Image tag: `incept-v4-release:20261029-sync8`
+- Image digest: `sha256:7a993a587b61cfcbc1f32ee931a857d502354b89aac65adb5ac842b76270bb7a`
+- Release directory: `/srv/incept/releases/e4875db`
+- Production image: `sha256:7a993a58…`; `current -> /srv/incept/releases/e4875db`
+- Production status: `/api/health/ready` 200; revision 1176, receipts 1257, reviews 0, incomplete staging 0
 - Sync config verified: `INCEPT_SYNC_TIMEOUT_MS=120000`, `INCEPT_SYNC_MAX_QUEUE=16`, `INCEPT_SYNC_MAX_BATCH_RECORDS=100000`
-- Local agent: dataRevision 1113, no active outbox, `lastErrorCode=null`
+- Local agent: no active outbox, `lastErrorCode=null`
 
 ## Review #36 — CommandCode sessionTitle
 
@@ -58,7 +58,7 @@ Two stale-parent zcode batches (5 and 36 records) produced reviews #37/#38. Both
 
 ## Dashboard refresh diagnosis
 
-The reported `Refresh failed` was not a sync disconnect. During the upload backlog, Caddy recorded `/api/dashboard/sync/devices/status` as **499 after 3.58s** followed by **429s**, while `/api/dashboard/usage` returned 200 and the agent uploads continued to complete. `devices/status` calls `executor.execute({op:'device-summary'})`, which shares the single sync worker/queue with uploads; the dashboard read then aborts or gets a queue-full response. Recommended fix: serve `device-summary` from a direct read-only SQLite query (or a priority/cached read path) instead of the upload worker. This is separate from the sync data path and did not lose records.
+The reported `Refresh failed` was not a sync disconnect. During the upload backlog, Caddy recorded `/api/dashboard/sync/devices/status` as **499 after 3.58s** followed by **429s**, while `/api/dashboard/usage` returned 200 and the agent uploads continued to complete. `devices/status` called `executor.execute({op:'device-summary'})`, which shares the single sync worker/queue with uploads; the dashboard read then aborted or got a queue-full response. Fixed in `e4875db`: `SyncExecutor.readDeviceSummary()` now reads `sync_receipt_clock` through a short-lived read-only SQLite connection, and `remote.ts` uses it directly. The regression test is in `sync-executor.test.ts`; dashboard suite 301 passed / 2 skipped. This is separate from the sync data path and did not lose records.
 
 ## Remaining
 
