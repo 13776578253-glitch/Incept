@@ -60,6 +60,12 @@ it('commits a Merkle-verified session above the old 20k ceiling',async()=>{
   const result=await executor.execute<{receipt:{status:string}}>({op:'commit',device:device.deviceId,batch:c.header.batchId,actor:device});expect(result.receipt.status).toBe('committed');
   const db=new DatabaseSync(join(home,'sync.db'));expect(db.prepare('SELECT COUNT(*) n FROM sync_current').get()!.n).toBe(25_000);db.close();
 },120_000);
+it('reads device summary without entering the upload queue',async()=>{
+  const executor=make(),c=candidate('summary');await executor.execute({op:'register',scope,label:'Synthetic',actor:owner});
+  await executor.execute({op:'begin',header:c.header,actor:device});await executor.execute({op:'stage',device:device.deviceId,batch:c.header.batchId,offset:0,records:c.records,actor:device});
+  await executor.execute({op:'commit',device:device.deviceId,batch:c.header.batchId,actor:device});
+  const summary=executor.readDeviceSummary([device.deviceId]);expect(typeof summary[device.deviceId]).toBe('string');expect(Number.isNaN(Date.parse(summary[device.deviceId]!))).toBe(false);
+});
 it('four active batches per device, TTL cleanup and receipt retention remain independent',async()=>{
   const executor=make();await executor.execute({op:'register',scope,label:'Synthetic',actor:owner});
   for(let i=0;i<4;i++)await executor.execute({op:'begin',header:candidate('batch-'+i).header,actor:device});

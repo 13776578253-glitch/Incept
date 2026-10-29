@@ -1,4 +1,5 @@
 import { Worker } from 'node:worker_threads';
+import { DatabaseSync } from 'node:sqlite';
 import { existsSync } from 'node:fs';
 import { dirname,isAbsolute,join,resolve } from 'node:path';
 import { DEFAULT_CAPACITY,SyncTransportError,type CapacityPolicy,type SyncWork } from './protocol';
@@ -28,6 +29,13 @@ export class SyncExecutor {
     if((this.options.policy.memoryPercent??85)<50||(this.options.policy.memoryPercent??85)>95||(this.options.policy.maxBatchRecords??100_000)<1)throw new SyncTransportError('INVALID_CAPACITY_CONFIG');
   }
   state(){return {queueLength:this.queue.length,running:!!this.running,...this.metrics};}
+  readDeviceSummary(devices:string[]){
+    if(!Array.isArray(devices)||devices.length>100||devices.some(device=>typeof device!=='string'))throw new SyncTransportError('INVALID_DEVICE_SUMMARY');
+    const db=new DatabaseSync(this.path,{readOnly:true});
+    try{db.exec('PRAGMA busy_timeout=5000; PRAGMA query_only=ON;');const statement=db.prepare('SELECT MAX(committed_at) at FROM sync_receipt_clock WHERE device_id=?');
+      return Object.fromEntries(devices.map(device=>{const row=statement.get(device) as {at?:number}|undefined;return [device,row?.at?new Date(Number(row.at)).toISOString():null];}));}
+    finally{db.close();}
+  }
   onCommitted(listener:()=>void){this.commitListeners.add(listener);return ()=>this.commitListeners.delete(listener);}
   execute<T=unknown>(work:SyncWork,verify:()=>Promise<void>=async()=>{},signal?:AbortSignal):Promise<T> {
     if(this.closed)return Promise.reject(new SyncTransportError('EXECUTOR_CLOSED'));

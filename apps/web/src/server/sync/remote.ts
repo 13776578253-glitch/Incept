@@ -48,7 +48,7 @@ export class RemoteSync {
         if(path.join('/')==='reviews'&&request.method==='GET')return response(await this.options.executor.execute({op:'reviews',actor:{role:'owner',subject:ownerId,reason:'Read-only historical review status'}}));
         if(path.join('/')==='devices/status'&&request.method==='GET'){
           const devices=await prisma.agentDevice.findMany({where:{ownerAccountId:ownerId},select:{id:true,name:true,revokedAt:true,lastUsedAt:true},take:100,orderBy:{createdAt:'asc'}}),snapshot=await this.telemetry(devices.filter(d=>!d.revokedAt).map(d=>d.id));
-          const commits=await this.options.executor.execute<Record<string,string|null>>({op:'device-summary',devices:devices.map(d=>d.id),actor:{role:'owner',subject:ownerId,reason:'Cloud committed receipt timestamps'}});
+          const commits=this.options.executor.readDeviceSummary(devices.map(d=>d.id));
           return response({remoteEnabled:true,readMode:this.options.readMode(),intervalMs:this.options.pollMs??300000,devices:await Promise.all(devices.map(async d=>{
             const latest=await prisma.syncJob.findFirst({where:{deviceId:d.id,ownerAccountId:ownerId},orderBy:{createdAt:'desc'}}),success=await prisma.syncJob.findFirst({where:{deviceId:d.id,ownerAccountId:ownerId,status:{in:['completed','completed_no_change']}},orderBy:{finishedAt:'desc'}});
             const online=!!snapshot.online[d.id],activity=snapshot.reported[d.id]?.activity??'idle';
