@@ -2,7 +2,7 @@
 
 更新：2026-10-27 16:35（Asia/Singapore）。写给接手的 AI：先读完本文，再动手。
 
-> **2026-10-28 release update — read this first:** `main` has been merged into `fix/sync-safety` at `fb75fa8`, so the roadmap surface fix (`8e5e084`) and the sync remediation now share one release line. The merged image is `sha256:a5003d4f…` (tag `20261028-sync6`); roadmap + sync tests are green and the release is being deployed. The status paragraphs below describe the 2026-10-27 state and are retained only as history; use `2026-10-28-sync-roadmap-release.md` and `2026-10-28-sync-upload-remediation.md` for the current state.
+> **2026-10-28 release update — read this first:** `main` has been merged into `fix/sync-safety` at `fb75fa8`, so the roadmap surface fix (`8e5e084`) and the sync remediation now share one release line. The combined image `sha256:a5003d4f…` (tag `20261028-sync6`, release `043bc5f`) is deployed; `/api/health/ready` is 200 and sync is at revision 1096 with 0 reviews and 0 incomplete staging. The status paragraphs below describe the 2026-10-27 state and are retained only as history; use `2026-10-28-sync-roadmap-release.md` and `2026-10-28-sync-upload-remediation.md` for the current state.
 
 > **Post-cleanup update:** `main` is 16 commits ahead of `origin/main` and not pushed; the working tree is clean. P1-A (`786ef96`), P2–P6 (`cf1f9e1`) and the cleanup/docs commits are in place. Production remains `20261027`; P1/P2/P6 are not deployed, and the P3 reboot check is still pending. P5 is accepted. Six worktrees are removed and four branches remain. See `2026-10-27-cleanup-round.md` for the current state.
 

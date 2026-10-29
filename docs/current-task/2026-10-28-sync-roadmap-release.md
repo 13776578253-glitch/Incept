@@ -28,8 +28,11 @@ The phase-3 Windows CLI test needed `PSExecutionPolicyPreference=Bypass` for the
 
 - Image tag: `incept-v4-release:20261028-sync6`
 - Image digest: `sha256:a5003d4f55d7ff754afe4b6122cea228f8a6de256b9b545a10109cf2e221821d`
-- Release directory: pending
-- Production verification: pending
+- Release directory: `/srv/incept/releases/043bc5f`
+- Production image: `sha256:a5003d4f…`; `current -> /srv/incept/releases/043bc5f`
+- Production status: `/api/health/ready` 200; revision 1096, receipts 1174, reviews 0, incomplete staging 0
+- Sync config verified: `INCEPT_SYNC_TIMEOUT_MS=120000`, `INCEPT_SYNC_MAX_QUEUE=16`, `INCEPT_SYNC_MAX_BATCH_RECORDS=100000`
+- Local agent: dataRevision 1096, no active outbox, `lastErrorCode=null`
 
 ## Remaining
 

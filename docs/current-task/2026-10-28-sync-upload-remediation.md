@@ -74,7 +74,7 @@ The deployment image `sha256:17c16ba5fbb7ddc1b5307bdfc90f955ececea40380394defb35
 
 ## Roadmap merge and combined release
 
-`main` (`8e5e084`) was merged into `fix/sync-safety` at `fb75fa8`; the merge was clean and the roadmap surface fix is now on the sync release line. Combined verification: roadmap 76, roadmap page 8, dashboard 299/2 skipped, sync-agent 103, phase 2 integration 15, phase 3 integration 3/1 skipped, typecheck and lint (0 errors). Image `sha256:a5003d4f…` (`20261028-sync6`) is the combined release image; deployment status is recorded in `2026-10-28-sync-roadmap-release.md`.
+`main` (`8e5e084`) was merged into `fix/sync-safety` at `fb75fa8`; the merge was clean and the roadmap surface fix is now on the sync release line. Combined verification: roadmap 76, roadmap page 8, dashboard 299/2 skipped, sync-agent 103, phase 2 integration 15, phase 3 integration 3/1 skipped, typecheck and lint (0 errors). Image `sha256:a5003d4f…` (`20261028-sync6`) is deployed from release `043bc5f`; production is revision 1096 with 1174 receipts, 0 reviews and 0 incomplete staging. Handover: `2026-10-27-agent-handover.md` now marks its 2026-10-27 status as historical.
 
 ## Remaining work
 
