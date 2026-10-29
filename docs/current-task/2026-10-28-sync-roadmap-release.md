@@ -34,6 +34,20 @@ The phase-3 Windows CLI test needed `PSExecutionPolicyPreference=Bypass` for the
 - Sync config verified: `INCEPT_SYNC_TIMEOUT_MS=120000`, `INCEPT_SYNC_MAX_QUEUE=16`, `INCEPT_SYNC_MAX_BATCH_RECORDS=100000`
 - Local agent: dataRevision 1096, no active outbox, `lastErrorCode=null`
 
+## Review #36 — CommandCode sessionTitle
+
+Review #36 was a metadata-only change, not a model or usage change:
+
+- Source/session: `commandcode` / `cc-f79e387c-d286-46d2-ad3a-dcf582af0283`
+- Candidate: 58 records; 14 existing records changed only by the newly materialized `sessionTitle: "Visualization Optimization"`; all IDs, timestamps, model, project, and token counters were unchanged.
+- Owner-approved rebase: old head `1825a4f2…` → new head `4b920397…`, generation `ad8ae3ab…`, 58 records, revision 1109.
+- Review #36 was resolved as `accepted-successor` at revision 1110; local lineage was reconciled to the new head and the stale local batch was superseded.
+- Server after resolution: reviews 0, staging 0; the local outbox had no active batch.
+
+### Envelope semantics
+
+`sessionTitle` is now excluded from `syncEnvelope` because it is display-only metadata. `qualifyRecords` also accepts canonical envelope equality for a parent record whose stored `envelopeHash` predates this exclusion, so historical title-bearing records do not create another review wave. A regression test covers a commandcode record whose only change is `sessionTitle`; the full dashboard suite is 300 passed / 2 skipped.
+
 ## Remaining
 
 - True delta/segment protocol for sessions above the 100k Merkle-batch ceiling.
