@@ -80,6 +80,8 @@ The deployment image `sha256:17c16ba5fbb7ddc1b5307bdfc90f955ececea40380394defb35
 
 Review #36 was a commandcode metadata change: 14 existing records gained only `sessionTitle: "Visualization Optimization"`; IDs, timestamps, model, project and usage counters were identical. Owner-approved rebase committed the 58-record candidate as generation `ad8ae3ab…` with new head `4b920397…` at revision 1109; review #36 was resolved as `accepted-successor` at revision 1110, local lineage was reconciled, and the batch was superseded. `syncEnvelope` now ignores `sessionTitle`, with canonical-equality acceptance for historical envelopes; regression test added; dashboard suite 300 passed / 2 skipped. The semantics image `83d90694…` from `1433891` is deployed; production revision 1113, receipts 1192, reviews 0, staging 0; local agent at 1113 with no active outbox.
 
+Zcode reviews #37/#38 were stale-parent batches (5/36 records), resolved by owner rebase to heads `9baf2337…`/`f6fc3580…` (generations `d27a2374…`/`a6b50d08…`) at revisions 1169–1172. Local heads were reconciled, the outbox is empty, and server reviews/staging are 0. A separate dashboard issue was identified: `devices/status` uses `device-summary` through the same single executor as uploads, so heavy uploads can cause a 499/429 read path failure; it did not interrupt the sync uploads.
+
 ## Remaining work
 
 1. **True delta for very large sessions**: Merkle-verified full snapshots support up to 100k records; a segment/delta protocol remains future work if a session exceeds that or bandwidth becomes material.
