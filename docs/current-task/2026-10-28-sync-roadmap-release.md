@@ -60,6 +60,10 @@ Two stale-parent zcode batches (5 and 36 records) produced reviews #37/#38. Both
 
 The reported `Refresh failed` was not a sync disconnect. During the upload backlog, Caddy recorded `/api/dashboard/sync/devices/status` as **499 after 3.58s** followed by **429s**, while `/api/dashboard/usage` returned 200 and the agent uploads continued to complete. `devices/status` called `executor.execute({op:'device-summary'})`, which shares the single sync worker/queue with uploads; the dashboard read then aborted or got a queue-full response. Fixed in `e4875db`: `SyncExecutor.readDeviceSummary()` now reads `sync_receipt_clock` through a short-lived read-only SQLite connection, and `remote.ts` uses it directly. The regression test is in `sync-executor.test.ts`; dashboard suite 301 passed / 2 skipped. This is separate from the sync data path and did not lose records.
 
+## Network error diagnosis — 2026-10-30
+
+The tray's `NETWORK_UNAVAILABLE` was a transport-path issue, not a server outage. The public health URL returned 200 through the external fetch path, while this machine measured 27 successes and 3 TLS `ECONNRESET` failures across 30 direct HTTPS checks; SSH to the same host was also intermittently closed. Agent outbox batches were preserved. The agent now retries transient TLS/socket resets up to five attempts with backoff; the regression test uses a server that resets the first two connections. This is a client-network/TUN resilience fix; the server image was not rebuilt for it.
+
 ## Remaining
 
 - True delta/segment protocol for sessions above the 100k Merkle-batch ceiling.

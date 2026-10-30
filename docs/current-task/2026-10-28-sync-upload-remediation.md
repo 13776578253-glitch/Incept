@@ -82,6 +82,8 @@ Review #36 was a commandcode metadata change: 14 existing records gained only `s
 
 Zcode reviews #37/#38 were stale-parent batches (5/36 records), resolved by owner rebase to heads `9baf2337…`/`f6fc3580…` (generations `d27a2374…`/`a6b50d08…`) at revisions 1169–1172. Local heads were reconciled, the outbox is empty, and server reviews/staging are 0. The dashboard read path was fixed in `e4875db`: `devices/status` now uses `SyncExecutor.readDeviceSummary()` on a short-lived read-only SQLite connection instead of the single upload worker; dashboard suite 301 passed / 2 skipped. Production image `7a993a58…` from release `e4875db` is deployed (revision 1176, reviews 0, staging 0).
 
+On 2026-10-30 the tray reported `NETWORK_UNAVAILABLE`: the server health endpoint was reachable externally, but this machine saw 3 TLS `ECONNRESET` failures in 30 direct checks and intermittent SSH closes. The agent preserved its outbox and now retries transient transport resets up to five attempts; agent tests are 104 passed.
+
 ## Remaining work
 
 1. **True delta for very large sessions**: Merkle-verified full snapshots support up to 100k records; a segment/delta protocol remains future work if a session exceeds that or bandwidth becomes material.
