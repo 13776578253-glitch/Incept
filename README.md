@@ -8,10 +8,10 @@
 
 <h1 align="center">Incept</h1>
 
-<p align="center">
+<!-- <p align="center">
   <strong>更安静的界面，更清楚的边界。</strong><br>
   沉静、有序的个人数字花园、工程知识中枢与创作发布系统。
-</p>
+</p> -->
 
 <p align="center">
   <a href="#-核心特性">核心特性</a> ｜
@@ -34,7 +34,7 @@
 
 ---
 
-## 📖 项目简介 (Introduction)
+## 项目简介 (Introduction)
 
 **Incept** 是一个私有化部署、高工程密度的个人数字化内容站点与创作系统。系统基于 **pnpm workspace** 驱动的现代 Monorepo 架构构建，前端采用 **Next.js 16 (App Router)**、**React 19** 与 **Tailwind CSS v4**，数据层依托 **Prisma ORM** 与 **PostgreSQL**，并具备中英双语对等支持（`next-intl`）与深浅色模式（`next-themes`）。
 
@@ -43,42 +43,42 @@
 
 ---
 
-## ✨ 核心特性 (Features)
+## 核心特性 (Features)
 
-### 1. 📚 沉静式 Docs 知识库与两阶段发布流水线
+### 1. 沉静式 Docs 知识库
 * **离线 Markdown-like 创作**：文章正文与媒体文件与代码仓库解耦，使用独立内容源目录（`DOCS_CONTENT_ROOT`）与 `.docs.md` 格式。
 * **双阶段审核发布**：CLI 导入时先完成内容结构校验、图片哈希去重与草稿（Draft）生成；必须由站长在 Web 端的 Owner 预览页面中直观校验确认后，才正式将文章事务写入 PostgreSQL。
 * **分级内容形态**：原生支持 `article`（长文）、`reference`（参考资料）与 `note`（随笔小记）；支持单篇阅读与树形嵌套的系列合集（Series & Collections）。
 * **高性能阅读体验**：集成 Shiki 语法高亮引擎、响应式侧边导航、目录大纲联动以及安全鉴权的受控媒体分发。
 
-### 2. 🎵 六边形架构环境声学与音乐系统 (`@incept/music`)
+### 2. 音乐系统 (`@incept/music`)
 * **整洁六边形架构**：将音频子系统解耦为 Domain（领域模型）、Ports & Adapters（端口与适配器）、Application（应用用例）、React 组件层与 CLI 独立工具链。
 * **文件夹即曲库 (Folder-as-Library)**：直接根据目录命名与层次自动提取音频元数据并派生曲库配置，无需手动维护繁复的索引文件。
 * **全局持久化播放体验**：通过站点自研的 Mount System 无缝注入根布局，悬浮播放条支持背景流式播放、播放列表切换与进度记忆。
 * **本地开发友好**：内置 Mock 音频生成指令（`pnpm music:mock-audio`），本地脱离真实版权资源即可实现全流程闭环开发。
 
-### 3. 🗺️ 动态交互式路线图与规划全景 (`@incept/roadmap` & Atlas)
+### 3. 路线图与规划全景 (`@incept/roadmap` & Atlas)
 * **双表面协同**：统一支持以阶段列状态驱动的 **Roadmap 看板**（Reviewing / Unstarted / Active / Completed / Canceled）以及宏观知识视角的 **Atlas 规划图**。
 * **纯追加、防覆盖安全导入**：提供专用 JSON 导入流水线，服务端单事务强校验；具备中英双语（`titleEn`/`titleZh`、`summaryEn`/`summaryZh`）严格对等保证与右上角悬浮毛玻璃反馈。
 * **所有权感知的动态视图**：Owner 登录态下可自由进行条目拖拽、状态调整与直观管理；访客态呈现轻量沉浸的只读全景。
 
-### 4. 📊 开发者指标与 AI 消耗仪表盘 (`@incept/dashboard`)
+### 4. 开发指标与 AI 消耗仪表盘 (`@incept/dashboard`)
 * **AI 算力与开发成本洞察**：无缝集成 `ccusage` 工具链，在私有控制台内直观可视化呈现 Claude Code 与 AI 编程助手的 Token 吞吐量、会话轮次与日度支出。
 * **GitHub 提交热力图联动**：支持配置 Personal Access Token，同步滚动 52 周与各自然年度的真实贡献热力图。
 * **写作与内容沉淀度量**：实时聚合已发布文章总量、写作单元（字数）以及内容版本迭代历史。
 
-### 5. 🛡️ 物理隔离的 Owner 鉴权与受限访问控制 (Security & Access)
+### 5.  Owner 鉴权与受限访问控制 (Security & Access)
 * **创作者与管理员彻底分离**：站长 Owner 账户与日常内容作者严格解耦，系统完全关闭公网开放注册入口。
 * **多因素安全防御**：支持 TOTP 双因子动态口令、受信任设备指纹风控（`OwnerDevice`）、基于会话的挑战审批流水线、应急一次性恢复码与访问限流防爆破（`AuthRateBucket`）。
 * **临时 Pro 兑换凭证**：支持通过 CLI 签发具备有效期限、最大兑换次数与设备哈希锁定的专属访问码（Shared Codes），安全分享受限资源。
 
-### 6. 🤖 原生 Multi-AI 并行协作工作流 (Agentic Worktrees)
+### 6.  Multi-AI 并行协作工作流 (Agentic Worktrees)
 * **多 Agent 协同支持**：内置专属 Git Worktree 编排脚本（`pnpm wt:new`、`wt:adopt`、`wt:status`），自动化派生隔离分支与独立的 PostgreSQL 数据库 Schema，避免多 AI 编程助手并发执行时的状态冲突。
 * **两类文档分层治理**：严谨划分「AI 任务工作流日志（`docs/current-task/`）」与「人类长效架构决策与手册（`docs/runbooks/`、`docs/decisions/`）」。
 
 ---
 
-## 🏗️ 架构设计 (Architecture)
+## 架构设计 (Architecture)
 
 Incept 采用基于 **pnpm workspace** 的清晰分层架构，确保核心业务边界分明、依赖单向流转：
 
@@ -131,7 +131,7 @@ Incept/
 
 ---
 
-## 🚀 快速上手 (Quick Start)
+## 快速上手 (Quick Start)
 
 ### 1. 环境准备
 确保本机已安装符合要求的运行环境：
@@ -195,7 +195,7 @@ pnpm dev
 
 ---
 
-## 🛠️ 常用指令 (Common Commands)
+## 常用指令 (Common Commands)
 
 ### 常用开发与构建
 ```powershell
@@ -252,7 +252,7 @@ pnpm wt:remove <name>       # 安全移除已合并的工作树并清理资源
 
 ---
 
-## 📚 文档体系 (Documentation)
+## 文档体系 (Documentation)
 
 项目拥有系统化的内部架构决策与运维手册，统一收录于 `docs/` 目录中：
 
