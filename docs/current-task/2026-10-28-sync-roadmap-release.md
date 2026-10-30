@@ -62,7 +62,7 @@ The reported `Refresh failed` was not a sync disconnect. During the upload backl
 
 ## Network error diagnosis — 2026-10-30
 
-The tray's `NETWORK_UNAVAILABLE` was a transport-path issue, not a server outage. The public health URL returned 200 through the external fetch path, while this machine measured 27 successes and 3 TLS `ECONNRESET` failures across 30 direct HTTPS checks; SSH to the same host was also intermittently closed. Agent outbox batches were preserved. The agent now retries transient TLS/socket resets up to five attempts with backoff; the regression test uses a server that resets the first two connections. This is a client-network/TUN resilience fix; the server image was not rebuilt for it.
+The tray's `NETWORK_UNAVAILABLE` was a transport-path issue, not a server outage. The public health URL returned 200 through the external fetch path, while this machine (Mihomo TUN, with local `HTTP_PROXY`/`HTTPS_PROXY` at `127.0.0.1:7897`) measured 27 successes and 3 TLS `ECONNRESET` failures across 30 direct HTTPS checks; SSH to the same host was also intermittently closed. Agent outbox batches were preserved. The agent retries transient TLS/socket resets up to five attempts with backoff and, after a network failure, schedules the next sync cycle in 30 seconds instead of 5 minutes. A later 30/30 health run and 10/10 authenticated GETs succeeded; the tray error cleared and the outbox was empty.
 
 ## Remaining
 
