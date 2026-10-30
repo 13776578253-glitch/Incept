@@ -21,6 +21,7 @@ const executors = new Map<string, SyncExecutor>();
 export const TRUSTED_SNAPSHOT_REFRESH_DEBOUNCE_MS = 1_500;
 export const TRUSTED_SNAPSHOT_REFRESH_MAX_WAIT_MS = 10_000;
 function scheduleTrustedDashboardRefresh(context: Context) {
+  if (refreshes.get(context.key)) return;
   const now = Date.now(), scheduled = refreshTimers.get(context.key);
   if (scheduled) clearTimeout(scheduled.timer);
   const deadline = scheduled?.deadline ?? now + TRUSTED_SNAPSHOT_REFRESH_MAX_WAIT_MS;
@@ -168,12 +169,30 @@ export function refreshTrustedDashboardSnapshots(): Promise<void> {
   })().finally(() => { if (refreshes.get(context.key) === job) refreshes.delete(context.key); });
   refreshes.set(context.key, job); return job;
 }
-export async function readDashboardSnapshot(range: UsageRange = '30d'): Promise<TokenDashboardData | null> {
+function currentGeneration(stored: Stored | undefined, version: Pick<Generation, 'identity' | 'revision'>, day: string) {
+  return !!stored?.sync && stored.sync.identity === version.identity && stored.sync.revision === version.revision && stored.sync.day === day
+    && usageRanges.every(range => isSnapshot(stored.snapshots[range], range));
+}
+export async function readDashboardSnapshot(range: UsageRange = '30d', options: { waitForFresh?: boolean } = {}): Promise<TokenDashboardData | null> {
   const context = snapshotContext();
-  if (context.database) await refreshTrustedDashboardSnapshots().catch(() => {});
+  if (!context.database) return (await readStored(context))?.snapshots[range] ?? null;
+  let version: Pick<Generation, 'identity' | 'revision'> | undefined;
+  try { version = readSyncDatabaseVersion(context.database); } catch { /* Retain the last good display during a transient read failure. */ }
+  const stored = await readStored(context, version?.identity);
+  const snapshot = stored?.snapshots[range] ?? null;
+  const current = !!version && currentGeneration(stored, version, dashboardDate(Date.now()));
+  if (current) return snapshot;
+  if (snapshot && options.waitForFresh === false) {
+    // Serve the last complete generation immediately. The persisted snapshot
+    // remains the source of truth if this background refresh fails or the
+    // process exits before it starts.
+    scheduleTrustedDashboardRefresh(context);
+    return snapshot;
+  }
+  await refreshTrustedDashboardSnapshots().catch(() => {});
   let identity: string | undefined;
-  if (context.database) try { identity = readSyncDatabaseVersion(context.database).identity; } catch { /* Retain the last good display during a transient read failure. */ }
-  return (await readStored(context, identity))?.snapshots[range] ?? null;
+  try { identity = readSyncDatabaseVersion(context.database).identity; } catch { /* Retain the last good display during a transient read failure. */ }
+  return (await readStored(context, identity))?.snapshots[range] ?? snapshot;
 }
 export async function saveDashboardSnapshot(data: TokenDashboardData) {
   const context = snapshotContext();

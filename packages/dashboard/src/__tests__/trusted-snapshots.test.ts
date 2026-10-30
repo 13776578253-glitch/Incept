@@ -72,6 +72,42 @@ it('merges concurrent public ranges into one atomic generation without collector
   expect(execute.mock.calls.every(([work]) => work.op === 'projection-snapshots')).toBe(true);
 });
 
+it('serves a stale complete generation immediately and refreshes it only in the background', async () => {
+  vi.useFakeTimers();
+  try {
+    const { cache, execute } = await fake();
+    await cache.readDashboardSnapshot('all');
+    execute.mockClear();
+    revision(1);
+    const stale = await cache.readDashboardSnapshot('all', { waitForFresh: false });
+    expect(stale?.sync?.dataRevision).toBe(0);
+    expect(execute).not.toHaveBeenCalled();
+    await cache.refreshTrustedDashboardSnapshots();
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect((await cache.readDashboardSnapshot('all'))?.sync?.dataRevision).toBe(1);
+  } finally { vi.useRealTimers(); }
+});
+
+it('waits for the first generation when no published snapshot exists', async () => {
+  const { cache, execute } = await fake(); let finish!: () => void;
+  execute.mockImplementationOnce(work => new Promise(done => { finish = () => done(batch(work)); }));
+  const pending = cache.readDashboardSnapshot('all', { waitForFresh: false });
+  await vi.waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
+  let settled = false; void pending.then(() => { settled = true; });
+  await Promise.resolve(); expect(settled).toBe(false);
+  finish(); expect((await pending)?.sync?.dataRevision).toBe(0);
+});
+
+it('waitForFresh reads the current generation instead of the cached one', async () => {
+  const { cache } = await fake();
+  await cache.readDashboardSnapshot('all');
+  revision(1);
+  const stale = await cache.readDashboardSnapshot('all', { waitForFresh: false });
+  expect(stale?.sync?.dataRevision).toBe(0);
+  const fresh = await cache.readDashboardSnapshot('all', { waitForFresh: true });
+  expect(fresh?.sync?.dataRevision).toBe(1);
+});
+
 it('coalesces a burst of receipts into one snapshot projection', async () => {
   const { cache, execute, commit } = await fake();
   await cache.readDashboardSnapshot('all');

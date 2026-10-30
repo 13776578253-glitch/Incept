@@ -7,6 +7,14 @@ beforeEach(()=>{vi.useFakeTimers();vi.spyOn(document,'visibilityState','get').mo
 afterEach(()=>{cleanup();vi.useRealTimers();vi.restoreAllMocks();vi.unstubAllGlobals();});
 const initial=()=>({...emptyDashboard('7d'),sync:{remote:true,readMode:'v2' as const,intervalMs:300000},checkedAt:'2026-10-01T00:00:00Z'});
 const reply=(value:unknown)=>({ok:true,json:async()=>value});
+it('loads remote device status on a live mount without requesting usage',async()=>{
+  const calls:string[]=[];vi.stubGlobal('fetch',vi.fn(async(url:string)=>{calls.push(String(url));return reply({remoteEnabled:true,readMode:'v2',intervalMs:300000,devices:[{id:'device',name:'Windows',online:true}]});}));
+  const {result}=renderHook(()=>useDashboardWindow(initial(),{owner:true,loadRemoteOnMount:true}));
+  await act(async()=>{});
+  expect(calls).toHaveLength(1);expect(calls[0]).toContain('/devices/status');
+  expect(result.current.remoteInfo?.devices[0].name).toBe('Windows');
+  expect(result.current.remoteDevice).toBe('device');
+});
 it('remote refresh waits for Job completion before reading the required revision, and merges repeated local clicks',async()=>{
   const calls:string[]=[];let finish!:(v:unknown)=>void;
   vi.stubGlobal('fetch',vi.fn(async(url:string)=>{calls.push(String(url));if(url.endsWith('/devices/status'))return reply({remoteEnabled:true,readMode:'v2',intervalMs:300000,devices:[{id:'device',name:'Windows',online:true,activity:'collecting',lastCollectedAt:'2026-10-01T00:00:00Z',lastCommittedAt:'2026-10-01T00:01:00Z'}]});
