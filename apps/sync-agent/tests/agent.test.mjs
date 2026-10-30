@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID,randomBytes} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
+import {createServer} from 'node:http';
 import {fileURLToPath} from 'node:url';
 import {AgentState,SyncEngine,AgentHttp,RemoteError,RemoteLink,captureHome,buildCandidate,storeToken,loadToken,protectDirectory,validateEndpoint,resumeReviewed,reconcileHeads} from '../dist/library.mjs';
 import {fixtures as f} from './helpers.mjs';
@@ -149,6 +150,13 @@ test('HTTPS required; only explicit loopback HTTP is accepted; URL credentials r
   assert.equal(validateEndpoint('https://example.test'),'https://example.test');assert.throws(()=>new AgentHttp('http://example.test','unused'));assert.throws(()=>validateEndpoint('https://user:secret@example.test'));
   assert.throws(()=>validateEndpoint('https://example.test/?token=secret'));assert.equal(validateEndpoint('http://127.0.0.1:1234',true),'http://127.0.0.1:1234');
 });
+test('agent HTTP retries transient TLS/socket resets',()=>sandbox(async()=>{
+  let attempts=0;const server=createServer((_req,res)=>{attempts++;if(attempts<3){_req.socket.destroy();return;}res.writeHead(200,{'content-type':'application/json'});res.end('{"ok":true}');});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const address=server.address();if(!address||typeof address==='string')throw Error('SERVER_ADDRESS_REQUIRED');
+  try{const http=new AgentHttp('http://127.0.0.1:'+address.port,'token',{allowLoopbackHttp:true,paceMs:0});assert.deepEqual(await http.request('/agent','GET'),{ok:true});assert.equal(attempts,3);}
+  finally{await new Promise(resolve=>server.close(()=>resolve()));}
+}));
 test('a new weak session namespace cannot bypass migrated v1 history',()=>sandbox(async dir=>{
   const home=join(dir,'home');f.writePhase0Source(home,'commandcode',{withoutId:true});const legacy=join(dir,'legacy.db'),bundle=f.phase0Export(home);f.phase0Import(bundle,legacy);
   const service=new f.CompatibleSyncService(join(dir,'cloud.db')),owner={role:'owner',subject:'owner',reason:'synthetic migration'};
