@@ -9,6 +9,8 @@
 - **目标生产环境**: Debian 13 (2 vCPU, 1.9GB RAM, 4GB swap), Docker (`incept-proxy-1`, `incept-sync-gateway-1`, `incept-app-1`, `incept-postgres-1`)
 - **密级与完整性**: 生产核心架构规范 (Production Engineering Design Document)
 
+> **2026-10-31 execution update:** `main` was unified with `fix/sync-safety` at `2d220df`; the two `main` documentation/test commits are included. Further work is isolated in `.worktrees/sync-reliability-perf` on `fix/sync-reliability-perf`. The baseline/test/metrics record is `docs/current-task/2026-10-31-sync-reliability-phases.md`. Live SSH to the production host was intermittently closed by the local network during this run; public health was 200 and public usage returned fresh data, but the live image digest was not re-inspected.
+
 ---
 
 ## 目录 (Table of Contents)
