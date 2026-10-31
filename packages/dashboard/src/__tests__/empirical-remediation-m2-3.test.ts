@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { hash } from '../adapters/local/imports/identity';
 import type { TransferEvent } from '../domain/imports';
+// @ts-expect-error The operational script is intentionally plain JS without a declaration file.
 import { backupSqlite } from '../../../../scripts/production-sync-backup.mjs';
+// The operational script above is intentionally plain JS and has no declaration.
 
 describe('Empirical Remediation Verification (Challenger M2.3)', () => {
 
@@ -198,7 +200,7 @@ describe('Empirical Remediation Verification (Challenger M2.3)', () => {
     it('empirically proves client halts after exactly maxRebaseAttempts = 3 on flapping server head', () => {
       const maxRebaseAttempts = 3;
       let attempts = 0;
-      let state: 'pending' | 'syncing' | 'lineage' = 'pending';
+      let state: string = 'pending';
       let terminalError: string | null = null;
 
       // Simulate client rebase loop facing persistent PARENT_MISMATCH

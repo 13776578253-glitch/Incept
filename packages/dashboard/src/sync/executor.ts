@@ -1,11 +1,11 @@
 import { Worker } from 'node:worker_threads';
 import { DatabaseSync } from 'node:sqlite';
-import { existsSync } from 'node:fs';
+import { existsSync,statSync } from 'node:fs';
 import { dirname,isAbsolute,join,resolve } from 'node:path';
 import { DEFAULT_CAPACITY,SyncTransportError,type CapacityPolicy,type SyncWork } from './protocol';
 import {syncDatabaseFileIdentity} from './database-version';
 
-type Job={id:number;work:SyncWork;device:string;resolve:(v:unknown)=>void;reject:(e:unknown)=>void;verify:()=>Promise<void>;signal?:AbortSignal;abort:()=>void;timer?:ReturnType<typeof setTimeout>;active:boolean};
+type Job={id:number;work:SyncWork;device:string;resolve:(v:unknown)=>void;reject:(e:unknown)=>void;verify:()=>Promise<void>;signal?:AbortSignal;abort:()=>void;timer?:ReturnType<typeof setTimeout>;active:boolean;enqueuedAt:number;startedAt?:number};
 export type ExecutorOptions={workerFile?:string;legacyPath?:string;trusted?:boolean;maxQueue?:number;perDevice?:number;timeoutMs?:number;policy?:CapacityPolicy};
 export function findSyncWorker() {
   if(process.env.INCEPT_SYNC_WORKER_FILE&&isAbsolute(process.env.INCEPT_SYNC_WORKER_FILE))return process.env.INCEPT_SYNC_WORKER_FILE;
@@ -17,7 +17,8 @@ export class SyncExecutor {
   private worker?:Worker;private queue:Job[]=[];private running?:Job;private serial=0;private closed=false;
   private workerIdentity?:string;
   private readonly commitListeners=new Set<()=>void>();
-  readonly metrics={completed:0,failed:0,lastFailure:null as string|null,lastWallMs:0,lastWriteWallMs:0,lastCommitWallMs:0,processRssBytes:0,workerHeapBytes:0,busyRetries:0};
+  readonly metrics={completed:0,failed:0,lastFailure:null as string|null,lastWallMs:0,lastWriteWallMs:0,lastCommitWallMs:0,lastProjectionWallMs:0,
+    lastQueueWaitMs:0,peakQueueWaitMs:0,queueWaitTotalMs:0,queueWaitSamples:0,lastExecutionWallMs:0,processRssBytes:0,workerHeapBytes:0,busyRetries:0};
   readonly options:Required<Omit<ExecutorOptions,'workerFile'|'legacyPath'|'trusted'>>&{workerFile:string;legacyPath?:string;trusted:boolean};
   constructor(readonly path:string,options:ExecutorOptions={}) {
     if(!isAbsolute(path))throw new SyncTransportError('EXPLICIT_ABSOLUTE_STORE_PATH_REQUIRED');
@@ -28,7 +29,8 @@ export class SyncExecutor {
     if(this.options.policy.warnBytes>this.options.policy.reviewBytes||this.options.policy.rejectFreeBytes>this.options.policy.warnFreeBytes)throw new SyncTransportError('INVALID_CAPACITY_CONFIG');
     if((this.options.policy.memoryPercent??85)<50||(this.options.policy.memoryPercent??85)>95||(this.options.policy.maxBatchRecords??100_000)<1)throw new SyncTransportError('INVALID_CAPACITY_CONFIG');
   }
-  state(){return {queueLength:this.queue.length,running:!!this.running,...this.metrics};}
+  state(){const size=(suffix:string)=>{try{return existsSync(this.path+suffix)?statSync(this.path+suffix).size:0;}catch{return 0;}};
+    return {queueLength:this.queue.length,running:!!this.running,...this.metrics,mainRssBytes:process.memoryUsage().rss,dbBytes:size(''),walBytes:size('-wal'),shmBytes:size('-shm')};}
   readDeviceSummary(devices:string[]){
     if(!Array.isArray(devices)||devices.length>100||devices.some(device=>typeof device!=='string'))throw new SyncTransportError('INVALID_DEVICE_SUMMARY');
     const db=new DatabaseSync(this.path,{readOnly:true});
@@ -44,13 +46,19 @@ export class SyncExecutor {
     if(this.queue.length+(this.running?1:0)>=this.options.maxQueue||this.queue.filter(j=>j.device===device).length+(this.running?.device===device?1:0)>=this.options.perDevice)
       return Promise.reject(new SyncTransportError('QUEUE_FULL',429,2));
     return new Promise<T>((resolveJob,reject)=>{
-      const job:Job={id:++this.serial,work,device,verify,signal,active:false,resolve:v=>resolveJob(v as T),reject,abort:()=>{void this.cancel(job,'REQUEST_CANCELLED');}};
+      const job:Job={id:++this.serial,work,device,verify,signal,active:false,enqueuedAt:Date.now(),resolve:v=>resolveJob(v as T),reject,abort:()=>{void this.cancel(job,'REQUEST_CANCELLED');}};
       job.timer=setTimeout(()=>{void this.cancel(job,job.active?'RESULT_UNKNOWN':'QUEUE_TIMEOUT');},this.options.timeoutMs);
       signal?.addEventListener('abort',job.abort,{once:true});this.queue.push(job);void this.pump();
     });
   }
   private finish(job:Job,error?:unknown,value?:unknown) {
     clearTimeout(job.timer);job.signal?.removeEventListener('abort',job.abort);
+    if(job.startedAt!==undefined){
+      const queueWait=job.startedAt-job.enqueuedAt;
+      this.metrics.lastQueueWaitMs=queueWait;this.metrics.peakQueueWaitMs=Math.max(this.metrics.peakQueueWaitMs,queueWait);
+      this.metrics.queueWaitTotalMs+=queueWait;this.metrics.queueWaitSamples++;
+      this.metrics.lastExecutionWallMs=Date.now()-job.startedAt;
+    }
     if(error){this.metrics.failed++;this.metrics.lastFailure=error instanceof SyncTransportError?error.code:'BACKEND_UNAVAILABLE';job.reject(error);}else{this.metrics.completed++;job.resolve(value);}
   }
   private async cancel(job:Job,code:string) {
@@ -64,7 +72,7 @@ export class SyncExecutor {
   private async pump() {
     if(this.running||this.closed)return;const job=this.queue.shift();if(!job)return;this.running=job;
     try {
-      await job.verify();if(this.running!==job)return;job.active=true;
+      await job.verify();if(this.running!==job)return;job.startedAt=Date.now();job.active=true;
       if(this.worker&&existsSync(this.path)) {
         const identity=syncDatabaseFileIdentity(this.path);
         if(this.workerIdentity&&this.workerIdentity!==identity){const previous=this.worker;this.worker=undefined;await previous.terminate();}
@@ -78,6 +86,7 @@ export class SyncExecutor {
           if(message.metrics){this.metrics.lastWallMs=message.metrics.wallMs;this.metrics.processRssBytes=message.metrics.rssBytes;this.metrics.workerHeapBytes=message.metrics.heapBytes;this.metrics.busyRetries=message.metrics.busyRetries;}
           if(message.metrics&&!['status','capacity'].includes(current.work.op))this.metrics.lastWriteWallMs=message.metrics.wallMs;
           if(message.metrics&&current.work.op==='commit')this.metrics.lastCommitWallMs=message.metrics.wallMs;
+          if(message.metrics&&current.work.op==='projection-snapshots')this.metrics.lastProjectionWallMs=message.metrics.wallMs;
           if(existsSync(this.path)&&!this.workerIdentity)this.workerIdentity=syncDatabaseFileIdentity(this.path);
           this.finish(current,message.error?new SyncTransportError(message.error.code,message.error.status??statusForCode(message.error.code),message.error.retryAfter??2):undefined,message.result);
           if(!message.error&&current.work.op==='commit'&&message.result?.receipt?.status==='committed') {

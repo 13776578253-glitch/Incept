@@ -127,6 +127,13 @@ export class AgentState {
     this.db.prepare('DELETE FROM heads WHERE scope=?').run(scope);
     this.db.prepare('INSERT INTO heads VALUES(?,?,?)').run(scope,JSON.stringify(head),signature);
     return rows.length;});}
+  reconcileHeadLag(scope:string,keepBatch:string,head:ParentCapture,signature:string){return this.tx(()=>{
+    const rows=this.db.prepare("SELECT batch FROM outbox WHERE scope=? AND state IN ('pending','lineage') AND batch<>?").all(scope,keepBatch);
+    for(const row of rows){this.db.prepare("UPDATE outbox SET state='superseded',error='SAFE_HEAD_LAG_RECONCILED',next_retry=0 WHERE batch=?").run(row.batch);this.db.prepare('DELETE FROM records WHERE batch=?').run(row.batch);}
+    this.db.prepare('DELETE FROM lineage WHERE scope=?').run(scope);this.db.prepare('DELETE FROM lineage_tokens WHERE scope=?').run(scope);
+    this.db.prepare('DELETE FROM heads WHERE scope=?').run(scope);
+    this.db.prepare('INSERT INTO heads VALUES(?,?,?)').run(scope,JSON.stringify(head),signature);
+    return rows.length;});}
   pending(){return this.db.prepare("SELECT o.* FROM outbox o WHERE state='pending' AND next_retry<=? AND NOT EXISTS(SELECT 1 FROM outbox p WHERE p.scope=o.scope AND p.serial<o.serial AND p.state IN ('pending','review','held','quarantined','lineage')) ORDER BY serial").all(Date.now());}
   renewExpired(batch:string,newBatch:string){this.tx(()=>{const row=this.db.prepare("SELECT header_json FROM outbox WHERE batch=? AND state='pending'").get(batch);if(!row)throw Error('OUTBOX_MISSING');const header=JSON.parse(String(row.header_json));header.batchId=newBatch;
     this.db.prepare('UPDATE records SET batch=? WHERE batch=?').run(newBatch,batch);this.db.prepare('UPDATE outbox SET batch=?,header_json=?,next_retry=0 WHERE batch=?').run(newBatch,JSON.stringify(header),batch);});}
@@ -158,5 +165,5 @@ export class AgentState {
     historicalHeldScopes:Number(this.db.prepare("SELECT COUNT(*) n FROM historical_seals WHERE json_extract(seal_json,'$.disposition')='isolated'").get()!.n),
     quarantineActive:Number(this.db.prepare('SELECT COUNT(*) n FROM session_isolations WHERE active=1').get()!.n),
     lastCollectionReport:this.get('lastCollectionReport'),
-    lastCollectedAt:this.get('lastCollectedAt'),lastReportAt:this.get('lastReportAt'),lastSuccessfulSyncAt:this.get('lastSuccessfulSyncAt'),dataRevision:this.get('dataRevision'),lastErrorCode:this.get('lastErrorCode'),lastErrorAt:this.get('lastErrorAt'),issues:this.get('issues'),heartbeat:this.get('heartbeat'),remoteOnline:this.get('remoteOnline'),lastRemoteJob:this.get('lastRemoteJob'),remoteError:this.get('remoteError')};}
+    lastCollectedAt:this.get('lastCollectedAt'),lastReportAt:this.get('lastReportAt'),lastSuccessfulSyncAt:this.get('lastSuccessfulSyncAt'),dataRevision:this.get('dataRevision'),lastErrorCode:this.get('lastErrorCode'),lastErrorAt:this.get('lastErrorAt'),lastHeadLagRecovery:this.get('lastHeadLagRecovery'),issues:this.get('issues'),heartbeat:this.get('heartbeat'),remoteOnline:this.get('remoteOnline'),lastRemoteJob:this.get('lastRemoteJob'),remoteError:this.get('remoteError')};}
 }

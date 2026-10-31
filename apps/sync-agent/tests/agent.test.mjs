@@ -7,7 +7,7 @@ import {randomUUID,randomBytes} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {createServer} from 'node:http';
 import {fileURLToPath} from 'node:url';
-import {AgentState,SyncEngine,AgentHttp,RemoteError,RemoteLink,captureHome,buildCandidate,storeToken,loadToken,protectDirectory,validateEndpoint,resumeReviewed,reconcileHeads} from '../dist/library.mjs';
+import {AgentState,SyncEngine,AgentHttp,RemoteError,RemoteLink,captureHome,buildCandidate,storeToken,loadToken,protectDirectory,validateEndpoint,resumeReviewed,reconcileHeads,reconcileHeadLag} from '../dist/library.mjs';
 import {fixtures as f} from './helpers.mjs';
 const sources=['codex','commandcode','claudeCode','geminiCli','antigravity','opencode','zcode'];
 const deviceId='00000000-0000-4000-8000-000000000003',actor={role:'device',deviceId};
@@ -57,6 +57,34 @@ test('owner rebase reconciliation adopts the server head and supersedes stale ca
     const result=await reconcileHeads(state,http);
     assert.equal(result.reconciled.length,1);assert.equal(result.reconciled[0].superseded,1);assert.equal(state.reviewCount(),0);
     assert.equal(state.parents().find(parent=>parent.header.manifest.scope.sessionId===capture.sessionId).header.manifest.manifestHash,fresh.header.manifest.manifestHash);
+  }finally{state.close();}
+}));
+test('safe head lag recovery keeps only a newer candidate already parented to the server head',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode');
+  const scopeValue=scope(capture),serverHead=buildCandidate(capture,scopeValue,undefined,'safe-head'),stale=buildCandidate(capture,scopeValue,undefined,'safe-stale'),latest=buildCandidate(capture,scopeValue,serverHead,'safe-latest');
+  const state=new AgentState(join(dir,'state'));
+  try{
+    state.enqueue(stale,'stale-signature');state.markLineageRecovery(stale.header.batchId,'PARENT_MISMATCH');state.enqueue(latest,'latest-signature');
+    const http={request:async path=>path==='/scopes/resolve'?{scope:scopeValue,headManifest:serverHead.header.manifest.manifestHash,head:serverHead.header}:{}};
+    const result=await reconcileHeadLag(state,http);
+    assert.equal(result.reconciled.length,1);assert.equal(result.reconciled[0].keptBatch,latest.header.batchId);assert.equal(result.reconciled[0].superseded,1);
+    assert.equal(state.pending().length,1);assert.equal(state.pending()[0].batch,latest.header.batchId);
+    assert.equal(state.db.prepare("SELECT state FROM outbox WHERE batch=?").get(stale.header.batchId).state,'superseded');
+    assert.equal(state.status().lastHeadLagRecovery.keptBatch,latest.header.batchId);
+    const adopted=state.db.prepare('SELECT parent_json FROM heads WHERE scope=?').get(f.hash([capture.source,capture.sessionId]));
+    assert.equal(JSON.parse(String(adopted.parent_json)).header.manifest.manifestHash,serverHead.header.manifest.manifestHash);
+  }finally{state.close();}
+}));
+test('safe head lag recovery leaves an unprovable candidate for manual reconcile',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode');
+  const scopeValue=scope(capture),serverHead=buildCandidate(capture,scopeValue,undefined,'unsafe-head'),stale=buildCandidate(capture,scopeValue,undefined,'unsafe-stale');
+  const state=new AgentState(join(dir,'state'));
+  try{
+    state.enqueue(stale,'stale-signature');state.markLineageRecovery(stale.header.batchId,'PARENT_MISMATCH');
+    const http={request:async path=>path==='/scopes/resolve'?{scope:scopeValue,headManifest:serverHead.header.manifest.manifestHash,head:serverHead.header}:{}};
+    const result=await reconcileHeadLag(state,http);
+    assert.equal(result.reconciled.length,0);assert.equal(result.skipped[0].reason,'NO_NEWER_CANDIDATE');
+    assert.equal(state.db.prepare("SELECT state FROM outbox WHERE batch=?").get(stale.header.batchId).state,'lineage');
   }finally{state.close();}
 }));
 test('permanent 4xx quarantines only the failed batch and 409 enters lineage recovery',()=>sandbox(async dir=>{

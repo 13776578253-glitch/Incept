@@ -49,3 +49,34 @@ export async function reconcileHeads(state:AgentState,http:AgentHttp,options:{se
   }
   return {reconciled,skipped};
 }
+
+/**
+ * Recover a stale head only when the newest local candidate is already built on
+ * the server's current head and covers at least the same snapshot. Older
+ * lineage/pending candidates are then provably superseded; the retained
+ * candidate still goes through normal server validation before commit.
+ */
+export async function reconcileHeadLag(state:AgentState,http:AgentHttp) {
+  const rows=state.db.prepare("SELECT scope FROM outbox WHERE state='lineage' ORDER BY scope").all() as Array<{scope:string}>;
+  const reconciled=[] as Array<{session:string;head:string;keptBatch:string;superseded:number}>,skipped=[] as Array<{session:string;reason:string}>;
+  for(const row of rows){
+    const key=String(row.scope);
+    if(state.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state IN ('review','held','quarantined') LIMIT 1").get(key)){skipped.push({session:key,reason:'UNRESOLVED_WORK'});continue;}
+    const candidates=state.db.prepare("SELECT batch,header_json FROM outbox WHERE scope=? AND state='pending' ORDER BY serial").all(key) as Array<{batch:string;header_json:string}>;
+    if(!candidates.length){skipped.push({session:key,reason:'NO_NEWER_CANDIDATE'});continue;}
+    const latest=candidates[candidates.length-1],header=JSON.parse(String(latest.header_json)) as SyncHeader,scope=header.manifest.scope;
+    if(header.manifest.intent!=='observe'||!header.manifest.parent){skipped.push({session:scope.sessionId,reason:'CANDIDATE_NOT_FULL_OBSERVATION'});continue;}
+    let admission:{scope:unknown;status?:string;headManifest?:string|null;head?:SyncHeader|null};
+    try{admission=await http.request('/scopes/resolve','POST',{source:scope.source,sessionId:scope.sessionId},[200,409]);}
+    catch(error){skipped.push({session:scope.sessionId,reason:error instanceof Error?error.message:'RESOLVE_FAILED'});continue;}
+    if(admission.status==='review-required'||!admission.head||!admission.headManifest){skipped.push({session:scope.sessionId,reason:admission.status??'HEAD_UNAVAILABLE'});continue;}
+    if(hash(admission.scope)!==hash(scope)||hash(admission.head.manifest.scope)!==hash(scope)||admission.head.manifest.manifestHash!==admission.headManifest){skipped.push({session:scope.sessionId,reason:'HEAD_MISMATCH'});continue;}
+    if(header.manifest.parent.generationId!==admission.head.manifest.generationId||header.manifest.parent.manifestHash!==admission.headManifest){skipped.push({session:scope.sessionId,reason:'CANDIDATE_PARENT_CHANGED'});continue;}
+    if(header.manifest.recordCount<admission.head.manifest.recordCount){skipped.push({session:scope.sessionId,reason:'CANDIDATE_SNAPSHOT_SHORTER'});continue;}
+    const head:ParentCapture={header:admission.head,proofs:admission.head.manifest.ranges.map(range=>({range,parts:[]}))};
+    const superseded=state.reconcileHeadLag(key,latest.batch,head,hash(['safe-head-lag/reconcile/1',admission.headManifest]));
+    state.set('lastHeadLagRecovery',{at:new Date().toISOString(),session:scope.sessionId,head:admission.headManifest,keptBatch:latest.batch,superseded});
+    reconciled.push({session:scope.sessionId,head:admission.headManifest,keptBatch:latest.batch,superseded});
+  }
+  return {reconciled,skipped};
+}

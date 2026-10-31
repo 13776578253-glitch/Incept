@@ -9,13 +9,13 @@ import type {TransferSource} from '../../../packages/dashboard/src/domain';
 import {AgentState,scopeKey} from './state';
 import {AgentHttp,RemoteError} from './transport';
 import {classifyIssues} from './issues';
-import {resumeReviewed} from './review';
+import {resumeReviewed,reconcileHeadLag} from './review';
 import {resumeHeld} from './resume';
 export {AgentState,scopeKey} from './state';
 export {AgentHttp,RemoteError,validateEndpoint} from './transport';
 export {storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
 export {RemoteLink} from './remote';
-export {resumeReviewed,reconcileHeads} from './review';
+export {resumeReviewed,reconcileHeads,reconcileHeadLag} from './review';
 export {resumeHeld} from './resume';
 export {classifyIssues} from './issues';
 export {verifyLineage,V4_BASELINE} from './verify-lineage';
@@ -36,6 +36,9 @@ export class SyncEngine {
   constructor(readonly state:AgentState,readonly config:Config,readonly http:AgentHttp,readonly collect:Collector=workerCollector(state.directory)){}
   run(signal?:AbortSignal){if(this.running)return this.running;this.state.set('activity','collecting');this.running=this.cycle(signal).finally(()=>{this.running=undefined;this.state.set('activity','idle');});return this.running;}
   private async cycle(signal?:AbortSignal){
+    // Only recover when the newest local candidate already names the server's
+    // current head as its parent. Anything weaker remains a manual reconcile.
+    try{const recovered=await reconcileHeadLag(this.state,this.http);if(recovered.reconciled.length)this.state.set('lastErrorCode',null);}catch{/* Network/head lookup is retried next cycle. */}
     // Capture one source at a time. This bounds the worker/snapshot to the
     // per-source limits and keeps one large source from marking all others
     // incomplete merely because an aggregate cap was reached.
@@ -146,6 +149,7 @@ export class SyncEngine {
   }
   private async upload(signal?:AbortSignal){
     this.state.set('activity','uploading');let sent=0,newTokens:number|null=0,uploadedTokens=0;
+    try{const recovered=await reconcileHeadLag(this.state,this.http);if(recovered.reconciled.length)this.state.set('lastErrorCode',null);}catch{/* Keep durable lineage for the next cycle. */}
     for(const b of this.state.reviewBatches()){try{await resumeReviewed(this.state,this.http,b);this.state.set('lastErrorCode',null);}catch{}}
     const heldRows=this.state.db.prepare("SELECT batch,scope FROM outbox WHERE state='held'").all() as {batch:string;scope:string}[];
     for(const row of heldRows){if(!this.state.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state='review' LIMIT 1").get(row.scope)){try{await resumeHeld(this.state,this.http,this.config,row.batch);}catch{}}}
