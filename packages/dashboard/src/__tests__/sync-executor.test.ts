@@ -67,8 +67,11 @@ it('reads device summary without entering the upload queue',async()=>{
   const summary=executor.readDeviceSummary([device.deviceId]);expect(typeof summary[device.deviceId]).toBe('string');expect(Number.isNaN(Date.parse(summary[device.deviceId]!))).toBe(false);
 });
 it('exposes queue wait, execution, projection, RSS and SQLite WAL telemetry',async()=>{
-  const executor=make();await executor.execute({op:'capacity',actor:owner});const state=executor.state();
-  expect(state.queueWaitSamples).toBeGreaterThan(0);expect(state.lastQueueWaitMs).toBeGreaterThanOrEqual(0);expect(state.lastExecutionWallMs).toBeGreaterThanOrEqual(0);
+  const executor=make();
+  const first=executor.execute({op:'capacity',actor:owner},()=>new Promise<void>(done=>setTimeout(done,25))),second=executor.execute({op:'capacity',actor:owner});
+  await Promise.all([first,second]);
+  const state=executor.state();
+  expect(state.queueWaitSamples).toBeGreaterThan(0);expect(state.peakQueueWaitMs).toBeGreaterThan(0);expect(state.lastQueueWaitMs).toBeGreaterThanOrEqual(0);expect(state.lastExecutionWallMs).toBeGreaterThanOrEqual(0);
   expect(state.lastProjectionWallMs).toBe(0);expect(state.mainRssBytes).toBeGreaterThan(0);expect(state.dbBytes).toBeGreaterThan(0);expect(state.walBytes).toBeGreaterThanOrEqual(0);
 });
 it('four active batches per device, TTL cleanup and receipt retention remain independent',async()=>{
