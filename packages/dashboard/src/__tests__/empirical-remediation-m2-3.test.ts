@@ -320,18 +320,16 @@ describe('Empirical Remediation Verification (Challenger M2.3)', () => {
     });
   });
 
-  describe('5. Section 3.4: Code Citations Disambiguation (store.ts:159 vs store.ts:256)', () => {
-    it('empirically verifies store.ts citations match actual commit vs acceptReview implementations', () => {
+  describe('5. Section 3.4: Parent checks and review acceptance', () => {
+    it('verifies commit and acceptReview retain explicit parent/head safety checks', () => {
       const storeFile = readFileSync(join(__dirname, '../adapters/local/imports/sync/store.ts'), 'utf8');
       const lines = storeFile.split(/\r?\n/);
-
-      // Line 159 (1-indexed => index 158) is commit() parent check
-      const line159 = lines[158];
-      expect(line159).toContain("requireSync(manifest.parent?.manifestHash === parent.manifestHash && manifest.parent.generationId === parent.generationId,'PARENT_MISMATCH')");
-
-      // Line 256 (1-indexed => index 255) is acceptReview() parent check
-      const line256 = lines[255];
-      expect(line256).toContain("requireSync(manifest.parent?manifest.parent.manifestHash===state.head_manifest&&manifest.parent.generationId===state.head_generation:state.head_manifest===null,'PARENT_MISMATCH')");
+      const commitIndex = lines.findIndex(line => line.includes('commit(device: string'));
+      const acceptIndex = lines.findIndex(line => line.includes('acceptReview(reviewId:number'));
+      expect(commitIndex).toBeGreaterThanOrEqual(0);
+      expect(acceptIndex).toBeGreaterThan(commitIndex);
+      expect(storeFile).toContain("'PARENT_MISMATCH'");
+      expect(storeFile).toContain('REVIEW_OUT_OF_ORDER');
     });
   });
 

@@ -68,7 +68,7 @@ describe('Empirical Challenger M2 Verification', () => {
       rmSync(dir, { recursive: true, force: true });
     });
 
-    it('empirically proves syncEnvelope includes sessionTitle in main branch, altering hash and throwing REVISION_ENVELOPE_CHANGED', () => {
+    it('keeps envelope identity stable across sessionTitle changes and accepts historical title-bearing records', () => {
       const baseEvent: TransferEvent = {
         eventId: hash('event-cc-1'),
         source: 'commandcode',
@@ -96,8 +96,9 @@ describe('Empirical Challenger M2 Verification', () => {
       };
       recordWithTitle.envelopeHash = syncEnvelope(recordWithTitle);
 
-      // EMPIRICAL VERIFICATION: Envelope hashes differ purely because of sessionTitle
-      expect(recordWithTitle.envelopeHash).not.toBe(recordWithoutTitle.envelopeHash);
+      // Remediated behavior: display-only sessionTitle is excluded from the
+      // envelope identity, so a title-only update must not create a review.
+      expect(recordWithTitle.envelopeHash).toBe(recordWithoutTitle.envelopeHash);
 
       recordWithoutTitle.nativeKey = { source: 'commandcode', keyHash: hash(['native-fixture', baseEvent.eventId]) };
       recordWithTitle.nativeKey = { source: 'commandcode', keyHash: hash(['native-fixture', baseEvent.eventId]) };
@@ -116,10 +117,10 @@ describe('Empirical Challenger M2 Verification', () => {
         }]
       } as any;
 
-      // In main branch, qualifyRecords MUST throw REVISION_ENVELOPE_CHANGED
+      // In the remediated contract, a title-only change is accepted.
       expect(() => {
         qualifyRecords([recordWithoutTitle], [recordWithTitle], dummyManifest);
-      }).toThrow('REVISION_ENVELOPE_CHANGED');
+      }).not.toThrow();
     });
   });
 
@@ -218,7 +219,7 @@ describe('Empirical Challenger M2 Verification', () => {
       rmSync(dir, { recursive: true, force: true });
     });
 
-    it('empirically proves permanent failure cascades state=review to subsequent batches and blocks the scope', () => {
+    it('does not cascade a permanent failure into later batches', () => {
       const scope: SyncScope = { deviceId: 'dev-1', source: 'antigravity', sessionId: 'ag-s1', originId: 'ag-o1' };
 
       const event1: TransferEvent = {
@@ -256,12 +257,12 @@ describe('Empirical Challenger M2 Verification', () => {
       expect(row1.state).toBe('review');
       expect(row1.error).toBe('PARENT_MISMATCH');
 
-      // EMPIRICAL VERIFICATION OF CASCADING FAILURE:
-      // In main branch state.ts:138:
-      // UPDATE outbox SET state='review',error=COALESCE(error,'PARENT_REVIEW_REQUIRED') WHERE scope=? AND serial>(SELECT serial FROM outbox WHERE batch=?)
+      // Remediated behavior: the failed batch is isolated, but later batches
+      // are not rewritten. The earlier review still blocks the scope until it
+      // is reviewed/reconciled; no silent cascade is introduced.
       const row2 = agentState.db.prepare('SELECT state, error FROM outbox WHERE batch=?').get('batch-2') as any;
-      expect(row2.state).toBe('review');
-      expect(row2.error).toBe('PARENT_REVIEW_REQUIRED');
+      expect(row2.state).toBe('pending');
+      expect(row2.error).toBeNull();
 
       // EMPIRICAL VERIFICATION OF SCOPE LOCKUP:
       // pending() must now return NOTHING for this scope
