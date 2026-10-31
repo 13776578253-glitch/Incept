@@ -20,7 +20,7 @@ This record captures the execution of the first four phases requested from the s
 - `main` after merging the safety branch: `2d220df` (`merge(sync): unify main with sync safety fixes`).
 - New worktree: `.worktrees/sync-reliability-perf`.
 - New branch: `fix/sync-reliability-perf`.
-- Phase 2/3 head before this record: `b16d075`.
+- Final validated phase head: `4ef3784`; `main` was fast-forwarded to this commit after the final test run.
 
 The merge included the 18 code commits described in the investigation report and the two documentation/test commits made on `main` (`2934f1e`, `f34470b`). The only merge conflict was the handover document; both notes were retained.
 
