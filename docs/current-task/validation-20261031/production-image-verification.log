@@ -1,0 +1,26 @@
+Production image verification (2026-10-31)
+digest=sha256:7a993a587b61cfcbc1f32ee931a857d502354b89aac65adb5ac842b76270bb7a created=2026-10-29T08:32:18.915405059Z
+source-file comparison (true means byte-identical after CRLF normalization):
+packages/dashboard/src/sync/executor.ts {"e4875db":true,"355987a":true,"HEAD":false}
+apps/web/src/server/sync/remote.ts {"e4875db":true,"355987a":true,"HEAD":false}
+packages/dashboard/src/adapters/runtime/snapshot-store.ts {"e4875db":true,"355987a":false,"HEAD":false}
+packages/dashboard/src/adapters/local/imports/sync/contract.ts {"e4875db":true,"355987a":true,"HEAD":true}
+apps/sync-agent/src/cli.ts {"e4875db":true,"355987a":false,"HEAD":false}
+apps/web/src/app/[locale]/dashboard/page.tsx {"e4875db":true,"355987a":true,"HEAD":true}
+public asset digest comparison:
+3mujxz7-mg8o6.css 200 HASH_MATCH
+2r-2a5ygyjo47.js 200 HASH_MATCH
+3p0e861n_8r5i.js 200 HASH_MATCH
+03c6i87gt_q9b.js 200 HASH_MATCH
+0b0hv10i8yn67.js 200 HASH_MATCH
+turbopack-2c3mg3r-05n1w.js 200 HASH_MATCH
+416n3ovyye9v1.js 200 HASH_MATCH
+1p73u9lf50ii2.js 200 HASH_MATCH
+1-fec_d5yq5bc.js 200 HASH_MATCH
+3r148qno5vok6.js 200 HASH_MATCH
+0p-nh_z5t6ork.js 200 HASH_MATCH
+0cz1d0mv5g_q7.js 200 HASH_MATCH
+matched=12/12
+public endpoint checks:
+health 200 {"status":"ready"}
+usage 200 updatedAt=2026-10-31T09:18:33.578Z checkedAt=2026-10-31T09:18:35.083Z sessions=442

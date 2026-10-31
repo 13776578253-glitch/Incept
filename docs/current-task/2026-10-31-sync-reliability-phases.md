@@ -24,13 +24,30 @@ This record captures the execution of the first four phases requested from the s
 
 The merge included the 18 code commits described in the investigation report and the two documentation/test commits made on `main` (`2934f1e`, `f34470b`). The only merge conflict was the handover document; both notes were retained.
 
-### Production evidence and limitation
+### Production image verification
 
-- Public `/api/health/ready`: HTTP 200 `{"status":"ready"}` on 2026-10-31.
-- Public `/api/dashboard/usage?range=30d`: HTTP 200, `updatedAt=2026-10-31T08:20:57Z`, `checkedAt=2026-10-31T08:20:59Z`, 441 sessions.
-- SSH to `root@43.155.136.83:22` was repeatedly closed by the local network path (the same Mihomo/TUN issue recorded earlier). Therefore the live Docker image digest/release symlink could not be independently inspected in this run.
-- Recorded production release evidence in the deployment notes remains: image `sha256:7a993a58...`, release `e4875db`, schema 3, revision 1176 at the time of that deployment. This is **recorded evidence**, not a new live inspection.
-- No production deployment was performed in this phase.
+The SSH path from this workstation was closed before SSH version exchange (`kex_exchange_identification`), including ports 22/2222/22022/2022. Public HTTPS remained healthy, so this was not used as evidence of image identity.
+
+The exact production image was verified from the local Docker image cache and public asset hashes:
+
+- Image tag: `incept-v4-release:20261029-sync8`
+- Image ID/digest: `sha256:7a993a587b61cfcbc1f32ee931a857d502354b89aac65adb5ac842b76270bb7a`
+- Image created: `2026-10-29T08:32:18.915405059Z`
+- Image source files extracted from `/app` matched `e4875db` byte-for-byte after CRLF normalization for:
+  - `packages/dashboard/src/sync/executor.ts`
+  - `apps/web/src/server/sync/remote.ts`
+  - `packages/dashboard/src/adapters/runtime/snapshot-store.ts`
+  - `packages/dashboard/src/adapters/local/imports/sync/contract.ts`
+  - `apps/sync-agent/src/cli.ts`
+  - `apps/web/src/app/[locale]/dashboard/page.tsx`
+- The comparison reports `snapshot-store.ts` and `cli.ts` as false against `355987a`, proving the image predates the later dashboard performance/network-retry commits.
+- The public `/en/docs` page references 12 Next static assets; all 12 return HTTP 200 and their SHA-256 hashes match the files extracted from this image (`matched=12/12`).
+- Public `/api/health/ready`: 200 `{"status":"ready"}`.
+- Public `/api/dashboard/usage?range=30d`: 200, `updatedAt=2026-10-31T09:18:33Z`, 442 sessions.
+
+Conclusion: production is serving the image built from release commit `e4875db` with digest `sha256:7a993a58...`. The exact live Docker inspect was not possible over SSH, but the image filesystem and the public asset hashes close the identity gap.
+
+Raw verification logs are committed under `docs/current-task/validation-20261031/`: `production-image-verification.log`, plus the actual `pnpm-test`, `pnpm-test-ops`, `pnpm-typecheck`, `pnpm-lint`, and `pnpm-build` logs with exit codes.
 
 ### Verification
 
