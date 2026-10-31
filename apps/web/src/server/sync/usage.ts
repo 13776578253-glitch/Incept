@@ -15,7 +15,7 @@ export async function syncUsageGet(request:Request,sessionId:string,executor:Syn
   // same worker that accepts device commits.
   const v2=async()=>{
     if(mode==='v2'&&trustedDashboardEnabled()){
-      const snapshot=await readDashboardSnapshot(range as UsageRange);
+      const snapshot=await readDashboardSnapshot(range as UsageRange,{waitForFresh:minimum>0});
       if(!snapshot||(snapshot.sync?.dataRevision??0)<minimum)throw new Error('REVISION_NOT_VISIBLE');
       return snapshot;
     }

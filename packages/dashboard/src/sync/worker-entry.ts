@@ -67,7 +67,7 @@ parentPort.on('message',({id,work}:{id:number;work:SyncWork})=>{
         service.transaction(()=>{for(const row of service.db.prepare('SELECT batch_id FROM sync_staging WHERE device_id=? AND expires_at<=?').all(device,Date.now()))service.clearStage(device,String(row.batch_id));});
         const existing=service.db.prepare('SELECT 1 FROM sync_staging WHERE device_id=? AND batch_id=?').get(work.actor.deviceId,work.header.batchId);
         if(!existing&&!service.receipt(work.actor.deviceId,work.header.batchId)) {
-          if(work.header.manifest.recordCount>(policy.maxBatchRecords??20000))throw new SyncTransportError('LARGE_BATCH_DEFERRED',429,300);
+          if(work.header.manifest.recordCount>(policy.maxBatchRecords??100_000))throw new SyncTransportError('LARGE_BATCH_DEFERRED',429,300);
           guardCapacity(capacityState(service.path,service.db,policy));
           const active=service.db.prepare('SELECT COUNT(*) n FROM sync_staging WHERE device_id=? AND expires_at>?').get(work.actor.deviceId,Date.now())!;
           if(Number(active.n)>=4)throw new SyncTransportError('DEVICE_BATCH_LIMIT',429,60);
@@ -79,7 +79,8 @@ parentPort.on('message',({id,work}:{id:number;work:SyncWork})=>{
       case 'status': {
         requireSync(work.actor.role==='device'&&work.actor.deviceId===work.device,'DEVICE_MISMATCH');
         const receipt=service.receipt(work.device,work.batch);
-        if(receipt){result={state:receipt.status,receipt,dataRevision:service.revision()};break;}
+        if(receipt){const review=service.db.prepare("SELECT r.id,x.resolution_json FROM sync_reviews r LEFT JOIN sync_review_resolutions x ON x.review_id=r.id WHERE json_extract(r.header_json,'$.batchId')=? LIMIT 1").get(work.batch);
+          result={state:receipt.status,receipt,dataRevision:service.revision(),review:review?{id:Number(review.id),resolution:review.resolution_json?JSON.parse(String(review.resolution_json)):null}:null};break;}
         const row=service.db.prepare('SELECT next_offset,expires_at FROM sync_staging WHERE device_id=? AND batch_id=?').get(work.device,work.batch);
         if(!row)throw new SyncTransportError('BATCH_NOT_FOUND',404,0);
         result={state:Number(row.expires_at)<=Date.now()?'expired':'staging',nextOffset:Number(row.next_offset),expiresAt:Number(row.expires_at),dataRevision:service.revision()};break;

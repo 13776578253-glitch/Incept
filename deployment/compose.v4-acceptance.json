@@ -55,7 +55,7 @@
         "INCEPT_SYNC_DEVICE_ALLOWLIST": "${INCEPT_V4_DEVICE_ID:?Set reviewed isolated canary device ID}",
         "INCEPT_SYNC_POLL_MS": "300000",
         "INCEPT_SYNC_MAX_QUEUE": "4",
-        "INCEPT_SYNC_MAX_BATCH_RECORDS": "20000",
+        "INCEPT_SYNC_MAX_BATCH_RECORDS": "100000",
         "INCEPT_SYNC_MEMORY_PERCENT": "85"
       },
       "volumes": [

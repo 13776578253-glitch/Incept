@@ -1,9 +1,13 @@
 import {describe,expect,it} from 'vitest';
-import {jobStatus,type JobCompletion} from '@incept/db/agent';
+import {jobStatus,JOB_TTL_MS,JOB_RUNNING_GRACE_MS,type JobCompletion} from '@incept/db/agent';
 
 const base:JobCompletion={scanId:'00000000-0000-4000-8000-000000000000',collectedAt:new Date().toISOString(),issues:3,pending:0,review:40,batches:[],lineageHash:'a'.repeat(64)};
 
 describe('Phase 5 hotfix job status',()=>{
+  it('keeps a job TTL above a large capture+upload and a running grace above the TTL',()=>{
+    expect(JOB_TTL_MS).toBeGreaterThanOrEqual(15*60_000);
+    expect(JOB_RUNNING_GRACE_MS).toBeGreaterThan(JOB_TTL_MS);
+  });
   it('historical backlog alone is completed_no_change and remains visible as reviewTotal',()=>{
     expect(jobStatus({...base,reviewTotal:40,reviewNew:0,held:0,warnings:3,blockingIssues:0},{changed:false,lineageHash:base.lineageHash})).toMatchObject({status:'completed_no_change',reviewTotal:40,reviewNew:0});
   });

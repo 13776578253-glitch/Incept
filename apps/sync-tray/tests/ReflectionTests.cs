@@ -209,6 +209,14 @@ internal static class ReflectionTests
             RecentError(s); Set(s, "LastErrorAt", "invalid");
         });
         StateCase("pending batches without uploading stay Connected", "Connected", delegate(object s, long n) { Set(s, "PendingBatches", 12); });
+        StateCase("local review batches need attention", "Attention", delegate(object s, long n) { Set(s, "ReviewBatches", 1); });
+        StateCase("held batches need attention", "Attention", delegate(object s, long n) { Set(s, "HeldBatches", 1); });
+        StateCase("quarantined and lineage batches need attention", "Attention", delegate(object s, long n) { Set(s, "QuarantinedBatches", 1); Set(s, "LineageBatches", 1); });
+        StateCase("remote review and held totals need attention", "Attention", delegate(object s, long n) { Set(s, "RemoteReviewTotal", 2); Set(s, "RemoteHeld", 1); });
+        StateCase("successful sync does not clear review attention", "Attention", delegate(object s, long n)
+        {
+            Set(s, "ReviewBatches", 1); Set(s, "LastSuccessfulSyncAt", DateTime.UtcNow.ToString("o"));
+        });
     }
 
     private static string[] AssetNames()

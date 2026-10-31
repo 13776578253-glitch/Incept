@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -34,6 +34,7 @@ const emptyData: TokenDashboardData = {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('package server/client composition', () => {
@@ -56,6 +57,24 @@ describe('package server/client composition', () => {
     expect(screen.queryByText(zh.overview.kpi.knownTokens)).toBeNull();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(zh.page.title);
   });
+  it('hands an existing SSR snapshot to the client without a mandatory mount refresh', async () => {
+    mocks.load.mockResolvedValue(emptyData);
+    const page = await TokenDashboardPage({ canImport: true });
+    expect(page.props.initialStatus).toBe('live');
+    expect(page.props.data.range).toBe('30d');
+  });
+  it('keeps the empty-first-load path when no snapshot exists', async () => {
+    mocks.load.mockResolvedValue(null);
+    const page = await TokenDashboardPage({ canImport: true });
+    expect(page.props.initialStatus).toBe('empty');
+  });
+  it('does not request usage immediately when the server supplied a snapshot', async () => {
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    mocks.load.mockResolvedValue(emptyData);
+    render(<NextIntlClientProvider locale="zh" messages={{ dashboard: zh }} timeZone="Asia/Singapore">{await TokenDashboardPage({ canImport: true })}</NextIntlClientProvider>);
+    await act(async () => {});
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it.each([
     ['en', en], ['zh', zh],
   ] as const)('loads data and renders all dashboard sections with %s package messages', async (locale, messages) => {
@@ -67,7 +86,7 @@ describe('package server/client composition', () => {
     );
 
     expect(mocks.load).toHaveBeenCalledTimes(1);
-    expect(mocks.load).toHaveBeenCalledWith('30d');
+    expect(mocks.load).toHaveBeenCalledWith('30d', { waitForFresh: false });
     expect(screen.getByRole('button', { name: messages.page.range30d }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(messages.page.title);
     for (const section of ['overview', 'models', 'costs', 'projects'] as const) {

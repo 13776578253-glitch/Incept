@@ -60,14 +60,14 @@ real('real TLS + PG identity: seven sources auto-enroll once, append and committ
   const statePath=join(directory,'engine-state');let state=new AgentState(statePath);const config={version:1 as const,deviceId:device.id,endpoint:base,home,allowedSources:[...TRANSFER_SOURCES]};
   const collect=async(h:string,a:typeof config.allowedSources,p:Parameters<typeof captureHome>[3])=>{const snap=join(directory,'snapshot');try{return await captureHome(h,snap,a,p);}finally{rmSync(snap,{recursive:true,force:true});}};
   const transport=new AgentHttp(base,device.token,{paceMs:0});
-  try{lostCommit=true;await new SyncEngine(state,config,transport,collect).run();expect(state.status().confirmedScopes).toBe(0);expect(state.status().outbox).toEqual([{state:'pending',count:7}]);expect(cloud()).toHaveLength(1);
-    state.close();state=new AgentState(statePath);state.db.exec('UPDATE outbox SET next_retry=0');await new SyncEngine(state,config,transport,collect).run();expect(state.status().confirmedScopes).toBe(7);expect(state.status().receiptCount).toBe(7);expect(cloud()).toHaveLength(7);
-    writePhase0Home(home,2);failPage=true;await new SyncEngine(state,config,transport,collect).run();expect(state.status().receiptCount).toBe(7);expect(state.status().outbox[0].count).toBe(7);
+  try{lostCommit=true;await new SyncEngine(state,config,transport,collect).run();expect(state.status().confirmedScopes).toBe(0);expect(state.status().outbox).toEqual([{state:'pending',count:TRANSFER_SOURCES.length}]);expect(cloud()).toHaveLength(1);
+    state.close();state=new AgentState(statePath);state.db.exec('UPDATE outbox SET next_retry=0');await new SyncEngine(state,config,transport,collect).run();expect(state.status().confirmedScopes).toBe(TRANSFER_SOURCES.length);expect(state.status().receiptCount).toBe(TRANSFER_SOURCES.length);expect(cloud()).toHaveLength(TRANSFER_SOURCES.length);
+    writePhase0Home(home,2);failPage=true;await new SyncEngine(state,config,transport,collect).run();expect(state.status().receiptCount).toBe(TRANSFER_SOURCES.length);expect(state.status().outbox[0].count).toBe(TRANSFER_SOURCES.length);
     await executor.close();executor=new SyncExecutor(join(directory,'cloud.db'),{legacyPath:join(directory,'legacy.db')});state.close();state=new AgentState(statePath);state.db.exec('UPDATE outbox SET next_retry=0');await new SyncEngine(state,config,transport,collect).run();
-    expect(state.status().receiptCount).toBe(14);expect(cloud()).toHaveLength(14);expect(state.status().outbox).toEqual([]);
+    expect(state.status().receiptCount).toBe(TRANSFER_SOURCES.length*2);expect(cloud()).toHaveLength(TRANSFER_SOURCES.length*2);expect(state.status().outbox).toEqual([]);
     const receipts=state.db.prepare('SELECT json FROM receipts ORDER BY batch').all().map(row=>JSON.parse(String(row.json)));
     mkdirSync(join(root,'.scratch/sync-agent-phase3'),{recursive:true});writeFileSync(join(root,'.scratch/sync-agent-phase3/upload-evidence.json'),JSON.stringify({transport:'HTTPS with verified test CA',sources:TRANSFER_SOURCES,initialAndAppendReceipts:receipts,cloudVisibleRecords:cloud().length,confirmedScopes:state.status().confirmedScopes,pending:state.status().outbox,ackLostRecovered:true,stagingWorkerRestartRecovered:true},null,2));
-    const db=new DatabaseSync(join(directory,'cloud.db'));expect(db.prepare('SELECT COUNT(*) n FROM sync_admissions').get()!.n).toBe(7);db.close();
+    const db=new DatabaseSync(join(directory,'cloud.db'));expect(db.prepare('SELECT COUNT(*) n FROM sync_admissions').get()!.n).toBe(TRANSFER_SOURCES.length);db.close();
     const serialized=JSON.stringify(state.status());expect(serialized.includes(device.token)).toBe(false);
   }finally{state.close();}
 },120000);
@@ -89,7 +89,7 @@ real('device namespace cannot forge Owner, steal origins, bypass v1 history, or 
   await prisma.agentDevice.update({where:{id:device.id},data:{allowedSources:[...TRANSFER_SOURCES]}});
   expect((await http('/devices')).status).toBe(403);expect((await http('/agent','GET',undefined,'isync_'+'x'.repeat(43))).status).toBe(401);
   expect((await fetch(base+'/api/dashboard/sync/devices',{headers:{cookie:'fixture-owner='+cookie}})).status).toBe(200);
-  expect(cloud()).toHaveLength(14);rmSync(join(directory,'legacy.db'),{force:true});
+  expect(cloud()).toHaveLength(TRANSFER_SOURCES.length*2);rmSync(join(directory,'legacy.db'),{force:true});
 },60000);
 
 real('portable Windows CLI: DPAPI binding, actual worker, single instance, sync-now, graceful stop and supervisor crash recovery',async()=>{

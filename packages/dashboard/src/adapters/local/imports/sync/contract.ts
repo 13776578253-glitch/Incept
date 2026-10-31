@@ -1,22 +1,39 @@
 import { createHash } from 'node:crypto';
-import type { SyncHeader, SyncManifest, SyncRecord, SyncScope, SyncBasis } from '../../../../domain/sync';
+import type { SyncHeader, SyncManifest, SyncRecord, SyncRange, SyncScope, SyncBasis } from '../../../../domain/sync';
 import { TRANSFER_SOURCES } from '../../../../domain';
 import { hash, stableJson } from '../identity';
 import { validateBundle } from '../validation';
 
-export const SYNC_LIMITS = { pageRecords: 500, pageBytes: 512 * 1024, records: 250_000, headerBytes: 128 * 1024,
+export const SYNC_LIMITS = { pageRecords: 500, pageBytes: 512 * 1024, records: 250_000, largeBatchRecords: 100_000, headerBytes: 128 * 1024,
   stagedBytes: 128 * 1024 * 1024, ttlMs: 24 * 60 * 60_000 } as const;
 export class SyncError extends Error { constructor(public code: string) { super(code); } }
 export function requireSync(condition: unknown, code: string): asserts condition { if (!condition) throw new SyncError(code); }
 export const syncScopeId = (scope: SyncScope) => hash(['sync-scope/2', scope.deviceId, scope.source, scope.sessionId]);
 export const syncEntityId = (scope: SyncScope, record?: SyncRecord) => hash(['sync-entity/2', syncScopeId(scope),
   scope.source !== 'codex' && record?.nativeKey ? record.nativeKey : 'session']);
-export const syncEnvelope = (record: SyncRecord) => hash({ ...record.event, eventId: undefined, inputTokens: undefined,
-  outputTokens: undefined, cacheReadTokens: undefined, cacheCreationTokens: undefined, reasoningTokens: undefined, recordedCost: undefined });
+export const syncEnvelope = (record: SyncRecord) => hash({ ...record.event, eventId: undefined, sessionTitle: undefined,
+  inputTokens: undefined, outputTokens: undefined, cacheReadTokens: undefined, cacheCreationTokens: undefined,
+  reasoningTokens: undefined, recordedCost: undefined });
 export function sequenceHash(records: Iterable<SyncRecord>) {
   const digest = createHash('sha256'); digest.update('['); let first = true;
   for (const record of records) { if (!first) digest.update(','); digest.update(stableJson(record)); first = false; }
   return digest.update(']').digest('hex');
+}
+export function merkleRoot(records: Iterable<SyncRecord>) {
+  let level = [...records].map(record => hash(record));
+  if (!level.length) return hash([]);
+  while (level.length > 1) {
+    const next: string[] = [];
+    for (let index = 0; index < level.length; index += 2) next.push(hash([level[index], level[index + 1] ?? level[index]]));
+    level = next;
+  }
+  return level[0];
+}
+export function usageKeyRoot(records: Iterable<SyncRecord>) {
+  const keys: string[] = [];
+  for (const record of records) if (record.nativeKey) keys.push(record.nativeKey.keyHash);
+  keys.sort();
+  return { keyRoot: hash(keys), count: keys.length };
 }
 export function makeManifest(body: Omit<SyncManifest, 'generationId' | 'manifestHash'>): SyncManifest {
   const { generationId: oldGeneration, manifestHash: oldHash, ...clean } = body as SyncManifest;
@@ -35,7 +52,7 @@ export function validateHeader(value: unknown): SyncHeader {
   requireSync(Buffer.byteLength(JSON.stringify(value)) <= SYNC_LIMITS.headerBytes, 'HEADER_TOO_LARGE');
   fields(value, ['batchId', 'manifest', 'basis', 'mappings']); text(value.batchId, 128);
   const manifest = value.manifest;
-  fields(manifest, ['version','scope','reader','collectorVersion','epoch','parent','read','ranges','recordCount','sequenceHash','basisHash','mappingsHash','generationId','manifestHash','intent']);
+  fields(manifest, ['version','scope','reader','collectorVersion','epoch','parent','read','ranges','recordCount','sequenceHash','basisHash','mappingsHash','merkleRoot','generationId','manifestHash','intent']);
   requireSync(manifest.version === 2 && manifest.collectorVersion === 'incept-collector/1', 'UNSUPPORTED_VERSION');
   fields(manifest.scope, ['deviceId','source','sessionId','originId']);
   for (const key of ['deviceId','source','sessionId','originId']) text(manifest.scope[key]);
@@ -43,6 +60,7 @@ export function validateHeader(value: unknown): SyncHeader {
   requireSync(manifest.reader === manifest.scope.source || manifest.reader === 'aiusage', 'UNKNOWN_READER');
   count(manifest.epoch, 1e6); count(manifest.recordCount, SYNC_LIMITS.records);
   for (const key of ['sequenceHash','basisHash','mappingsHash','generationId','manifestHash']) digest(manifest[key]);
+  if (manifest.merkleRoot !== undefined) digest(manifest.merkleRoot);
   requireSync(['observe','rebase','reprice'].includes(String(manifest.intent)), 'INVALID_INTENT');
   if (manifest.parent !== null) { fields(manifest.parent, ['generationId','manifestHash']); digest(manifest.parent.generationId); digest(manifest.parent.manifestHash); }
   fields(manifest.read, ['status','inventoryHash','beforeRoot','afterRoot','snapshotRoot']);
@@ -50,7 +68,7 @@ export function validateHeader(value: unknown): SyncHeader {
   for (const key of ['inventoryHash','beforeRoot','afterRoot','snapshotRoot']) digest(manifest.read[key]);
   requireSync(Array.isArray(manifest.ranges) && manifest.ranges.length > 0 && manifest.ranges.length <= 128, 'INVALID_RANGES');
   for (const range of manifest.ranges) {
-    fields(range, ['locatorHash','identityHash','root','envelopeRoot','byteLength','kind','sessionAnchorHash','previous']);
+    fields(range, ['locatorHash','identityHash','root','envelopeRoot','byteLength','kind','sessionAnchorHash','commitment','previous']);
     for (const key of ['locatorHash','identityHash','root','envelopeRoot']) digest(range[key]); count(range.byteLength);
     requireSync(['jsonl','json','sqlite','compressed'].includes(String(range.kind)), 'INVALID_RANGE_KIND');
     const kinds:Record<string,string[]>={codex:['jsonl','compressed'],commandcode:['jsonl','json'],claudeCode:['jsonl'],geminiCli:['json'],antigravity:['sqlite'],opencode:['sqlite'],zcode:['sqlite'],deepseekHarness:['jsonl'],aiusage:['sqlite']};
@@ -58,6 +76,11 @@ export function validateHeader(value: unknown): SyncHeader {
     // review path available; qualifyRanges never admits it automatically.
     requireSync(range.kind==='compressed'||kinds[String(manifest.reader)].includes(String(range.kind)),'SOURCE_FORMAT_MISMATCH');
     if (range.sessionAnchorHash !== undefined) digest(range.sessionAnchorHash);
+    if (range.commitment !== undefined) {
+      fields(range.commitment, ['version','kind','keyRoot','count','schemaHash']);
+      requireSync(range.commitment.version === 1 && range.commitment.kind === 'stable-key-set', 'UNSUPPORTED_EVIDENCE');
+      digest(range.commitment.keyRoot); count(range.commitment.count, SYNC_LIMITS.records); digest(range.commitment.schemaHash);
+    }
     if (range.previous !== undefined) { fields(range.previous, ['locatorHash','root','retainedRoot','retainedBytes','change']);
       for (const key of ['locatorHash','root','retainedRoot']) digest(range.previous[key]); count(range.previous.retainedBytes);
       requireSync(['append','usage-revision','rotation'].includes(String(range.previous.change)), 'INVALID_CHANGE'); }
@@ -114,8 +137,16 @@ export function qualifyRanges(parent: SyncManifest | undefined, next: SyncManife
   if (!parent) { requireSync(next.parent === null, 'PARENT_MISMATCH');requireSync(next.ranges.every(range=>!range.previous),'ROTATION_UNVERIFIED');requireSync(next.recordCount>0||next.intent==='rebase','EMPTY_BASELINE_SCOPE_UNVERIFIED');return; }
   requireSync(hash(next.scope) === hash(parent.scope) && next.reader === parent.reader && next.collectorVersion === parent.collectorVersion, 'SCOPE_MISMATCH');
   requireSync(next.parent?.generationId === parent.generationId && next.parent.manifestHash === parent.manifestHash, 'PARENT_MISMATCH');
-  requireSync(next.recordCount >= parent.recordCount, 'PREFIX_LOST');
-  for(const range of next.ranges) if(range.previous) {
+  const stable=(range:SyncRange)=>range.commitment?.kind==='stable-key-set';
+  const stableScope=next.ranges.some(stable)||parent.ranges.some(stable);
+  const verifyStable=(old:SyncRange,current:SyncRange)=>{
+    requireSync(next.scope.source==='antigravity','UNSUPPORTED_EVIDENCE');
+    requireSync(old.commitment&&current.commitment,'UNSUPPORTED_EVIDENCE');
+    requireSync(old.commitment.schemaHash===current.commitment.schemaHash,'SOURCE_REVISION_UNVERIFIED');
+    requireSync(current.commitment.count>=old.commitment.count,'PREFIX_LOST');
+  };
+  if(!stableScope)requireSync(next.recordCount >= parent.recordCount, 'PREFIX_LOST');
+  for(const range of next.ranges){if(stable(range))continue;if(range.previous) {
     const proof=range.previous,old=parent.ranges.find(row=>row.locatorHash===proof.locatorHash);
     requireSync(old&&old.root===proof.root,'ROTATION_UNVERIFIED');requireSync(old.kind===range.kind,'UNSUPPORTED_EVIDENCE');
     if(proof.change==='rotation') requireSync(range.sessionAnchorHash&&range.sessionAnchorHash===old.sessionAnchorHash&&proof.retainedRoot===old.root&&proof.retainedBytes===old.byteLength
@@ -125,11 +156,12 @@ export function qualifyRanges(parent: SyncManifest | undefined, next: SyncManife
       if(proof.change==='append')requireSync(proof.retainedRoot===old.root&&proof.retainedBytes===old.byteLength&&(range.kind!=='jsonl'||range.byteLength>=old.byteLength),'PREFIX_LOST');
       else requireSync(range.envelopeRoot===old.envelopeRoot&&next.scope.source!=='antigravity'&&next.reader!=='aiusage','SOURCE_REVISION_UNVERIFIED');
     }
-  }
+  }}
   for (const old of parent.ranges) {
     const current = next.ranges.find(row => row.locatorHash === old.locatorHash || row.previous?.locatorHash === old.locatorHash);
     requireSync(current, 'ROTATION_UNVERIFIED');
     requireSync(current.kind===old.kind,'UNSUPPORTED_EVIDENCE');
+    if(stable(old)||stable(current)){verifyStable(old,current);continue;}
     if (current.locatorHash === old.locatorHash && current.identityHash !== old.identityHash) throw new SyncError(old.kind === 'sqlite' ? 'DB_REPLACED_UNVERIFIED' : 'ROTATION_UNVERIFIED');
     if (current.root === old.root && current.identityHash === old.identityHash && current.locatorHash === old.locatorHash) continue;
     const proof = current.previous;
@@ -158,7 +190,7 @@ export function qualifyRecords(parent: Iterable<SyncRecord>, next: Iterable<Sync
         if (old) {
           const relocated=['commandcode','geminiCli'].includes(manifest.scope.source)&&manifest.ranges.some(range=>range.previous?.change==='rotation');
           const unchangedUsage=(record:SyncRecord)=>hash({...record.event,projectKey:undefined,projectName:undefined,workspacePath:undefined});
-          requireSync(old.envelopeHash === row.envelopeHash || relocated&&unchangedUsage(old)===unchangedUsage(row),'REVISION_ENVELOPE_CHANGED');
+          requireSync(old.envelopeHash === row.envelopeHash || syncEnvelope(old) === syncEnvelope(row) || relocated&&unchangedUsage(old)===unchangedUsage(row),'REVISION_ENVELOPE_CHANGED');
           if (manifest.scope.source === 'antigravity') requireSync(hash(old) === hash(row),'SOURCE_REVISION_UNVERIFIED'); native.delete(row.nativeKey.keyHash); }
       } else { const key=hash(row), n=weak.get(key) ?? 0; if(n) weak.set(key,n-1); }
     }

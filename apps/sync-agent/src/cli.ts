@@ -1,16 +1,19 @@
 import {join,resolve} from 'node:path';
-import {homedir} from 'node:os';
-import {existsSync,readdirSync,rmSync,appendFileSync,statSync,renameSync,readFileSync} from 'node:fs';
+import {homedir,tmpdir} from 'node:os';
+import {existsSync,readdirSync,rmSync,appendFileSync,statSync,renameSync,readFileSync,mkdtempSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {spawn} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {AgentState,SyncEngine,AgentHttp,validateEndpoint,scopeKey,type Config} from './engine';
+import {AgentState,SyncEngine,AgentHttp,validateEndpoint,scopeKey,captureHome,buildCandidate,type Config} from './engine';
+import {hash} from '../../../packages/dashboard/src/adapters/local/imports/identity';
+import {SYNC_LIMITS} from '../../../packages/dashboard/src/adapters/local/imports/sync/contract';
 import {readConfig,storeToken,loadToken,protectDirectory,atomicJson} from './credentials';
 import {acquireInstance,isRunning} from './lifecycle';
 import {RemoteLink} from './remote';
 import {publishStatus} from './snapshot';
 import {resumeReviewed} from './review';
+import {reconcileHeads} from './review';
 import {resumeHeld} from './resume';
 import {verifyLineage} from './verify-lineage';
 const argv=process.argv.slice(2),command=argv[0],option=(key:string)=>{const i=argv.indexOf('--'+key);return i<0?undefined:argv[i+1];};
@@ -58,15 +61,44 @@ async function main(){
     const state=new AgentState(directory),config=readConfig<Config>(directory);
     try{output(await resumeHeld(state,new AgentHttp(config.endpoint,loadToken(directory),{allowLoopbackHttp:config.allowLoopbackHttp}),config,batch));}finally{state.close();}return;
   }
+  if(command==='reconcile-heads'){
+    if(!argv.includes('--confirm-reviewed'))throw Error('OWNER_REVIEW_CONFIRMATION_REQUIRED');
+    if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
+    const state=new AgentState(directory),config=readConfig<Config>(directory);
+    try{output(await reconcileHeads(state,new AgentHttp(config.endpoint,loadToken(directory),{allowLoopbackHttp:config.allowLoopbackHttp}),{session:option('session')}));}finally{state.close();}return;
+  }
   if(command==='export-review'){
     if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
     const batch=option('batch');if(!batch||!/^[a-zA-Z0-9_-]{1,128}$/.test(batch))throw Error('BATCH_REQUIRED');
     const state=new AgentState(directory);
     try{const row=state.db.prepare("SELECT header_json FROM outbox WHERE batch=? AND state='review'").get(batch);if(!row)throw Error('REVIEW_BATCH_REQUIRED');
-      const header=JSON.parse(String(row.header_json)),records=[];if(header.manifest.recordCount>20000)throw Error('REVIEW_EXPORT_LIMIT');
+      const header=JSON.parse(String(row.header_json)),records=[];if(header.manifest.recordCount>SYNC_LIMITS.largeBatchRecords)throw Error('REVIEW_EXPORT_LIMIT');
       for(let offset=0;offset<header.manifest.recordCount;){const page=state.page(batch,offset);if(!page.length)throw Error('REVIEW_RECORDS_MISSING');records.push(...page);offset+=page.length;}
       atomicJson(join(directory,'review-'+batch+'.json'),{header,records});output({exported:true,manifest:header.manifest.manifestHash});
     }finally{state.close();}return;
+  }
+  if(command==='export-rebase'){
+    if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
+    const config=readConfig<Config>(directory),source=option('source') as Config['allowedSources'][number]|undefined;
+    const sessions=(option('sessions')??option('session')??'').split(',').map(value=>value.trim()).filter(Boolean);
+    if(!source||!sessions.length||!config.allowedSources.includes(source))throw Error('REBASE_SCOPE_REQUIRED');
+    const singleOut=option('out')?resolve(option('out')!):undefined;
+    if(singleOut&&sessions.length!==1)throw Error('SINGLE_REBASE_OUTPUT_ONLY');
+    const snapshot=mkdtempSync(join(tmpdir(),'incept-rebase-'));
+    try{
+      const result=await captureHome(config.home,snapshot,[source],[],{sessionIds:sessions}),exported=[];
+      for(const sessionId of sessions){
+        const capture=result.captures.find(item=>item.source===source&&item.sessionId===sessionId);
+        if(!capture)throw Error('REBASE_SOURCE_UNAVAILABLE:'+sessionId);
+        const scope={deviceId:config.deviceId,source:capture.source,sessionId:capture.sessionId,originId:hash(['incept-origin/1',capture.source,capture.sessionId])};
+        const candidate=buildCandidate(capture,scope,undefined,randomUUID());
+        if(!candidate.records.length)throw Error('REBASE_SOURCE_EMPTY:'+sessionId);
+        const outPath=singleOut??join(directory,'rebase-'+source+'-'+hash([source,sessionId]).slice(0,12)+'.json');
+        atomicJson(outPath,{exportedAt:new Date().toISOString(),source:capture.source,sessionId:capture.sessionId,header:candidate.header,records:candidate.records,issues:result.issues});
+        exported.push({sessionId,path:outPath,records:candidate.records.length,manifest:candidate.header.manifest.manifestHash,commitment:candidate.header.manifest.ranges.map(range=>range.commitment??null)});
+      }
+      output({exported:exported.length,files:exported});
+    }finally{rmSync(snapshot,{recursive:true,force:true});}return;
   }
   if(command==='sync-now'||command==='stop'){if(!await isRunning(directory))throw Error('AGENT_NOT_RUNNING');const state=new AgentState(directory);try{const id=randomUUID();state.db.prepare("INSERT INTO commands VALUES(?,?,'pending',?)").run(id,command==='stop'?'stop':'sync',Date.now());output({requestId:id,queued:true});}finally{state.close();}return;}
   if(command==='bind'){
@@ -119,11 +151,13 @@ async function main(){
     if(commands.some(c=>c.kind==='stop')){state.db.prepare("UPDATE commands SET state='done' WHERE kind='stop'").run();stop();return;}
     if(job||stopping)return;const paused=state.get<boolean>('paused')===true;if(paused&&!commands.some(c=>c.kind==='sync'))return;void remote?.discover();if(Date.now()<next&&!commands.length&&!remote?.hasPending())return;
     state.db.prepare("DELETE FROM commands WHERE state IN ('done','failed') AND at<?").run(Date.now()-86400000);state.db.prepare("UPDATE commands SET state='running' WHERE state='pending' AND kind='sync'").run();
-    next=Date.now()+300000;log('COLLECTING');job=(remote?.hasPending()?remote.execute(()=>engine.run(abort.signal)):engine.run(abort.signal)).then(()=>{log('CYCLE_FINISHED');state.db.prepare("UPDATE commands SET state='done' WHERE state='running'").run();}).catch(()=>{state.set('lastErrorCode','CYCLE_FAILED');state.set('lastErrorAt',new Date().toISOString());log('CYCLE_FAILED');state.db.prepare("UPDATE commands SET state='failed' WHERE state='running'").run();}).finally(()=>{job=undefined;});};
+    next=Date.now()+300000;log('COLLECTING');job=(remote?.hasPending()?remote.execute(()=>engine.run(abort.signal)):engine.run(abort.signal)).then(()=>{log('CYCLE_FINISHED');state.db.prepare("UPDATE commands SET state='done' WHERE state='running'").run();
+      const networkRetry=state.get('lastErrorCode')==='NETWORK_UNAVAILABLE'||!!state.db.prepare("SELECT 1 FROM outbox WHERE state='pending' AND error='NETWORK_UNAVAILABLE' LIMIT 1").get();
+      if(networkRetry){next=Date.now()+30000;log('NETWORK_RETRY_SCHEDULED');}}).catch(()=>{state.set('lastErrorCode','CYCLE_FAILED');state.set('lastErrorAt',new Date().toISOString());log('CYCLE_FAILED');state.db.prepare("UPDATE commands SET state='failed' WHERE state='running'").run();}).finally(()=>{job=undefined;});};
   try{
     if(command==='flush'){const result=await engine.flush(abort.signal);output(result);if(state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
     else if(command==='run-once'){const result=await engine.run(abort.signal);output(result);if(result&&typeof result==='object'&&'outcome' in result&&result.outcome==='source_failed'||state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
     else {if(config.remote){remote=new RemoteLink(state,config,http,token,()=>{next=0;});remote.start();}timer=setInterval(tick,1000);tick();while(!stopping)await new Promise(r=>setTimeout(r,100));await job;}
   }finally{remote?.stop();if(timer)clearInterval(timer);await job;state.set('heartbeat',null);publishStatus(state,false,true);state.close();await new Promise<void>(yes=>lock.close(()=>yes()));}
 }
-main().catch(error=>{const code=typeof error?.message==='string'&&/^[A-Z][A-Z0-9_]{0,80}$/.test(error.message)?error.message:'AGENT_COMMAND_FAILED';if(command==='daemon')log(code);output({error:code});process.exitCode=code==='ALREADY_RUNNING'&&command!=='verify-lineage'?0:1;});
+main().catch(error=>{const code=typeof error?.message==='string'&&/^[A-Z][A-Z0-9_]{0,80}$/.test(error.message)?error.message:'AGENT_COMMAND_FAILED';if(process.env.INCEPT_CAPTURE_DEBUG)console.error(error);if(command==='daemon')log(code);output({error:code});process.exitCode=code==='ALREADY_RUNNING'&&command!=='verify-lineage'?0:1;});

@@ -7,13 +7,16 @@ export type SyncBasis = { rates: Record<string, TransferPrice>; aliases: Record<
 export type SyncCounters = { input: number; cache: number; output: number; reasoning: number };
 export type SyncRecord = { event: TransferEvent; envelopeHash: string; nativeKey?: { source: TransferSource; keyHash: string };
   pointKey?: string; cumulative?: SyncCounters };
+export type SyncCommitment = { version: 1; kind: 'stable-key-set'; keyRoot: string; count: number; schemaHash: string };
 export type SyncRange = { locatorHash: string; identityHash: string; root: string; envelopeRoot: string; byteLength: number;
   kind: 'jsonl' | 'json' | 'sqlite' | 'compressed'; sessionAnchorHash?: string;
+  commitment?: SyncCommitment;
   previous?: { locatorHash: string; root: string; retainedRoot: string; retainedBytes: number; change: 'append' | 'usage-revision' | 'rotation' } };
 export type SyncManifest = { version: 2; scope: SyncScope; reader: TransferSource | 'aiusage'; collectorVersion: 'incept-collector/1'; epoch: number;
   parent: { generationId: string; manifestHash: string } | null; read: { status: 'complete' | 'partial' | 'unavailable' | 'failed';
     inventoryHash: string; beforeRoot: string; afterRoot: string; snapshotRoot: string };
   ranges: SyncRange[]; recordCount: number; sequenceHash: string; basisHash: string; mappingsHash: string;
+  merkleRoot?: string;
   generationId: string; manifestHash: string; intent: 'observe' | 'rebase' | 'reprice' };
 export type SyncHeader = { batchId: string; manifest: SyncManifest; basis: SyncBasis; mappings: Record<string, string | null> };
 export type SyncActor = { role: 'device'; deviceId: string } | { role: 'owner'; subject: string; reason: string };

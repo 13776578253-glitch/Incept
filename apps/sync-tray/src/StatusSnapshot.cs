@@ -32,6 +32,11 @@ namespace InceptSync
         public string LastErrorAt;
         public int PendingBatches;
         public int ReviewBatches;
+        public int HeldBatches;
+        public int QuarantinedBatches;
+        public int LineageBatches;
+        public int RemoteReviewTotal;
+        public int RemoteHeld;
         public int ConfirmedScopes;
         public bool RemoteOnline;
 
@@ -85,6 +90,28 @@ namespace InceptSync
                         {
                             snapshot.ReviewBatches += count;
                         }
+                        else if (state == "held")
+                        {
+                            snapshot.HeldBatches += count;
+                        }
+                        else if (state == "quarantined")
+                        {
+                            snapshot.QuarantinedBatches += count;
+                        }
+                        else if (state == "lineage")
+                        {
+                            snapshot.LineageBatches += count;
+                        }
+                    }
+                }
+                object remoteJobValue;
+                if (map.TryGetValue("lastRemoteJob", out remoteJobValue))
+                {
+                    Dictionary<string, object> remoteJob = remoteJobValue as Dictionary<string, object>;
+                    if (remoteJob != null)
+                    {
+                        snapshot.RemoteReviewTotal = (int)Json.Num(remoteJob, "reviewTotal", 0);
+                        snapshot.RemoteHeld = (int)Json.Num(remoteJob, "held", 0);
                     }
                 }
                 return snapshot;
@@ -114,6 +141,10 @@ namespace InceptSync
             if (Paused)
             {
                 return AgentVisualState.Paused;
+            }
+            if (ReviewBatches > 0 || HeldBatches > 0 || QuarantinedBatches > 0 || LineageBatches > 0 || RemoteReviewTotal > 0 || RemoteHeld > 0)
+            {
+                return AgentVisualState.Attention;
             }
             if (HasRecentError())
             {

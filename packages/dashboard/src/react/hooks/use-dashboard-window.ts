@@ -19,7 +19,7 @@ function olderSnapshot(next: TokenDashboardData, previous: TokenDashboardData) {
   return Number.isFinite(previousTime) && (!Number.isFinite(nextTime) || nextTime < previousTime);
 }
 
-export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean; owner?: boolean; canViewDetails?: boolean } = {}) {
+export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean; owner?: boolean; canViewDetails?: boolean; loadRemoteOnMount?: boolean } = {}) {
   const remoteEnabled=!!options.owner&&!!initialData.sync?.remote;
   const scope = (options.owner ? 'owner' : options.canViewDetails ? 'pro' : 'public')+(remoteEnabled?':remote:'+initialData.sync?.readMode:'');
   const [remoteInfo,setRemoteInfo]=useState<RemoteStatus|null>(null),[remoteDevice,setRemoteDevice]=useState(''),[remoteState,setRemoteState]=useState('idle');
@@ -42,6 +42,22 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
   const [isPollingPaused, setIsPollingPaused] = useState(false);
   const refreshRef = useRef<() => void>(() => {});
   const activeRange = useRef(rangePreset);
+  useEffect(() => {
+    if (!remoteEnabled || !options.loadRemoteOnMount) return;
+    const controller = new AbortController();
+    let active = true;
+    void remoteStatus(controller.signal).then(info => {
+      if (!active) return;
+      setRemoteInfo(info);
+      const nextDevice = info.devices.find(device => device.id === deviceRef.current) ?? info.devices[0];
+      if (!deviceRef.current && nextDevice) {
+        deviceRef.current = nextDevice.id;
+        setRemoteDevice(nextDevice.id);
+      }
+      if (nextDevice?.lastJob?.phase) setRemoteState(nextDevice.lastJob.phase);
+    }).catch(() => {});
+    return () => { active = false; controller.abort(); };
+  }, [remoteEnabled, options.loadRemoteOnMount]);
   const refreshOnMount = useRef(!!options.refreshOnMount);
   useEffect(() => { rememberSnapshot(initialData, scope); }, [initialData, scope]);
 
