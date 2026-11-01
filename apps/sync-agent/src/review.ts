@@ -33,6 +33,12 @@ export async function reconcileHeads(state:AgentState,http:AgentHttp,options:{se
   const rows=state.db.prepare("SELECT scope,header_json FROM outbox WHERE state IN ('pending','review','held','lineage') ORDER BY serial").all() as Array<{scope:string;header_json:string}>;
   const scopes=new Map<string,SyncScope>();
   for(const row of rows){const header=JSON.parse(String(row.header_json)) as SyncHeader,scope=header.manifest.scope;if(options.session&&scope.sessionId!==options.session)continue;scopes.set(String(row.scope),scope);}
+  if(options.session&&!scopes.size){
+    for(const row of state.db.prepare('SELECT scope,parent_json FROM heads').all() as Array<{scope:string;parent_json:string}>){
+      try{const parent=JSON.parse(String(row.parent_json)) as ParentCapture;if(parent.header?.manifest?.scope?.sessionId===options.session)scopes.set(String(row.scope),parent.header.manifest.scope);}
+      catch{}
+    }
+  }
   const reconciled=[] as Array<{session:string;head:string;superseded:number}>,skipped=[] as Array<{session:string;reason:string}>;
   for(const [key,scope] of scopes){
     if(state.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state='quarantined' LIMIT 1").get(key)){skipped.push({session:scope.sessionId,reason:'QUARANTINED'});continue;}
