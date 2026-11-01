@@ -38,6 +38,14 @@ export class AgentState {
     for(const session of healthySessions)if(!items.some(item=>item.sessionId===session))this.db.prepare('UPDATE session_isolations SET active=0 WHERE source=? AND session_id=?').run(source,session);
     // One notification per issue identity. Changed counters do not create another alarm.
     const unique=new Map(items.map(item=>[hash([item.source,item.sessionId,item.reason]),item]));
+    const currentBySession=new Map<string,{source:string;sessionId:string;ids:string[]}>();
+    for(const [id,item] of unique){const key=item.source+'\0'+item.sessionId,current=currentBySession.get(key)??{source:item.source,sessionId:item.sessionId,ids:[]};current.ids.push(id);currentBySession.set(key,current);}
+    for(const {source:itemSource,sessionId,ids} of currentBySession.values()){
+      // A session can move from one diagnostic reason to another. Only the
+      // reasons observed in this scan remain active; old rows stay as audit.
+      const placeholders=ids.map(()=>'?').join(',');
+      this.db.prepare(`UPDATE session_isolations SET active=0 WHERE source=? AND session_id=? AND active=1 AND id NOT IN (${placeholders})`).run(itemSource,sessionId,...ids);
+    }
     for(const [id,item]of unique){const previous=this.db.prepare('SELECT active FROM session_isolations WHERE id=?').get(id);
       if(!previous)added++;
       this.db.prepare(`INSERT INTO session_isolations VALUES(?,?,?,?,?,?,?,1,1)
@@ -51,10 +59,15 @@ export class AgentState {
   historicalPolicies():HistoricalSeal[]{return this.db.prepare('SELECT seal_json FROM historical_seals ORDER BY scope').all().map(row=>JSON.parse(String(row.seal_json)));}
   historicalSeals(){return this.historicalPolicies().filter(policy=>policy.disposition!=='isolated');}
   historicalHolds(){return this.historicalPolicies().filter(policy=>policy.disposition==='isolated');}
+  historicalDecision(scope:string,reason:string,owner:HistoricalSealDecision['owner']):HistoricalSealDecision{
+    const evidence=this.historicalEvidence(scope),manifest=evidence.parent.header.manifest;
+    return {deviceId:manifest.scope.deviceId,manifestHash:manifest.manifestHash,generationId:manifest.generationId,
+      receipt:evidence.receipt,reason,owner};
+  }
   private historicalEvidence(scope:string){
     const row=this.db.prepare('SELECT * FROM lineage WHERE scope=?').get(scope);
     if(!row)throw Error('HISTORICAL_CONFIRMED_HEAD_REQUIRED');
-    if(this.db.prepare('SELECT 1 FROM heads WHERE scope=?').get(scope)||this.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state IN ('pending','review','held')").get(scope))throw Error('HISTORICAL_SCOPE_HAS_UNRESOLVED_WORK');
+    if(this.db.prepare('SELECT 1 FROM heads WHERE scope=?').get(scope)||this.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state IN ('pending','review','held','lineage','quarantined')").get(scope))throw Error('HISTORICAL_SCOPE_HAS_UNRESOLVED_WORK');
     const parent:ParentCapture=JSON.parse(String(row.parent_json)),header=validateHeader(parent.header),manifest=header.manifest,receipt:SyncReceipt=JSON.parse(String(row.receipt_json));
     const stored=this.db.prepare('SELECT json FROM receipts WHERE batch=?').get(receipt.batchId);
     if(scopeKey(manifest.scope.source,manifest.scope.sessionId)!==scope||!Array.isArray(parent.proofs)||hash(parent.proofs.map(proof=>proof.range))!==hash(manifest.ranges)
@@ -70,8 +83,13 @@ export class AgentState {
     if(decision.deviceId!==manifest.scope.deviceId||decision.manifestHash!==manifest.manifestHash||decision.generationId!==manifest.generationId||hash(decision.receipt)!==hash(evidence.receipt))throw Error('HISTORICAL_EVIDENCE_MISMATCH');
     const seal:HistoricalSeal={...decision,scope,source:manifest.scope.source,sessionId:manifest.scope.sessionId,parentHash:hash(evidence.parent),proofHash:hash(evidence.parent.proofs),signature:evidence.signature};
     const previous=this.db.prepare('SELECT seal_json FROM historical_seals WHERE scope=?').get(scope);
-    if(previous){if(hash(JSON.parse(String(previous.seal_json)))!==hash(seal))throw Error('HISTORICAL_SEAL_CONFLICT');return JSON.parse(String(previous.seal_json));}
-    this.db.prepare('INSERT INTO historical_seals VALUES(?,?,?)').run(scope,JSON.stringify(seal),new Date().toISOString());return seal;
+    if(previous){if(hash(JSON.parse(String(previous.seal_json)))!==hash(seal))throw Error('HISTORICAL_SEAL_CONFLICT');
+      this.db.prepare('UPDATE session_isolations SET active=0 WHERE source=? AND session_id=?').run(manifest.scope.source,manifest.scope.sessionId);
+      return JSON.parse(String(previous.seal_json));}
+    this.db.prepare('INSERT INTO historical_seals VALUES(?,?,?)').run(scope,JSON.stringify(seal),new Date().toISOString());
+    // A sealed historical scope is terminal policy, not a recurring warning.
+    this.db.prepare('UPDATE session_isolations SET active=0 WHERE source=? AND session_id=?').run(manifest.scope.source,manifest.scope.sessionId);
+    return seal;
   });}
   quarantineHistorical(scope:string,decision:Omit<HistoricalSealDecision,'disposition'>){return this.sealHistorical(scope,{...decision,disposition:'isolated'});}
   isHistoricalSealCurrent(parent:ParentCapture,deviceId:string){

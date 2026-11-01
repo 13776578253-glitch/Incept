@@ -17,7 +17,7 @@ import {makeManifest,merkleRoot,sequenceHash,syncEnvelope,SYNC_LIMITS,validateHe
 import type {SyncScope,SyncHeader,SyncRecord,SyncRange} from '../domain/sync';
 import type {TransferSource,TransferEvent} from '../domain';
 
-export type RangeProof={range:SyncRange;parts?:{schema:string;rows:string[];envelopes:string[]}[];recoveryAfterTimestampMs?:number};
+export type RangeProof={range:SyncRange;locator?:string;parts?:{schema:string;rows:string[];envelopes:string[]}[];recoveryAfterTimestampMs?:number};
 export type Capture={source:TransferSource;sessionId:string;reader:TransferSource|'aiusage';records:SyncRecord[];proofs:RangeProof[];rates:SyncHeader['basis']['rates'];prefixes:Record<string,string>};
 export type ParentCapture={header:SyncHeader;proofs:RangeProof[]};
 export type SessionIsolation={source:TransferSource;sessionId:string;reason:string;affectedRecords:number;unattributedTokens:number;
@@ -78,7 +78,7 @@ function fileProof(file:File,scope:{source:TransferSource;sessionId:string},read
       ||scope.source==='deepseekHarness'&&rows.some(r=>r.type==='session'&&r.id===scope.sessionId)
       ||scope.source==='commandcode'&&'cc-'+basename(file.locator,'.jsonl')===scope.sessionId)anchor=hash(scope.sessionId);
   }else throw Error('UNSUPPORTED_EVIDENCE');
-  return {range:{locatorHash:hash(file.locator),identityHash:file.identity,root,envelopeRoot,byteLength:file.byteLength,kind:parts?(reader==='geminiCli'?'json':'sqlite'):'jsonl',...(anchor?{sessionAnchorHash:anchor}:{})},...(parts?{parts}:{})};
+  return {locator:file.locator,range:{locatorHash:hash(file.locator),identityHash:file.identity,root,envelopeRoot,byteLength:file.byteLength,kind:parts?(reader==='geminiCli'?'json':'sqlite'):'jsonl',...(anchor?{sessionAnchorHash:anchor}:{})},...(parts?{parts}:{})};
 }
 // Caller supplies a private disposable snapshot directory and cleans it even on worker termination.
 export async function captureHome(home:string,snapshot:string,allowed:TransferSource[],parents:ParentCapture[]=[],options:CaptureOptions={}):Promise<CaptureResult>{
@@ -116,9 +116,24 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
   }
   const rows=[...cc.events,...agents.events.filter(r=>r.sourceId!=='commandcode'||!r.sourceFile||!commandFiles.has(normalizeFile(r.sourceFile)))];
   const groups=new Map<string,typeof rows>();for(const row of rows){if(!allowed.includes(row.sourceId as TransferSource))continue;const key=JSON.stringify([row.sourceId,row.sessionId]),group=groups.get(key)??[];group.push(row);groups.set(key,group);}
+  // Older Codex collectors could merge subagent rollouts into the parent
+  // session. When those exact file ranges are still present, the parent may
+  // retain them while the now-independent subagent scope is not uploaded twice.
+  const legacyParentScopes=new Set<string>(),legacyCoveredRanges=new Map<string,{range:SyncRange;locator:string}>();
+  for(const parent of parents){
+    if(parent.header.manifest.scope.source!=='codex')continue;
+    legacyParentScopes.add('codex\0'+parent.header.manifest.scope.sessionId);
+    for(const old of parent.proofs){
+      const file=files.find(candidate=>candidate.source==='codex'&&hash(candidate.locator)===old.range.locatorHash
+        &&(candidate.byteLength===old.range.byteLength&&candidate.root===old.range.root
+          ||(candidate.bytes&&candidate.byteLength>=old.range.byteLength&&hash(candidate.bytes.subarray(0,old.range.byteLength).toString('base64'))===old.range.root)));
+      if(file)legacyCoveredRanges.set([old.range.locatorHash,old.range.root,old.range.byteLength].join(':'),{range:structuredClone(old.range),locator:file.locator});
+    }
+  }
   const captures:Capture[]=[];
   for(let group of groups.values()){
     const source=group[0].sourceId as TransferSource,sessionId=group[0].sessionId,reader=group.some(r=>agents.fallbackEvents.includes(r))?'aiusage':source;
+    const parent=parents.find(item=>item.header.manifest.scope.source===source&&item.header.manifest.scope.sessionId===sessionId);
     let recoveryAfterTimestampMs:number|undefined;
     if(failed.has(source)||reader==='aiusage'&&failed.has('aiusage')){issues.push(source+':COLLECTOR_INCOMPLETE');continue;}
     const quarantined=isolations.filter(item=>item.source===source&&!(source==='deepseekHarness'&&item.coverage==='prefix')&&(item.sessionId===sessionId||item.locatorHashes?.some(locator=>files.some(file=>hash(file.locator)===locator&&group.some(row=>row.sourceFile&&normalizeFile(row.sourceFile)===normalizeFile(file.path))))));
@@ -127,7 +142,6 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
       const recovery=options.recoveryRanges?.find(item=>item.source===source&&item.sessionId===sessionId);
       const openingOnly=quarantined.every(item=>['OPENING_PREFIX_MISSING','OPENING_USAGE_UNCERTAIN'].includes(item.reason)&&item.recoveryAfterTimestampMs!==undefined);
       const anchor=Math.max(...quarantined.map(item=>item.recoveryAfterTimestampMs??Infinity));
-      const parent=parents.find(item=>item.header.manifest.scope.source===source&&item.header.manifest.scope.sessionId===sessionId);
       // A range recovery must be explicitly pinned. Never reinterpret an accepted full-session baseline.
       const parentRecovery=recovery&&parent&&parent.proofs.length>0
         &&parent.proofs.every(proof=>proof.recoveryAfterTimestampMs===recovery.afterTimestampMs);
@@ -143,6 +157,11 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
       const referenced=new Set(group.flatMap(r=>source==='deepseekHarness'?(r.sourceFile?[r.sourceFile]:[]):[...(r.sourceFiles??[]),...(r.sourceFile?[r.sourceFile]:[])]).map(normalizeFile));
       const selected=files.filter(file=>reader==='aiusage'?file.source==='aiusage':file.source===source&&referenced.has(normalizeFile(file.path)));
       if(!selected.length)throw Error('MISSING_ORIGIN');
+      if(source==='codex'&&!legacyParentScopes.has('codex\0'+sessionId)&&selected.every(file=>legacyCoveredRanges.has([hash(file.locator),file.root,file.byteLength].join(':')))){
+        // This file is byte-for-byte the same range already committed inside a
+        // parent scope by the old merged Codex collector; it carries no new usage.
+        continue;
+      }
       const commandHasIds=source!=='commandcode'||selected.every(file=>file.bytes!.toString('utf8').split('\n').filter(r=>r.trim()).every(line=>!!JSON.parse(line).id));
       const points=source==='codex'&&reader==='codex'?selected.flatMap(file=>file.bytes!.toString('utf8').split('\n').filter(r=>r.trim()).map(r=>JSON.parse(r))).filter(r=>r.payload?.type==='token_count'&&group.some(row=>row.timestampMs===Date.parse(r.timestamp))):[];
       const usable=group.filter(raw=>(raw.inputTokens??0)+(raw.outputTokens??0)+(raw.cacheReadTokens??0)+(raw.cacheCreationTokens??0)+(raw.reasoningTokens??0)>0);
@@ -172,7 +191,13 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
         const price=lookupPricing(pricing,name)??(pricing.has(name)?pricing.get(name)!:undefined);
         return price?[[name,price]]:[];
       }));
-      const prefixes:Record<string,string>={};for(const parent of parents.filter(p=>p.header.manifest.scope.source===source&&p.header.manifest.scope.sessionId===sessionId))for(const old of parent.proofs){const file=selected.find(f=>hash(f.locator)===old.range.locatorHash);if(file?.bytes&&file.bytes.length>=old.range.byteLength)prefixes[old.range.locatorHash+':'+old.range.byteLength]=hash(file.bytes.subarray(0,old.range.byteLength).toString('base64'));}
+      const prefixes:Record<string,string>={};for(const parent of parents.filter(p=>p.header.manifest.scope.source===source&&p.header.manifest.scope.sessionId===sessionId))for(const old of parent.proofs){
+        const direct=selected.find(f=>hash(f.locator)===old.range.locatorHash);
+        const strip=(locator?:string)=>locator?.replace(/\.(zst|zstd)$/i,'');
+        const rotated=old.locator?selected.find(f=>strip(f.locator)===strip(old.locator)):undefined;
+        const anchored=old.range.sessionAnchorHash?selected.find(f=>f.bytes):undefined;
+        const file=direct??rotated??anchored;
+        if(file?.bytes&&file.bytes.length>=old.range.byteLength)prefixes[old.range.locatorHash+':'+old.range.byteLength]=hash(file.bytes.subarray(0,old.range.byteLength).toString('base64'));}
       const keysByLocator=new Map<string,string[]>();
       if(source==='antigravity')for(const raw of group){if(!raw.eventId)continue;const key=hash(raw.eventId);
         for(const sourceFile of [...(raw.sourceFiles??[]),...(raw.sourceFile?[raw.sourceFile]:[])]){
@@ -183,8 +208,15 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
         if(source==='antigravity'&&proof.parts){const keys=keysByLocator.get(hash(file.locator))??[];
           proof.range.commitment={version:1,kind:'stable-key-set',keyRoot:hash(keys.slice().sort()),count:keys.length,schemaHash:hash(proof.parts.map(part=>part.schema).sort())};}
         return {...proof,...(recoveryAfterTimestampMs!==undefined?{recoveryAfterTimestampMs}:{})};});
+      if(source==='codex'&&parent){
+        const selectedLocators=new Set(selected.map(file=>hash(file.locator)));
+        for(const old of parent.proofs){
+          if(selectedLocators.has(old.range.locatorHash))continue;
+          const covered=legacyCoveredRanges.get([old.range.locatorHash,old.range.root,old.range.byteLength].join(':'));
+          if(covered)proofs.push({range:covered.range,locator:covered.locator});
+        }
+      }
       const capture:Capture={source,sessionId,reader,records:normalized,proofs,rates,prefixes};
-      const parent=parents.find(item=>item.header.manifest.scope.source===source&&item.header.manifest.scope.sessionId===sessionId);
       const candidate=buildCandidate(capture,parent?.header.manifest.scope??{deviceId:'00000000-0000-4000-8000-000000000000',source,sessionId,
         originId:hash(['incept-origin/1',source,sessionId])},parent,'00000000-0000-4000-8000-000000000000');
       if(source==='codex'&&reader==='codex')qualifyRanges(parent?.header.manifest,candidate.header.manifest);
@@ -197,9 +229,27 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
 }
 export function buildCandidate(capture:Capture,scope:SyncScope,parent:ParentCapture|undefined,batchId:string,readCurrentPrefix?:(locatorHash:string,length:number)=>string|undefined){
   const proofs=capture.proofs.map(p=>structuredClone(p));
-  for(const proof of proofs){const next=proof.range,old=parent?.proofs.find(p=>p.range.locatorHash===next.locatorHash);
+  const stripCompression=(locator?:string)=>locator?.replace(/\.(zst|zstd)$/i,'');
+  const prefixFor=(old:RangeProof)=>readCurrentPrefix?.(old.range.locatorHash,old.range.byteLength)??capture.prefixes[old.range.locatorHash+':'+old.range.byteLength];
+  for(const proof of proofs){const next=proof.range;
+    let old=parent?.proofs.find(p=>p.range.locatorHash===next.locatorHash),rotation=false;
+    if(!old&&parent){
+      old=parent.proofs.find(p=>p.range.kind===next.kind&&(
+        (!!p.locator&&!!proof.locator&&stripCompression(p.locator)===stripCompression(proof.locator))
+        ||(!!p.range.sessionAnchorHash&&p.range.sessionAnchorHash===next.sessionAnchorHash)));
+      rotation=!!old;
+    }
+    if(!old)continue;
     if(next.commitment?.kind==='stable-key-set')continue;
-    if(old&&old.range.root!==next.root){let retained=false;
+    if(rotation){
+      // A path/extension rotation is only safe when the current file still
+      // carries the old decompressed prefix and the session anchor survives.
+      const retained=prefixFor(old)===old.range.root;
+      if(retained&&next.sessionAnchorHash&&next.sessionAnchorHash===old.range.sessionAnchorHash)
+        next.previous={locatorHash:old.range.locatorHash,root:old.range.root,retainedRoot:old.range.root,retainedBytes:old.range.byteLength,change:'rotation'};
+      continue;
+    }
+    if(old.range.root!==next.root){let retained=false;
       if(proof.parts&&old.parts){
         retained=old.parts.every((part,i)=>part.schema===proof.parts![i]?.schema&&part.rows.every((h,n)=>h===proof.parts![i].rows[n]));
       }

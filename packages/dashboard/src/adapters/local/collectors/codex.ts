@@ -35,7 +35,7 @@ export function collectCodexEvents(home: string, pricingMap: Map<string, UnitPri
   const seen = new Map<string, Watermark>();
   const autoReviewSessions=new Set(policy.autoReviewSessions??[]),reviewSnapshots=new Set<string>();
   const samples: Array<{ sessionId: string; currentModel: string; currentCwd: string; filePath: string;
-    lineIndex: number; timestamp?: string; timestampMs: number; estimated: boolean; total?: Record<string, number>; last: Record<string, number>; hasLast: boolean }> = [];
+    lineIndex: number; timestamp?: string; timestampMs: number; estimated: boolean; total?: Record<string, number>; last: Record<string, number>; hasLast: boolean; subagent: boolean }> = [];
   let unreadable = 0;
   let latestMtimeMs = 0;
 
@@ -63,7 +63,12 @@ export function collectCodexEvents(home: string, pricingMap: Map<string, UnitPri
 
       let currentModel = 'unknown';
       let currentCwd = '';
-      let sessionId = basename(filePath.replace(/\.zst$/, ''), '.jsonl').replace(/^rollout-/, '');
+      const filenameIds = [...basename(filePath.replace(/\.zst$/i, ''), '.jsonl')
+        .matchAll(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi)].map(match=>match[0].toLowerCase());
+      const filenameSessionId = filenameIds.length > 1 ? filenameIds.at(-1) : filenameIds[0];
+      let sessionId = filenameSessionId ?? basename(filePath.replace(/\.zst$/, ''), '.jsonl').replace(/^rollout-/, '');
+      let sessionMetaSeen = false;
+      let isSubagent = false;
       let malformedLines = 0;
 
       for(const [lineIndex, line] of content.split('\n').entries()) {
@@ -89,9 +94,18 @@ export function collectCodexEvents(home: string, pricingMap: Map<string, UnitPri
             };
           };
           if(obj.type === 'session_meta') {
-            if(obj.payload?.id !== undefined) {
-              if (typeof obj.payload.id !== 'string' || !obj.payload.id.trim()) throw new Error('Invalid session identity');
-              sessionId = obj.payload.id;
+            // A subagent rollout starts with its own session_meta and then
+            // replays the parent session_meta. Only the first identity owns
+            // this file; later parent metadata must not merge the child
+            // counters into the parent stream.
+            if(!sessionMetaSeen) {
+              sessionMetaSeen = true;
+              isSubagent = (obj.payload as {thread_source?: string}).thread_source === 'subagent';
+              const identity = isSubagent || filenameIds.length > 1 ? filenameSessionId ?? obj.payload?.id : obj.payload?.id;
+              if(identity !== undefined) {
+                if (typeof identity !== 'string' || !identity.trim()) throw new Error('Invalid session identity');
+                sessionId = identity;
+              }
             }
             if(obj.payload?.cwd) currentCwd = obj.payload.cwd;
           } else if(obj.type === 'turn_context') {
@@ -115,7 +129,7 @@ export function collectCodexEvents(home: string, pricingMap: Map<string, UnitPri
               continue;
             }
             samples.push({ sessionId, currentModel, currentCwd, filePath, lineIndex, total, last, hasLast: !!obj.payload.info!.last_token_usage,
-              timestamp: obj.timestamp, timestampMs: estimated ? fileMtimeMs : ts, estimated });
+              timestamp: obj.timestamp, timestampMs: estimated ? fileMtimeMs : ts, estimated, subagent: isSubagent });
           }
         } catch {
           malformedLines++;
@@ -156,7 +170,10 @@ export function collectCodexEvents(home: string, pricingMap: Map<string, UnitPri
     // Skip archive copies before they can change the session watermark.
     const duplicate = seen.get(eventKey);
     if (duplicate) { fileWatermarks.set(fileKey, duplicate); continue; }
-    const epochs = watermarks.get(sessionId) ?? new Set<Watermark>();
+    // A subagent rollout owns an independent counter stream even when a
+    // filename or replayed metadata still points at its parent.
+    const watermarkKey = sample.subagent ? fileKey : sessionId;
+    const epochs = watermarks.get(watermarkKey) ?? new Set<Watermark>();
     // A reset starts another counter epoch. Bind each file to its epoch
     // so interleaved old/new streams cannot reset one another repeatedly.
     let watermark = fileWatermarks.get(fileKey) ?? [...epochs]
@@ -188,7 +205,7 @@ export function collectCodexEvents(home: string, pricingMap: Map<string, UnitPri
     watermark.historyIncomplete = historyIncomplete;
     if (total) { watermark.totals = total; watermark.timestampMs = sample.estimated ? undefined : timestampMs; }
     epochs.add(watermark);
-    watermarks.set(sessionId, epochs);
+    watermarks.set(watermarkKey, epochs);
     fileWatermarks.set(fileKey, watermark);
     seen.set(eventKey, watermark);
     // This opening establishes a counter anchor only. Its cumulative usage has no reliable date.

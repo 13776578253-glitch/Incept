@@ -87,6 +87,33 @@ test('safe head lag recovery leaves an unprovable candidate for manual reconcile
     assert.equal(state.db.prepare("SELECT state FROM outbox WHERE batch=?").get(stale.header.batchId).state,'lineage');
   }finally{state.close();}
 }));
+test('safe head lag recovery skips envelope conflicts to avoid infinite recreation loop',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode');
+  const scopeValue=scope(capture),serverHead=buildCandidate(capture,scopeValue,undefined,'safe-head-env'),stale=buildCandidate(capture,scopeValue,undefined,'safe-stale-env'),latest=buildCandidate(capture,scopeValue,serverHead,'safe-latest-env');
+  const state=new AgentState(join(dir,'state'));
+  try{
+    state.enqueue(stale,'stale-sig');state.markLineageRecovery(stale.header.batchId,'REVISION_ENVELOPE_CHANGED');state.enqueue(latest,'latest-sig');
+    const http={request:async path=>path==='/scopes/resolve'?{scope:scopeValue,headManifest:serverHead.header.manifest.manifestHash,head:serverHead.header}:{}};
+    const result=await reconcileHeadLag(state,http);
+    assert.equal(result.reconciled.length,0);
+    assert.equal(result.skipped.length,1);
+    assert.equal(result.skipped[0].reason,'ENVELOPE_CONFLICT_REQUIRES_REBASE');
+    assert.equal(state.db.prepare("SELECT state FROM outbox WHERE batch=?").get(stale.header.batchId).state,'lineage');
+    assert.equal(state.db.prepare("SELECT state FROM outbox WHERE batch=?").get(latest.header.batchId).state,'pending');
+    assert.equal(state.pending().length,0);
+  }finally{state.close();}
+}));
+test('isolation reason transitions keep only the current reason active',()=>sandbox(async dir=>{
+  const state=new AgentState(join(dir,'state'));
+  try{
+    const base={source:'codex',sessionId:'reason-transition',affectedRecords:1,unattributedTokens:0,coverage:'session'};
+    state.observeSessionIsolations('codex',[{...base,reason:'OLD_REASON'}],[]);
+    state.observeSessionIsolations('codex',[{...base,reason:'NEW_REASON'}],[]);
+    const active=state.db.prepare("SELECT reason FROM session_isolations WHERE source='codex' AND session_id=? AND active=1").all(base.sessionId);
+    assert.deepEqual(active.map(row=>row.reason),['NEW_REASON']);
+    assert.equal(state.db.prepare("SELECT active FROM session_isolations WHERE source='codex' AND session_id=? AND reason='OLD_REASON'").get(base.sessionId).active,0);
+  }finally{state.close();}
+}));
 test('permanent 4xx quarantines only the failed batch and 409 enters lineage recovery',()=>sandbox(async dir=>{
   const home=join(dir,'home');f.writePhase0Home(home,1);const capture=(await scan(home,dir)).captures.find(c=>c.source==='claudeCode'),candidate=buildCandidate(capture,scope(capture),undefined,'rejection'),state=new AgentState(join(dir,'state'));
   try{state.enqueue(candidate,'signature');state.db.prepare('UPDATE outbox SET admitted=1 WHERE batch=?').run(candidate.header.batchId);

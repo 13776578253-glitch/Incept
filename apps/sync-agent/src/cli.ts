@@ -32,6 +32,42 @@ async function main(){
     if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
     const state=new AgentState(directory);try{output({isolations:state.sessionIsolations()});}finally{state.close();}return;
   }
+  if(command==='seal-historical'){
+    if(!argv.includes('--confirm-reviewed'))throw Error('OWNER_REVIEW_CONFIRMATION_REQUIRED');
+    if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
+    const apply=argv.includes('--apply'),source=option('source')??'codex',singleSession=option('session');
+    const sessionList=(option('sessions')??'').split(',').map(s=>s.trim()).filter(Boolean);
+    const filterSessions=singleSession?[singleSession]:sessionList.length?sessionList:undefined;
+    const singleScope=option('scope'),scopeList=(option('scopes')??'').split(',').map(s=>s.trim()).filter(Boolean);
+    const filterScopes=singleScope?[singleScope]:scopeList.length?scopeList:undefined;
+    const limitArg=option('limit'),limit=limitArg!==undefined?Number(limitArg):undefined;
+    if(limit!==undefined&&(!Number.isSafeInteger(limit)||limit<=0))throw Error('INVALID_LIMIT');
+    const expectedArg=option('expected-count'),expectedCount=expectedArg!==undefined?Number(expectedArg):undefined;
+    const previewManifest=argv.includes('--manifest-preview');
+    const reason=option('reason')??'Historical rotation verified against committed cloud receipt';
+    const owner={subject:option('owner')??'owner',decisionId:option('decision')??'seal-'+randomUUID()};
+    const state=new AgentState(directory);
+    try{
+      const isolations=state.sessionIsolations(),results=[];
+      let matches=isolations.filter(row=>row.active&&row.source===source&&row.reason==='ROTATION_UNVERIFIED'
+        &&(!filterSessions||filterSessions.includes(row.sessionId))
+        &&(!filterScopes||filterScopes.includes(scopeKey(source,row.sessionId))));
+      if(expectedCount!==undefined&&matches.length!==expectedCount)throw Error('EXPECTED_COUNT_MISMATCH');
+      const totalMatched=matches.length;
+      if(limit!==undefined)matches=matches.slice(0,limit);
+      for(const item of matches){
+        if(isolations.some(row=>row.active&&row.source===source&&row.sessionId===item.sessionId&&row.reason!=='ROTATION_UNVERIFIED')){
+          results.push({sessionId:item.sessionId,status:'skipped',reason:'OTHER_ACTIVE_ISOLATION'});continue;
+        }
+        try{
+          const scope=scopeKey(source,item.sessionId),decision=state.historicalDecision(scope,reason,owner);
+          const manifestInfo=previewManifest?{manifestHash:decision.manifestHash,generationId:decision.generationId,receiptBatch:decision.receipt.batchId,dataRevision:decision.receipt.dataRevision}:{};
+          results.push({sessionId:item.sessionId,scope,...manifestInfo,status:apply?state.sealHistorical(scope,{...decision,disposition:'sealed'}).disposition??'sealed':'sealable'});
+        }catch(error){results.push({sessionId:item.sessionId,scope:scopeKey(source,item.sessionId),status:'skipped',reason:error instanceof Error?error.message:'UNKNOWN'});}
+      }
+      output({apply,source,candidates:results.length,totalMatched,results});return;
+    }finally{state.close();}
+  }
   if(command==='recover-session'){
     if(await isRunning(directory))throw Error('STOP_AGENT_FOR_MAINTENANCE');
     const source=option('source'),sessionId=option('session'),afterTimestampMs=Date.parse(option('after')??'');

@@ -1,3 +1,5 @@
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -83,7 +85,7 @@ test('sealing rejects pending, review, held, and unconfirmed local heads',()=>se
   const input=decision(ctx.state);f.writePhase0Source(ctx.home,source,{session:'historical',count:2});
   const capture=(await scan(ctx.home,ctx.dir,ctx.state.parents())).captures[0],parent=ctx.state.parents()[0];
   const candidate=buildCandidate(capture,parent.header.manifest.scope,parent,'pending-history');ctx.state.enqueue(candidate,'signature');
-  for(const status of ['pending','review','held']){ctx.state.db.prepare('UPDATE outbox SET state=?').run(status);assert.throws(()=>ctx.state.sealHistorical(key,input),/HISTORICAL_SCOPE_HAS_UNRESOLVED_WORK/);}
+  for(const status of ['pending','review','held','lineage','quarantined']){ctx.state.db.prepare('UPDATE outbox SET state=?').run(status);assert.throws(()=>ctx.state.sealHistorical(key,input),/HISTORICAL_SCOPE_HAS_UNRESOLVED_WORK/);}
   ctx.state.db.exec('DELETE FROM records; DELETE FROM outbox;');
   ctx.state.db.prepare('INSERT INTO heads VALUES(?,?,?)').run(key,JSON.stringify(parent),'unconfirmed');
   assert.throws(()=>ctx.state.sealHistorical(key,input),/HISTORICAL_SCOPE_HAS_UNRESOLVED_WORK/);assert.equal(ctx.state.historicalSeals().length,0);
@@ -132,4 +134,17 @@ test('historical hold rejects an unverified receipt and invalid disposition',()=
   assert.throws(()=>ctx.state.quarantineHistorical(key,{...input,receipt:{...input.receipt,generationId:'f'.repeat(64)}}),/HISTORICAL_EVIDENCE_MISMATCH/);
   assert.throws(()=>ctx.state.sealHistorical(key,{...input,disposition:'ignore'}),/HISTORICAL_DISPOSITION_INVALID/);
   assert.equal(ctx.state.historicalPolicies().length,0);
+}));
+
+test('seal-historical CLI supports filtering by session, limit, expected-count, and manifest preview',()=>setup(async ctx=>{
+  ctx.state.observeSessionIsolations('claudeCode',[{source:'claudeCode',sessionId:'historical',reason:'ROTATION_UNVERIFIED',affectedRecords:1,unattributedTokens:0,coverage:'session'}],[]);
+  const cliPath=fileURLToPath(new URL('../dist/agent.mjs',import.meta.url));
+  const res=JSON.parse(execFileSync(process.execPath,[cliPath,'seal-historical','--state',join(ctx.dir,'state'),'--confirm-reviewed','--source','claudeCode','--session','historical','--limit','1','--expected-count','1','--manifest-preview'],{encoding:'utf8'}));
+  assert.equal(res.apply,false);
+  assert.equal(res.candidates,1);
+  assert.equal(res.totalMatched,1);
+  assert.equal(res.results[0].sessionId,'historical');
+  assert.equal(res.results[0].status,'sealable');
+  assert(res.results[0].manifestHash);
+  assert.throws(()=>execFileSync(process.execPath,[cliPath,'seal-historical','--state',join(ctx.dir,'state'),'--confirm-reviewed','--source','claudeCode','--session','historical','--expected-count','99'],{encoding:'utf8',stdio:'pipe'}),err=>(err.stdout??'').includes('EXPECTED_COUNT_MISMATCH')||(err.stderr??'').includes('EXPECTED_COUNT_MISMATCH'));
 }));

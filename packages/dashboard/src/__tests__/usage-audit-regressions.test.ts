@@ -38,6 +38,34 @@ const total = (events: RawUsageEvent[]) => events.reduce((sum, event) => sum + e
   + event.outputTokens + event.cacheReadTokens + event.cacheCreationTokens + event.reasoningTokens, 0);
 const collect = () => collectCodexEvents(home, pricing, new Set());
 
+it('keeps the first session_meta identity for a subagent rollout replaying its parent', () => {
+  const dir = join(home, '.codex', 'sessions');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'rollout-child.jsonl'), [
+    { type: 'session_meta', payload: { id: 'subagent-child', thread_source: 'subagent', parent_thread_id: 'parent-session' } },
+    { type: 'session_meta', payload: { id: 'parent-session', thread_source: 'user' } },
+    { type: 'turn_context', payload: { model: 'priced-model' } },
+    count(0, usage(100, 20, 60, 5), usage(100, 20, 60, 5)),
+  ].map(value => JSON.stringify(value)).join('\n'));
+  const result = collect();
+  expect(result.events).toHaveLength(1);
+  expect(result.events[0].sessionId).toBe('subagent-child');
+  expect(result.sessionIntegrity).toHaveLength(0);
+});
+
+it('uses the filename subagent suffix when replay metadata still names the parent', () => {
+  const dir = join(home, '.codex', 'sessions');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'rollout-2026-10-31T10-00-00-11111111-1111-4111-8111-111111111111_22222222-2222-4222-8222-222222222222.jsonl'), [
+    { type: 'session_meta', payload: { id: 'parent-session', thread_source: 'user' } },
+    { type: 'turn_context', payload: { model: 'priced-model' } },
+    count(0, usage(100, 20, 60, 5), usage(100, 20, 60, 5)),
+  ].map(value => JSON.stringify(value)).join('\n'));
+  const result = collect();
+  expect(result.events).toHaveLength(1);
+  expect(result.events[0].sessionId).toBe('22222222-2222-4222-8222-222222222222');
+});
+
 it('shares cumulative watermarks across resumed files regardless of scan order and repeated collection', () => {
   rollout('z-parent', [count(0, usage(100, 20, 60, 5), usage(100, 20, 60, 5))]);
   rollout('a-resume_original-id_new-rollout-id', [count(1, usage(150, 30, 90, 8)), count(2, usage(170, 34, 100, 9))]);

@@ -5,8 +5,9 @@ import { zstdCompressSync } from 'node:zlib';
 import { expect, it } from 'vitest';
 import { captureHome, buildCandidate } from '../agent/capture';
 import { SyncService } from '../adapters/local/imports/sync/service';
-import { syncScopeId } from '../adapters/local/imports/sync/contract';
+import { syncScopeId, qualifyRanges } from '../adapters/local/imports/sync/contract';
 import { hash } from '../adapters/local/imports/identity';
+import { fromEvents } from './fixtures/events';
 it('Harness multiframe capture receipts append idempotently despite an invalid line', async () => {
   const home=mkdtempSync(join(tmpdir(),'harness-capture-')),dir=join(home,'.dsh','sessions','fixture'),path=join(dir,'session.v4.jsonl.zstd');
   const source='deepseekHarness' as const,sessionId='harness-fixture';
@@ -31,4 +32,17 @@ it('Harness multiframe capture receipts append idempotently despite an invalid l
     const records=[...service.current(syncScopeId(scope))];expect(records).toHaveLength(2);
     expect(records.reduce((n,r)=>n+r.event.inputTokens+r.event.outputTokens+r.event.cacheReadTokens,0)).toBe(84);
   }finally{service.close();rmSync(home,{recursive:true,force:true});}
+});
+it('turns a path/extension rotation with a retained prefix into an auditable rotation proof', () => {
+  const source='claudeCode' as const,sessionId='rotation-fixture';
+  const scope={deviceId:'00000000-0000-4000-8000-000000000001',source,sessionId,originId:hash(['fixture',sessionId])};
+  const event={eventId:hash('rotation-event'),source,sessionId,timestampMs:Date.parse('2026-10-31T00:00:00Z'),modelName:'fixture-model',
+    projectKey:'fixture',projectName:'Fixture',inputTokens:10,outputTokens:2,cacheReadTokens:3,cacheCreationTokens:0,reasoningTokens:0};
+  const base=fromEvents([event],scope,undefined,'rotation-base'),old=base.header.manifest.ranges[0];
+  const newRange={...old,locatorHash:hash('rotation-new.jsonl.zst'),identityHash:hash('rotation-new-identity')};
+  const parent={header:{...base.header,manifest:{...base.header.manifest,ranges:[old]}},proofs:[{range:old,locator:'rotation-old.jsonl'}]};
+  const capture={source,sessionId,reader:source,records:base.records,proofs:[{range:newRange,locator:'rotation-new.jsonl.zst'}],rates:{},prefixes:{[old.locatorHash+':'+old.byteLength]:old.root}};
+  const candidate=buildCandidate(capture,scope,parent,'rotation');
+  expect(candidate.header.manifest.ranges[0].previous).toMatchObject({locatorHash:old.locatorHash,retainedRoot:old.root,change:'rotation'});
+  expect(() => qualifyRanges(parent.header.manifest,candidate.header.manifest)).not.toThrow();
 });

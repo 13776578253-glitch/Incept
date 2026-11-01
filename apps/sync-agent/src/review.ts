@@ -62,6 +62,10 @@ export async function reconcileHeadLag(state:AgentState,http:AgentHttp) {
   for(const row of rows){
     const key=String(row.scope);
     if(state.db.prepare("SELECT 1 FROM outbox WHERE scope=? AND state IN ('review','held','quarantined') LIMIT 1").get(key)){skipped.push({session:key,reason:'UNRESOLVED_WORK'});continue;}
+    const lineageErrors=state.db.prepare("SELECT error FROM outbox WHERE scope=? AND state='lineage'").all(key) as Array<{error:string|null}>;
+    if(lineageErrors.some(r=>r.error&&['REVISION_ENVELOPE_CHANGED','NATIVE_ANCHOR_CHANGED','SOURCE_REVISION_UNVERIFIED','LOCAL_LINEAGE_RECOVERY_REQUIRED','REBASE_REQUIRED'].includes(r.error))){
+      skipped.push({session:key,reason:'ENVELOPE_CONFLICT_REQUIRES_REBASE'});continue;
+    }
     const candidates=state.db.prepare("SELECT batch,header_json FROM outbox WHERE scope=? AND state='pending' ORDER BY serial").all(key) as Array<{batch:string;header_json:string}>;
     if(!candidates.length){skipped.push({session:key,reason:'NO_NEWER_CANDIDATE'});continue;}
     const latest=candidates[candidates.length-1],header=JSON.parse(String(latest.header_json)) as SyncHeader,scope=header.manifest.scope;
