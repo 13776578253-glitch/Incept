@@ -192,7 +192,7 @@ export async function readDashboardSnapshot(range: UsageRange = '30d', options: 
   await refreshTrustedDashboardSnapshots().catch(() => {});
   let identity: string | undefined;
   try { identity = readSyncDatabaseVersion(context.database).identity; } catch { /* Retain the last good display during a transient read failure. */ }
-  return (await readStored(context, identity))?.snapshots[range] ?? snapshot;
+  return (await readStored(context, identity ?? version?.identity))?.snapshots[range] ?? null;
 }
 export async function saveDashboardSnapshot(data: TokenDashboardData) {
   const context = snapshotContext();
