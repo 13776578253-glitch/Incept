@@ -1,4 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RoadmapProject } from '@incept/roadmap/domain';
@@ -49,6 +51,15 @@ const roadmaps = [
   { key: 'project-atlas', project, name: { en: 'Planning Board', zh: '规划图' }, columns: [] },
 ];
 
+function renderPage(page: ReactElement, locale: AppLocale) {
+  const navigation = locale === 'zh' ? zhNavigation : enNavigation;
+  return render(
+    <NextIntlClientProvider locale={locale} messages={{ navigation }}>
+      {page}
+    </NextIntlClientProvider>,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.listProjects.mockResolvedValue([project]);
@@ -70,10 +81,10 @@ describe('standalone roadmap page', () => {
     ['zh', 'atlas', false],
   ] as const)('keeps %s %s selection and owner controls at /roadmap', async (locale, surface, canEdit) => {
     mocks.isOwner.mockResolvedValue(canEdit);
-    render(await RoadmapPage({
+    renderPage(await RoadmapPage({
       params: Promise.resolve({ locale }),
       searchParams: Promise.resolve({ project: project.key, surface }),
-    }));
+    }), locale);
 
     const key = surface === 'atlas' ? 'project-atlas' : 'project-roadmap';
     expect(mocks.listBoard).toHaveBeenCalledWith(key);
@@ -100,20 +111,20 @@ describe('standalone roadmap page', () => {
   });
 
   it('keeps legacy board selection through rd at the standalone route', async () => {
-    render(await RoadmapPage({
+    renderPage(await RoadmapPage({
       params: Promise.resolve({ locale: 'en' }),
       searchParams: Promise.resolve({ project: project.key, rd: 'project-atlas' }),
-    }));
+    }), 'en');
     expect(mocks.listBoard).toHaveBeenCalledWith('project-atlas');
     expect(screen.getByRole('link', { name: 'Planning' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('keeps the disabled planning surface locked and falls back to roadmap', async () => {
     mocks.listProjects.mockResolvedValue([{ ...project, atlasEnabled: false }]);
-    render(await RoadmapPage({
+    renderPage(await RoadmapPage({
       params: Promise.resolve({ locale: 'zh' }),
       searchParams: Promise.resolve({ project: project.key, surface: 'atlas' }),
-    }));
+    }), 'zh');
     expect(mocks.listBoard).toHaveBeenCalledWith('project-roadmap');
     expect(screen.getByRole('button', { name: /规划图/ })).toBeDisabled();
     expect(screen.getByRole('link', { name: '路线图' })).toHaveAttribute('aria-current', 'page');

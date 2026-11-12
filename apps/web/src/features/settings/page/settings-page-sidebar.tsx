@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/hooks/use-language';
 import { getSettingsPageData } from '../shared/settings-schema';

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -243,7 +243,6 @@ export function SiteHeader() {
                                   ? 'bg-[var(--color-pill-active-bg)] shadow-[var(--shadow-pill-active)]'
                                   : 'hover:bg-[var(--color-nav-item-hover)]'
                               }`}
-                              onClick={() => setOpenDropdown(null)}
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">

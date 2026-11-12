@@ -1,5 +1,5 @@
  'use client';
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { AppLocale } from '@/i18n/config/locales';

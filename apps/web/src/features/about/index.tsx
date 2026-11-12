@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { DocsBlockRenderer } from '@/features/docs/shared/renderers';

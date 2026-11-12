@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import { useLocale } from 'next-intl';
 import type { DocsNavGroupModel, DocsNavItemModel } from '@/features/docs/shared/types';
 import type { AppLocale } from '@/i18n/config/locales';

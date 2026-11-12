@@ -1,7 +1,7 @@
 'use client';
 
 import { useDeferredValue, useState } from 'react';
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import { useLocale, useTranslations } from 'next-intl';
 import type { DocsLibraryEntryModel } from '../types';
 import { DocsSelect, type DocsSelectOption } from './docs-select';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import type { RoadmapProject } from '@incept/roadmap/domain';
 import { IconChevronDown, IconProjectTag } from '@incept/roadmap/react';
 import type { AppLocale } from '@/i18n/config/locales';

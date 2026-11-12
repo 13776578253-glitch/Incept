@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import type { PrimaryNavItem } from '@/components/layouts/navigation.types';
 
 type MobileSiteHeaderProps = {
