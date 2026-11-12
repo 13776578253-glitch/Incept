@@ -14,7 +14,7 @@ export async function dashboardUsageGet(request: Request, ownerSessionId?: strin
   const force = query.get('refresh') === '1';
   if (!ownerSessionId) {
     if (force) return Response.json({ error: 'Owner access required.' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
-    const history = await readDashboardSnapshot(range as UsageRange);
+    const history = await readDashboardSnapshot(range as UsageRange, { waitForFresh: false });
     const data = publicDashboardSummary(history ?? emptyDashboard(range as UsageRange), canViewDetails);
     const { body, validator } = dashboardUsageRepresentation(data, canViewDetails);
     const headers = { 'Cache-Control': 'no-store', Vary: 'Cookie', ETag: validator };

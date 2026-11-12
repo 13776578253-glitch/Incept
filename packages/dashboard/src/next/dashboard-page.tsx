@@ -6,7 +6,7 @@ import { TokenDashboardFeature } from '../react';
 import { dashboardUsageRepresentation } from './usage-validator';
 
 export async function TokenDashboardPage({ canImport = false, canViewDetails = canImport }: { canImport?: boolean; canViewDetails?: boolean } = {}) {
-  const history = await readDashboardSnapshot('30d');
+  const history = await readDashboardSnapshot('30d', { waitForFresh: false });
 
   const original = history ?? emptyDashboard();
   const mode=process.env.INCEPT_SYNC_READ_MODE==='v2'?'v2':process.env.INCEPT_SYNC_READ_MODE==='shadow'?'shadow':'v1';

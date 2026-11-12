@@ -15,7 +15,7 @@ function importsUnchanged(home: string, checkedAt: number) {
 const pending = new Map<string, { force: boolean; job: Promise<TokenDashboardData> }>();
 export async function refreshDashboardSnapshot({ range = '30d', force = false }: { range?: UsageRange; force?: boolean } = {}) {
   if (trustedDashboardEnabled()) {
-    const snapshot = await readDashboardSnapshot(range);
+    const snapshot = await readDashboardSnapshot(range, { waitForFresh: force });
     if (!snapshot) throw Error('TRUSTED_SNAPSHOT_UNAVAILABLE');
     return snapshot;
   }
