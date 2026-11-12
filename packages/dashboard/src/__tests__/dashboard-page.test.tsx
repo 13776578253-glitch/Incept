@@ -72,7 +72,7 @@ describe('package server/client composition', () => {
     );
 
     expect(mocks.load).toHaveBeenCalledTimes(1);
-    expect(mocks.load).toHaveBeenCalledWith('30d');
+    expect(mocks.load).toHaveBeenCalledWith('30d', { waitForFresh: false });
     expect(screen.getByRole('button', { name: messages.page.range30d }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(messages.page.title);
     for (const section of ['overview', 'models', 'costs', 'projects'] as const) {
