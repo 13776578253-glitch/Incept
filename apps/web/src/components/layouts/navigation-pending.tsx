@@ -9,11 +9,9 @@ export function NavigationPending() {
 
   return (
     <>
-      <span
-        aria-hidden="true"
-        className="navigation-pending"
-        data-navigation-pending={pending ? 'true' : undefined}
-      />
+      {pending ? (
+        <span aria-hidden="true" className="navigation-pending" data-navigation-pending="true" />
+      ) : null}
       <span role="status" aria-live="polite" className="sr-only">
         {pending ? t('loading') : ''}
       </span>

@@ -1,6 +1,4 @@
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
-import { NavigationSkeleton } from '@/components/layouts/navigation-skeleton';
 import { DocsArticleFeature } from '@/features/docs';
 import { getDocsCollectionArticlePage } from '@/server/docs/loaders';
 import type { AppLocale } from '@/i18n/config/locales';
@@ -34,12 +32,10 @@ export default async function DocsCollectionArticlePage({
   }
 
   return (
-    <Suspense fallback={<NavigationSkeleton variant="article" />}>
-      <DocsArticleFeature
-        page={page}
-        showImportSuccessToast={resolvedSearchParams?.imported === '1'}
-        backToListHref={`/${locale}/docs`}
-      />
-    </Suspense>
+    <DocsArticleFeature
+      page={page}
+      showImportSuccessToast={resolvedSearchParams?.imported === '1'}
+      backToListHref={`/${locale}/docs`}
+    />
   );
 }
