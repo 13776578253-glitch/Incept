@@ -9,3 +9,9 @@ export function rememberSnapshot(data: TokenDashboardData, scope = 'public') {
   const previous = snapshots.get(key);
   if (!previous || Date.parse(data.checkedAt) >= Date.parse(previous.checkedAt ?? '')) snapshots.set(key, data);
 }
+
+export function clearSnapshots(scope: string) {
+  for (const key of snapshots.keys()) {
+    if (key.startsWith(`${scope}:`)) snapshots.delete(key);
+  }
+}

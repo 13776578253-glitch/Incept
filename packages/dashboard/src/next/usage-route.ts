@@ -1,6 +1,7 @@
 import 'server-only';
 import { refreshDashboardSnapshot, readDashboardSnapshot } from '../adapters';
 import { emptyDashboard, publicDashboardSummary, usageRanges, type UsageRange } from '../domain';
+import { dashboardUsageRepresentation } from './usage-validator';
 
 const refreshes = new Map<string, number>();
 
@@ -14,9 +15,13 @@ export async function dashboardUsageGet(request: Request, ownerSessionId?: strin
   if (!ownerSessionId) {
     if (force) return Response.json({ error: 'Owner access required.' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
     const history = await readDashboardSnapshot(range as UsageRange);
-    return Response.json(publicDashboardSummary(history ?? emptyDashboard(range as UsageRange), canViewDetails), {
-      headers: { 'Cache-Control': 'no-store', Vary: 'Cookie' },
-    });
+    const data = publicDashboardSummary(history ?? emptyDashboard(range as UsageRange), canViewDetails);
+    const { body, validator } = dashboardUsageRepresentation(data, canViewDetails);
+    const headers = { 'Cache-Control': 'no-store', Vary: 'Cookie', ETag: validator };
+    if (request.headers.get('if-none-match') === validator) {
+      return new Response(null, { status: 304, headers });
+    }
+    return new Response(body, { headers: { ...headers, 'Content-Type': 'application/json' } });
   }
   if (force) {
     const now = Date.now();

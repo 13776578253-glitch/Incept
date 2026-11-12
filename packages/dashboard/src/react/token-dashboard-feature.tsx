@@ -24,7 +24,8 @@ export function TokenDashboardFeature({
   canImport = false,
   canViewDetails = canImport,
   initialStatus = 'live',
-}: { data: TokenDashboardData; canImport?: boolean; canViewDetails?: boolean; initialStatus?: 'history' | 'empty' | 'live' }) {
+  initialValidator,
+}: { data: TokenDashboardData; canImport?: boolean; canViewDetails?: boolean; initialStatus?: 'history' | 'empty' | 'live'; initialValidator?: string }) {
   const [importOpen, setImportOpen] = useState(false);
   const {
     rangePreset,
@@ -41,7 +42,7 @@ export function TokenDashboardFeature({
     hasSnapshot,
     showingHistory,
     remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval,lastPageUpdatedAt,
-  } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport, canViewDetails });
+  } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport, canViewDetails, initialValidator });
 
   return (
     <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-24 md:pt-8 lg:px-10 lg:pt-9 lg:pb-28">
