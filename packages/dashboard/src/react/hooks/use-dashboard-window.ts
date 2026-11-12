@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TokenDashboardData, UsageRange } from '../../domain';
 import { dashboardEndpoints } from '../../endpoints';
-import { emptyDashboard } from '../../domain';
-import { clientSnapshot, rememberSnapshot } from './client-snapshots';
+import { emptyDashboard, publicDashboardSummary } from '../../domain';
+import { clearSnapshots, clientSnapshot, rememberSnapshot } from './client-snapshots';
 import {remoteRefresh,remoteStatus,type RemoteStatus} from './remote-refresh';
 
 export const DASHBOARD_REFRESH_INTERVAL = 60_000;
@@ -19,7 +19,7 @@ function olderSnapshot(next: TokenDashboardData, previous: TokenDashboardData) {
   return Number.isFinite(previousTime) && (!Number.isFinite(nextTime) || nextTime < previousTime);
 }
 
-export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean; owner?: boolean; canViewDetails?: boolean; loadRemoteOnMount?: boolean } = {}) {
+export function useDashboardWindow(initialData: TokenDashboardData, options: { refreshOnMount?: boolean; initialHasSnapshot?: boolean; owner?: boolean; canViewDetails?: boolean; initialValidator?: string; loadRemoteOnMount?: boolean } = {}) {
   const remoteEnabled=!!options.owner&&!!initialData.sync?.remote;
   const scope = (options.owner ? 'owner' : options.canViewDetails ? 'pro' : 'public')+(remoteEnabled?':remote:'+initialData.sync?.readMode:'');
   const [remoteInfo,setRemoteInfo]=useState<RemoteStatus|null>(null),[remoteDevice,setRemoteDevice]=useState(''),[remoteState,setRemoteState]=useState('idle');
@@ -45,9 +45,8 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
   useEffect(() => {
     if (!remoteEnabled || !options.loadRemoteOnMount) return;
     const controller = new AbortController();
-    let active = true;
     void remoteStatus(controller.signal).then(info => {
-      if (!active) return;
+      if (controller.signal.aborted) return;
       setRemoteInfo(info);
       const nextDevice = info.devices.find(device => device.id === deviceRef.current) ?? info.devices[0];
       if (!deviceRef.current && nextDevice) {
@@ -56,9 +55,10 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
       }
       if (nextDevice?.lastJob?.phase) setRemoteState(nextDevice.lastJob.phase);
     }).catch(() => {});
-    return () => { active = false; controller.abort(); };
+    return () => controller.abort();
   }, [remoteEnabled, options.loadRemoteOnMount]);
   const refreshOnMount = useRef(!!options.refreshOnMount);
+  const initialSnapshot = useRef({ data: initialData, validator: options.initialValidator });
   useEffect(() => { rememberSnapshot(initialData, scope); }, [initialData, scope]);
 
   useEffect(() => {
@@ -95,24 +95,60 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
       try {
         const query = new URLSearchParams({ range: rangePreset });
         let completedStatus='',completedPhase='';
-        if(remoteEnabled){const info=await remoteStatus(current.signal);if(!disposed){setRemoteInfo(info);if(!deviceRef.current&&info.devices.length){deviceRef.current=info.devices[0].id;setRemoteDevice(deviceRef.current);}
+        if(remoteEnabled){const info=await remoteStatus(current.signal);if(disposed||current.signal.aborted)return;setRemoteInfo(info);if(!deviceRef.current&&info.devices.length){deviceRef.current=info.devices[0].id;setRemoteDevice(deviceRef.current);}
           const selected=info.devices.find(device=>device.id===deviceRef.current);
-          if(!force&&selected?.lastJob?.phase)setRemoteState(selected.lastJob.phase);}
-          if(force){if(!deviceRef.current)throw Error('NO_REMOTE_DEVICE');const job=await remoteRefresh(deviceRef.current,j=>{const phase=j.phase??(['completed','completed_no_change'].includes(j.status)?'reading':j.status);if(!disposed)setRemoteState(['committed','no_change'].includes(phase)?'committing':phase);},current.signal);completedStatus=job.status;completedPhase=job.phase??job.status;
+          if(!force&&selected?.lastJob?.phase)setRemoteState(selected.lastJob.phase);
+          if(force){if(!deviceRef.current)throw Error('NO_REMOTE_DEVICE');const job=await remoteRefresh(deviceRef.current,j=>{const phase=j.phase??(['completed','completed_no_change'].includes(j.status)?'reading':j.status);if(!disposed&&!current.signal.aborted)setRemoteState(['committed','no_change'].includes(phase)?'committing':phase);},current.signal);if(disposed||current.signal.aborted)return;completedStatus=job.status;completedPhase=job.phase??job.status;
             if(job.status==='completed'||job.status==='completed_no_change'){if(job.dataRevision!==null)query.set('minRevision',String(job.dataRevision));}
             else if(!['partial','review_required','offline','expired','cancelled'].includes(job.status))throw Error('REMOTE_JOB_'+job.status);
           }
         }else if (force && options.owner) query.set('refresh', '1');
-        const response = await fetch(dashboardEndpoints.usage + '?' + query, { cache: 'no-store', signal: current.signal });
+        const initial = initialSnapshot.current;
+        const validator = !force && !options.owner && initial.data.range === rangePreset && dataRef.current === initial.data
+          ? initial.validator
+          : undefined;
+        const response = await fetch(dashboardEndpoints.usage + '?' + query, {
+          cache: 'no-store',
+          signal: current.signal,
+          ...(validator ? { headers: { 'If-None-Match': validator } } : {}),
+        });
+        const responseRole = response.headers?.get('X-Incept-Dashboard-Role');
+        const currentRole = options.owner ? 'owner' : options.canViewDetails ? 'pro' : 'guest';
+        const roleRank = { guest: 0, pro: 1, owner: 2 };
+        const validRole = responseRole === 'guest' || responseRole === 'pro' || responseRole === 'owner'
+          ? responseRole
+          : undefined;
+        const accessReduced = validRole !== undefined && roleRank[validRole] < roleRank[currentRole];
+        if (accessReduced && !disposed && !current.signal.aborted) {
+          clearSnapshots(scope);
+          const empty = emptyDashboard(rangePreset);
+          dataRef.current = empty;
+          setData(empty);
+          setHasSnapshot(false);
+          setShowingHistory(false);
+        }
+        if (response.status === 304 && validator && (!validRole || validRole === currentRole)) {
+          if (!disposed && !current.signal.aborted) {
+            setLastPageUpdatedAt(new Date().toISOString());
+            setHasSnapshot(true);
+            setShowingHistory(false);
+            setRefreshError(false);
+          }
+          return;
+        }
         if (!response.ok) throw new Error('Usage refresh failed');
-        const next = await response.json() as TokenDashboardData;
+        let next = await response.json() as TokenDashboardData;
+        if (disposed || current.signal.aborted) return;
+        if (validRole && roleRank[validRole] > roleRank[currentRole]) {
+          next = publicDashboardSummary(next, currentRole === 'pro');
+        }
         if (next.range !== rangePreset) throw new Error('Usage window mismatch');
         if(remoteEnabled&&query.has('minRevision')&&next.sync?.readMode==='v2'&&(next.sync.dataRevision??-1)<Number(query.get('minRevision')))throw Error('REVISION_NOT_VISIBLE');
         if (!disposed && !current.signal.aborted) {
           if (olderSnapshot(next, dataRef.current)) throw new Error('STALE_USAGE_SNAPSHOT');
           dataRef.current = next;
           setData(next);
-          rememberSnapshot(next, scope);
+          rememberSnapshot(next, accessReduced ? (validRole === 'pro' ? 'pro' : 'public') : scope);
           setLastPageUpdatedAt(new Date().toISOString());
           setHasSnapshot(true);
           setShowingHistory(false);
@@ -160,7 +196,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
       clearTimer();
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [rangePreset, scope, options.owner,remoteEnabled,interval]);
+  }, [rangePreset, scope, options.owner, options.canViewDetails, remoteEnabled, interval]);
 
   const refresh = useCallback(() => refreshRef.current(), []);
   return { data, rangePreset, setRangePreset, selectedTrendIndex, setSelectedTrendIndex,

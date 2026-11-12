@@ -14,6 +14,7 @@ import type {
 } from '@/features/docs/shared/types';
 import type { DbDocsCollectionNavigationNode } from '@incept/db/docs';
 import { resolveArticleReadingRoute, resolveCollectionReadingRoute, preferredHomeEntries } from './reading-language';
+import { traceNavigation } from '@/server/navigation-timing';
 import {
   docsHomeIntro,
   mapDocsArticleRecordToPageModel,
@@ -63,9 +64,8 @@ export async function getDocsArticlePage({
   slug: string;
   viewerRole: DocsAccessRole;
 }): Promise<DocsArticlePageModel | null> {
-  const record = await findPublishedDocsArticleBySlug({
-    ...await resolveArticleReadingRoute(locale, slug),
-  });
+  const route = await traceNavigation('docs_resolve_article', () => resolveArticleReadingRoute(locale, slug));
+  const record = await traceNavigation('prisma_docs_article', () => findPublishedDocsArticleBySlug(route));
 
   if (!record) {
     return null;
@@ -89,10 +89,10 @@ export async function getUnlistedDocsArticlePage({
   documentKey: string;
   viewerRole: DocsAccessRole;
 }): Promise<DocsArticlePageModel | null> {
-  const record = await findPublishedUnlistedDocsArticleByDocumentKey({
+  const record = await traceNavigation('prisma_docs_unlisted', () => findPublishedUnlistedDocsArticleByDocumentKey({
     locale: locale as DbDocsLocale,
     documentKey,
-  });
+  }));
 
   if (!record || !canAccessDocsArticle(viewerRole, record.accessRole)) {
     return null;
@@ -113,9 +113,9 @@ export async function getDocsCollectionArticlePage({
   articleSlug: string;
   viewerRole: DocsAccessRole;
 }): Promise<DocsArticlePageModel | null> {
-  const record = await findPublishedDocsCollectionArticleBySlugs({
-    ...await resolveCollectionReadingRoute(locale, collectionSlug, articleSlug),
-  });
+  const route = await traceNavigation('docs_resolve_series', () =>
+    resolveCollectionReadingRoute(locale, collectionSlug, articleSlug));
+  const record = await traceNavigation('prisma_docs_series', () => findPublishedDocsCollectionArticleBySlugs(route));
 
   if (!record) {
     return null;
@@ -146,8 +146,8 @@ export async function getDocsHomePage({
   viewerRole: DocsAccessRole;
 }): Promise<DocsHomePageModel> {
   const [entries, rawStats] = await Promise.all([
-    preferredHomeEntries(locale, listPublishedDocsHomeEntries),
-    getDocsLibraryStats({ locale: locale as DbDocsLocale }).catch(() => null),
+    preferredHomeEntries(locale, input => traceNavigation('prisma_docs_home_entries', () => listPublishedDocsHomeEntries(input))),
+    traceNavigation('prisma_docs_stats', () => getDocsLibraryStats({ locale: locale as DbDocsLocale })).catch(() => null),
   ]);
 
   const stats = rawStats

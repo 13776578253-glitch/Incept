@@ -32,7 +32,8 @@ catch(err) {
   process.exit(1);
 }
 
-const child = spawn(process.execPath, ['apps/web/node_modules/next/dist/bin/next', 'start', 'apps/web',
+const timing = Number(process.env.INCEPT_NAV_TRACE_SAMPLE_RATE) > 0 ? ['--require', './scripts/navigation-timing.cjs'] : [];
+const child = spawn(process.execPath, [...timing, 'apps/web/node_modules/next/dist/bin/next', 'start', 'apps/web',
   '--hostname', process.env.INCEPT_BIND_ADDRESS ?? '0.0.0.0', '--port', process.env.PORT ?? '3000'], { stdio: 'inherit' });
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => child.kill(signal));
 child.on('error', () => { console.error(JSON.stringify({ event: 'web_process_start_failed' })); process.exitCode = 1; });

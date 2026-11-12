@@ -4,9 +4,10 @@ import { prisma } from '@incept/db';
 import type { DbDocsHomeEntryRecord } from '@incept/db/docs';
 import type { AppLocale } from '@/i18n/config/locales';
 import { DOCUMENT_LANGUAGE_COOKIE, isDocumentLanguage } from '@/features/docs/language/preference';
+import { traceNavigation } from '@/server/navigation-timing';
 
 export async function getDocumentLanguage(interfaceLocale: AppLocale): Promise<AppLocale> {
-  const value = (await cookies()).get(DOCUMENT_LANGUAGE_COOKIE)?.value;
+  const value = (await traceNavigation('docs_language_cookie', cookies)).get(DOCUMENT_LANGUAGE_COOKIE)?.value;
   return isDocumentLanguage(value) ? value : interfaceLocale;
 }
 
@@ -18,11 +19,11 @@ const chooseTranslation = (translations: Translation[], preferred: AppLocale) =>
 export async function resolveArticleReadingRoute(interfaceLocale: AppLocale, slug: string, note = false) {
   const preferred = await getDocumentLanguage(interfaceLocale);
   for (const routeLocale of [interfaceLocale, interfaceLocale === 'zh' ? 'en' : 'zh'] as AppLocale[]) {
-    const document = await prisma.docsDocument.findFirst({
+    const document = await traceNavigation('prisma_resolve_article', () => prisma.docsDocument.findFirst({
       where: { isListed: true, kind: note ? 'note' : { not: 'note' }, collectionItem: { is: null },
         locales: { some: { locale: routeLocale, slug, status: 'published' } } },
       select: { locales: { where: { status: 'published', locale: { in: ['zh', 'en'] } }, select: { locale: true, slug: true } } },
-    });
+    }));
     if (document) {
       const translation = chooseTranslation(document.locales, preferred)!;
       return { locale: translation.locale as AppLocale, slug: translation.slug };
@@ -34,13 +35,13 @@ export async function resolveArticleReadingRoute(interfaceLocale: AppLocale, slu
 export async function resolveCollectionReadingRoute(interfaceLocale: AppLocale, collectionSlug: string, articleSlug: string) {
   const preferred = await getDocumentLanguage(interfaceLocale);
   for (const routeLocale of [interfaceLocale, interfaceLocale === 'zh' ? 'en' : 'zh'] as AppLocale[]) {
-    const collection = await prisma.docsCollection.findFirst({
+    const collection = await traceNavigation('prisma_resolve_series', () => prisma.docsCollection.findFirst({
       where: { locales: { some: { locale: routeLocale, slug: collectionSlug, status: 'published' } },
         items: { some: { isActive: true, document: { locales: { some: { locale: routeLocale, slug: articleSlug, status: 'published' } } } } } },
       select: { locales: { where: { status: 'published' }, select: { locale: true, slug: true } },
         items: { where: { isActive: true, document: { locales: { some: { locale: routeLocale, slug: articleSlug, status: 'published' } } } },
           select: { document: { select: { locales: { where: { status: 'published' }, select: { locale: true, slug: true } } } } } } },
-    });
+    }));
     if (!collection) continue;
     const translations = collection.items[0]?.document?.locales ?? [];
     const language = [preferred, preferred === 'zh' ? 'en' : 'zh'].find(value =>

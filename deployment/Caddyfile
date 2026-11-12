@@ -38,6 +38,7 @@
 	vars safe_uri {http.request.uri.path}
 	vars @invitation safe_uri /invitation/redacted
 	log_append <safe_uri {http.vars.safe_uri}
+	log_append request_id {http.request.uuid}
 	header @ordinary >Referrer-Policy same-origin
 	header @invitation >Referrer-Policy no-referrer
 	header {
@@ -57,6 +58,7 @@
 		header_up X-Request-ID {http.request.uuid}
 		header_up -Forwarded
 		header_down -Referrer-Policy
+		header_down X-Request-ID {http.request.uuid}
 		flush_interval -1
 		transport http {
 			dial_timeout 5s
@@ -78,11 +80,19 @@ https://{$INCEPT_DOMAIN} {
 	@auth path /api/auth/owner/login /api/access/shared-code/redeem
 	@music path /api/internal/music/tracks
 	@imports path /api/dashboard/imports/preview
+	@usage path /api/dashboard/usage
 	@sync path /api/sync/ws
 	@internal path /api/internal/sync /api/internal/sync/* /rpc /rpc/* /healthz /healthz/*
 	route {
 		import incept-request
 		header >Strict-Transport-Security "max-age=31536000"
+		log_append upstream_headers_ms {http.reverse_proxy.upstream.latency_ms}
+		log_append upstream_duration_ms {http.reverse_proxy.upstream.duration_ms}
+		encode @usage gzip {
+			match {
+				header Content-Type application/json*
+			}
+		}
 		handle @internal {
 			respond 404
 		}

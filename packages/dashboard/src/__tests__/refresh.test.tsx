@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDashboardWindow } from '../react/hooks/use-dashboard-window';
 import type { TokenDashboardData, UsageRange } from '../domain';
 import { emptyDashboard } from '../domain';
+import { clearSnapshots, clientSnapshot } from '../react/hooks/client-snapshots';
 
 const snapshot = (range: UsageRange) => ({ range, daily: [], dateRange: { from: '2026-10-01', to: '2026-10-12', activeDays: 0 } }) as unknown as TokenDashboardData;
 const response = (range: UsageRange) => ({ ok: true, json: async () => snapshot(range) });
@@ -20,6 +21,114 @@ afterEach(() => {
 });
 
 describe('dashboard refresh', () => {
+  it('revalidates the initial public snapshot without downloading an unchanged response', async () => {
+    const history = emptyDashboard('30d');
+    history.totals.totalTokens = 123;
+    const fetch = vi.fn().mockResolvedValue({
+      status: 304, ok: false, headers: new Headers({ 'X-Incept-Dashboard-Role': 'guest' }),
+    });
+    vi.stubGlobal('fetch', fetch);
+    const { result } = renderHook(() => useDashboardWindow(history, {
+      refreshOnMount: true, initialHasSnapshot: true, initialValidator: '"public-tag"',
+    }));
+    await act(async () => {});
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][1].headers).toEqual({ 'If-None-Match': '"public-tag"' });
+    expect(result.current.data.totals.totalTokens).toBe(123);
+    expect(result.current.showingHistory).toBe(false);
+    expect(result.current.isRefreshing).toBe(false);
+    expect(result.current.refreshError).toBe(false);
+  });
+  it('does not put newly privileged data in the guest snapshot after a role change', async () => {
+    clearSnapshots('public');
+    const publicData = emptyDashboard('all');
+    const privileged = { ...emptyDashboard('all'), checkedAt: '2026-10-15T00:00:00Z' };
+    privileged.projects = [{
+      ...privileged.totals, projectKey: 'private-project', projectName: 'Private Project',
+      workspacePath: '/private', modelsUsed: [], shareOfTokens: 1, shareOfCost: 1, lastActivity: '2026-10-14',
+    }];
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'X-Incept-Dashboard-Role': 'pro' }),
+      json: async () => privileged,
+    }));
+    const { result } = renderHook(() => useDashboardWindow(publicData, { refreshOnMount: true }));
+    await act(async () => {});
+    expect(result.current.data.projects).toEqual([]);
+    expect(clientSnapshot('all', 'public')?.projects).toEqual([]);
+    clearSnapshots('public');
+  });
+  it('clears a privileged snapshot if the server reports a lower role on a failed refresh', async () => {
+    clearSnapshots('pro');
+    const initial = { ...emptyDashboard('all'), checkedAt: '2026-10-15T00:00:00Z' };
+    initial.totals.totalTokens = 123;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      headers: new Headers({ 'X-Incept-Dashboard-Role': 'guest' }),
+    }));
+    const { result } = renderHook(() => useDashboardWindow(initial, { canViewDetails: true }));
+    await act(async () => { result.current.refresh(); });
+    expect(result.current.hasSnapshot).toBe(false);
+    expect(result.current.data.totals.totalTokens).toBe(0);
+    expect(clientSnapshot('all', 'pro')).toBeUndefined();
+    clearSnapshots('pro');
+  });
+  it('stores a successful downgraded response in its actual role scope', async () => {
+    clearSnapshots('pro');
+    clearSnapshots('public');
+    const initial = { ...emptyDashboard('all'), checkedAt: '2026-10-14T00:00:00Z' };
+    initial.totals.totalTokens = 123;
+    const guest = { ...emptyDashboard('all'), checkedAt: '2026-10-15T00:00:00Z' };
+    guest.totals.totalTokens = 5;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'X-Incept-Dashboard-Role': 'guest' }),
+      json: async () => guest,
+    }));
+    const { result } = renderHook(() => useDashboardWindow(initial, { canViewDetails: true }));
+    await act(async () => { result.current.refresh(); });
+    expect(result.current.data.totals.totalTokens).toBe(5);
+    expect(clientSnapshot('all', 'pro')).toBeUndefined();
+    expect(clientSnapshot('all', 'public')?.totals.totalTokens).toBe(5);
+    clearSnapshots('public');
+  });
+  it('clears privileged data as soon as a downgraded response arrives', async () => {
+    clearSnapshots('pro');
+    const initial = { ...emptyDashboard('all'), checkedAt: '2026-10-14T00:00:00Z' };
+    initial.totals.totalTokens = 123;
+    let resolveBody!: (value: TokenDashboardData) => void;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'X-Incept-Dashboard-Role': 'guest' }),
+      json: () => new Promise<TokenDashboardData>(resolve => { resolveBody = resolve; }),
+    }));
+    const { result } = renderHook(() => useDashboardWindow(initial, { canViewDetails: true }));
+    await act(async () => { result.current.refresh(); });
+    expect(result.current.hasSnapshot).toBe(false);
+    expect(result.current.data.totals.totalTokens).toBe(0);
+    expect(clientSnapshot('all', 'pro')).toBeUndefined();
+    await act(async () => { resolveBody(emptyDashboard('all')); });
+    expect(result.current.hasSnapshot).toBe(true);
+    clearSnapshots('public');
+  });
+  it.each(['invalid JSON', 'wrong range'])('keeps privileged data cleared after a downgraded %s response', async failure => {
+    clearSnapshots('pro');
+    const initial = { ...emptyDashboard('all'), checkedAt: '2026-10-14T00:00:00Z' };
+    initial.totals.totalTokens = 123;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'X-Incept-Dashboard-Role': 'guest' }),
+      json: failure === 'invalid JSON'
+        ? async () => { throw new Error('invalid JSON'); }
+        : async () => emptyDashboard('7d'),
+    }));
+    const { result } = renderHook(() => useDashboardWindow(initial, { canViewDetails: true }));
+    await act(async () => { result.current.refresh(); });
+    expect(result.current.hasSnapshot).toBe(false);
+    expect(result.current.data.totals.totalTokens).toBe(0);
+    expect(result.current.refreshError).toBe(true);
+    expect(clientSnapshot('all', 'pro')).toBeUndefined();
+  });
   it('shows history immediately, requests fresh data on entry and retains history if the request fails', async () => {
     const history = { ...emptyDashboard('30d'), checkedAt: '2026-10-10T00:00:00Z' };
     history.totals.totalTokens = 123;

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { TokenDashboardData } from '@incept/dashboard/domain';
 import { TokenDashboardPage } from '@incept/dashboard/next';
+import { dashboardUsageRepresentation } from '../next/usage-validator';
 import en from '@incept/dashboard/messages/en';
 import zh from '@incept/dashboard/messages/zh';
 
@@ -45,13 +46,17 @@ describe('package server/client composition', () => {
     const guest = await TokenDashboardPage();
     expect(guest.props.data.projects).toEqual([]);
     expect(guest.props.canViewDetails).toBe(false);
+    expect(guest.props.initialValidator).toBe(dashboardUsageRepresentation(guest.props.data, false).validator);
     const pro = await TokenDashboardPage({ canViewDetails: true });
     expect(pro.props.data.projects[0].projectName).toBe('Project');
     expect(pro.props.canImport).toBe(false);
     expect(JSON.stringify(pro.props.data)).not.toContain('private-');
+    expect(pro.props.initialValidator).toBe(dashboardUsageRepresentation(pro.props.data, true).validator);
+    expect(pro.props.initialValidator).not.toBe(guest.props.initialValidator);
   });
   it('renders a loading shell when history is absent without waiting for native collection', async () => {
     mocks.load.mockResolvedValue(null);
+    expect((await TokenDashboardPage()).props.initialValidator).toBeUndefined();
     render(<NextIntlClientProvider locale="zh" messages={{ dashboard: zh }} timeZone="Asia/Singapore">{await TokenDashboardPage()}</NextIntlClientProvider>);
     expect(screen.getByText(zh.page.loadingFirst)).toBeDefined();
     expect(screen.queryByText(zh.overview.kpi.knownTokens)).toBeNull();

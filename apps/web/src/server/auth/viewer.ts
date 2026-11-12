@@ -3,6 +3,7 @@ import 'server-only';
 import { findActiveAccessSessionByTokenHash } from '@incept/db/access';
 import { hashAccessCredential } from './crypto';
 import { readAccessSessionToken } from './session-cookie';
+import { traceNavigation } from '@/server/navigation-timing';
 
 export type CurrentViewer =
   | { role: 'guest' }
@@ -18,16 +19,15 @@ export type CurrentViewer =
 
 // 获取当前访问者信息
 export async function getCurrentViewer(): Promise<CurrentViewer> {
-  const token = await readAccessSessionToken();
+  const token = await traceNavigation('session_cookie', readAccessSessionToken);
 
   if (!token) {
     return { role: 'guest' };
   }
 
   // 查询数据库中是否存在与该 token 对应的有效访问会话
-  const session = await findActiveAccessSessionByTokenHash(
-    hashAccessCredential(token),
-  );
+  const session = await traceNavigation('prisma_session', () =>
+    findActiveAccessSessionByTokenHash(hashAccessCredential(token)));
 
   if (!session) {
     return { role: 'guest' };

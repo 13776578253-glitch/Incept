@@ -3,10 +3,14 @@ import {cleanup,render} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
 import {afterEach,expect,it,vi} from 'vitest';
 import zh from '../../../../messages/zh/docs.json';
+import navigation from '../../../../messages/zh/navigation.json';
 import type {DocsLibraryEntryModel} from '../types';
 import {DocsLibraryTable} from '../components/docs-library-table';
 
-vi.mock('next/link',()=>({default:(props:{href:string;children:ReactNode})=><a href={props.href}>{props.children}</a>}));
+vi.mock('next/link',()=>({
+  default:(props:{href:string;children:ReactNode})=><a href={props.href}>{props.children}</a>,
+  useLinkStatus: () => ({ pending: false }),
+}));
 
 afterEach(cleanup);
 
@@ -19,7 +23,7 @@ const entry:DocsLibraryEntryModel={
 };
 
 function renderTable(entries:DocsLibraryEntryModel[]){
-  return render(<NextIntlClientProvider locale="zh" messages={{docs:zh}}><DocsLibraryTable entries={entries}/></NextIntlClientProvider>);
+  return render(<NextIntlClientProvider locale="zh" messages={{docs:zh,navigation}}><DocsLibraryTable entries={entries}/></NextIntlClientProvider>);
 }
 
 function cells(){return Array.from(document.querySelectorAll('tbody tr td')).map(td=>td.textContent);}

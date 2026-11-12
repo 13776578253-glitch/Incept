@@ -51,6 +51,38 @@ describe('dashboard publishing boundary', () => {
     expect((await dashboardUsageGet(new Request('http://site/api/dashboard/usage?refresh=1'))).status).toBe(403);
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
+  it('revalidates the projected snapshot and keeps role and range validators separate', async () => {
+    const snapshot = emptyDashboard('7d');
+    snapshot.totals.totalTokens = 42;
+    mocks.read.mockResolvedValue(snapshot);
+    const url = 'http://site/api/dashboard/usage?range=7d';
+    const first = await dashboardUsageGet(new Request(url));
+    const tag = first.headers.get('etag')!;
+    expect(tag).toBeTruthy();
+    expect(await first.json()).toEqual(publicDashboardSummary(snapshot));
+
+    const same = await dashboardUsageGet(new Request(url, { headers: { 'If-None-Match': tag } }));
+    expect(same.status).toBe(304);
+    expect(await same.text()).toBe('');
+    expect(same.headers.get('cache-control')).toBe('no-store');
+    expect(same.headers.get('vary')).toBe('Cookie');
+
+    const pro = await dashboardUsageGet(new Request(url, { headers: { 'If-None-Match': tag } }), undefined, true);
+    expect(pro.status).toBe(200);
+    expect(pro.headers.get('etag')).not.toBe(tag);
+
+    const newer = { ...snapshot, totals: { ...snapshot.totals, totalTokens: 43 } };
+    mocks.read.mockResolvedValue(newer);
+    const changed = await dashboardUsageGet(new Request(url, { headers: { 'If-None-Match': tag } }));
+    expect(changed.status).toBe(200);
+    expect((await changed.json()).totals.totalTokens).toBe(43);
+
+    mocks.read.mockResolvedValue(emptyDashboard('30d'));
+    const anotherRange = await dashboardUsageGet(new Request(
+      'http://site/api/dashboard/usage?range=30d', { headers: { 'If-None-Match': tag } },
+    ));
+    expect(anotherRange.status).toBe(200);
+  });
   it('owner reads retain details and forced collection has a cooldown', async () => {
     const data = { ...emptyDashboard(), collectionIssues: ['owner-only'] };
     mocks.refresh.mockResolvedValue(data);

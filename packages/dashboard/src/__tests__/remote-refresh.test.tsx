@@ -44,3 +44,23 @@ it('cloud polling keeps its own five-minute clock and pauses while the page is h
   vi.spyOn(document,'visibilityState','get').mockReturnValue('hidden');await act(async()=>{document.dispatchEvent(new Event('visibilitychange'));vi.advanceTimersByTime(600000);});expect(fetch).toHaveBeenCalledTimes(0);
   vi.spyOn(document,'visibilityState','get').mockReturnValue('visible');await act(async()=>{document.dispatchEvent(new Event('visibilitychange'));});expect(fetch).toHaveBeenCalledTimes(2);
 });
+it('ignores a delayed device response from an aborted refresh', async () => {
+  let resolveOld!: (value: ReturnType<typeof reply>) => void;
+  const fetch = vi.fn((url: string) => {
+    if (url.endsWith('/devices/status')) {
+      const statusCalls = fetch.mock.calls.filter(([value]) => value.endsWith('/devices/status')).length;
+      if (statusCalls === 1) return new Promise<ReturnType<typeof reply>>(resolve => { resolveOld = resolve; });
+      return Promise.resolve(reply({ devices: [{ id: 'new-device', name: 'New', online: true }] }));
+    }
+    return Promise.resolve(reply(initial()));
+  });
+  vi.stubGlobal('fetch', fetch);
+  const { result } = renderHook(() => useDashboardWindow(initial(), { owner: true }));
+  await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
+  await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
+  expect(result.current.remoteInfo?.devices[0].id).toBe('new-device');
+  expect(fetch.mock.calls.filter(([url]) => url.includes('/usage'))).toHaveLength(1);
+  await act(async () => { resolveOld(reply({ devices: [{ id: 'old-device', name: 'Old', online: true }] })); });
+  expect(result.current.remoteInfo?.devices[0].id).toBe('new-device');
+  expect(fetch.mock.calls.filter(([url]) => url.includes('/usage'))).toHaveLength(1);
+});
