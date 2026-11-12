@@ -34,7 +34,7 @@ it('serves trusted v2 owner reads from the published snapshot without running pr
   const response=await syncUsageGet(request('?range=30d'),'session',executor,'v2');
   expect(response.status).toBe(200);
   expect(await response.json()).toMatchObject({sync:{remote:true,readMode:'v2',dataRevision:7,intervalMs:300000}});
-  expect(mocks.readSnapshot).toHaveBeenCalledWith('30d');
+  expect(mocks.readSnapshot).toHaveBeenCalledWith('30d',{waitForFresh:false});
   expect(execute).not.toHaveBeenCalled();
 });
 
@@ -50,6 +50,7 @@ it('refuses a snapshot below the requested minimum revision',async()=>{
   mocks.readSnapshot.mockResolvedValue(snapshot(2));
   const response=await syncUsageGet(request('?minRevision=3'),'session',executor,'v2');
   expect(response.status).toBe(503);
+  expect(mocks.readSnapshot).toHaveBeenCalledWith('30d',{waitForFresh:true});
   expect(execute).not.toHaveBeenCalled();
 });
 
