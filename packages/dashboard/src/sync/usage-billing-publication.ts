@@ -54,6 +54,8 @@ function readCandidate(path: string, run: string) {
     };
     return {
       publication, priceVersions, unpriced, recorded,
+      ...(result.channelMappings ? { channelMappings: result.channelMappings,
+        excluded: result.excluded, silentUnpriced: result.silentUnpriced } : {}),
       pricingReviewDigest: hash(['billing-pricing-review/1', row.input, catalog.version, unpriced, recorded]),
     };
   } finally { db.close(); }

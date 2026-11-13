@@ -144,7 +144,8 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
   }
   if(command==='build-usage-billing'){
     return buildBillingDetails(absolute(options,'source'),absolute(options,'sidecar'),
-      absolute(options,'baseline'),required(options,'run'));
+      absolute(options,'baseline'),required(options,'run'),
+      options['channel-mappings']===undefined?undefined:absolute(options,'channel-mappings'));
   }
   if(command==='resolve-usage-identity-conflict'){
     const actor=owner(options);

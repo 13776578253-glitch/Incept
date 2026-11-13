@@ -86,6 +86,19 @@ it('retains all member references, publishes exact new rates, and pins previous 
         tokens: 400, baselineCost: expect.any(Number), unpricedTokens: 200, recordedUnknownCurrency: 1,
         estimatedByCurrency: { USD: '0.0000125' } }]) });
     await expect(build('first')).resolves.toMatchObject({ reused: true });
+    const mappings = join(directory, 'mappings.json');
+    const rules = [
+      { channel: scope.source, model: 'other/a', action: 'rate', rateModel: 'provider/a', evidence: 'fixture alias' },
+      { channel: scope.source, model: 'provider/c', action: 'exclude', evidence: 'fixture route' },
+      { channel: scope.source, model: 'provider/b', action: 'exclude', evidence: 'fixture recorded route' },
+    ];
+    writeFileSync(mappings, JSON.stringify({ version: 1, rules }));
+    const buildMapped = (run: string) => runMaintenance(['build-usage-billing', '--source=' + source, '--sidecar=' + sidecar,
+      '--baseline=' + baseline, '--run=' + run, '--channel-mappings=' + mappings], {});
+    await expect(buildMapped('first')).rejects.toThrow('BILLING_RUN_INPUT_CHANGED');
+    await expect(buildMapped('mapped')).resolves.toMatchObject({ members: 4, excluded: 1, recorded: 1,
+      estimated: 2, unpriced: 0, windows: expect.arrayContaining([expect.objectContaining({ range: 'all', tokens: 400,
+        unpricedTokens: 0, recordedUnknownCurrency: 1, estimatedByCurrency: { USD: '0.000025' } })]) });
     await expect(publish([{ ...rate, model: 'provider/c' }, { ...rate, evidence: 'overlap' }])).rejects.toThrow('USAGE_RATE_INTERVAL_OVERLAP');
 
     const db = new DatabaseSync(sidecar, { readOnly: true });
@@ -97,6 +110,10 @@ it('retains all member references, publishes exact new rates, and pins previous 
       expect(db.prepare("SELECT amount,charge_status FROM usage_billing_details WHERE run='first' AND model='other/a'").get())
         .toEqual({ amount: null, charge_status: 'unpriced' });
       expect(db.prepare("SELECT observations FROM usage_unpriced_models WHERE run='first' AND model='other/a'").get()?.observations).toBe(1);
+      expect(db.prepare("SELECT model, rate_version FROM usage_billing_details WHERE run='mapped' AND model='other/a'").get())
+        .toEqual({ model: 'other/a', rate_version: version });
+      expect(db.prepare("SELECT amount, reason FROM usage_billing_details WHERE run='mapped' AND model='provider/c'").get())
+        .toEqual({ amount: null, reason: 'CHANNEL_ROUTE_EXCLUDED' });
       const later = { ...rate, effectiveFrom: time + 1, perMillion: { input: '2' } };
       await expect(publish([later, { ...rate, model: 'provider/c' }], [{ version, at: time + 1 }]))
         .resolves.toMatchObject({ added: 2, closed: 1 });

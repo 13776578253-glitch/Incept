@@ -2,6 +2,24 @@
   "rates": [
     {
       "channel": "antigravity",
+      "model": "claude-opus-4-6",
+      "provider": "Anthropic on Google Cloud",
+      "currency": "USD",
+      "evidence": "Google Cloud global Standard token reference, cache writes require 5m versus 1h attribution; https://cloud.google.com/model-garden/partner-models/pricing ; https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/opus-4-6",
+      "effectiveFrom": 1770336000000,
+      "perMillion": {"input": "5", "output": "25", "cacheRead": "0.5", "reasoning": "25"}
+    },
+    {
+      "channel": "zcode",
+      "model": "GLM-5.3",
+      "provider": "Zhipu BigModel",
+      "currency": "USD",
+      "evidence": "Reference estimate from BigModel's CNY 8 input, 2 cache hit and 28 output per 1M, divided by the fixed CFETS midpoint CNY 6.7152 per USD on 2026-11-13 and rounded to 12 decimals. The rate applies to this reference replay from 2026-09-01, without assuming ZCode subscription spend or historical FX. https://docs.bigmodel.cn/cn/guide/start/pricing ; https://help.aliyun.com/zh/model-studio/glm-5-3-by-zhipu ; https://www.chinamoney.com.cn/chinese/bkccpr/index.html?tab=2",
+      "effectiveFrom": 1788220800000,
+      "perMillion": {"input": "1.191327138432", "output": "4.169644984513", "cacheRead": "0.297831784608", "reasoning": "4.169644984513"}
+    },
+    {
+      "channel": "antigravity",
       "model": "gemini-3.8-flash",
       "provider": "Google",
       "currency": "USD",

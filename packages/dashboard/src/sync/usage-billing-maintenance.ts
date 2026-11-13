@@ -4,10 +4,12 @@ import { initializeUsageRateCatalog, publishUsageRates, readUsageRates } from '.
 import { readSyncView, type LedgerUsageMember } from '../adapters/local/imports/sync/read';
 import { hash } from '../adapters/local/imports/identity';
 import type { UnitPricing } from '../adapters/local/types';
-import { billingComponents, decimalUnits, estimateUsage, formatDecimal, ledgerDecimal, type BillingRate } from '../domain/usage-billing';
+import { billingComponents, decimalUnits, estimateUsage, formatDecimal, ledgerDecimal,
+  type BillingComponent, type BillingRate } from '../domain/usage-billing';
 import { identityLedgerStamp } from './usage-identity-backfill';
 import { dateWindow, usageRanges } from '../domain/window';
 import { billingLedgerVersion } from './billing-ledger-version';
+import { readBillingChannelMappings } from './usage-billing-channel-mappings';
 
 type Baseline = { checkedAt: number; rates: Record<string, UnitPricing>; aliases: Record<string, string> };
 
@@ -78,9 +80,10 @@ export function publishBillingCatalog(path: string, catalogPath: string) {
 const referenceKey = (member: Pick<LedgerUsageMember, 'kind' | 'container' | 'position' | 'observation'>) =>
   JSON.stringify([member.kind, member.container, member.position, member.observation]);
 
-export function buildBillingDetails(sourcePath: string, sidecarPath: string, baselinePath: string, run: string) {
+export function buildBillingDetails(sourcePath: string, sidecarPath: string, baselinePath: string, run: string, mappingsPath?: string) {
   if (!run.trim()) throw Error('INVALID_BILLING_RUN');
   const baseline = readBillingBaseline(baselinePath);
+  const mappings = readBillingChannelMappings(mappingsPath);
   const sourceFile = statSync(sourcePath, { bigint: true }), sidecarFile = statSync(sidecarPath, { bigint: true });
   if (sourceFile.dev === sidecarFile.dev && sourceFile.ino === sidecarFile.ino) throw Error('DISTINCT_BILLING_SIDECAR_REQUIRED');
   sourcePath = realpathSync(sourcePath);
@@ -93,7 +96,8 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
       const rates = readUsageRates(db);
       const ledgerVersion = billingLedgerVersion(source);
       const input = hash(['usage-billing-run/3', baseline, stamp, rates.version, ledgerVersion.ledger,
-        db.prepare('SELECT COALESCE(MAX(id),0) AS revision FROM usage_identity_audit').get()?.revision]);
+        db.prepare('SELECT COALESCE(MAX(id),0) AS revision FROM usage_identity_audit').get()?.revision,
+        ...(mappings.rules.length ? [mappings.rules] : [])]);
       db.exec(`
         CREATE TABLE IF NOT EXISTS usage_billing_runs (
           id TEXT PRIMARY KEY, input TEXT NOT NULL, catalog TEXT NOT NULL, baseline_json TEXT NOT NULL, result_json TEXT
@@ -124,7 +128,8 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
         ON CONFLICT (run,channel,model,reason) DO UPDATE SET observations=observations+1,
           first_seen=MIN(first_seen,excluded.first_seen),last_seen=MAX(last_seen,excluded.last_seen)`);
       const totals = { members: 0, mapped: 0, unproven: 0, conflict: 0, legacy: 0,
-        recorded: 0, estimated: 0, unpriced: 0, considered: 0, consideredCurrent: 0, consideredLegacy: 0,
+        recorded: 0, estimated: 0, unpriced: 0, excluded: 0, silentUnpriced: 0,
+        considered: 0, consideredCurrent: 0, consideredLegacy: 0,
         skippedAfterCutoff: 0, skippedZeroTokens: 0 };
       const windows = usageRanges.map(range => ({ range, ...dateWindow(range, baseline.checkedAt),
         members: 0, tokens: 0, baselineCost: 0, unpricedTokens: 0, recordedUnknownCurrency: 0,
@@ -145,14 +150,24 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
           throw Error('INVALID_BILLING_DISPOSITION');
         }
         const event = { ...member.event, timestampPrecision: visible.timestampPrecision };
-        const counters = Object.fromEntries(billingComponents.map((component, i) => [component,
-          [event.inputTokens, event.outputTokens, event.cacheReadTokens, event.cacheCreationTokens, event.reasoningTokens][i]]));
+        const counters: Record<BillingComponent, number> = { input: event.inputTokens, output: event.outputTokens,
+          cacheRead: event.cacheReadTokens, cacheWrite: event.cacheCreationTokens, reasoning: event.reasoningTokens };
         const tokens = Object.values(counters).reduce((sum, count) => sum + count, 0);
         if (tokens <= 0) {
           totals.skippedZeroTokens++;
           return;
         }
-        const charge = estimateUsage(event, rates.select(event));
+        const mapping = mappings.get(event.source, event.modelName);
+        const selected = rates.select(mapping?.action === 'rate' ? { ...event, modelName: mapping.rateModel } : event);
+        const charge = mapping?.action === 'exclude' && event.recordedCost === undefined
+          ? { status: 'excluded' as const, reason: 'CHANNEL_ROUTE_EXCLUDED' }
+          : estimateUsage(event, selected);
+        const silent = charge.status === 'unpriced' && charge.reason === 'RATE_COMPONENT_MISSING'
+          && mapping?.action === 'silence-missing-cache-write' && selected && counters.cacheWrite > 0
+          && selected.rate.perMillion.cacheWrite === undefined
+          && billingComponents.every(component => component === 'cacheWrite' || counters[component] === 0
+            || selected.rate.perMillion[component] !== undefined);
+        if (silent) totals.silentUnpriced++;
         insert.run(run, referenceKey(member), row?.event_id ?? null, disposition, event.source, event.modelName,
           visible.projectKey, visible.dateKey, JSON.stringify(counters), ledgerDecimal(visible.cost), visible.missingPricing ? 0 : 1,
           charge.status, 'currency' in charge ? charge.currency : null, 'amount' in charge ? charge.amount : null,
@@ -160,14 +175,14 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
         totals.members++;
         totals[disposition]++;
         totals[charge.status]++;
-        if (charge.status === 'unpriced') noteUnpriced.run(run, event.source, event.modelName, charge.reason,
+        if (charge.status === 'unpriced' && !silent) noteUnpriced.run(run, event.source, event.modelName, charge.reason,
           event.timestampMs, event.timestampMs);
         for (const window of windows) {
           if ((window.range !== 'all' && visible.dateKey < window.from) || visible.dateKey > window.to) continue;
           window.members++;
           window.tokens += tokens;
           window.baselineCost += visible.cost;
-          if (charge.status === 'unpriced') window.unpricedTokens += tokens;
+          if (charge.status === 'unpriced' && !silent) window.unpricedTokens += tokens;
           if (charge.status === 'recorded' && charge.currency === null) window.recordedUnknownCurrency++;
           if (charge.status === 'estimated') {
             const units = decimalUnits(charge.amount, 24);
@@ -179,6 +194,7 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
       const indexedMembers = Number(db.prepare('SELECT COUNT(*) AS n FROM usage_ledger_identity').get()?.n);
       if (indexedMembers !== totals.consideredCurrent) throw Error('BILLING_VISIBLE_MEMBER_COUNT_MISMATCH');
       const result = { ok: true, run, ...ledgerVersion, catalog: rates.version, indexedMembers, ...totals,
+        ...(mappings.rules.length ? { channelMappings: mappings.rules } : {}),
         windows: windows.map(({ range, members, tokens, baselineCost, unpricedTokens, recordedUnknownCurrency, estimated }) =>
           ({ range, members, tokens, baselineCost, unpricedTokens, recordedUnknownCurrency,
             estimatedByCurrency: Object.fromEntries([...estimated].map(([currency, amount]) => [currency, formatDecimal(amount, 24)])) })) };

@@ -167,6 +167,8 @@ node packages/dashboard/dist/sync-maintenance.mjs resolve-usage-identity-conflic
 
 用同一份旧覆盖配置演练 revision 843 时，27 个费率版本可重复发布，第二次新增 0 项。四窗口的 Token 和旧金额与此前演练逐项一致。54,475 条明细中，41,543 条产生 USD 参考估算，6,840 条保留来源金额及未知币种，6,092 条仍缺价，分属 15 组。两类 Codex auto-review 占 3,301 条，Claude Opus 5.5 缓存写分项占 67 条，其余待确认模型、路由或价目条件。本次无 `DAY_RATE_AMBIGUOUS`，并单独核对了 DeepSeek 峰时边界、中秋国庆和调休周六。
 
+2026-11-14 已按渠道规则处理上述清单，详见[计费对账汇报](./2026-11-14-dashboard-billing-channel-review.md)。`build-usage-billing` 默认使用[渠道映射](../../packages/dashboard/src/sync/usage-billing-channel-mappings.json)，可通过 `--channel-mappings=<绝对路径>` 提供完整替代文件。规则按渠道和原始模型键精确匹配，解析后的规则随新批次存档。更新费率或渠道映射时使用新 `--run`。
+
 ### Owner 灰度读取
 
 用灰度目标环境的同版本快照完成四窗口对账，并审核待发布目录后，在隔离旁路库生成待审报告。命令会列出四个窗口的基线、各币种估算、缺价分组和币种未知的来源费用分组，并返回费率审阅摘要。
