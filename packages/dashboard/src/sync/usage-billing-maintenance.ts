@@ -10,6 +10,39 @@ import { dateWindow, usageRanges } from '../domain/window';
 
 type Baseline = { checkedAt: number; rates: Record<string, UnitPricing>; aliases: Record<string, string> };
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizedEntries<T>(entries: Record<string, T>) {
+  const normalized = new Map<string, T>();
+  for (const [key, value] of Object.entries(entries)) {
+    const model = key.trim().toLowerCase();
+    if (!model || ['__proto__', 'constructor', 'prototype'].includes(model)) throw Error('INVALID_BILLING_BASELINE_KEY');
+    if (normalized.has(model) && hash(normalized.get(model)) !== hash(value)) throw Error('DUPLICATE_BILLING_BASELINE_KEY');
+    normalized.set(model, value);
+  }
+  return Object.fromEntries(normalized);
+}
+
+function readBillingBaseline(path: string): Baseline {
+  const input: unknown = JSON.parse(readFileSync(path, 'utf8'));
+  if (!isObject(input) || typeof input.checkedAt !== 'number' || !Number.isSafeInteger(input.checkedAt)
+    || input.checkedAt <= 0 || !isObject(input.rates) || !isObject(input.aliases)) throw Error('INVALID_BILLING_BASELINE');
+  for (const value of Object.values(input.rates)) {
+    if (!isObject(value) || typeof value.inputPerMillion !== 'number' || typeof value.outputPerMillion !== 'number'
+      || !Object.values(value).every(rate => typeof rate === 'number' && Number.isFinite(rate) && rate >= 0)) {
+      throw Error('INVALID_BILLING_BASELINE_RATE');
+    }
+  }
+  const aliases = Object.fromEntries(Object.entries(input.aliases).map(([key, value]) => {
+    if (typeof value !== 'string' || !value.trim()) throw Error('INVALID_BILLING_BASELINE_ALIAS');
+    return [key, value.trim()];
+  }));
+  return { checkedAt: input.checkedAt, rates: normalizedEntries(input.rates as Record<string, UnitPricing>),
+    aliases: normalizedEntries(aliases) };
+}
+
 function writeSidecar<T>(path: string, action: (db: DatabaseSync) => T): T {
   const db = new DatabaseSync(realpathSync(path));
   try {
@@ -32,7 +65,7 @@ function writeSidecar<T>(path: string, action: (db: DatabaseSync) => T): T {
 
 export function publishBillingCatalog(path: string, catalogPath: string) {
   const catalog = JSON.parse(readFileSync(catalogPath, 'utf8')) as { rates: BillingRate[]; close?: { version: string; at: number }[] };
-  if (!Array.isArray(catalog.rates) || (catalog.close !== undefined && !Array.isArray(catalog.close))) {
+  if (!catalog || !Array.isArray(catalog.rates) || (catalog.close !== undefined && !Array.isArray(catalog.close))) {
     throw Error('INVALID_BILLING_CATALOG');
   }
   return writeSidecar(path, db => {
@@ -45,10 +78,8 @@ const referenceKey = (member: Pick<LedgerUsageMember, 'kind' | 'container' | 'po
   JSON.stringify([member.kind, member.container, member.position, member.observation]);
 
 export function buildBillingDetails(sourcePath: string, sidecarPath: string, baselinePath: string, run: string) {
-  const baseline = JSON.parse(readFileSync(baselinePath, 'utf8')) as Baseline;
-  if (!Number.isSafeInteger(baseline.checkedAt) || baseline.checkedAt <= 0 || !baseline.rates || !baseline.aliases) {
-    throw Error('INVALID_BILLING_BASELINE');
-  }
+  if (!run.trim()) throw Error('INVALID_BILLING_RUN');
+  const baseline = readBillingBaseline(baselinePath);
   const sourceFile = statSync(sourcePath, { bigint: true }), sidecarFile = statSync(sidecarPath, { bigint: true });
   if (sourceFile.dev === sidecarFile.dev && sourceFile.ino === sidecarFile.ino) throw Error('DISTINCT_BILLING_SIDECAR_REQUIRED');
   sourcePath = realpathSync(sourcePath);
@@ -59,7 +90,7 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
       const cursor = db.prepare('SELECT source,revision FROM usage_identity_backfill_v2 WHERE id=1').get();
       if (cursor?.source !== stamp) throw Error('BILLING_SOURCE_CHANGED');
       const rates = readUsageRates(db);
-      const input = hash(['usage-billing-run/1', baseline, stamp, rates.version,
+      const input = hash(['usage-billing-run/2', baseline, stamp, rates.version,
         db.prepare('SELECT COALESCE(MAX(id),0) AS revision FROM usage_identity_audit').get()?.revision]);
       db.exec(`
         CREATE TABLE IF NOT EXISTS usage_billing_runs (
@@ -91,24 +122,35 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
         ON CONFLICT (run,channel,model,reason) DO UPDATE SET observations=observations+1,
           first_seen=MIN(first_seen,excluded.first_seen),last_seen=MAX(last_seen,excluded.last_seen)`);
       const totals = { members: 0, mapped: 0, unproven: 0, conflict: 0, legacy: 0,
-        recorded: 0, estimated: 0, unpriced: 0 };
+        recorded: 0, estimated: 0, unpriced: 0, considered: 0, consideredCurrent: 0, consideredLegacy: 0,
+        skippedAfterCutoff: 0, skippedZeroTokens: 0 };
       const windows = usageRanges.map(range => ({ range, ...dateWindow(range, baseline.checkedAt),
-        members: 0, tokens: 0, baselineCost: 0, unpricedTokens: 0, estimated: new Map<string, bigint>() }));
+        members: 0, tokens: 0, baselineCost: 0, unpricedTokens: 0, recordedUnknownCurrency: 0,
+        estimated: new Map<string, bigint>() }));
       const revision = () => Number(source.prepare('SELECT data_revision FROM sync_meta WHERE id=1').get()?.data_revision);
       const view = readSyncView({ db: source, revision }, [], new Map(Object.entries(baseline.rates)), baseline.aliases, (member, visible) => {
-        if (visible.timestampMs > baseline.checkedAt) return;
+        totals.considered++;
+        if (member.kind === 'current') totals.consideredCurrent++;
+        else totals.consideredLegacy++;
+        if (visible.timestampMs > baseline.checkedAt) {
+          totals.skippedAfterCutoff++;
+          return;
+        }
         const row = member.kind === 'current' ? identity.get(member.container, member.position) : undefined;
         if (member.kind === 'current' && row?.observation !== member.observation) throw Error('BILLING_MEMBER_IDENTITY_MISMATCH');
         const disposition = member.kind === 'legacy' ? 'legacy' : row?.disposition;
         if (disposition !== 'mapped' && disposition !== 'unproven' && disposition !== 'conflict' && disposition !== 'legacy') {
           throw Error('INVALID_BILLING_DISPOSITION');
         }
-        const event = member.event;
-        const charge = estimateUsage(event, rates.select(event));
+        const event = { ...member.event, timestampPrecision: visible.timestampPrecision };
         const counters = Object.fromEntries(billingComponents.map((component, i) => [component,
           [event.inputTokens, event.outputTokens, event.cacheReadTokens, event.cacheCreationTokens, event.reasoningTokens][i]]));
         const tokens = Object.values(counters).reduce((sum, count) => sum + count, 0);
-        if (tokens <= 0) return; // Match the Dashboard's visible usage aggregation.
+        if (tokens <= 0) {
+          totals.skippedZeroTokens++;
+          return;
+        }
+        const charge = estimateUsage(event, rates.select(event));
         insert.run(run, referenceKey(member), row?.event_id ?? null, disposition, event.source, event.modelName,
           visible.projectKey, visible.dateKey, JSON.stringify(counters), ledgerDecimal(visible.cost), visible.missingPricing ? 0 : 1,
           charge.status, 'currency' in charge ? charge.currency : null, 'amount' in charge ? charge.amount : null,
@@ -124,17 +166,20 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
           window.tokens += tokens;
           window.baselineCost += visible.cost;
           if (charge.status === 'unpriced') window.unpricedTokens += tokens;
+          if (charge.status === 'recorded' && charge.currency === null) window.recordedUnknownCurrency++;
           if (charge.status === 'estimated') {
-            const units = decimalUnits(charge.amount, 18);
+            const units = decimalUnits(charge.amount, 24);
             window.estimated.set(charge.currency, (window.estimated.get(charge.currency) ?? 0n) + units);
           }
         }
       });
       if (view.dataRevision !== cursor.revision || identityLedgerStamp(sourcePath) !== stamp) throw Error('BILLING_SOURCE_CHANGED');
-      const result = { ok: true, run, revision: view.dataRevision, catalog: rates.version, ...totals,
-        windows: windows.map(({ range, members, tokens, baselineCost, unpricedTokens, estimated }) =>
-          ({ range, members, tokens, baselineCost, unpricedTokens,
-            estimatedByCurrency: Object.fromEntries([...estimated].map(([currency, amount]) => [currency, formatDecimal(amount, 18)])) })) };
+      const indexedMembers = Number(db.prepare('SELECT COUNT(*) AS n FROM usage_ledger_identity').get()?.n);
+      if (indexedMembers !== totals.consideredCurrent) throw Error('BILLING_VISIBLE_MEMBER_COUNT_MISMATCH');
+      const result = { ok: true, run, revision: view.dataRevision, catalog: rates.version, indexedMembers, ...totals,
+        windows: windows.map(({ range, members, tokens, baselineCost, unpricedTokens, recordedUnknownCurrency, estimated }) =>
+          ({ range, members, tokens, baselineCost, unpricedTokens, recordedUnknownCurrency,
+            estimatedByCurrency: Object.fromEntries([...estimated].map(([currency, amount]) => [currency, formatDecimal(amount, 24)])) })) };
       db.prepare('UPDATE usage_billing_runs SET result_json=? WHERE id=?').run(JSON.stringify(result), run);
       return result;
     });

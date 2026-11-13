@@ -35,6 +35,11 @@ it('computes exact estimates, applies a versioned period, and preserves recorded
     .toEqual({ status: 'unpriced', reason: 'RATE_COMPONENT_MISSING' });
   expect(estimateUsage({ ...event, recordedCost: 0 }, { version: 'first', rate: scheduled }))
     .toEqual({ status: 'recorded', currency: null, amount: '0' });
+  expect(estimateUsage({ ...event, timestampPrecision: 'day' }, { version: 'peak', rate: scheduled }))
+    .toEqual({ status: 'unpriced', reason: 'DAY_RATE_AMBIGUOUS' });
+  expect(estimateUsage(event, { version: 'discount', rate: { ...scheduled,
+    schedule: { version: 'discount', periods: [{ from: time, to: time + 1, multiplier: '0.5' }] } } }))
+    .toMatchObject({ amount: '0.00000625' });
 });
 
 it('retains all member references, publishes exact new rates, and pins previous billing runs', async () => {
@@ -49,6 +54,8 @@ it('retains all member references, publishes exact new rates, and pins previous 
         { ...event, eventId: hash('other-provider'), modelName: 'other/a' },
         { ...event, eventId: hash('same-key'), modelName: 'provider/b', recordedCost: 0 },
         { ...event, eventId: hash('conflict'), modelName: 'provider/c' },
+        { ...event, eventId: hash('zero') },
+        { ...event, eventId: hash('future'), timestampMs: time + 1 },
       ], scope);
       service.register(scope, 'billing fixture', owner);
       service.begin(header, owner);
@@ -58,10 +65,11 @@ it('retains all member references, publishes exact new rates, and pins previous 
         SELECT observation_id FROM sync_current WHERE position=?)`);
       update.run(JSON.stringify({ ...records[1], nativeKey: { source: scope.source, keyHash: ' ' } }), 1);
       update.run(JSON.stringify({ ...records[3], nativeKey: records[2].nativeKey }), 3);
+      update.run(JSON.stringify({ ...records[4], event: { ...records[4].event, inputTokens: 0 } }), 4);
     } finally { service.close(); }
 
-    expect(backfillUsageIdentity(source, sidecar, 100)).toMatchObject({ mapped: 1, unproven: 1, conflicts: 2 });
-    writeFileSync(baseline, JSON.stringify({ checkedAt: time, rates: { 'provider/a': { inputPerMillion: 2, outputPerMillion: 2 } }, aliases: {} }));
+    expect(backfillUsageIdentity(source, sidecar, 100)).toMatchObject({ mapped: 3, unproven: 1, conflicts: 2 });
+    writeFileSync(baseline, JSON.stringify({ checkedAt: time, rates: { ' Provider/A ': { inputPerMillion: 2, outputPerMillion: 2 } }, aliases: {} }));
     const publish = async (rates: BillingRate[], close?: { version: string; at: number }[]) => {
       writeFileSync(catalog, JSON.stringify({ rates, close }));
       return runMaintenance(['publish-usage-rates', '--sidecar=' + sidecar, '--catalog=' + catalog], {});
@@ -69,10 +77,13 @@ it('retains all member references, publishes exact new rates, and pins previous 
     const build = (run: string) => runMaintenance(['build-usage-billing', '--source=' + source, '--sidecar=' + sidecar,
       '--baseline=' + baseline, '--run=' + run], {});
     await expect(publish([rate])).resolves.toMatchObject({ added: 1 });
-    await expect(publish([{ ...rate, perMillion: { input: '0.1250' } }])).resolves.toMatchObject({ added: 0 });
+    const annotated = { ...rate, perMillion: { input: '0.1250' }, comment: 'operator note' };
+    await expect(publish([annotated])).resolves.toMatchObject({ added: 0 });
     await expect(build('first')).resolves.toMatchObject({ members: 4, mapped: 1, unproven: 1, conflict: 2,
+      considered: 6, skippedAfterCutoff: 1, skippedZeroTokens: 1,
       recorded: 1, estimated: 1, unpriced: 2, windows: expect.arrayContaining([{ range: 'all', members: 4,
-        tokens: 400, baselineCost: expect.any(Number), unpricedTokens: 200, estimatedByCurrency: { USD: '0.0000125' } }]) });
+        tokens: 400, baselineCost: expect.any(Number), unpricedTokens: 200, recordedUnknownCurrency: 1,
+        estimatedByCurrency: { USD: '0.0000125' } }]) });
     await expect(build('first')).resolves.toMatchObject({ reused: true });
     await expect(publish([{ ...rate, model: 'provider/c' }, { ...rate, evidence: 'overlap' }])).rejects.toThrow('USAGE_RATE_INTERVAL_OVERLAP');
 
@@ -80,6 +91,7 @@ it('retains all member references, publishes exact new rates, and pins previous 
     try {
       const version = String(db.prepare('SELECT version FROM usage_rate_versions').get()?.version);
       expect(db.prepare('SELECT COUNT(*) n FROM usage_rate_versions').get()?.n).toBe(1);
+      expect(db.prepare("SELECT baseline_amount FROM usage_billing_details WHERE run='first' AND model='provider/a'").get()?.baseline_amount).toBe('0.0002');
       expect(db.prepare("SELECT COUNT(*) n FROM usage_billing_details WHERE run='first' AND event_id IS NULL").get()?.n).toBe(3);
       expect(db.prepare("SELECT amount,charge_status FROM usage_billing_details WHERE run='first' AND model='other/a'").get())
         .toEqual({ amount: null, charge_status: 'unpriced' });
@@ -91,6 +103,21 @@ it('retains all member references, publishes exact new rates, and pins previous 
       await expect(build('reestimate')).resolves.toMatchObject({ estimated: 2, unpriced: 1 });
       expect(db.prepare("SELECT amount,rate_version FROM usage_billing_details WHERE run='first' AND model='provider/a'").get())
         .toEqual({ amount: '0.0000125', rate_version: version });
+      const decision = join(directory, 'decision.json');
+      const collisions = db.prepare(`SELECT scope,position,observation,origin,anchor_kind,anchor_value
+        FROM usage_ledger_identity_disposition WHERE disposition='conflict' ORDER BY position`).all();
+      writeFileSync(decision, JSON.stringify({ origin: collisions[0].origin,
+        anchor: { kind: collisions[0].anchor_kind, value: collisions[0].anchor_value },
+        members: collisions.map(({ scope, position, observation }) => ({
+          scope, position, observation, replacement: { kind: 'usage-row/1', value: observation },
+        })) }));
+      const resolve = () => runMaintenance(['resolve-usage-identity-conflict', '--sidecar=' + sidecar,
+        '--decision=' + decision, '--owner-confirm=I_AM_THE_OWNER', '--reason=fixture evidence'], {});
+      await expect(resolve()).resolves.toMatchObject({ members: 2, reused: false });
+      await expect(resolve()).resolves.toMatchObject({ members: 2, reused: true });
+      await expect(build('reestimate')).rejects.toThrow('BILLING_RUN_INPUT_CHANGED');
+      await expect(build('reviewed')).resolves.toMatchObject({ mapped: 3, conflict: 0, members: 4 });
+      expect(db.prepare('SELECT COUNT(*) n FROM usage_identity_conflicts').get()?.n).toBe(1);
     } finally { db.close(); }
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });

@@ -55,8 +55,10 @@ describe('non-blocking dashboard history', () => {
     await cache.saveDashboardSnapshot(data(90_000));
     let finish!: (value: TokenDashboardData) => void;
     mocked.collect.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(data());
-    const normal = refreshDashboardSnapshot(), forced = refreshDashboardSnapshot({ force: true });
-    await vi.waitFor(() => expect(mocked.collect).toHaveBeenCalledTimes(1)); finish(data());
+    const normal = refreshDashboardSnapshot();
+    await vi.waitFor(() => expect(mocked.collect).toHaveBeenCalledTimes(1));
+    const forced = refreshDashboardSnapshot({ force: true });
+    finish(data());
     await normal; await forced;
     expect(mocked.collect.mock.calls.map(call => call[2])).toEqual([false, true]);
   });

@@ -15,6 +15,7 @@ import {listReviewSummaries} from '../adapters/local/imports/sync/reviews';
 import {auditAcceptedReviews,auditDigest,auditReport} from './review-audit';
 import {backfillUsageIdentity} from './usage-identity-backfill';
 import {buildBillingDetails,publishBillingCatalog} from './usage-billing-maintenance';
+import {resolveIdentityConflict} from './usage-identity-resolution';
 import type {SyncActor} from '../domain/sync';
 import type {TokenDashboardData,UsageRange} from '../domain';
 
@@ -40,7 +41,7 @@ function required(options:Options,key:string) {
   return value;
 }
 
-function owner(options:Options):SyncActor {
+function owner(options:Options):Extract<SyncActor,{role:'owner'}> {
   if(options['owner-confirm']!==OWNER_CONFIRMATION)throw new MaintenanceError('OWNER_CONFIRMATION_REQUIRED');
   const reason=required(options,'reason');
   if(reason.length>2000)throw new MaintenanceError('REASON_TOO_LONG');
@@ -143,6 +144,10 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
   if(command==='build-usage-billing'){
     return buildBillingDetails(absolute(options,'source'),absolute(options,'sidecar'),
       absolute(options,'baseline'),required(options,'run'));
+  }
+  if(command==='resolve-usage-identity-conflict'){
+    const actor=owner(options);
+    return resolveIdentityConflict(absolute(options,'sidecar'),absolute(options,'decision'),actor.subject,actor.reason);
   }
   if(command==='audit-accepted-reviews'){
     const source=absolute(options,'source'),id=options.id===undefined?undefined:Number(options.id);

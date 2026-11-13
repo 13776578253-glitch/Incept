@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
-import { TRANSFER_SOURCES, type TransferEvent } from '../../domain/imports';
-import { billingComponents, decimalUnits, formatDecimal, type BillingRate } from '../../domain/usage-billing';
+import { TRANSFER_SOURCES } from '../../domain/imports';
+import { billingComponents, billingInterval, decimalUnits, formatDecimal, type BillingRate, type BillingUsage } from '../../domain/usage-billing';
 import { hash } from './imports/identity';
 
 export function initializeUsageRateCatalog(db: DatabaseSync) {
@@ -45,15 +45,18 @@ export function publishUsageRates(db: DatabaseSync, rates: readonly BillingRate[
       !Number.isSafeInteger(period.from) || !Number.isSafeInteger(period.to) || period.to <= period.from
       || period.from < rate.effectiveFrom || (rate.effectiveTo !== undefined && period.to > rate.effectiveTo)
       || (i > 0 && period.from < schedule.periods[i - 1].to)
-      || !Number.isSafeInteger(period.multiplier) || period.multiplier < 1))) {
+      || decimalUnits(String(period.multiplier), 6) <= 0n))) {
       throw Error('INVALID_USAGE_RATE_SCHEDULE');
     }
     const entries = Object.entries(rate.perMillion);
     if (!entries.length || entries.some(([key]) => !billingComponents.some(component => component === key))) {
       throw Error('INVALID_USAGE_RATE_COMPONENTS');
     }
-    const normalized: BillingRate = { ...rate,
-      perMillion: Object.fromEntries(entries.map(([key, value]) => [key, formatDecimal(decimalUnits(value, 12), 12)])) };
+    const { channel, model, provider, currency, evidence, effectiveFrom, effectiveTo } = rate;
+    const normalized: BillingRate = { channel, model, provider, currency, evidence, effectiveFrom, effectiveTo,
+      perMillion: Object.fromEntries(entries.map(([key, value]) => [key, formatDecimal(decimalUnits(value, 12), 12)])),
+      ...(schedule ? { schedule: { version: schedule.version, periods: schedule.periods.map(({ from, to, multiplier }) =>
+        ({ from, to, multiplier: formatDecimal(decimalUnits(String(multiplier), 6), 6) })) } } : {}) };
     const version = hash(['usage-rate/1', normalized]);
     if (get.get(version)) continue;
     const to = rate.effectiveTo ?? null;
@@ -77,9 +80,11 @@ export function readUsageRates(db: DatabaseSync) {
   }
   return {
     version: hash(['usage-rate-catalog/1', versions]),
-    select(event: TransferEvent) {
+    select(event: BillingUsage) {
+      if (!Number.isSafeInteger(event.timestampMs) || event.timestampMs <= 0) return undefined;
+      const [start, end] = billingInterval(event);
       return byModel.get(JSON.stringify([event.source, event.modelName]))?.find(({ rate }) =>
-        rate.effectiveFrom <= event.timestampMs && (rate.effectiveTo === undefined || event.timestampMs < rate.effectiveTo));
+        rate.effectiveFrom <= start && (rate.effectiveTo === undefined || end <= rate.effectiveTo));
     },
   };
 }
