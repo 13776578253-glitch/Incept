@@ -162,9 +162,13 @@ node packages/dashboard/dist/sync-maintenance.mjs resolve-usage-identity-conflic
 
 ```text
 node packages/dashboard/dist/sync-maintenance.mjs review-usage-billing-read --sidecar=<旁路库> --run=<批次名> --report=<待审报告JSON>
-node packages/dashboard/dist/sync-maintenance.mjs publish-usage-billing-read --sidecar=<旁路库> --run=<批次名> --approval=<验收JSON> --output=<新发布JSON> --owner-confirm=I_AM_THE_OWNER --reason=<发布原因>
+node packages/dashboard/dist/sync-maintenance.mjs publish-usage-billing-read --sidecar=<旁路库> --run=<批次名> --approval=<验收JSON> --output=<新发布JSON> --owner-confirm=I_AM_THE_OWNER --actor=<操作者标识> --reason=<发布原因>
 ```
 
 验收 JSON 绑定 `input`、`revision`、`ledger`、`asOf`、`catalog` 和 `pricingReviewDigest`。 `windows` 填写同期现网采集的四个 `{ range, tokens, baselineCost }`，`baselineEvidence` 填写来源。 `pricingEvidence` 引用对生产费率及报告中缺价、币种未知分组的审阅结果。命令核对四个窗口数值和审阅摘要，空费率目录或目录变更均拒绝发布。先发布到新文件，再将 Web 配置指向已发布文件。
 
 默认关闭。灰度环境设置 `INCEPT_BILLING_READ_MODE=owner` 和 `INCEPT_BILLING_PUBLICATION_FILE`，由 Owner 访问 `GET /api/dashboard/billing?range=14d`。接口读取已发布汇总，账本 revision、可见谱系或旧导入状态变化时返回 503。响应包含 `asOf`、按币种分列的 `estimatedByCurrency`、币种未知的记录笔数 `recordedUnknownCurrency` 和 `unpricedTokens`。金额保持十进制字符串。币种未知的旧金额留在私有明细库。关掉该开关可撤回 Owner 试读，现有 Dashboard 继续使用原读取路径。
+
+发布文件的 `approval` 区保存 CLI 填报的操作者标识、发布原因、发布时间、两项证据引用及费率审阅摘要。Owner API 仅返回汇总字段。早期生成的无审计发布文件需要重新发布。证据字段填写归档引用，避免写入凭据。
+
+试读期间，新的同步提交可能立即使发布过期。验收时安排同一账本版本的观察窗口，或在下一笔提交后重新生成、审核并发布。长期接入页面前再实现自动刷新及陈旧数据状态。开启真实环境试读前，另须完成 `pnpm build` 和两项业务数据验收。

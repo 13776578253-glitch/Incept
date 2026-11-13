@@ -10,9 +10,13 @@ const isCount = (value: unknown) => typeof value === 'number' && Number.isSafeIn
 const isDigest = (value: unknown) => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 
 function validPublication(data: BillingPublication) {
+  const approval = data?.approval;
   return data?.version === 1 && typeof data.run === 'string' && !!data.run.trim()
     && isCount(data.revision) && isDigest(data.input) && isDigest(data.catalog) && isDigest(data.ledger)
     && Number.isFinite(Date.parse(data.asOf))
+    && !!approval && [approval.actor, approval.reason, approval.baselineEvidence, approval.pricingEvidence]
+      .every(value => typeof value === 'string' && !!value.trim())
+    && Number.isFinite(Date.parse(approval.publishedAt)) && isDigest(approval.pricingReviewDigest)
     && Array.isArray(data.windows) && data.windows.length === usageRanges.length
     && usageRanges.every(range => data.windows.some(window => window?.range === range && isCount(window.members)
       && isCount(window.tokens) && isCount(window.recordedUnknownCurrency) && window.recordedUnknownCurrency <= window.members

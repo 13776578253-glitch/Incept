@@ -129,13 +129,20 @@ it('retains all member references, publishes exact new rates, and pins previous 
         pricingEvidence: 'fixture price review', ...overrides,
       }));
       const publishRead = () => runMaintenance(['publish-usage-billing-read', '--sidecar=' + sidecar, '--run=reviewed',
-        '--approval=' + approval, '--output=' + publication, '--owner-confirm=I_AM_THE_OWNER', '--reason=fixture'], {});
+        '--approval=' + approval, '--output=' + publication, '--owner-confirm=I_AM_THE_OWNER', '--actor=fixture-operator', '--reason=fixture'], {});
       approve({ windows: report.publication.windows.slice(0, 3) });
       await expect(publishRead()).rejects.toThrow('BILLING_BASELINE_APPROVAL_MISMATCH');
       approve({ pricingReviewDigest: 'stale' });
       await expect(publishRead()).rejects.toThrow('BILLING_PRICING_APPROVAL_MISMATCH');
       approve();
       await expect(publishRead()).resolves.toMatchObject({ ok: true, run: 'reviewed' });
+      const artifact = JSON.parse(readFileSync(publication, 'utf8'));
+      expect(artifact.approval).toMatchObject({ actor: 'fixture-operator', reason: 'fixture',
+        baselineEvidence: 'fixture dashboard response', pricingEvidence: 'fixture price review',
+        pricingReviewDigest: report.pricingReviewDigest, publishedAt: expect.any(String) });
+      const unaudited = join(directory, 'unaudited.json');
+      writeFileSync(unaudited, JSON.stringify({ ...artifact, approval: undefined }));
+      await expect(readPublishedBilling('all', source, unaudited)).rejects.toThrow('INVALID_BILLING_PUBLICATION');
       const result = await readPublishedBilling('all', source, publication);
       expect(result).toEqual({ run: 'reviewed', revision: report.publication.revision, catalog: report.publication.catalog,
         asOf: new Date(time).toISOString(), range: 'all', members: 4, tokens: 400, unpricedTokens: 100,

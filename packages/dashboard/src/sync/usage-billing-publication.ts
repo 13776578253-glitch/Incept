@@ -5,8 +5,9 @@ import { hash } from '../adapters/local/imports/identity';
 import { readUsageRates } from '../adapters/local/usage-rate-catalog';
 import { usageRanges } from '../domain/window';
 import type { BillingReadWindow } from '../domain/usage-billing-read';
+import type { SyncActor } from '../domain/sync';
 
-export type BillingPublication = {
+type BillingCandidate = {
   version: 1;
   run: string;
   input: string;
@@ -16,6 +17,20 @@ export type BillingPublication = {
   asOf: string;
   windows: (BillingReadWindow & { baselineCost: number })[];
 };
+
+export type BillingPublication = BillingCandidate & {
+  approval: {
+    actor: string;
+    reason: string;
+    publishedAt: string;
+    baselineEvidence: string;
+    pricingEvidence: string;
+    pricingReviewDigest: string;
+  };
+};
+
+const isEvidence = (value: unknown): value is string =>
+  typeof value === 'string' && !!value.trim() && value.length <= 2_000;
 
 function readCandidate(path: string, run: string) {
   const db = new DatabaseSync(path, { readOnly: true });
@@ -33,7 +48,7 @@ function readCandidate(path: string, run: string) {
       WHERE run=? ORDER BY channel,model,reason`).all(run);
     const recorded = db.prepare(`SELECT source,model,COUNT(*) observations FROM usage_billing_details
       WHERE run=? AND charge_status='recorded' AND currency IS NULL GROUP BY source,model ORDER BY source,model`).all(run);
-    const publication: BillingPublication = {
+    const publication: BillingCandidate = {
       version: 1, run, input: row.input, revision: result.revision, ledger: result.ledger, catalog: catalog.version,
       asOf: new Date(baseline.checkedAt).toISOString(), windows: result.windows,
     };
@@ -51,13 +66,14 @@ export function reviewBillingRead(path: string, run: string, report: string) {
     pricingReviewDigest: candidate.pricingReviewDigest, unpricedGroups: candidate.unpriced.length };
 }
 
-export function publishBillingRead(path: string, run: string, approvalPath: string, output: string) {
+export function publishBillingRead(path: string, run: string, approvalPath: string, output: string,
+  actor: Extract<SyncActor, { role: 'owner' }>) {
   const candidate = readCandidate(path, run);
   const approval = JSON.parse(readFileSync(approvalPath, 'utf8'));
   const { publication } = candidate;
   if (!approval || approval.input !== publication.input || approval.revision !== publication.revision
     || approval.ledger !== publication.ledger || approval.asOf !== publication.asOf
-    || typeof approval.baselineEvidence !== 'string' || !approval.baselineEvidence.trim()
+    || !isEvidence(approval.baselineEvidence)
     || !Array.isArray(approval.windows) || approval.windows.length !== usageRanges.length
     || !usageRanges.every(range => {
       const expected = approval.windows.find((window: { range?: unknown }) => window?.range === range);
@@ -66,15 +82,20 @@ export function publishBillingRead(path: string, run: string, approvalPath: stri
     })) throw Error('BILLING_BASELINE_APPROVAL_MISMATCH');
   if (candidate.priceVersions < 1 || approval.catalog !== publication.catalog
     || approval.pricingReviewDigest !== candidate.pricingReviewDigest
-    || typeof approval.pricingEvidence !== 'string' || !approval.pricingEvidence.trim()) {
+    || !isEvidence(approval.pricingEvidence)) {
     throw Error('BILLING_PRICING_APPROVAL_MISMATCH');
   }
+  const artifact: BillingPublication = { ...publication, approval: {
+    actor: actor.subject, reason: actor.reason, publishedAt: new Date().toISOString(),
+    baselineEvidence: approval.baselineEvidence, pricingEvidence: approval.pricingEvidence,
+    pricingReviewDigest: candidate.pricingReviewDigest,
+  } };
   const lock = output + '.lock';
   const temporary = output + '.' + randomUUID() + '.tmp';
   writeFileSync(lock, '', { flag: 'wx', mode: 0o600 });
   try {
     if (existsSync(output)) throw Error('BILLING_PUBLICATION_ALREADY_EXISTS');
-    writeFileSync(temporary, JSON.stringify(publication), { flag: 'wx', mode: 0o600 });
+    writeFileSync(temporary, JSON.stringify(artifact), { flag: 'wx', mode: 0o600 });
     renameSync(temporary, output);
   } finally {
     if (existsSync(temporary)) unlinkSync(temporary);

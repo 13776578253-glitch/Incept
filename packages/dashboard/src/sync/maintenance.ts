@@ -154,9 +154,10 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
     return reviewBillingRead(absolute(options,'sidecar'),required(options,'run'),absolute(options,'report'));
   }
   if(command==='publish-usage-billing-read'){
-    owner(options);
+    const actor={...owner(options),subject:required(options,'actor')};
+    if(actor.subject.length>200)throw new MaintenanceError('ACTOR_TOO_LONG');
     return publishBillingRead(absolute(options,'sidecar'),required(options,'run'),
-      absolute(options,'approval'),absolute(options,'output'));
+      absolute(options,'approval'),absolute(options,'output'),actor);
   }
   if(command==='audit-accepted-reviews'){
     const source=absolute(options,'source'),id=options.id===undefined?undefined:Number(options.id);
