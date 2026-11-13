@@ -10,4 +10,5 @@ export type IdentityEvidence = Readonly<{
 
 export type IdentityResolution =
   | { status: 'resolved'; eventId: string }
+  | { status: 'unresolved-anchor'; anchor: UsageAnchor }
   | { status: 'conflict'; eventIds: string[] };

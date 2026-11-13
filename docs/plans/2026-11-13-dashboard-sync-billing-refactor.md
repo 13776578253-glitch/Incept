@@ -118,4 +118,8 @@
 node packages/dashboard/dist/sync-maintenance.mjs backfill-usage-identity --source=<账本副本绝对路径> --output=<旁路库绝对路径> --limit=1000
 ```
 
-重复执行到 `complete: true`。每批持久化游标和映射，最后一批返回 `seen`、`mapped`、`unproven` 和 `conflicts`。用 `usage_ledger_identity_disposition` 查看逐成员结果，用 `usage_ledger_coverage` 查看已扫描会话的 v2 范围证据。已有原生锚点或计数点可以映射，缺锚点和同一锚点重复占用的记录保留原引用供审查。当前入口覆盖 v2 可见成员，旧导入、隐藏代际及金额对账在后续批次补齐。
+重复执行到 `complete: true`。扫描阶段先保存成员和覆盖证据，确定全部冲突后，再分批物化唯一绑定。`scanComplete` 表示冲突扫描结束，`bindingsWritten` 表示本次新增绑定，最后一批返回 `seen`、`mapped`、`unproven`、`conflicts` 和 `history`。早期版本生成的旁路库应以新输出路径重跑。
+
+用 `usage_ledger_identity_disposition` 查看逐成员结果，用 `usage_identity_conflicts` 查锚点碰撞。冲突及缺锚点成员保留原引用，碰撞锚点不产生规范绑定或有效变更审计。覆盖记录包括零成员可见代际和已接受审查的可见祖先引用。历史验收表保留已迁移的 v1 批次及成员、投影、隐藏及回滚代际的父链和变化、审查及其成员引用。逐版本金额对账由后续计费批次完成。
+
+已用归档的 Phase 0B 生产审计副本（revision 843）跑完整轮回填。54,475 个可见成员中，52,830 个可映射，1,645 个由 aiusage 读取的 Antigravity 成员缺少锚点，碰撞为零。保留 356 个隐藏代际、31 条审查及 28,191 个审查成员，11 个可见 scope 的祖先链关联 22 条已接受审查。未发现缺失观察或 manifest。再次执行的新增绑定为零。该副本没有 v1 批次和已回滚代际，这两类路径由合成回归覆盖。分来源的可映射量为 Antigravity 25,829、Codex 15,020、DeepSeek Harness 6,672、CommandCode 4,980、OpenCode 215、Claude Code 67、ZCode 41、Gemini CLI 6。

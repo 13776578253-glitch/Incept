@@ -3,7 +3,9 @@ import type { IdentityEvidence, IdentityResolution, UsageAnchor } from '../../do
 import { hash } from './imports/identity';
 
 export class UsageIdentityIndex {
-  constructor(private readonly db: DatabaseSync) {
+  constructor(private readonly db: DatabaseSync) {}
+
+  static initialize(db: DatabaseSync): UsageIdentityIndex {
     db.exec(`
       CREATE TABLE IF NOT EXISTS usage_events (
         origin TEXT NOT NULL, event_id TEXT NOT NULL, PRIMARY KEY (origin, event_id)
@@ -13,12 +15,17 @@ export class UsageIdentityIndex {
         PRIMARY KEY (origin, kind, value),
         FOREIGN KEY (origin, event_id) REFERENCES usage_events (origin, event_id)
       );
+      CREATE TABLE IF NOT EXISTS usage_identity_conflicts (
+        origin TEXT NOT NULL, kind TEXT NOT NULL, value TEXT NOT NULL, members INTEGER NOT NULL,
+        PRIMARY KEY (origin, kind, value)
+      );
       CREATE TABLE IF NOT EXISTS usage_identity_audit (
         id INTEGER PRIMARY KEY, origin TEXT NOT NULL, kind TEXT NOT NULL, value TEXT NOT NULL,
         previous_event_id TEXT, event_id TEXT NOT NULL, actor TEXT NOT NULL, evidence TEXT NOT NULL,
         changed_at INTEGER NOT NULL
       );
     `);
+    return new UsageIdentityIndex(db);
   }
 
   lookup(origin: string, anchor: UsageAnchor): string | undefined {
@@ -27,10 +34,14 @@ export class UsageIdentityIndex {
   }
 
   resolve(origin: string, anchors: readonly UsageAnchor[], evidence: IdentityEvidence): IdentityResolution {
-    if (!origin || !anchors.length || anchors.some(anchor => !anchor.value) || !evidence.actor || !evidence.reference) {
+    if (!origin.trim() || !anchors.length || anchors.some(anchor => !anchor.value.trim())
+      || !evidence.actor.trim() || !evidence.reference.trim()) {
       throw Error('IDENTITY_EVIDENCE_REQUIRED');
     }
     return this.atomic(() => {
+      const conflicts = this.db.prepare('SELECT 1 FROM usage_identity_conflicts WHERE origin=? AND kind=? AND value=?');
+      const blocked = anchors.find(anchor => conflicts.get(origin, anchor.kind, anchor.value));
+      if (blocked) return { status: 'unresolved-anchor', anchor: blocked };
       const eventIds = new Set(anchors.map(anchor => this.lookup(origin, anchor)).filter(id => id !== undefined));
       if (eventIds.size > 1) return { status: 'conflict', eventIds: [...eventIds].sort() };
 
@@ -53,16 +64,19 @@ export class UsageIdentityIndex {
     expectedEventId: string;
     eventId: string;
     evidence: IdentityEvidence;
+    split?: true;
   }): boolean {
     const { origin, anchor, expectedEventId, eventId, evidence } = input;
-    if (!evidence.actor || !evidence.reference) throw Error('IDENTITY_EVIDENCE_REQUIRED');
+    if (!origin.trim() || !anchor.value.trim() || !expectedEventId.trim() || !eventId.trim()
+      || !evidence.actor.trim() || !evidence.reference.trim()) throw Error('IDENTITY_EVIDENCE_REQUIRED');
     return this.atomic(() => {
       const current = this.lookup(origin, anchor);
       if (current === eventId) return false;
       if (!current || current !== expectedEventId) throw Error('IDENTITY_BINDING_CHANGED');
-      if (!this.db.prepare('SELECT 1 FROM usage_events WHERE origin=? AND event_id=?').get(origin, eventId)) {
-        throw Error('IDENTITY_TARGET_NOT_FOUND');
-      }
+      const target = this.db.prepare('SELECT 1 FROM usage_events WHERE origin=? AND event_id=?').get(origin, eventId);
+      if (input.split && target) throw Error('IDENTITY_SPLIT_TARGET_EXISTS');
+      if (input.split) this.db.prepare('INSERT INTO usage_events VALUES (?, ?)').run(origin, eventId);
+      else if (!target) throw Error('IDENTITY_TARGET_NOT_FOUND');
       this.db.prepare('UPDATE usage_event_anchors SET event_id=? WHERE origin=? AND kind=? AND value=?')
         .run(eventId, origin, anchor.kind, anchor.value);
       this.audit(origin, anchor, current, eventId, evidence);
@@ -85,7 +99,7 @@ export class UsageIdentityIndex {
       this.db.exec(nested ? 'RELEASE usage_identity' : 'COMMIT');
       return result;
     } catch (error) {
-      this.db.exec(nested ? 'ROLLBACK TO usage_identity; RELEASE usage_identity' : 'ROLLBACK');
+      if (this.db.isTransaction) this.db.exec(nested ? 'ROLLBACK TO usage_identity; RELEASE usage_identity' : 'ROLLBACK');
       throw error;
     }
   }

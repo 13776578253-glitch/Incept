@@ -2,8 +2,11 @@ import type { TransferSource } from './imports';
 
 export type UsageCoverageRange =
   | { kind: 'log'; segment: string; start: number; end: number; root: string }
+  | { kind: 'document'; locator: string; root: string; envelopeRoot: string }
   | { kind: 'keys'; domain: string; keyRoot: string; schemaHash: string; count: number }
   | { kind: 'days'; from: string; to: string; timeZone: string };
+
+export type CoverageReview = Readonly<{ id: number; code: string; successor: string }>;
 
 export type UsageCoverage = Readonly<{
   source: TransferSource;
@@ -12,6 +15,7 @@ export type UsageCoverage = Readonly<{
   reader: TransferSource | 'aiusage' | 'ccusage';
   readerVersion: string;
   snapshot: string;
+  acceptedReviews?: readonly CoverageReview[];
 }> & (
   | { status: 'complete'; ranges: readonly [UsageCoverageRange, ...UsageCoverageRange[]] }
   | { status: 'partial'; ranges: readonly UsageCoverageRange[]; reasons: readonly [string, ...string[]] }

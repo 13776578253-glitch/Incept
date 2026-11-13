@@ -133,7 +133,8 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
     return backupSqlite(absolute(options,'source'),absolute(options,'output'));
   }
   if(command==='backfill-usage-identity'){
-    return backfillUsageIdentity(absolute(options,'source'),absolute(options,'output'),Number(options.limit??1000));
+    const limit=options.limit===undefined?1000:Number(required(options,'limit'));
+    return backfillUsageIdentity(absolute(options,'source'),absolute(options,'output'),limit);
   }
   if(command==='audit-accepted-reviews'){
     const source=absolute(options,'source'),id=options.id===undefined?undefined:Number(options.id);
