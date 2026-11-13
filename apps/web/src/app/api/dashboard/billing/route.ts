@@ -1,4 +1,4 @@
-import { readPublishedBilling } from '@incept/dashboard/adapters';
+import { readPublishedBilling } from '@incept/dashboard/adapters/billing';
 import { usageRanges, type UsageRange } from '@incept/dashboard/domain';
 import { JobError, requireSyncOwner } from '@incept/db/agent';
 import { getCurrentViewer } from '@/server/auth';

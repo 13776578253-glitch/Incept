@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ read: vi.fn(), viewer: vi.fn(), requireOwner: vi.fn() }));
-vi.mock('@incept/dashboard/adapters', () => ({ readPublishedBilling: mocks.read }));
+vi.mock('@incept/dashboard/adapters/billing', () => ({ readPublishedBilling: mocks.read }));
 vi.mock('@incept/db/agent', () => ({ requireSyncOwner: mocks.requireOwner, JobError: class extends Error {
   constructor(readonly code: string, readonly status: number) { super(code); }
 } }));

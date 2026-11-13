@@ -19,6 +19,10 @@
       "types": "./src/adapters/index.ts",
       "default": "./src/adapters/index.ts"
     },
+    "./adapters/billing": {
+      "types": "./src/adapters/runtime/billing-publication.ts",
+      "default": "./src/adapters/runtime/billing-publication.ts"
+    },
     "./react": {
       "types": "./src/react/index.ts",
       "default": "./src/react/index.ts"
