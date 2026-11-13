@@ -13,6 +13,7 @@ import {loadTokenDashboardData} from '../adapters/local/loader';
 import {hash} from '../adapters/local/imports/identity';
 import {listReviewSummaries} from '../adapters/local/imports/sync/reviews';
 import {auditAcceptedReviews,auditDigest,auditReport} from './review-audit';
+import {backfillUsageIdentity} from './usage-identity-backfill';
 import type {SyncActor} from '../domain/sync';
 import type {TokenDashboardData,UsageRange} from '../domain';
 
@@ -130,6 +131,9 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
   const {command,options}=parse(argv),syncPath=env.INCEPT_SYNC_DATABASE_FILE,legacyPath=env.INCEPT_DASHBOARD_IMPORTS_FILE,home=env.INCEPT_DASHBOARD_HOME;
   if(command==='backup'){
     return backupSqlite(absolute(options,'source'),absolute(options,'output'));
+  }
+  if(command==='backfill-usage-identity'){
+    return backfillUsageIdentity(absolute(options,'source'),absolute(options,'output'),Number(options.limit??1000));
   }
   if(command==='audit-accepted-reviews'){
     const source=absolute(options,'source'),id=options.id===undefined?undefined:Number(options.id);
