@@ -22,7 +22,17 @@ export const PROVENANCE_READ_SQL='SELECT p.* FROM sync_provenance p JOIN sync_sc
 
 // O(distinct eligible legacy variants + visible v2 records), independent of the
 // number of duplicate historical batch JSON payloads. No temporary compat DB.
-export function readSyncView(service: CompatibleSyncService, native: RawUsageEvent[] = [], receiver = new Map<string,UnitPricing>(), aliases: Record<string,string> = {}) {
+export type LedgerUsageMember = {
+  kind: 'current' | 'legacy';
+  container: string;
+  position: number;
+  observation: string;
+  event: TransferEvent;
+};
+
+export function readSyncView(service: Pick<CompatibleSyncService, 'db' | 'revision'>, native: RawUsageEvent[] = [],
+  receiver = new Map<string,UnitPricing>(), aliases: Record<string,string> = {},
+  onMember?: (member: LedgerUsageMember, visible: RawUsageEvent) => void) {
   const db=service.db; db.exec('BEGIN');
   try {
     const dataRevision=service.revision(), resolve=(model:string)=>canonicalModelName(model,aliases);
@@ -38,12 +48,13 @@ export function readSyncView(service: CompatibleSyncService, native: RawUsageEve
       catalogs.set(id,{bundle,captured,mappings:JSON.parse(String(row.mappings_json)),order:Number(row.source_order)});
       updatedAt=Math.max(updatedAt,Date.parse(JSON.parse(String(row.receipt_json)).importedAt));
     }
-    const records:Array<{event:TransferEvent;catalog:NonNullable<ReturnType<typeof catalogs.get>>;batchId:string;project:string}>=[];
+    const records:Array<{event:TransferEvent;catalog:NonNullable<ReturnType<typeof catalogs.get>>;batchId:string;project:string;position:number;observation:string}>=[];
     for(const row of db.prepare(LEGACY_READ_SQL).iterate()) records.push({event:(JSON.parse(String(row.record_json)) as SyncRecord).event,
-      catalog:catalogs.get(String(row.batch_id))!,batchId:String(row.batch_id),project:String(row.project)});
+      catalog:catalogs.get(String(row.batch_id))!,batchId:String(row.batch_id),project:String(row.project),
+      position:Number(row.position),observation:String(row.observation_id)});
     const local=identityIndex(native.map(raw=>({raw,event:{...raw,eventId:nativeEventId(raw),source:raw.sourceId} as TransferEvent})),resolve), transferred=identityIndex(records,resolve);
     const seen=new Set<string>(), replacedIndexed=new Set<RawUsageEvent>(), events:RawUsageEvent[]=[], issues:string[]=[], targets=new Map(native.map(row=>[row.projectKey,row]));
-    for(const {event,catalog,batchId,project:effectiveProject} of records) {
+    for(const {event,catalog,batchId,project:effectiveProject,position,observation} of records) {
       const identity=canonicalTransferId(event); if(seen.has(identity)) continue;
       if(hasWeakIdentity(event) && transferred.hasWeak(event)) {
         const strong=transferred.related(event).filter(row=>!hasWeakIdentity(row.event));
@@ -61,9 +72,11 @@ export function readSyncView(service: CompatibleSyncService, native: RawUsageEve
       if(price && !lookupPricing(pricing,modelName)) pricing.set(modelName.toLowerCase(),price);
       const target=catalog.mappings[event.projectKey], project=target?targets.get(target):undefined,dateKey=dashboardDate(event.timestampMs);
       const labels={codex:'Codex CLI',commandcode:'CommandCode',antigravity:'Antigravity',claudeCode:'Claude Code',deepseekHarness:'DeepSeek Harness',geminiCli:'Gemini CLI',opencode:'OpenCode',zcode:'ZCode'};
-      events.push(applyCommandCodeQuota({...event,modelName,sourceId:event.source,sourceLabel:labels[event.source],deviceId:catalog.bundle.device.id,deviceLabel:catalog.bundle.device.label,importBatchId:batchId,
+      const visible = applyCommandCodeQuota({...event,modelName,sourceId:event.source,sourceLabel:labels[event.source],deviceId:catalog.bundle.device.id,deviceLabel:catalog.bundle.device.label,importBatchId:batchId,
         projectKey:effectiveProject,projectName:project?.projectName??(target?event.projectName:event.projectName+' · '+catalog.bundle.device.label),workspacePath:project?.workspacePath??event.workspacePath,
-        costSource:event.recordedCost===undefined?'calculated':'recorded',cost:event.recordedCost??computeCostFromPricing(price,event),missingPricing:event.recordedCost===undefined&&!canPriceUsage(price,event),dateKey,monthKey:dateKey.slice(0,7)}));
+        costSource:event.recordedCost===undefined?'calculated':'recorded',cost:event.recordedCost??computeCostFromPricing(price,event),missingPricing:event.recordedCost===undefined&&!canPriceUsage(price,event),dateKey,monthKey:dateKey.slice(0,7)});
+      events.push(visible);
+      onMember?.({ kind: 'legacy', container: batchId, position, observation, event }, visible);
     }
     const ancestors=new Map<string,{batchId:string;legacyEventId:string}[]>();
     for(const row of db.prepare(PROVENANCE_READ_SQL).iterate()) {
@@ -86,7 +99,9 @@ export function readSyncView(service: CompatibleSyncService, native: RawUsageEve
       const kind=record.nativeKey?'native':record.pointKey?'point':'retained',key=record.nativeKey?.keyHash??record.pointKey??hash(record);
       const supports=ancestors.get(JSON.stringify([row.scope_id,kind,key]))??ancestors.get(JSON.stringify([row.scope_id,'session',row.scope_id]))??[];
       const ancestor=(supports.find(item=>item.legacyEventId===record.event.eventId)??supports[0])?.batchId,target=targets.get(event.projectKey);
-      events.push({...event,...(target?{projectName:target.projectName,workspacePath:target.workspacePath}:{}),...(ancestor?{importBatchId:ancestor}:{})});
+      const visible = {...event,...(target?{projectName:target.projectName,workspacePath:target.workspacePath}:{}),...(ancestor?{importBatchId:ancestor}:{})};
+      events.push(visible);
+      onMember?.({ kind: 'current', container: String(row.scope_id), position: Number(row.position), observation: String(row.observation_id), event: record.event }, visible);
     }
     if(Number(db.prepare('SELECT COUNT(*) n FROM sync_legacy_quarantine').get()!.n))issues.push('LEGACY_OVERLAP_REVIEW_REQUIRED');
     const combined=[...native.filter(row=>!replacedIndexed.has(row)),...events];let tokens=0;

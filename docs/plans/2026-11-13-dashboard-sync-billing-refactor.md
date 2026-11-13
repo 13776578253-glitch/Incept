@@ -123,3 +123,20 @@ node packages/dashboard/dist/sync-maintenance.mjs backfill-usage-identity --sour
 用 `usage_ledger_identity_disposition` 查看逐成员结果，用 `usage_identity_conflicts` 查锚点碰撞。冲突及缺锚点成员保留原引用，碰撞锚点不产生规范绑定或有效变更审计。覆盖记录包括零成员可见代际和已接受审查的可见祖先引用。历史验收表保留已迁移的 v1 批次及成员、投影、隐藏及回滚代际的父链和变化、审查及其成员引用。逐版本金额对账由后续计费批次完成。
 
 已用归档的 Phase 0B 生产审计副本（revision 843）跑完整轮回填。54,475 个可见成员中，52,830 个可映射，1,645 个由 aiusage 读取的 Antigravity 成员缺少锚点，碰撞为零。保留 356 个隐藏代际、31 条审查及 28,191 个审查成员，11 个可见 scope 的祖先链关联 22 条已接受审查。未发现缺失观察或 manifest。再次执行的新增绑定为零。该副本没有 v1 批次和已回滚代际，这两类路径由合成回归覆盖。分来源的可映射量为 Antigravity 25,829、Codex 15,020、DeepSeek Harness 6,672、CommandCode 4,980、OpenCode 215、Claude Code 67、ZCode 41、Gemini CLI 6。
+
+### 版本化计费演练
+
+在同一个已完成身份回填的旁路库发布目录，再生成有独立名称的计费批次。所有路径使用绝对路径。
+
+```text
+node packages/dashboard/dist/sync-maintenance.mjs publish-usage-rates --sidecar=<旁路库> --catalog=<目录JSON>
+node packages/dashboard/dist/sync-maintenance.mjs build-usage-billing --source=<原账本副本> --sidecar=<旁路库> --baseline=<基线JSON> --run=<批次名>
+```
+
+目录 JSON 使用 `{ rates, close? }`。费率包含 `channel`、原始 `model`、`provider`、`currency`、`evidence`、毫秒时间 `effectiveFrom` 与可选 `effectiveTo`、十进制字符串 `perMillion`。计价查找使用精确渠道与完整模型键。首次见到的新模型按缺价原因归集在 `usage_unpriced_models`。需要峰谷的价格可提供规则版本及不重叠的 UTC 区间，区间外使用基础价。发布新费率时可在同一事务用 `close: [{ version, at }]` 关闭旧开放区间。重复发布相同版本可重入，冲突使整次发布回滚。旧账本随设备上报的数值价格继续作为旧口径输入。
+
+基线 JSON 使用 `{ checkedAt, rates, aliases }`，其中 `rates` 和 `aliases` 是旧读取路径实际使用的接收端费率与别名，`checkedAt` 为冻结的毫秒时间。工具从原同步库只读获取 v1 批次的费用、映射、可见性和认领证据。账本、身份审计或目录版本变更后，重估使用新批次名，旧明细和费率版本保留。
+
+费用明细按 `(批次, 成员类型, scope 或导入批次, 位置, observation)` 唯一存放。已映射事件另存规范 ID。缺锚点、碰撞和 v1 成员仍逐条保存 Token、旧费用、项目及新计价状态；重复观察按旧可见成员的实际位置对账。历史 v2 数值金额缺币种时保留原额和未知币种状态。普通身份纠正可以迁移已绑定的别名，隔离锚点的解封和人工消歧留给单独操作流程。
+
+revision 843 的本地演练生成了 54,475 条费用明细，包含全部 1,645 条缺锚点成员。该轮使用空的接收端基线与新版费率目录，6,840 条保留来源记录金额，47,635 条为未定价。该次运行用于验证成员完整性。合成 v1 导入夹具以冻结的接收端费率核对四个窗口的 Token 和旧金额。生产真实 v1 与已回滚代际组合、费率来源审查和灰度切读仍需单独验收。

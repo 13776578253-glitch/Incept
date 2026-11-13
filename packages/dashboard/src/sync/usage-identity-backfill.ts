@@ -30,15 +30,15 @@ type BindingRow = {
 };
 
 function ledgerAnchor(record: SyncRecord): UsageAnchor | undefined {
-  if (record.nativeKey) return { kind: 'native/2', value: record.nativeKey.keyHash };
-  if (record.pointKey) return { kind: 'point/2', value: record.pointKey };
+  if (record.nativeKey?.keyHash.trim()) return { kind: 'native/2', value: record.nativeKey.keyHash };
+  if (record.pointKey?.trim()) return { kind: 'point/2', value: record.pointKey };
 }
 
-function sourceStamp(path: string) {
+export function identityLedgerStamp(path: string) {
   const wal = statSync(path + '-wal', { bigint: true, throwIfNoEntry: false });
   const file = statSync(path, { bigint: true });
   return JSON.stringify([syncDatabaseFileIdentity(path), String(file.size), String(file.mtimeNs),
-    wal ? [String(wal.ino), String(wal.size), String(wal.mtimeNs)] : null]);
+    wal && wal.size > 0n ? [String(wal.ino), String(wal.size), String(wal.mtimeNs)] : null]);
 }
 
 /**
@@ -56,7 +56,7 @@ export function backfillUsageIdentity(sourcePath: string, outputPath: string, li
   if (['', '-wal', '-shm', '-journal'].some(suffix => outputPath.toLowerCase() === (sourcePath + suffix).toLowerCase())) {
     throw Error('DISTINCT_IDENTITY_OUTPUT_REQUIRED');
   }
-  const sourceIdentity = sourceStamp(sourcePath);
+  const sourceIdentity = identityLedgerStamp(sourcePath);
   const source = new DatabaseSync(sourcePath, { readOnly: true });
   try {
     source.exec('PRAGMA query_only=ON; BEGIN');
@@ -162,7 +162,7 @@ export function backfillUsageIdentity(sourcePath: string, outputPath: string, li
         }
         const last = rows[Math.min(limit, rows.length) - 1];
         if (last) output.prepare('UPDATE usage_identity_backfill_v2 SET last_scope=?, last_position=? WHERE id=1').run(last.scope_id, last.position);
-        if (sourceIdentity !== sourceStamp(sourcePath)) throw Error('IDENTITY_BACKFILL_INPUT_CHANGED');
+        if (sourceIdentity !== identityLedgerStamp(sourcePath)) throw Error('IDENTITY_BACKFILL_INPUT_CHANGED');
 
         const scanComplete = rows.length <= limit;
         if (!cursor.scan_complete && scanComplete) {
@@ -201,7 +201,7 @@ export function backfillUsageIdentity(sourcePath: string, outputPath: string, li
           FROM usage_ledger_identity_disposition
         `).get() : undefined;
         const history = complete ? identityHistorySummary(output) : undefined;
-        if (sourceIdentity !== sourceStamp(sourcePath)) throw Error('IDENTITY_BACKFILL_INPUT_CHANGED');
+        if (sourceIdentity !== identityLedgerStamp(sourcePath)) throw Error('IDENTITY_BACKFILL_INPUT_CHANGED');
         output.exec('COMMIT');
         return { ok: true, revision, scanComplete, complete, processed: Math.min(rows.length, limit),
           bindingsWritten: Math.min(pending.length, limit), ...totals, ...(history ? { history } : {}) };

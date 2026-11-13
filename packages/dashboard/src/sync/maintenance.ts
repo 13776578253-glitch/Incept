@@ -14,6 +14,7 @@ import {hash} from '../adapters/local/imports/identity';
 import {listReviewSummaries} from '../adapters/local/imports/sync/reviews';
 import {auditAcceptedReviews,auditDigest,auditReport} from './review-audit';
 import {backfillUsageIdentity} from './usage-identity-backfill';
+import {buildBillingDetails,publishBillingCatalog} from './usage-billing-maintenance';
 import type {SyncActor} from '../domain/sync';
 import type {TokenDashboardData,UsageRange} from '../domain';
 
@@ -135,6 +136,13 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
   if(command==='backfill-usage-identity'){
     const limit=options.limit===undefined?1000:Number(required(options,'limit'));
     return backfillUsageIdentity(absolute(options,'source'),absolute(options,'output'),limit);
+  }
+  if(command==='publish-usage-rates'){
+    return publishBillingCatalog(absolute(options,'sidecar'),absolute(options,'catalog'));
+  }
+  if(command==='build-usage-billing'){
+    return buildBillingDetails(absolute(options,'source'),absolute(options,'sidecar'),
+      absolute(options,'baseline'),required(options,'run'));
   }
   if(command==='audit-accepted-reviews'){
     const source=absolute(options,'source'),id=options.id===undefined?undefined:Number(options.id);

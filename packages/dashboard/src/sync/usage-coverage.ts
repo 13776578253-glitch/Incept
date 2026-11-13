@@ -23,20 +23,21 @@ export function coverageFromV2(manifest: SyncManifest, acceptedReviews: readonly
     ...(acceptedReviews.length ? { acceptedReviews } : {}),
   };
   const { status } = manifest.read;
+  const reviewReasons = acceptedReviews.length ? ['V2_ACCEPTED_REVIEW_IN_VISIBLE_LINEAGE'] : [];
   if (status === 'failed' || status === 'unavailable') return { ...scope, status, reason: 'V2_READ_' + status.toUpperCase() };
   // A partial v2 manifest does not tell us which individual ranges completed.
-  if (status === 'partial') return { ...scope, status, ranges: [], reasons: ['V2_PARTIAL_WITHOUT_RANGE_STATUS'] };
+  if (status === 'partial') return { ...scope, status, ranges: [], reasons: ['V2_PARTIAL_WITHOUT_RANGE_STATUS', ...reviewReasons] };
   const { beforeRoot, afterRoot, snapshotRoot, inventoryHash } = manifest.read;
   if (beforeRoot !== afterRoot || beforeRoot !== snapshotRoot
     || snapshotRoot !== hash(manifest.ranges.map(range => [range.locatorHash, range.root]))
     || inventoryHash !== hash(manifest.ranges.map(range => range.locatorHash).sort())) {
-    return { ...scope, status: 'partial', ranges: [], reasons: ['V2_SNAPSHOT_PROOF_MISMATCH'] };
+    return { ...scope, status: 'partial', ranges: [], reasons: ['V2_SNAPSHOT_PROOF_MISMATCH', ...reviewReasons] };
   }
   const ranges = manifest.ranges.map(rangeEvidence).filter(range => range !== undefined);
   const [first, ...rest] = ranges;
   const reasons: string[] = [];
   if (!first || ranges.length !== manifest.ranges.length) reasons.push('V2_RANGE_EVIDENCE_MISSING');
-  if (acceptedReviews.length) reasons.push('V2_ACCEPTED_REVIEW_IN_VISIBLE_LINEAGE');
+  reasons.push(...reviewReasons);
   if (manifest.scope.source === 'antigravity'
     && (ranges.length !== 1 || first?.kind !== 'keys' || first.count !== manifest.recordCount)) {
     reasons.push('V2_USAGE_KEY_COUNT_UNPROVEN');
