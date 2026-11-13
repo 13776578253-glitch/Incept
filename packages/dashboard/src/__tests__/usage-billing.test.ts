@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -14,6 +14,7 @@ import { PHASE0_NOW, phase0Export, phase0Import, writePhase0Home } from './fixtu
 import { projection } from '../sync/projection';
 import { loadLocalPricingMap } from '../adapters/local/pricing';
 import { readLocalOverrides } from '../adapters/local/overrides';
+import { readPublishedBilling } from '../adapters/runtime/billing-publication';
 
 const time = Date.UTC(2026, 9, 15);
 const scope = { source: 'antigravity', sessionId: 'billing', originId: 'origin',
@@ -118,6 +119,32 @@ it('retains all member references, publishes exact new rates, and pins previous 
       await expect(build('reestimate')).rejects.toThrow('BILLING_RUN_INPUT_CHANGED');
       await expect(build('reviewed')).resolves.toMatchObject({ mapped: 3, conflict: 0, members: 4 });
       expect(db.prepare('SELECT COUNT(*) n FROM usage_identity_conflicts').get()?.n).toBe(1);
+
+      const reportPath = join(directory, 'billing-review.json');
+      await runMaintenance(['review-usage-billing-read', '--sidecar=' + sidecar, '--run=reviewed', '--report=' + reportPath], {});
+      const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+      const approval = join(directory, 'billing-approval.json'), publication = join(directory, 'billing-publication.json');
+      const approve = (overrides: object = {}) => writeFileSync(approval, JSON.stringify({
+        ...report.publication, pricingReviewDigest: report.pricingReviewDigest, baselineEvidence: 'fixture dashboard response',
+        pricingEvidence: 'fixture price review', ...overrides,
+      }));
+      const publishRead = () => runMaintenance(['publish-usage-billing-read', '--sidecar=' + sidecar, '--run=reviewed',
+        '--approval=' + approval, '--output=' + publication, '--owner-confirm=I_AM_THE_OWNER', '--reason=fixture'], {});
+      approve({ windows: report.publication.windows.slice(0, 3) });
+      await expect(publishRead()).rejects.toThrow('BILLING_BASELINE_APPROVAL_MISMATCH');
+      approve({ pricingReviewDigest: 'stale' });
+      await expect(publishRead()).rejects.toThrow('BILLING_PRICING_APPROVAL_MISMATCH');
+      approve();
+      await expect(publishRead()).resolves.toMatchObject({ ok: true, run: 'reviewed' });
+      const result = await readPublishedBilling('all', source, publication);
+      expect(result).toEqual({ run: 'reviewed', revision: report.publication.revision, catalog: report.publication.catalog,
+        asOf: new Date(time).toISOString(), range: 'all', members: 4, tokens: 400, unpricedTokens: 100,
+        recordedUnknownCurrency: 1, estimatedByCurrency: { USD: '0.000025' } });
+      const replaced = new CompatibleSyncService(source);
+      try {
+        replaced.db.exec("UPDATE sync_scopes SET fenced=1");
+        await expect(readPublishedBilling('all', source, publication)).rejects.toThrow('BILLING_PUBLICATION_STALE');
+      } finally { replaced.close(); }
     } finally { db.close(); }
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });

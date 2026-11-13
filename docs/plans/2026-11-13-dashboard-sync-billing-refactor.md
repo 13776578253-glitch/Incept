@@ -155,3 +155,16 @@ node packages/dashboard/dist/sync-maintenance.mjs resolve-usage-identity-conflic
 组合演练从归档的真实 v1 导入库迁入一份有效批次和一份已回滚批次，再对隔离的 revision 843 副本执行一次 v2 代际回滚。演练库到达 revision 846，历史旁路保留 2 个 v1 批次、7,951 个 v1 成员和 1 个已回滚 v2 代际。计费明细包含 54,475 个 v2 可见成员及 7,944 个可见 v1 成员，共 62,419 条。本轮验证可见性与成员数。归档中的旧覆盖配置早于 revision 843，尚缺能与该 revision 对齐的完整接收端费率及审核过的生产费率目录。正式金额对账和缺价清单审核完成后再启用灰度切读。
 
 将归档旧覆盖配置用于 revision 843 的对照运行时，四个窗口的 Token 与空基线运行一致，全量旧金额由 791.755555983196 变为 1,260.7328740932082。两次均保留 54,475 条明细；空新版目录下，47,635 条未定价记录归入 32 个渠道、模型与原因组合。这两份摘要用于核对基线输入对旧金额的影响，正式对账采用与 revision 843 同期的完整接收端基线。
+
+### Owner 灰度读取
+
+完成同期基线和生产费率目录验收后，先在隔离旁路库生成待审报告。命令会列出四个窗口的基线、各币种估算、缺价分组和币种未知的来源费用分组，并返回费率审阅摘要。
+
+```text
+node packages/dashboard/dist/sync-maintenance.mjs review-usage-billing-read --sidecar=<旁路库> --run=<批次名> --report=<待审报告JSON>
+node packages/dashboard/dist/sync-maintenance.mjs publish-usage-billing-read --sidecar=<旁路库> --run=<批次名> --approval=<验收JSON> --output=<新发布JSON> --owner-confirm=I_AM_THE_OWNER --reason=<发布原因>
+```
+
+验收 JSON 绑定 `input`、`revision`、`ledger`、`asOf`、`catalog` 和 `pricingReviewDigest`。 `windows` 填写同期现网采集的四个 `{ range, tokens, baselineCost }`，`baselineEvidence` 填写来源。 `pricingEvidence` 引用对生产费率及报告中缺价、币种未知分组的审阅结果。命令核对四个窗口数值和审阅摘要，空费率目录或目录变更均拒绝发布。先发布到新文件，再将 Web 配置指向已发布文件。
+
+默认关闭。灰度环境设置 `INCEPT_BILLING_READ_MODE=owner` 和 `INCEPT_BILLING_PUBLICATION_FILE`，由 Owner 访问 `GET /api/dashboard/billing?range=14d`。接口读取已发布汇总，账本 revision、可见谱系或旧导入状态变化时返回 503。响应包含 `asOf`、按币种分列的 `estimatedByCurrency`、币种未知的记录笔数 `recordedUnknownCurrency` 和 `unpricedTokens`。金额保持十进制字符串。币种未知的旧金额留在私有明细库。关掉该开关可撤回 Owner 试读，现有 Dashboard 继续使用原读取路径。

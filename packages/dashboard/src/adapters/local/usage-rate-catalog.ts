@@ -45,7 +45,7 @@ export function publishUsageRates(db: DatabaseSync, rates: readonly BillingRate[
       !Number.isSafeInteger(period.from) || !Number.isSafeInteger(period.to) || period.to <= period.from
       || period.from < rate.effectiveFrom || (rate.effectiveTo !== undefined && period.to > rate.effectiveTo)
       || (i > 0 && period.from < schedule.periods[i - 1].to)
-      || decimalUnits(String(period.multiplier), 6) <= 0n))) {
+      || decimalUnits(String(period.multiplier), 6) <= BigInt(0)))) {
       throw Error('INVALID_USAGE_RATE_SCHEDULE');
     }
     const entries = Object.entries(rate.perMillion);

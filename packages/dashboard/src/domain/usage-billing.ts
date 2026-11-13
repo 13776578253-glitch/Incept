@@ -66,17 +66,18 @@ export function estimateUsage(event: BillingUsage, selected?: { version: string;
   const [start, end] = billingInterval(event);
   const periods = selected.rate.schedule?.periods.filter(period => period.from < end && period.to > start) ?? [];
   const multipliers = new Set<bigint>();
+  const baseMultiplier = BigInt(1_000_000);
   let coveredThrough = start;
   for (const period of periods) {
-    if (period.from > coveredThrough) multipliers.add(1_000_000n);
+    if (period.from > coveredThrough) multipliers.add(baseMultiplier);
     multipliers.add(decimalUnits(String(period.multiplier), 6));
     coveredThrough = period.to;
   }
-  if (coveredThrough < end) multipliers.add(1_000_000n);
+  if (coveredThrough < end) multipliers.add(baseMultiplier);
   if (multipliers.size !== 1) return { status: 'unpriced', reason: 'DAY_RATE_AMBIGUOUS' };
   const [multiplier] = multipliers;
   const counts = [event.inputTokens, event.outputTokens, event.cacheReadTokens, event.cacheCreationTokens, event.reasoningTokens];
-  let total = 0n;
+  let total = BigInt(0);
   for (const [index, component] of billingComponents.entries()) {
     const count = counts[index], rate = selected.rate.perMillion[component];
     if (!Number.isSafeInteger(count) || count < 0) throw Error('INVALID_BILLING_COUNTER');

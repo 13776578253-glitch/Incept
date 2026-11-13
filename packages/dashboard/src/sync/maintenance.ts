@@ -16,6 +16,7 @@ import {auditAcceptedReviews,auditDigest,auditReport} from './review-audit';
 import {backfillUsageIdentity} from './usage-identity-backfill';
 import {buildBillingDetails,publishBillingCatalog} from './usage-billing-maintenance';
 import {resolveIdentityConflict} from './usage-identity-resolution';
+import {publishBillingRead,reviewBillingRead} from './usage-billing-publication';
 import type {SyncActor} from '../domain/sync';
 import type {TokenDashboardData,UsageRange} from '../domain';
 
@@ -148,6 +149,14 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
   if(command==='resolve-usage-identity-conflict'){
     const actor=owner(options);
     return resolveIdentityConflict(absolute(options,'sidecar'),absolute(options,'decision'),actor.subject,actor.reason);
+  }
+  if(command==='review-usage-billing-read'){
+    return reviewBillingRead(absolute(options,'sidecar'),required(options,'run'),absolute(options,'report'));
+  }
+  if(command==='publish-usage-billing-read'){
+    owner(options);
+    return publishBillingRead(absolute(options,'sidecar'),required(options,'run'),
+      absolute(options,'approval'),absolute(options,'output'));
   }
   if(command==='audit-accepted-reviews'){
     const source=absolute(options,'source'),id=options.id===undefined?undefined:Number(options.id);

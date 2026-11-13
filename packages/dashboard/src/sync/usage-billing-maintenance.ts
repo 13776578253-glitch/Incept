@@ -7,6 +7,7 @@ import type { UnitPricing } from '../adapters/local/types';
 import { billingComponents, decimalUnits, estimateUsage, formatDecimal, ledgerDecimal, type BillingRate } from '../domain/usage-billing';
 import { identityLedgerStamp } from './usage-identity-backfill';
 import { dateWindow, usageRanges } from '../domain/window';
+import { billingLedgerVersion } from './billing-ledger-version';
 
 type Baseline = { checkedAt: number; rates: Record<string, UnitPricing>; aliases: Record<string, string> };
 
@@ -90,7 +91,8 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
       const cursor = db.prepare('SELECT source,revision FROM usage_identity_backfill_v2 WHERE id=1').get();
       if (cursor?.source !== stamp) throw Error('BILLING_SOURCE_CHANGED');
       const rates = readUsageRates(db);
-      const input = hash(['usage-billing-run/2', baseline, stamp, rates.version,
+      const ledgerVersion = billingLedgerVersion(source);
+      const input = hash(['usage-billing-run/3', baseline, stamp, rates.version, ledgerVersion.ledger,
         db.prepare('SELECT COALESCE(MAX(id),0) AS revision FROM usage_identity_audit').get()?.revision]);
       db.exec(`
         CREATE TABLE IF NOT EXISTS usage_billing_runs (
@@ -176,7 +178,7 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
       if (view.dataRevision !== cursor.revision || identityLedgerStamp(sourcePath) !== stamp) throw Error('BILLING_SOURCE_CHANGED');
       const indexedMembers = Number(db.prepare('SELECT COUNT(*) AS n FROM usage_ledger_identity').get()?.n);
       if (indexedMembers !== totals.consideredCurrent) throw Error('BILLING_VISIBLE_MEMBER_COUNT_MISMATCH');
-      const result = { ok: true, run, revision: view.dataRevision, catalog: rates.version, indexedMembers, ...totals,
+      const result = { ok: true, run, ...ledgerVersion, catalog: rates.version, indexedMembers, ...totals,
         windows: windows.map(({ range, members, tokens, baselineCost, unpricedTokens, recordedUnknownCurrency, estimated }) =>
           ({ range, members, tokens, baselineCost, unpricedTokens, recordedUnknownCurrency,
             estimatedByCurrency: Object.fromEntries([...estimated].map(([currency, amount]) => [currency, formatDecimal(amount, 24)])) })) };
