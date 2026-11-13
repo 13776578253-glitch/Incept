@@ -8,4 +8,4 @@ Reason: this is the original v1 schema draft for the `docs` product line, writte
 
 The DBML that accompanied this draft moved with it, to [2026-05-06-docs-database-draft.dbml](../../history/dbml/2026-05-06-docs-database-draft.dbml).
 
-For the current model: the ER view is [2026-09-23-current-database-schema.dbml](../../history/dbml/2026-09-23-current-database-schema.dbml) and the source of truth is `packages/db/prisma/schema.prisma`. The data-layer rules that still apply are in [db-layer-architecture-rules.md](./db-layer-architecture-rules.md).
+For the current model: the ER view is [2026-11-04-current-database-schema.dbml](../../history/dbml/2026-11-04-current-database-schema.dbml) and the source of truth is `packages/db/prisma/schema.prisma`. The data-layer rules that still apply are in [db-layer-architecture-rules.md](./db-layer-architecture-rules.md).

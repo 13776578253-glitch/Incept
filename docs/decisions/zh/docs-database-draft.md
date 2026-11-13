@@ -8,4 +8,4 @@
 
 随本文一起的 DBML 也已归档到 [2026-05-06-docs-database-draft.dbml](../../history/dbml/2026-05-06-docs-database-draft.dbml)。
 
-当前有效的模型：ER 视图见 [2026-09-23-current-database-schema.dbml](../../history/dbml/2026-09-23-current-database-schema.dbml)，唯一真相是 `packages/db/prisma/schema.prisma`；仍然生效的数据层规则见 [db-layer-architecture-rules.md](./db-layer-architecture-rules.md)。
+当前有效的模型：ER 视图见 [2026-11-04-current-database-schema.dbml](../../history/dbml/2026-11-04-current-database-schema.dbml)，唯一真相是 `packages/db/prisma/schema.prisma`；仍然生效的数据层规则见 [db-layer-architecture-rules.md](./db-layer-architecture-rules.md)。

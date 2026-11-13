@@ -143,7 +143,7 @@ It holds two kinds of material, described below.
 #### `history/dbml/`
 
 Every snapshot is dated and named `<date>-<subject>.dbml`. The current model snapshot is
-`2026-09-23-current-database-schema.dbml`; older ones are kept as history and are not the
+`2026-11-04-current-database-schema.dbml`; older ones are kept as history and are not the
 current model.
 
 #### `history/decisions/`
@@ -161,7 +161,7 @@ Current contents:
 
 | Archived document | Superseded by |
 | --- | --- |
-| `docs-database-draft.md` (en + zh) and `dbml/2026-05-06-docs-database-draft.dbml` | The shipped schema; see `packages/db/prisma/schema.prisma` and the 2026-09-23 snapshot |
+| `docs-database-draft.md` (en + zh) and `dbml/2026-05-06-docs-database-draft.dbml` | The shipped schema; see `packages/db/prisma/schema.prisma` and the 2026-11-04 snapshot |
 | `docs-prisma-postgres-workflow.md` (en + zh) | `decisions/*/prisma-basics-and-evolution.md` and `decisions/*/db-layer-architecture-rules.md` |
 | `docs-authoring-markdown-like-rules.md` (zh) | `decisions/zh/docs-markdown-like-authoring-syntax.md` and the docs-push README |
 | `docs-import-flow-rules.md` (zh) | `runbooks/*/docs-content-import.md` |
