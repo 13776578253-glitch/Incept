@@ -3,6 +3,14 @@ import { TRANSFER_SOURCES } from '../../domain/imports';
 import { billingComponents, billingInterval, decimalUnits, formatDecimal, type BillingRate, type BillingUsage } from '../../domain/usage-billing';
 import { hash } from './imports/identity';
 
+function normalizeComponents(perMillion: BillingRate['perMillion']) {
+  const entries = Object.entries(perMillion);
+  if (!entries.length || entries.some(([key]) => !billingComponents.some(component => component === key))) {
+    throw Error('INVALID_USAGE_RATE_COMPONENTS');
+  }
+  return Object.fromEntries(entries.map(([key, value]) => [key, formatDecimal(decimalUnits(value, 12), 12)]));
+}
+
 export function initializeUsageRateCatalog(db: DatabaseSync) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS usage_rate_versions (
@@ -48,13 +56,15 @@ export function publishUsageRates(db: DatabaseSync, rates: readonly BillingRate[
       || decimalUnits(String(period.multiplier), 6) <= BigInt(0)))) {
       throw Error('INVALID_USAGE_RATE_SCHEDULE');
     }
-    const entries = Object.entries(rate.perMillion);
-    if (!entries.length || entries.some(([key]) => !billingComponents.some(component => component === key))) {
-      throw Error('INVALID_USAGE_RATE_COMPONENTS');
+    const longPrompt = rate.longPrompt;
+    if (longPrompt !== undefined && (!Number.isSafeInteger(longPrompt?.aboveInputTokens) || longPrompt.aboveInputTokens <= 0)) {
+      throw Error('INVALID_USAGE_RATE_LONG_PROMPT');
     }
     const { channel, model, provider, currency, evidence, effectiveFrom, effectiveTo } = rate;
     const normalized: BillingRate = { channel, model, provider, currency, evidence, effectiveFrom, effectiveTo,
-      perMillion: Object.fromEntries(entries.map(([key, value]) => [key, formatDecimal(decimalUnits(value, 12), 12)])),
+      perMillion: normalizeComponents(rate.perMillion),
+      ...(longPrompt ? { longPrompt: { aboveInputTokens: longPrompt.aboveInputTokens,
+        perMillion: normalizeComponents(longPrompt.perMillion) } } : {}),
       ...(schedule ? { schedule: { version: schedule.version, periods: schedule.periods.map(({ from, to, multiplier }) =>
         ({ from, to, multiplier: formatDecimal(decimalUnits(String(multiplier), 6), 6) })) } } : {}) };
     const version = hash(['usage-rate/1', normalized]);

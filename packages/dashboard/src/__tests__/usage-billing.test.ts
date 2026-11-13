@@ -41,6 +41,14 @@ it('computes exact estimates, applies a versioned period, and preserves recorded
   expect(estimateUsage(event, { version: 'discount', rate: { ...scheduled,
     schedule: { version: 'discount', periods: [{ from: time, to: time + 1, multiplier: '0.5' }] } } }))
     .toMatchObject({ amount: '0.00000625' });
+  const tiered = { version: 'tiered', rate: { ...rate, perMillion: { input: '2', cacheRead: '0.2', output: '12' },
+    longPrompt: { aboveInputTokens: 200_000, perMillion: { input: '4', cacheRead: '0.4', output: '18' } } } };
+  const boundary = { ...event, inputTokens: 180_000, cacheReadTokens: 20_000, outputTokens: 1_000 };
+  expect(estimateUsage(boundary, tiered)).toMatchObject({ amount: '0.376' });
+  const long = { ...boundary, cacheReadTokens: 20_001 };
+  expect(estimateUsage(long, tiered)).toMatchObject({ amount: '0.7460004' });
+  expect(estimateUsage({ ...long, timestampPrecision: 'day' }, tiered))
+    .toEqual({ status: 'unpriced', reason: 'DAY_RATE_AMBIGUOUS' });
 });
 
 it('retains all member references, publishes exact new rates, and pins previous billing runs', async () => {
@@ -86,9 +94,12 @@ it('retains all member references, publishes exact new rates, and pins previous 
         tokens: 400, baselineCost: expect.any(Number), unpricedTokens: 200, recordedUnknownCurrency: 1,
         estimatedByCurrency: { USD: '0.0000125' } }]) });
     await expect(build('first')).resolves.toMatchObject({ reused: true });
+    const crossChannelRate = { ...rate, channel: 'deepseekHarness' as const, model: 'official/a',
+      longPrompt: { aboveInputTokens: 99, perMillion: { input: '0.25' } } };
     const mappings = join(directory, 'mappings.json');
     const rules = [
-      { channel: scope.source, model: 'other/a', action: 'rate', rateModel: 'provider/a', evidence: 'fixture alias' },
+      { channel: scope.source, model: 'other/a', action: 'rate', rateModel: 'official/a',
+        rateChannel: 'deepseekHarness', evidence: 'fixture alias' },
       { channel: scope.source, model: 'provider/c', action: 'exclude', evidence: 'fixture route' },
       { channel: scope.source, model: 'provider/b', action: 'exclude', evidence: 'fixture recorded route' },
     ];
@@ -96,22 +107,24 @@ it('retains all member references, publishes exact new rates, and pins previous 
     const buildMapped = (run: string) => runMaintenance(['build-usage-billing', '--source=' + source, '--sidecar=' + sidecar,
       '--baseline=' + baseline, '--run=' + run, '--channel-mappings=' + mappings], {});
     await expect(buildMapped('first')).rejects.toThrow('BILLING_RUN_INPUT_CHANGED');
+    await expect(publish([crossChannelRate])).resolves.toMatchObject({ added: 1 });
     await expect(buildMapped('mapped')).resolves.toMatchObject({ members: 4, excluded: 1, recorded: 1,
       estimated: 2, unpriced: 0, windows: expect.arrayContaining([expect.objectContaining({ range: 'all', tokens: 400,
-        unpricedTokens: 0, recordedUnknownCurrency: 1, estimatedByCurrency: { USD: '0.000025' } })]) });
+        unpricedTokens: 0, recordedUnknownCurrency: 1, estimatedByCurrency: { USD: '0.0000375' } })]) });
     await expect(publish([{ ...rate, model: 'provider/c' }, { ...rate, evidence: 'overlap' }])).rejects.toThrow('USAGE_RATE_INTERVAL_OVERLAP');
 
     const db = new DatabaseSync(sidecar, { readOnly: true });
     try {
-      const version = String(db.prepare('SELECT version FROM usage_rate_versions').get()?.version);
-      expect(db.prepare('SELECT COUNT(*) n FROM usage_rate_versions').get()?.n).toBe(1);
+      const version = String(db.prepare("SELECT version FROM usage_rate_versions WHERE model='provider/a'").get()?.version);
+      const officialVersion = String(db.prepare("SELECT version FROM usage_rate_versions WHERE model='official/a'").get()?.version);
+      expect(db.prepare('SELECT COUNT(*) n FROM usage_rate_versions').get()?.n).toBe(2);
       expect(db.prepare("SELECT baseline_amount FROM usage_billing_details WHERE run='first' AND model='provider/a'").get()?.baseline_amount).toBe('0.0002');
       expect(db.prepare("SELECT COUNT(*) n FROM usage_billing_details WHERE run='first' AND event_id IS NULL").get()?.n).toBe(3);
       expect(db.prepare("SELECT amount,charge_status FROM usage_billing_details WHERE run='first' AND model='other/a'").get())
         .toEqual({ amount: null, charge_status: 'unpriced' });
       expect(db.prepare("SELECT observations FROM usage_unpriced_models WHERE run='first' AND model='other/a'").get()?.observations).toBe(1);
       expect(db.prepare("SELECT model, rate_version FROM usage_billing_details WHERE run='mapped' AND model='other/a'").get())
-        .toEqual({ model: 'other/a', rate_version: version });
+        .toEqual({ model: 'other/a', rate_version: officialVersion });
       expect(db.prepare("SELECT amount, reason FROM usage_billing_details WHERE run='mapped' AND model='provider/c'").get())
         .toEqual({ amount: null, reason: 'CHANNEL_ROUTE_EXCLUDED' });
       const later = { ...rate, effectiveFrom: time + 1, perMillion: { input: '2' } };

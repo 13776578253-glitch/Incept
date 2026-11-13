@@ -1,6 +1,57 @@
 {
   "rates": [
     {
+      "channel": "codex",
+      "model": "kimi-k3",
+      "provider": "Moonshot AI",
+      "currency": "USD",
+      "evidence": "Kimi K3 official USD real-time reference selected by Incept policy; https://www.kimi.com/resources/kimi-k3-pricing ; https://forum.moonshot.ai/t/kimi-k3-is-here-our-most-capable-model/480",
+      "effectiveFrom": 1784764800000,
+      "perMillion": {
+        "input": "3",
+        "output": "15",
+        "cacheRead": "0.3",
+        "reasoning": "15"
+      }
+    },
+    {
+      "channel": "deepseekHarness",
+      "model": "mimo-v2.6-pro",
+      "provider": "Xiaomi",
+      "currency": "USD",
+      "evidence": "Xiaomi official overseas real-time API USD reference; https://mimo.mi.com/models/en-US/mimo-v2.6-pro ; https://mimo.mi.com/docs/en-US/updates/model",
+      "effectiveFrom": 1790121600000,
+      "perMillion": {
+        "input": "0.435",
+        "output": "0.87",
+        "cacheRead": "0.0036",
+        "reasoning": "0.87"
+      }
+    },
+    {
+      "channel": "geminiCli",
+      "model": "gemini-3.1-pro-preview",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Google Gemini API Standard paid-tier USD reference, long-prompt tier applies above 200K input tokens; https://aistudio.google.com/docs/pricing#gemini-3.1-pro-preview ; https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/",
+      "effectiveFrom": 1771545600000,
+      "perMillion": {
+        "input": "2",
+        "output": "12",
+        "cacheRead": "0.2",
+        "reasoning": "12"
+      },
+      "longPrompt": {
+        "aboveInputTokens": 200000,
+        "perMillion": {
+          "input": "4",
+          "output": "18",
+          "cacheRead": "0.4",
+          "reasoning": "18"
+        }
+      }
+    },
+    {
       "channel": "antigravity",
       "model": "claude-opus-4-6",
       "provider": "Anthropic on Google Cloud",

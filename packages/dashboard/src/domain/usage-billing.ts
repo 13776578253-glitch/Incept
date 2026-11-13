@@ -12,11 +12,18 @@ export type BillingRate = {
   effectiveFrom: number;
   effectiveTo?: number;
   perMillion: Partial<Record<BillingComponent, string>>;
+  longPrompt?: { aboveInputTokens: number; perMillion: Partial<Record<BillingComponent, string>> };
   // An independently versioned rule can be published as explicit UTC periods.
   schedule?: { version: string; periods: { from: number; to: number; multiplier: string | number }[] };
 };
 
 export type BillingUsage = TransferEvent & { timestampPrecision?: 'event' | 'day' };
+
+export function usageComponentRates(event: BillingUsage, rate: BillingRate) {
+  const input = event.inputTokens + event.cacheReadTokens + event.cacheCreationTokens;
+  if (!rate.longPrompt || input <= rate.longPrompt.aboveInputTokens) return rate.perMillion;
+  return event.timestampPrecision === 'day' ? undefined : rate.longPrompt.perMillion;
+}
 
 export function billingInterval(event: BillingUsage): readonly [number, number] {
   if (event.timestampPrecision !== 'day') return [event.timestampMs, event.timestampMs + 1];
@@ -76,10 +83,12 @@ export function estimateUsage(event: BillingUsage, selected?: { version: string;
   if (coveredThrough < end) multipliers.add(baseMultiplier);
   if (multipliers.size !== 1) return { status: 'unpriced', reason: 'DAY_RATE_AMBIGUOUS' };
   const [multiplier] = multipliers;
+  const perMillion = usageComponentRates(event, selected.rate);
+  if (!perMillion) return { status: 'unpriced', reason: 'DAY_RATE_AMBIGUOUS' };
   const counts = [event.inputTokens, event.outputTokens, event.cacheReadTokens, event.cacheCreationTokens, event.reasoningTokens];
   let total = BigInt(0);
   for (const [index, component] of billingComponents.entries()) {
-    const count = counts[index], rate = selected.rate.perMillion[component];
+    const count = counts[index], rate = perMillion[component];
     if (!Number.isSafeInteger(count) || count < 0) throw Error('INVALID_BILLING_COUNTER');
     if (!count) continue;
     if (rate === undefined) return { status: 'unpriced', reason: 'RATE_COMPONENT_MISSING' };

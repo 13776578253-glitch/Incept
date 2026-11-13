@@ -25,6 +25,139 @@
       "model": "codex-auto-review-unpriced",
       "action": "exclude",
       "evidence": "Historical placeholder for the same internal Codex approval-review route"
+    },
+    {
+      "channel": "deepseekHarness",
+      "model": "workbuddy-ai/deepseek-v4.1-flash",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "deepseekHarness",
+      "model": "workbuddy/deepseek-v4.1-flash",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "deepseekHarness",
+      "model": "deepseek/deepseek-v4.1-flash-fast",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "deepseekHarness",
+      "model": "deepseek-v4.1-flash",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "deepseekHarness",
+      "model": "deepseek-v4.1-flash-fast",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "deepseekHarness",
+      "model": "deepseek-v4-flash-vision-exp",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "codex",
+      "model": "ccs-deepseek/deepseek-flash",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "rateChannel": "deepseekHarness",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "commandcode",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "rateChannel": "deepseekHarness",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "commandcode",
+      "model": "deepseek/deepseek-v4.1-flash-fast",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "rateChannel": "deepseekHarness",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "opencode",
+      "model": "deepseek-flash",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "rateChannel": "deepseekHarness",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "opencode",
+      "model": "deepseek-v4-flash",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "rateChannel": "deepseekHarness",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "opencode",
+      "model": "deepseek-v4-flash-vision-exp",
+      "action": "rate",
+      "rateModel": "deepseek-flash",
+      "rateChannel": "deepseekHarness",
+      "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "channel": "codex",
+      "model": "gpt/gpt-6.1-sol",
+      "action": "rate",
+      "rateModel": "gpt-6.1-sol",
+      "evidence": "Incept official-channel reference mapping; https://developers.openai.com/api/docs/models/gpt-6.1-sol"
+    },
+    {
+      "channel": "codex",
+      "model": "ccs-codex1-5x/gpt-6.1-sol",
+      "action": "rate",
+      "rateModel": "gpt-6.1-sol",
+      "evidence": "Incept official-channel reference mapping; https://developers.openai.com/api/docs/models/gpt-6.1-sol"
+    },
+    {
+      "channel": "codex",
+      "model": "workbuddy/kimi-k3-1",
+      "action": "rate",
+      "rateModel": "kimi-k3",
+      "evidence": "Incept official-channel reference mapping; https://www.kimi.com/resources/kimi-k3-pricing"
+    },
+    {
+      "channel": "deepseekHarness",
+      "model": "xiaomi/mimo-v2.6-pro",
+      "action": "rate",
+      "rateModel": "mimo-v2.6-pro",
+      "evidence": "Incept official-channel reference mapping; https://mimo.mi.com/models/en-US/mimo-v2.6-pro"
+    },
+    {
+      "channel": "commandcode",
+      "model": "xiaomi/mimo-v2.6-pro",
+      "action": "rate",
+      "rateModel": "mimo-v2.6-pro",
+      "rateChannel": "deepseekHarness",
+      "evidence": "Incept official-channel reference mapping; https://mimo.mi.com/models/en-US/mimo-v2.6-pro"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-3.8-flash-exp-b",
+      "action": "rate",
+      "rateModel": "gemini-3.8-flash",
+      "evidence": "Incept official-channel reference mapping; https://antigravity.google/blog/gemini-3-8-flash-in-google-antigravity/"
     }
   ]
 }

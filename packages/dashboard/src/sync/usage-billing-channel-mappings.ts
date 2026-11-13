@@ -3,7 +3,7 @@ import { TRANSFER_SOURCES, type TransferSource } from '../domain/imports';
 import defaults from './usage-billing-channel-mappings.json';
 
 type ChannelMapping = { channel: TransferSource; model: string; evidence: string } & (
-  | { action: 'rate'; rateModel: string }
+  | { action: 'rate'; rateModel: string; rateChannel?: TransferSource }
   | { action: 'exclude' }
   | { action: 'silence-missing-cache-write' }
 );
@@ -19,11 +19,12 @@ export function readBillingChannelMappings(path?: string) {
     if (!rule || !TRANSFER_SOURCES.includes(rule.channel) || !isText(rule.model) || !isText(rule.evidence)) {
       throw Error('INVALID_BILLING_CHANNEL_MAPPING');
     }
-    const { channel, model, evidence, action, rateModel } = rule;
+    const { channel, model, evidence, action, rateModel, rateChannel } = rule;
     const id = key(channel, model);
     if (rules.has(id)) throw Error('DUPLICATE_BILLING_CHANNEL_MAPPING');
-    if (action === 'rate' && isText(rateModel) && rateModel !== model) {
-      rules.set(id, { channel, model, evidence, action, rateModel });
+    if (action === 'rate' && isText(rateModel) && (rateChannel === undefined || TRANSFER_SOURCES.includes(rateChannel))
+      && (rateModel !== model || (rateChannel !== undefined && rateChannel !== channel))) {
+      rules.set(id, { channel, model, evidence, action, rateModel, ...(rateChannel === undefined ? {} : { rateChannel }) });
     } else if (action === 'exclude' || action === 'silence-missing-cache-write') {
       rules.set(id, { channel, model, evidence, action });
     } else throw Error('INVALID_BILLING_CHANNEL_MAPPING');

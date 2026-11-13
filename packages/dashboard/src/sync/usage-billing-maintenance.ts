@@ -4,7 +4,7 @@ import { initializeUsageRateCatalog, publishUsageRates, readUsageRates } from '.
 import { readSyncView, type LedgerUsageMember } from '../adapters/local/imports/sync/read';
 import { hash } from '../adapters/local/imports/identity';
 import type { UnitPricing } from '../adapters/local/types';
-import { billingComponents, decimalUnits, estimateUsage, formatDecimal, ledgerDecimal,
+import { billingComponents, decimalUnits, estimateUsage, formatDecimal, ledgerDecimal, usageComponentRates,
   type BillingComponent, type BillingRate } from '../domain/usage-billing';
 import { identityLedgerStamp } from './usage-identity-backfill';
 import { dateWindow, usageRanges } from '../domain/window';
@@ -158,15 +158,18 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
           return;
         }
         const mapping = mappings.get(event.source, event.modelName);
-        const selected = rates.select(mapping?.action === 'rate' ? { ...event, modelName: mapping.rateModel } : event);
+        const selected = rates.select(mapping?.action === 'rate'
+          ? { ...event, source: mapping.rateChannel ?? event.source, modelName: mapping.rateModel }
+          : event);
         const charge = mapping?.action === 'exclude' && event.recordedCost === undefined
           ? { status: 'excluded' as const, reason: 'CHANNEL_ROUTE_EXCLUDED' }
           : estimateUsage(event, selected);
+        const perMillion = selected && usageComponentRates(event, selected.rate);
         const silent = charge.status === 'unpriced' && charge.reason === 'RATE_COMPONENT_MISSING'
-          && mapping?.action === 'silence-missing-cache-write' && selected && counters.cacheWrite > 0
-          && selected.rate.perMillion.cacheWrite === undefined
+          && mapping?.action === 'silence-missing-cache-write' && perMillion && counters.cacheWrite > 0
+          && perMillion.cacheWrite === undefined
           && billingComponents.every(component => component === 'cacheWrite' || counters[component] === 0
-            || selected.rate.perMillion[component] !== undefined);
+            || perMillion[component] !== undefined);
         if (silent) totals.silentUnpriced++;
         insert.run(run, referenceKey(member), row?.event_id ?? null, disposition, event.source, event.modelName,
           visible.projectKey, visible.dateKey, JSON.stringify(counters), ledgerDecimal(visible.cost), visible.missingPricing ? 0 : 1,
