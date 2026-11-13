@@ -152,13 +152,24 @@ revision 843 的本地演练生成了 54,475 条费用明细，包含全部 1,64
 node packages/dashboard/dist/sync-maintenance.mjs resolve-usage-identity-conflict --sidecar=<旁路库绝对路径> --decision=<决议JSON绝对路径> --owner-confirm=I_AM_THE_OWNER --reason=<证据说明>
 ```
 
-组合演练从归档的真实 v1 导入库迁入一份有效批次和一份已回滚批次，再对隔离的 revision 843 副本执行一次 v2 代际回滚。演练库到达 revision 846，历史旁路保留 2 个 v1 批次、7,951 个 v1 成员和 1 个已回滚 v2 代际。计费明细包含 54,475 个 v2 可见成员及 7,944 个可见 v1 成员，共 62,419 条。本轮验证可见性与成员数。归档中的旧覆盖配置早于 revision 843，尚缺能与该 revision 对齐的完整接收端费率及审核过的生产费率目录。正式金额对账和缺价清单审核完成后再启用灰度切读。
+组合演练从归档的真实 v1 导入库迁入一份有效批次和一份已回滚批次，再对隔离的 revision 843 副本执行一次 v2 代际回滚。演练库到达 revision 846，历史旁路保留 2 个 v1 批次、7,951 个 v1 成员和 1 个已回滚 v2 代际。计费明细包含 54,475 个 v2 可见成员及 7,944 个可见 v1 成员，共 62,419 条。本轮验证可见性与成员数。
 
-将归档旧覆盖配置用于 revision 843 的对照运行时，四个窗口的 Token 与空基线运行一致，全量旧金额由 791.755555983196 变为 1,260.7328740932082。两次均保留 54,475 条明细；空新版目录下，47,635 条未定价记录归入 32 个渠道、模型与原因组合。这两份摘要用于核对基线输入对旧金额的影响，正式对账采用与 revision 843 同期的完整接收端基线。
+将归档旧覆盖配置用于 revision 843 的对照运行时，四个窗口的 Token 与空基线运行一致，全量旧金额由 791.755555983196 变为 1,260.7328740932082。两次均保留 54,475 条明细。空新版目录下，47,635 条未定价记录归入 32 个渠道、模型与原因组合。revision 843 保留作历史重放和回归基线。金额验收改用灰度目标环境的一次同版本采集，同步归档账本快照、接收端费率及覆盖配置、截止时点和旧 Dashboard 四窗口结果。
+
+### 官网参考费率
+
+[2026-11-13 参考目录](./dashboard-billing-reference-catalog-2026-11-13.json) 可通过 `publish-usage-rates` 写入隔离旁路库。目录按原始渠道和模型键选择版本，每项附来源和适用区间。官网仅给出变更日的场合，旧版本在该日 UTC 零点结束，新版本从次日零点起算。未来的日级版本按目录中显式 UTC 边界执行。参考估算采用标准 Token 价目，订阅额度、账户折扣、加速和工具调用按各自账单核对。
+
+- Codex 使用公开 Standard Token 费率，GPT-5.6 Terra 和 Sol 保留已证实的价目变化。Sol 优惠有效期按 Codex 价目给出的最短确认范围封存。Auto-review 有账号和用途条件，两种历史占位键待确认后再按对应政策处理。[OpenAI Codex 价目](https://help.openai.com/en/articles/20001415-chatgpt-rate-card-enterprise-token-based-pricing) · [Codex 订阅与积分](https://learn.chatgpt.com/docs/pricing) · [GPT-5.6 发布价](https://openai.com/index/gpt-5-6/) · [Terra 调价](https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/)
+- Gemini 3.8 Flash 的原始键与 `-n`、`-tiered`、`-exp-a` 参考价沿用项目已有显式映射。新版目录分别登记四个键，并纳入 2027 年 1 月 1 日的调价。`-exp-b` 待确认计价映射。Gemini 4 Hydrogen 已登记 Antigravity 和 Gemini CLI 的精确基础键。Gemini 3.1 Pro Preview 的长上下文分档留待接入请求级计价条件。[Antigravity 发布说明](https://antigravity.google/blog/gemini-3-8-flash-in-google-antigravity/) · [Google 官方费率](https://aistudio.google.com/docs/pricing)
+- DeepSeek 参考估算采用官网 USD 刊例。Flash 的闲时输入、缓存读、输出分别为 USD 0.15、0.003、0.60 每百万 Token，峰时翻倍。目录展开了截至北京时间 2026 年底的 UTC 峰时区间，排除周末及中秋、国庆假期。官网另有 CNY 刊例，闲时分别为 CNY 1、0.02、4，峰时翻倍。当前目录按同一渠道、模型及时点选择一个币种，CNY 刊例留作有账户币种证据时的独立目录输入。`-fast`、WorkBuddy、CommandCode 和其他转接标签需要对应路由证据。[DeepSeek 英文价目](https://api-docs.deepseek.com/quick_start/pricing/) · [DeepSeek 中文价目](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/) · [2026 年放假安排](https://www.beijing.gov.cn/zhengce/zhengcefagui/202511/t20251104_4258873.html)
+- Claude Opus 5.5 已登记输入、输出和缓存读。缓存写的 USD 5 与 USD 8 分别对应 5 分钟和 1 小时，历史数据只留总写入 Token，相关行继续标记缺少费率分项。Antigravity 的 Claude 路由、ZCode 的 `GLM-5.3` 和转接的 MiMo/Kimi 继续待审。历史 `recordedCost` 保留原金额和未知币种，直到有对应账单或来源契约证明币种。[Anthropic 缓存价目](https://platform.claude.com/docs/en/models/opus-5-5/whats-new-opus-5-5) · [ZCode 接入方式](https://zcode.z.ai/en/docs/configuration)
+
+用同一份旧覆盖配置演练 revision 843 时，27 个费率版本可重复发布，第二次新增 0 项。四窗口的 Token 和旧金额与此前演练逐项一致。54,475 条明细中，41,543 条产生 USD 参考估算，6,840 条保留来源金额及未知币种，6,092 条仍缺价，分属 15 组。两类 Codex auto-review 占 3,301 条，Claude Opus 5.5 缓存写分项占 67 条，其余待确认模型、路由或价目条件。本次无 `DAY_RATE_AMBIGUOUS`，并单独核对了 DeepSeek 峰时边界、中秋国庆和调休周六。
 
 ### Owner 灰度读取
 
-完成同期基线和生产费率目录验收后，先在隔离旁路库生成待审报告。命令会列出四个窗口的基线、各币种估算、缺价分组和币种未知的来源费用分组，并返回费率审阅摘要。
+用灰度目标环境的同版本快照完成四窗口对账，并审核待发布目录后，在隔离旁路库生成待审报告。命令会列出四个窗口的基线、各币种估算、缺价分组和币种未知的来源费用分组，并返回费率审阅摘要。
 
 ```text
 node packages/dashboard/dist/sync-maintenance.mjs review-usage-billing-read --sidecar=<旁路库> --run=<批次名> --report=<待审报告JSON>
