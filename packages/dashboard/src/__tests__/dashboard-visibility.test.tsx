@@ -9,6 +9,8 @@ import { emptyDashboard, type BillingReadResponse, type UsageRange } from '../do
 import { useBillingPreview } from '../react/hooks/use-billing-preview';
 import { buildReferenceTrendDays } from '../react/sections/overview/reference-cost-trend';
 import { ProjectsSection } from '../react/sections/projects/projects-section';
+import { ModelsSection } from '../react/sections/models/models-section';
+import { reconcileDashboardWithBilling } from '../react/reconcile-billing-models';
 import { TokenDashboardFeature } from '../react/token-dashboard-feature';
 
 afterEach(() => {
@@ -290,4 +292,280 @@ it('fills continuous calendar dates for all-range reference cost trend and prese
   await waitFor(() => expect(screen.getAllByText('$3.00 USD')).toHaveLength(2));
   expect(screen.queryByText('$999.00')).toBeNull();
   expect(screen.getAllByText('$12.34').length).toBeGreaterThan(0);
+});
+
+it('reconciles managed billing prices onto model ranking, models table, sources, and drops Unpriced on codex-auto-review', async () => {
+  const data = emptyDashboard('30d');
+  data.daily = [{
+    date: '2026-10-28',
+    inputTokens: 1000,
+    outputTokens: 500,
+    cacheCreationTokens: 0,
+    cacheReadTokens: 0,
+    reasoningTokens: 0,
+    totalTokens: 1500,
+    cost: 1.0,
+    modelsUsed: [],
+    modelBreakdowns: [],
+  }];
+  const baseModel = {
+    inputTokens: 100,
+    outputTokens: 50,
+    cacheCreationTokens: 0,
+    cacheReadTokens: 0,
+    reasoningTokens: 0,
+    sessionCount: 1,
+    activeDays: 1,
+    cacheHitRate: 0,
+  };
+  data.models = [
+    {
+      ...baseModel,
+      modelName: 'gemini-3.8-flash-n',
+      displayName: 'gemini-3.8-flash-n',
+      provider: 'gemini',
+      source: 'Antigravity',
+      sourcesUsed: ['Antigravity'],
+      totalTokens: 200,
+      cost: 300,
+      shareOfTokens: 0.4,
+      shareOfCost: 0.6,
+      missingPricing: false,
+    },
+    {
+      ...baseModel,
+      modelName: 'gemini-3.8-flash-tiered',
+      displayName: 'gemini-3.8-flash-tiered',
+      provider: 'gemini',
+      source: 'Antigravity',
+      sourcesUsed: ['Antigravity'],
+      totalTokens: 100,
+      cost: 100,
+      shareOfTokens: 0.2,
+      shareOfCost: 0.2,
+      missingPricing: false,
+    },
+    {
+      ...baseModel,
+      modelName: 'gemini-4-hydrogen',
+      displayName: 'gemini-4-hydrogen',
+      provider: 'gemini',
+      source: 'Antigravity',
+      sourcesUsed: ['Antigravity'],
+      totalTokens: 100,
+      cost: 0,
+      shareOfTokens: 0.1,
+      shareOfCost: 0,
+      missingPricing: true,
+    },
+    {
+      ...baseModel,
+      modelName: 'gpt-6.1-terra',
+      displayName: 'gpt-6.1-terra',
+      provider: 'openai',
+      source: 'Codex CLI',
+      sourcesUsed: ['Codex CLI'],
+      totalTokens: 100,
+      cost: 0,
+      shareOfTokens: 0.1,
+      shareOfCost: 0,
+      missingPricing: true,
+    },
+    {
+      ...baseModel,
+      modelName: 'codex-auto-review',
+      displayName: 'Codex Auto-review',
+      provider: 'openai',
+      source: 'Codex CLI',
+      sourcesUsed: ['Codex CLI'],
+      totalTokens: 100,
+      cost: 0,
+      shareOfTokens: 0.1,
+      shareOfCost: 0,
+      missingPricing: true,
+    },
+    {
+      ...baseModel,
+      modelName: 'gemini-4-argon-trial',
+      displayName: 'gemini-4-argon-trial',
+      provider: 'gemini',
+      source: 'Antigravity',
+      sourcesUsed: ['Antigravity'],
+      totalTokens: 50,
+      cost: 0,
+      shareOfTokens: 0.05,
+      shareOfCost: 0,
+      missingPricing: true,
+    },
+    {
+      ...baseModel,
+      modelName: 'claude-opus-5-5',
+      displayName: 'Claude Opus 5.5',
+      provider: 'claude',
+      source: 'Claude Code',
+      sourcesUsed: ['Claude Code'],
+      totalTokens: 500,
+      cost: 0,
+      shareOfTokens: 0.03,
+      shareOfCost: 0,
+      missingPricing: true,
+    },
+    {
+      ...baseModel,
+      modelName: 'claude-opus-5-5-low',
+      displayName: 'Claude Opus 5.5 Low',
+      provider: 'claude',
+      source: 'Antigravity',
+      sourcesUsed: ['Antigravity'],
+      totalTokens: 50,
+      cost: 0,
+      shareOfTokens: 0.02,
+      shareOfCost: 0,
+      missingPricing: true,
+    },
+  ];
+  data.sources = [
+    {
+      sourceId: 'antigravity',
+      label: 'Antigravity',
+      descriptionKey: 'antigravity',
+      status: 'active',
+      totalTokens: 500,
+      inputTokens: 300,
+      outputTokens: 200,
+      cacheCreationTokens: 0,
+      cacheReadTokens: 0,
+      reasoningTokens: 0,
+      cost: 400,
+      missingPricing: true,
+      sessionCount: 2,
+      modelsUsed: ['gemini-4-hydrogen'],
+      shareOfTokens: 0.5,
+      shareOfCost: 0.8,
+    },
+    {
+      sourceId: 'codex',
+      label: 'Codex CLI',
+      descriptionKey: 'codex',
+      status: 'active',
+      totalTokens: 200,
+      inputTokens: 100,
+      outputTokens: 100,
+      cacheCreationTokens: 0,
+      cacheReadTokens: 0,
+      reasoningTokens: 0,
+      cost: 0,
+      missingPricing: true,
+      sessionCount: 1,
+      modelsUsed: ['gpt-6.1-terra'],
+      shareOfTokens: 0.5,
+      shareOfCost: 0.2,
+    },
+  ];
+
+  // Without billing preview, codex-auto-review still never renders Unpriced badge.
+  const withoutBilling = render(withMessages(<ModelsSection data={data} />));
+  const autoReviewRowGuest = screen.getByText('codex-auto-review').closest('tr')!;
+  expect(within(autoReviewRowGuest).queryByText(zh.models.table.unpricedBadge)).toBeNull();
+  const terraRowGuest = screen.getAllByText('gpt-6.1-terra')[0].closest('tr')!;
+  expect(within(terraRowGuest).getByText(zh.models.table.unpricedBadge)).toBeDefined();
+  withoutBilling.unmount();
+
+  const billing: BillingReadResponse = {
+    range: '30d',
+    estimatedCostUsd: '545.46',
+    estimatedTokens: 600,
+    unpricedTokens: 500,
+    excludedTokens: 100,
+    members: 8,
+    tokens: 1200,
+    recordedUnknownCurrency: 0,
+    asOf: '2026-10-28T01:00:00Z',
+    run: 'reconcile',
+    revision: 3336,
+    catalog: 'test',
+    breakdown: {
+      days: [{ day: '2026-10-28', estimatedCostUsd: '545.46', estimatedTokens: 600, unpricedTokens: 500, excludedTokens: 100 }],
+      models: [
+        {
+          model: 'gemini-3.8-flash',
+          estimatedCostUsd: '400.00',
+          estimatedTokens: 300,
+          unpricedTokens: 0,
+          excludedTokens: 0,
+          channels: [{ channel: 'antigravity', estimatedCostUsd: '400.00', estimatedTokens: 300, unpricedTokens: 0, excludedTokens: 0 }],
+        },
+        {
+          model: 'gemini-4-hydrogen',
+          estimatedCostUsd: '104.81',
+          estimatedTokens: 100,
+          unpricedTokens: 0,
+          excludedTokens: 0,
+          channels: [{ channel: 'antigravity', estimatedCostUsd: '104.81', estimatedTokens: 100, unpricedTokens: 0, excludedTokens: 0 }],
+        },
+        {
+          model: 'gpt-6.1-terra',
+          estimatedCostUsd: '36.18',
+          estimatedTokens: 100,
+          unpricedTokens: 0,
+          excludedTokens: 0,
+          channels: [{ channel: 'codex', estimatedCostUsd: '36.18', estimatedTokens: 100, unpricedTokens: 0, excludedTokens: 0 }],
+        },
+        {
+          model: 'gemini-4-argon',
+          estimatedCostUsd: '4.38',
+          estimatedTokens: 50,
+          unpricedTokens: 0,
+          excludedTokens: 0,
+          channels: [{ channel: 'antigravity', estimatedCostUsd: '4.38', estimatedTokens: 50, unpricedTokens: 0, excludedTokens: 0 }],
+        },
+        {
+          model: 'codex-auto-review',
+          estimatedCostUsd: '0',
+          estimatedTokens: 0,
+          unpricedTokens: 0,
+          excludedTokens: 100,
+          channels: [{ channel: 'codex', estimatedCostUsd: '0', estimatedTokens: 0, unpricedTokens: 0, excludedTokens: 100 }],
+        },
+        {
+          model: 'claude-opus-5-5',
+          estimatedCostUsd: '0.09',
+          estimatedTokens: 50,
+          unpricedTokens: 500,
+          excludedTokens: 0,
+          channels: [
+            { channel: 'claudeCode', estimatedCostUsd: '0', estimatedTokens: 0, unpricedTokens: 500, excludedTokens: 0 },
+            { channel: 'antigravity', estimatedCostUsd: '0.09', estimatedTokens: 50, unpricedTokens: 0, excludedTokens: 0 },
+          ],
+        },
+      ],
+      unpriced: [],
+    },
+  };
+
+  const reconciled = reconcileDashboardWithBilling(data, { status: 'ready', data: billing });
+  expect(reconciled.excludedModels.has('codex-auto-review')).toBe(true);
+  expect(reconciled.data.daily[0].cost).toBe(545.46);
+
+  const byName = new Map(reconciled.data.models.map(m => [m.modelName, m]));
+  expect(byName.get('gemini-3.8-flash-n')).toMatchObject({ cost: 300, missingPricing: false });
+  expect(byName.get('gemini-3.8-flash-tiered')).toMatchObject({ cost: 100, missingPricing: false });
+  expect(byName.get('gemini-4-hydrogen')).toMatchObject({ cost: 104.81, missingPricing: false });
+  expect(byName.get('gpt-6.1-terra')).toMatchObject({ cost: 36.18, missingPricing: false });
+  expect(byName.get('gemini-4-argon-trial')).toMatchObject({ cost: 4.38, missingPricing: false });
+  expect(byName.get('claude-opus-5-5')).toMatchObject({ cost: 0, missingPricing: true });
+  expect(byName.get('claude-opus-5-5-low')).toMatchObject({ cost: 0.09, missingPricing: false });
+  expect(reconciled.data.sources[0].cost).toBeCloseTo(509.28, 6);
+  expect(reconciled.data.sources[0].missingPricing).toBe(false);
+  expect(reconciled.data.sources[1]).toMatchObject({ sourceId: 'codex', cost: 36.18, missingPricing: false });
+
+  render(withMessages(<ModelsSection data={reconciled.data} excludedModels={reconciled.excludedModels} />));
+  expect(within(screen.getAllByText('gemini-4-hydrogen')[0].closest('tr')!).getByText('$104.81')).toBeDefined();
+  expect(within(screen.getAllByText('gpt-6.1-terra')[0].closest('tr')!).getByText('$36.18')).toBeDefined();
+  expect(within(screen.getAllByText('gemini-4-argon-trial')[0].closest('tr')!).getByText('$4.38')).toBeDefined();
+  const autoReviewRowOwner = screen.getByText('codex-auto-review').closest('tr')!;
+  expect(within(autoReviewRowOwner).getByText('—')).toBeDefined();
+  expect(within(autoReviewRowOwner).queryByText(zh.models.table.unpricedBadge)).toBeNull();
+  const opusRow = screen.getByText('claude-opus-5-5').closest('tr')!;
+  expect(within(opusRow).getByText(zh.models.table.unpricedBadge)).toBeDefined();
 });

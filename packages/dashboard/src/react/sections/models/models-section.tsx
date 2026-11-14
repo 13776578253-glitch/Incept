@@ -11,11 +11,13 @@ import { ModelsTable } from './models-table';
 type ModelsSectionProps = {
   data: TokenDashboardData;
   showLegacyCosts?: boolean;
+  excludedModels?: ReadonlySet<string>;
 };
 
 export function ModelsSection({
   data,
   showLegacyCosts = true,
+  excludedModels,
 }: ModelsSectionProps) {
   const t = useTranslations('dashboard');
   const {
@@ -55,6 +57,7 @@ export function ModelsSection({
       {/* Full Model & Slot Breakdown Table (30 Models across all sources) */}
       <ModelsTable
         showLegacyCosts={showLegacyCosts}
+        excludedModels={excludedModels}
         selectedModelSource={selectedModelSource}
         setSelectedModelSource={setSelectedModelSource}
         modelSort={modelSort}

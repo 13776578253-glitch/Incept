@@ -3,13 +3,14 @@
 import { useTranslations } from 'next-intl';
 import { formatCompactTokens, formatUsd } from '../../formatters';
 import { CredibilityPill } from '../../components/credibility-pill';
+import { isExcludedBillingModelName } from '../../reconcile-billing-models';
 import type { OverviewState } from './use-overview-state';
 
 export function PeriodSummary({ selectedPeriodItem: period, showLegacyCosts = true }:
   Pick<OverviewState, 'selectedPeriodItem'> & { showLegacyCosts?: boolean }) {
   const t = useTranslations('dashboard');
   const models = period?.modelBreakdowns ?? [];
-  const unpriced = models.some(model => model.missingPricing);
+  const unpriced = models.some(model => model.missingPricing && !isExcludedBillingModelName(model.modelName));
   return (
     <div className="dashboard-period-summary">
       <div className="dashboard-period-totals">

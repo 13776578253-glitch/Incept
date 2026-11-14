@@ -1,12 +1,13 @@
 'use client';
 
 import './dashboard.css';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 import type { TokenDashboardData } from '../domain/index';
 import { useDashboardWindow } from './hooks/use-dashboard-window';
 import { useBillingPreview } from './hooks/use-billing-preview';
+import { reconcileDashboardWithBilling } from './reconcile-billing-models';
 import { DashboardToolbar } from './components/dashboard-toolbar';
 import { OverviewSection } from './sections/overview/overview-section';
 import { DeferredSection } from './components/deferred-section';
@@ -46,6 +47,14 @@ export function TokenDashboardFeature({
     remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval,lastPageUpdatedAt,
   } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport, canViewDetails, initialValidator, loadRemoteOnMount: initialStatus === 'live' });
   const billingPreview = useBillingPreview(canImport && billingPreviewEnabled, rangePreset, refreshCycle);
+  const {
+    data: displayData,
+    filteredDaily: displayFilteredDaily,
+    excludedModels,
+  } = useMemo(
+    () => reconcileDashboardWithBilling(data, billingPreview, filteredDaily),
+    [data, billingPreview, filteredDaily],
+  );
 
   return (
     <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-24 md:pt-8 lg:px-10 lg:pt-9 lg:pb-28">
@@ -74,9 +83,9 @@ export function TokenDashboardFeature({
             SECTION 01: OVERVIEW (全局使用量、趋势、模型分布 — TokLens v0.1.2 布局)
         ===================================================================== */}
         {hasSnapshot ? <OverviewSection
-          data={data}
+          data={displayData}
           billingPreview={billingPreview}
-          filteredDaily={filteredDaily}
+          filteredDaily={displayFilteredDaily}
           selectedTrendIndex={selectedTrendIndex}
           setSelectedTrendIndex={setSelectedTrendIndex}
         /> : <SectionPlaceholder section="overview" />}
@@ -84,20 +93,20 @@ export function TokenDashboardFeature({
         {/* =====================================================================
             SECTION 02: MODELS & SOURCES (按模型、客户端来源、Token 类型拆解)
         ===================================================================== */}
-        <DeferredSection section="models" enabled={hasSnapshot}><ModelsSection data={data} /></DeferredSection>
+        <DeferredSection section="models" enabled={hasSnapshot}><ModelsSection data={displayData} excludedModels={excludedModels} /></DeferredSection>
 
         {/* =====================================================================
             SECTION 03: COSTS & COVERAGE (API 等效费用、价格覆盖率)
         ===================================================================== */}
         <DeferredSection section="costs" enabled={hasSnapshot || !!billingPreview}>
-          <CostsSection data={data} billingPreview={billingPreview} />
+          <CostsSection data={displayData} billingPreview={billingPreview} />
         </DeferredSection>
 
         {/* =====================================================================
             SECTION 04: PROJECTS & SESSIONS (项目排行表格 + 会话主从检查器)
         ===================================================================== */}
         <DeferredSection section="projects" enabled={hasSnapshot || !canViewDetails}>
-          <ProjectsSection data={data} canViewDetails={canViewDetails} />
+          <ProjectsSection data={displayData} canViewDetails={canViewDetails} />
         </DeferredSection>
       </div>
     </div>

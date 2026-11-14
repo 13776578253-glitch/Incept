@@ -9,10 +9,12 @@ import { formatKnownCost, formatCompactTokens, formatUsd, formatPercent } from '
 import { ProviderBadge } from '../../components/provider-badge';
 import { CredibilityPill } from '../../components/credibility-pill';
 import type { ModelsState } from './use-models-state';
+import { isExcludedBillingModelName } from '../../reconcile-billing-models';
 
 type ModelsTableProps = {
   data: TokenDashboardData;
   showLegacyCosts?: boolean;
+  excludedModels?: ReadonlySet<string>;
 } & Pick<ModelsState,
   'selectedModelSource'
   | 'setSelectedModelSource'
@@ -33,6 +35,7 @@ export function ModelsTable({
   maxSortedModelMetric,
   data,
   showLegacyCosts = true,
+  excludedModels,
 }: ModelsTableProps) {
   const t = useTranslations('dashboard');
   const { expanded, visibleRows, toggle } = useExpandableRows(sortedModels, 10, (data.range ?? 'all') + ':' + selectedModelSource);
@@ -124,6 +127,7 @@ export function ModelsTable({
           <tbody className="divide-y divide-[var(--color-border)] tabular-nums">
             {visibleRows.map((model, idx) => {
               const isSlot = model.slotStatus === 'configured';
+              const isExcluded = excludedModels?.has(model.modelName) || isExcludedBillingModelName(model.modelName);
               const metricVal =
                 modelSort === 'cost'
                   ? model.cost
@@ -222,6 +226,8 @@ export function ModelsTable({
                         label={t('models.table.slotBadge')}
                         tone="indigo"
                       />
+                    ) : isExcluded ? (
+                      <span className="text-[var(--color-nav-muted)]">—</span>
                     ) : model.missingPricing && model.cost === 0 ? (
                       <span className="inline-flex items-center gap-1.5 text-[var(--color-nav-muted)]">
                         <span>—</span>
