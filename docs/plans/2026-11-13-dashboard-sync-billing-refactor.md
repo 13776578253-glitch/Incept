@@ -133,7 +133,7 @@ node packages/dashboard/dist/sync-maintenance.mjs publish-usage-rates --sidecar=
 node packages/dashboard/dist/sync-maintenance.mjs build-usage-billing --source=<原账本副本> --sidecar=<旁路库> --baseline=<基线JSON> --run=<批次名>
 ```
 
-目录 JSON 使用 `{ rates, close? }`。费率包含 `channel`、原始 `model`、`provider`、`currency`、`evidence`、毫秒时间 `effectiveFrom` 与可选 `effectiveTo`、十进制字符串 `perMillion`。计价查找使用精确渠道与完整模型键。首次见到的新模型按缺价原因归集在 `usage_unpriced_models`。需要峰谷的价格可提供规则版本及不重叠的 UTC 区间，区间外使用基础价。发布新费率时可在同一事务用 `close: [{ version, at }]` 关闭旧开放区间。重复发布相同版本可重入，冲突使整次发布回滚。旧账本随设备上报的数值价格继续作为旧口径输入。
+目录 JSON 使用 `{ rates, close? }`。费率包含规范 `model`、`provider`、固定为 `USD` 的 `currency`、`evidence`、毫秒时间 `effectiveFrom` 与可选 `effectiveTo`、十进制字符串 `perMillion`。首次见到的新模型按缺价原因归集在 `usage_unpriced_models`。需要峰谷的价格可提供规则版本及不重叠的 UTC 区间，区间外使用基础价。发布新费率时可在同一事务用 `close: [{ version, at }]` 关闭旧开放区间。重复发布相同版本可重入，冲突使整次发布回滚。旧账本随设备上报的数值价格继续作为旧口径输入，并在新版旁路库保存为审计记录。
 
 基线 JSON 使用 `{ checkedAt, rates, aliases }`，其中 `rates` 和 `aliases` 是旧读取路径实际使用的接收端费率与别名，`checkedAt` 为冻结的毫秒时间。工具从原同步库只读获取 v1 批次的费用、映射、可见性和认领证据。账本、身份审计或目录版本变更后，重估使用新批次名，旧明细和费率版本保留。
 
@@ -158,30 +158,21 @@ node packages/dashboard/dist/sync-maintenance.mjs resolve-usage-identity-conflic
 
 ### 官网参考费率
 
-[2026-11-13 参考目录](./dashboard-billing-reference-catalog-2026-11-13.json) 可通过 `publish-usage-rates` 写入隔离旁路库。目录按原始渠道和模型键选择版本，每项附来源和适用区间。官网仅给出变更日的场合，旧版本在该日 UTC 零点结束，新版本从次日零点起算。未来的日级版本按目录中显式 UTC 边界执行。参考估算采用标准 Token 价目，订阅额度、账户折扣、加速和工具调用按各自账单核对。
-
-- Codex 使用公开 Standard Token 费率，GPT-5.6 Terra 和 Sol 保留已证实的价目变化。Sol 优惠有效期按 Codex 价目给出的最短确认范围封存。Auto-review 有账号和用途条件，两种历史占位键待确认后再按对应政策处理。[OpenAI Codex 价目](https://help.openai.com/en/articles/20001415-chatgpt-rate-card-enterprise-token-based-pricing) · [Codex 订阅与积分](https://learn.chatgpt.com/docs/pricing) · [GPT-5.6 发布价](https://openai.com/index/gpt-5-6/) · [Terra 调价](https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/)
-- Gemini 3.8 Flash 的原始键与 `-n`、`-tiered`、`-exp-a` 参考价沿用项目已有显式映射。新版目录分别登记四个键，并纳入 2027 年 1 月 1 日的调价。`-exp-b` 待确认计价映射。Gemini 4 Hydrogen 已登记 Antigravity 和 Gemini CLI 的精确基础键。Gemini 3.1 Pro Preview 的长上下文分档留待接入请求级计价条件。[Antigravity 发布说明](https://antigravity.google/blog/gemini-3-8-flash-in-google-antigravity/) · [Google 官方费率](https://aistudio.google.com/docs/pricing)
-- DeepSeek 参考估算采用官网 USD 刊例。Flash 的闲时输入、缓存读、输出分别为 USD 0.15、0.003、0.60 每百万 Token，峰时翻倍。目录展开了截至北京时间 2026 年底的 UTC 峰时区间，排除周末及中秋、国庆假期。官网另有 CNY 刊例，闲时分别为 CNY 1、0.02、4，峰时翻倍。当前目录按同一渠道、模型及时点选择一个币种，CNY 刊例留作有账户币种证据时的独立目录输入。`-fast`、WorkBuddy、CommandCode 和其他转接标签需要对应路由证据。[DeepSeek 英文价目](https://api-docs.deepseek.com/quick_start/pricing/) · [DeepSeek 中文价目](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/) · [2026 年放假安排](https://www.beijing.gov.cn/zhengce/zhengcefagui/202511/t20251104_4258873.html)
-- Claude Opus 5.5 已登记输入、输出和缓存读。缓存写的 USD 5 与 USD 8 分别对应 5 分钟和 1 小时，历史数据只留总写入 Token，相关行继续标记缺少费率分项。Antigravity 的 Claude 路由、ZCode 的 `GLM-5.3` 和转接的 MiMo/Kimi 继续待审。历史 `recordedCost` 保留原金额和未知币种，直到有对应账单或来源契约证明币种。[Anthropic 缓存价目](https://platform.claude.com/docs/en/models/opus-5-5/whats-new-opus-5-5) · [ZCode 接入方式](https://zcode.z.ai/en/docs/configuration)
-
-用同一份旧覆盖配置演练 revision 843 时，27 个费率版本可重复发布，第二次新增 0 项。四窗口的 Token 和旧金额与此前演练逐项一致。54,475 条明细中，41,543 条产生 USD 参考估算，6,840 条保留来源金额及未知币种，6,092 条仍缺价，分属 15 组。两类 Codex auto-review 占 3,301 条，Claude Opus 5.5 缓存写分项占 67 条，其余待确认模型、路由或价目条件。本次无 `DAY_RATE_AMBIGUOUS`，并单独核对了 DeepSeek 峰时边界、中秋国庆和调休周六。
-
-2026-11-14 已按渠道规则处理上述清单，详见[计费对账汇报](./2026-11-14-dashboard-billing-channel-review.md)。`build-usage-billing` 默认使用[渠道映射](../../packages/dashboard/src/sync/usage-billing-channel-mappings.json)，可通过 `--channel-mappings=<绝对路径>` 提供完整替代文件。规则按渠道和原始模型键精确匹配，解析后的规则随新批次存档。更新费率或渠道映射时使用新 `--run`。
+按[官网 API 等效成本契约](./2026-11-14-dashboard-billing-contract.md)维护规范模型映射、USD 费率版本、审计原额与覆盖率。历史调查结果保留在[渠道对账汇报](./2026-11-14-dashboard-billing-channel-review.md)。`build-usage-billing` 默认使用[渠道映射](../../packages/dashboard/src/sync/usage-billing-channel-mappings.json)，可通过 `--channel-mappings=<绝对路径>` 提供完整替代文件。解析后的规则随新批次存档。更新费率或映射时使用新 `--run`。
 
 ### Owner 灰度读取
 
-用灰度目标环境的同版本快照完成四窗口对账，并审核待发布目录后，在隔离旁路库生成待审报告。命令会列出四个窗口的基线、各币种估算、缺价分组和币种未知的来源费用分组，并返回费率审阅摘要。
+用灰度目标环境的同版本快照完成四窗口对账，并在隔离旁路库生成待审报告。报告包含四窗口基线、USD 估算与覆盖率明细、待审未估算分组和费率审阅摘要。币种未知的来源金额分组供审计。
 
 ```text
 node packages/dashboard/dist/sync-maintenance.mjs review-usage-billing-read --sidecar=<旁路库> --run=<批次名> --report=<待审报告JSON>
 node packages/dashboard/dist/sync-maintenance.mjs publish-usage-billing-read --sidecar=<旁路库> --run=<批次名> --approval=<验收JSON> --output=<新发布JSON> --owner-confirm=I_AM_THE_OWNER --actor=<操作者标识> --reason=<发布原因>
 ```
 
-验收 JSON 绑定 `input`、`revision`、`ledger`、`asOf`、`catalog` 和 `pricingReviewDigest`。 `windows` 填写同期现网采集的四个 `{ range, tokens, baselineCost }`，`baselineEvidence` 填写来源。 `pricingEvidence` 引用对生产费率及报告中缺价、币种未知分组的审阅结果。命令核对四个窗口数值和审阅摘要，空费率目录或目录变更均拒绝发布。先发布到新文件，再将 Web 配置指向已发布文件。
+验收 JSON 绑定 `input`、`revision`、`ledger`、`asOf`、`catalog` 和 `pricingReviewDigest`。`windows` 填写同期现网采集的四个 `{ range, tokens, baselineCost }`，`baselineEvidence` 填写来源。`pricingEvidence` 引用对生产 USD 费率及待审未估算分组的审核结果。命令核对四个窗口数值和审阅摘要，空费率目录或目录变更均拒绝发布。先发布到新文件，再将 Web 配置指向已发布文件。
 
-默认关闭。灰度环境设置 `INCEPT_BILLING_READ_MODE=owner` 和 `INCEPT_BILLING_PUBLICATION_FILE`，由 Owner 访问 `GET /api/dashboard/billing?range=14d`。接口读取已发布汇总，账本 revision、可见谱系或旧导入状态变化时返回 503。响应包含 `asOf`、按币种分列的 `estimatedByCurrency`、币种未知的记录笔数 `recordedUnknownCurrency` 和 `unpricedTokens`。金额保持十进制字符串。币种未知的旧金额留在私有明细库。关掉该开关可撤回 Owner 试读，现有 Dashboard 继续使用原读取路径。
+默认关闭。灰度环境设置 `INCEPT_BILLING_READ_MODE=owner` 和 `INCEPT_BILLING_PUBLICATION_FILE`，由 Owner 访问 `GET /api/dashboard/billing?range=14d`。接口响应包括 `asOf`、十进制字符串 `estimatedCostUsd` 及三个覆盖率 Token 计数 `estimatedTokens`、`unpricedTokens`、`excludedTokens`。审计计数 `recordedUnknownCurrency` 仅用于核对历史原额留存。使用新版计费契约的批次生成 v2 发布件。
 
 发布文件的 `approval` 区保存 CLI 填报的操作者标识、发布原因、发布时间、两项证据引用及费率审阅摘要。Owner API 仅返回汇总字段。早期生成的无审计发布文件需要重新发布。证据字段填写归档引用，避免写入凭据。
 
-试读期间，新的同步提交可能立即使发布过期。验收时安排同一账本版本的观察窗口，或在下一笔提交后重新生成、审核并发布。长期接入页面前再实现自动刷新及陈旧数据状态。开启真实环境试读前，另须完成 `pnpm build` 和两项业务数据验收。
+API 验收后可额外设置 `INCEPT_BILLING_UI_MODE=owner`，在 Owner 的概览主费用卡和费用区读取新版快照。同步 revision、可见谱系或旧导入状态变化时接口返回 503，页面显示快照暂不可用。撤回 UI 试读时关闭 UI 开关，撤回 API 试读时关闭读取开关。趋势、模型和项目费用明细将在取得同口径聚合后单独迁移。开启真实环境试读前需完成 `pnpm build`、同期四窗口对账和目标目录审核。持续使用前需建立后台重估与发布机制。

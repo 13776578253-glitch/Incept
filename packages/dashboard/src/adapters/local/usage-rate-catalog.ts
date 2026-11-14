@@ -1,5 +1,4 @@
 import type { DatabaseSync } from 'node:sqlite';
-import { TRANSFER_SOURCES } from '../../domain/imports';
 import { billingComponents, billingInterval, decimalUnits, formatDecimal, type BillingRate, type BillingUsage } from '../../domain/usage-billing';
 import { hash } from './imports/identity';
 
@@ -13,9 +12,9 @@ function normalizeComponents(perMillion: BillingRate['perMillion']) {
 
 export function initializeUsageRateCatalog(db: DatabaseSync) {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS usage_rate_versions (
-      version TEXT PRIMARY KEY, channel TEXT NOT NULL, model TEXT NOT NULL, effective_from INTEGER NOT NULL,
-      effective_to INTEGER, rate_json TEXT NOT NULL, UNIQUE (channel,model,effective_from)
+    CREATE TABLE IF NOT EXISTS usage_reference_rate_versions (
+      version TEXT PRIMARY KEY, model TEXT NOT NULL, effective_from INTEGER NOT NULL,
+      effective_to INTEGER, rate_json TEXT NOT NULL, UNIQUE (model,effective_from)
     );
   `);
 }
@@ -23,12 +22,12 @@ export function initializeUsageRateCatalog(db: DatabaseSync) {
 /** The caller holds a write transaction for the full publication. */
 export function publishUsageRates(db: DatabaseSync, rates: readonly BillingRate[], close: readonly { version: string; at: number }[] = []) {
   if (!db.isTransaction) throw Error('RATE_PUBLICATION_TRANSACTION_REQUIRED');
-  const get = db.prepare('SELECT 1 FROM usage_rate_versions WHERE version=?');
-  const overlap = db.prepare(`SELECT 1 FROM usage_rate_versions WHERE channel=? AND model=?
+  const get = db.prepare('SELECT 1 FROM usage_reference_rate_versions WHERE version=?');
+  const overlap = db.prepare(`SELECT 1 FROM usage_reference_rate_versions WHERE model=?
     AND (? IS NULL OR effective_from<?) AND (effective_to IS NULL OR effective_to>?) LIMIT 1`);
-  const insert = db.prepare('INSERT INTO usage_rate_versions VALUES (?,?,?,?,?,?)');
-  const find = db.prepare('SELECT effective_from,effective_to,rate_json FROM usage_rate_versions WHERE version=?');
-  const closeVersion = db.prepare('UPDATE usage_rate_versions SET effective_to=? WHERE version=? AND effective_to IS NULL');
+  const insert = db.prepare('INSERT INTO usage_reference_rate_versions VALUES (?,?,?,?,?)');
+  const find = db.prepare('SELECT effective_from,effective_to,rate_json FROM usage_reference_rate_versions WHERE version=?');
+  const closeVersion = db.prepare('UPDATE usage_reference_rate_versions SET effective_to=? WHERE version=? AND effective_to IS NULL');
   let closed = 0;
   for (const item of close) {
     const row = find.get(item.version);
@@ -42,8 +41,10 @@ export function publishUsageRates(db: DatabaseSync, rates: readonly BillingRate[
   }
   let added = 0;
   for (const rate of rates) {
-    if (!rate || !TRANSFER_SOURCES.includes(rate.channel) || !rate.model.trim() || rate.model !== rate.model.trim()
-      || !rate.provider.trim() || !rate.evidence.trim() || !/^[A-Z]{3}$/.test(rate.currency)
+    if (!rate || typeof rate !== 'object' || 'channel' in rate
+      || typeof rate.model !== 'string' || !rate.model.trim() || rate.model !== rate.model.trim()
+      || typeof rate.provider !== 'string' || !rate.provider.trim()
+      || typeof rate.evidence !== 'string' || !rate.evidence.trim() || rate.currency !== 'USD'
       || !Number.isSafeInteger(rate.effectiveFrom) || rate.effectiveFrom < 0
       || (rate.effectiveTo !== undefined && (!Number.isSafeInteger(rate.effectiveTo) || rate.effectiveTo <= rate.effectiveFrom))) {
       throw Error('INVALID_USAGE_RATE');
@@ -60,18 +61,18 @@ export function publishUsageRates(db: DatabaseSync, rates: readonly BillingRate[
     if (longPrompt !== undefined && (!Number.isSafeInteger(longPrompt?.aboveInputTokens) || longPrompt.aboveInputTokens <= 0)) {
       throw Error('INVALID_USAGE_RATE_LONG_PROMPT');
     }
-    const { channel, model, provider, currency, evidence, effectiveFrom, effectiveTo } = rate;
-    const normalized: BillingRate = { channel, model, provider, currency, evidence, effectiveFrom, effectiveTo,
+    const { model, provider, currency, evidence, effectiveFrom, effectiveTo } = rate;
+    const normalized: BillingRate = { model, provider, currency, evidence, effectiveFrom, effectiveTo,
       perMillion: normalizeComponents(rate.perMillion),
       ...(longPrompt ? { longPrompt: { aboveInputTokens: longPrompt.aboveInputTokens,
         perMillion: normalizeComponents(longPrompt.perMillion) } } : {}),
       ...(schedule ? { schedule: { version: schedule.version, periods: schedule.periods.map(({ from, to, multiplier }) =>
         ({ from, to, multiplier: formatDecimal(decimalUnits(String(multiplier), 6), 6) })) } } : {}) };
-    const version = hash(['usage-rate/1', normalized]);
+    const version = hash(['usage-reference-rate/1', normalized]);
     if (get.get(version)) continue;
     const to = rate.effectiveTo ?? null;
-    if (overlap.get(rate.channel, rate.model, to, to, rate.effectiveFrom)) throw Error('USAGE_RATE_INTERVAL_OVERLAP');
-    insert.run(version, rate.channel, rate.model, rate.effectiveFrom, to, JSON.stringify(normalized));
+    if (overlap.get(model, to, to, effectiveFrom)) throw Error('USAGE_RATE_INTERVAL_OVERLAP');
+    insert.run(version, model, effectiveFrom, to, JSON.stringify(normalized));
     added++;
   }
   return { added, closed };
@@ -80,20 +81,20 @@ export function publishUsageRates(db: DatabaseSync, rates: readonly BillingRate[
 export function readUsageRates(db: DatabaseSync) {
   const byModel = new Map<string, { version: string; rate: BillingRate }[]>();
   const versions: unknown[] = [];
-  for (const row of db.prepare('SELECT version,rate_json,effective_to FROM usage_rate_versions ORDER BY version').iterate()) {
+  for (const row of db.prepare('SELECT version,rate_json,effective_to FROM usage_reference_rate_versions ORDER BY version').iterate()) {
     const version = String(row.version), rate = JSON.parse(String(row.rate_json)) as BillingRate;
     if (row.effective_to !== null) rate.effectiveTo = Number(row.effective_to);
-    const key = JSON.stringify([rate.channel, rate.model]), existing = byModel.get(key) ?? [];
+    const existing = byModel.get(rate.model) ?? [];
     existing.push({ version, rate });
-    byModel.set(key, existing);
+    byModel.set(rate.model, existing);
     versions.push([version, row.effective_to]);
   }
   return {
-    version: hash(['usage-rate-catalog/1', versions]),
-    select(event: BillingUsage) {
+    version: hash(['usage-reference-rate-catalog/1', versions]),
+    select(model: string, event: BillingUsage) {
       if (!Number.isSafeInteger(event.timestampMs) || event.timestampMs <= 0) return undefined;
       const [start, end] = billingInterval(event);
-      return byModel.get(JSON.stringify([event.source, event.modelName]))?.find(({ rate }) =>
+      return byModel.get(model)?.find(({ rate }) =>
         rate.effectiveFrom <= start && (rate.effectiveTo === undefined || end <= rate.effectiveTo));
     },
   };

@@ -95,7 +95,7 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
       if (cursor?.source !== stamp) throw Error('BILLING_SOURCE_CHANGED');
       const rates = readUsageRates(db);
       const ledgerVersion = billingLedgerVersion(source);
-      const input = hash(['usage-billing-run/3', baseline, stamp, rates.version, ledgerVersion.ledger,
+      const input = hash(['usage-billing-run/4', baseline, stamp, rates.version, ledgerVersion.ledger,
         db.prepare('SELECT COALESCE(MAX(id),0) AS revision FROM usage_identity_audit').get()?.revision,
         ...(mappings.rules.length ? [mappings.rules] : [])]);
       db.exec(`
@@ -114,16 +114,26 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
           observations INTEGER NOT NULL, first_seen INTEGER NOT NULL, last_seen INTEGER NOT NULL,
           PRIMARY KEY (run,channel,model,reason)
         );
+        CREATE TABLE IF NOT EXISTS usage_billing_recorded_audit (
+          run TEXT NOT NULL, member TEXT NOT NULL, amount TEXT NOT NULL, currency TEXT,
+          PRIMARY KEY (run,member)
+        );
       `);
       const previous = db.prepare('SELECT input,result_json FROM usage_billing_runs WHERE id=?').get(run);
       if (previous) {
         if (previous.input !== input) throw Error('BILLING_RUN_INPUT_CHANGED');
         return { ...JSON.parse(String(previous.result_json)), reused: true };
       }
+      if (!db.prepare("SELECT 1 FROM pragma_table_info('usage_billing_details') WHERE name='canonical_model'").get()) {
+        db.exec('ALTER TABLE usage_billing_details ADD COLUMN canonical_model TEXT');
+      }
       db.prepare('INSERT INTO usage_billing_runs VALUES (?,?,?,?,NULL)').run(run, input, rates.version, JSON.stringify(baseline));
       const identity = db.prepare(`SELECT observation,disposition,event_id FROM usage_ledger_identity_disposition
         WHERE scope=? AND position=?`);
-      const insert = db.prepare('INSERT INTO usage_billing_details VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+      const insert = db.prepare(`INSERT INTO usage_billing_details (run,member,event_id,disposition,source,model,project,day,
+        counters_json,baseline_amount,baseline_priced,charge_status,currency,amount,rate_version,reason,canonical_model)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+      const recordAudit = db.prepare('INSERT INTO usage_billing_recorded_audit (run,member,amount) VALUES (?,?,?)');
       const noteUnpriced = db.prepare(`INSERT INTO usage_unpriced_models VALUES (?,?,?,?,1,?,?)
         ON CONFLICT (run,channel,model,reason) DO UPDATE SET observations=observations+1,
           first_seen=MIN(first_seen,excluded.first_seen),last_seen=MAX(last_seen,excluded.last_seen)`);
@@ -132,8 +142,8 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
         considered: 0, consideredCurrent: 0, consideredLegacy: 0,
         skippedAfterCutoff: 0, skippedZeroTokens: 0 };
       const windows = usageRanges.map(range => ({ range, ...dateWindow(range, baseline.checkedAt),
-        members: 0, tokens: 0, baselineCost: 0, unpricedTokens: 0, recordedUnknownCurrency: 0,
-        estimated: new Map<string, bigint>() }));
+        members: 0, tokens: 0, baselineCost: 0, unpricedTokens: 0, estimatedTokens: 0, excludedTokens: 0,
+        recordedUnknownCurrency: 0, estimated: 0n }));
       const revision = () => Number(source.prepare('SELECT data_revision FROM sync_meta WHERE id=1').get()?.data_revision);
       const view = readSyncView({ db: source, revision }, [], new Map(Object.entries(baseline.rates)), baseline.aliases, (member, visible) => {
         totals.considered++;
@@ -158,10 +168,9 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
           return;
         }
         const mapping = mappings.get(event.source, event.modelName);
-        const selected = rates.select(mapping?.action === 'rate'
-          ? { ...event, source: mapping.rateChannel ?? event.source, modelName: mapping.rateModel }
-          : event);
-        const charge = mapping?.action === 'exclude' && event.recordedCost === undefined
+        const model = mapping?.action === 'map' ? mapping.canonicalModel : event.modelName;
+        const selected = rates.select(model, event);
+        const charge = mapping?.action === 'exclude'
           ? { status: 'excluded' as const, reason: 'CHANNEL_ROUTE_EXCLUDED' }
           : estimateUsage(event, selected);
         const perMillion = selected && usageComponentRates(event, selected.rate);
@@ -171,10 +180,16 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
           && billingComponents.every(component => component === 'cacheWrite' || counters[component] === 0
             || perMillion[component] !== undefined);
         if (silent) totals.silentUnpriced++;
-        insert.run(run, referenceKey(member), row?.event_id ?? null, disposition, event.source, event.modelName,
+        const memberKey = referenceKey(member);
+        if (event.recordedCost !== undefined) {
+          recordAudit.run(run, memberKey, ledgerDecimal(event.recordedCost));
+          totals.recorded++;
+        }
+        insert.run(run, memberKey, row?.event_id ?? null, disposition, event.source, event.modelName,
           visible.projectKey, visible.dateKey, JSON.stringify(counters), ledgerDecimal(visible.cost), visible.missingPricing ? 0 : 1,
           charge.status, 'currency' in charge ? charge.currency : null, 'amount' in charge ? charge.amount : null,
-          'rateVersion' in charge ? charge.rateVersion : null, 'reason' in charge ? charge.reason : null);
+          'rateVersion' in charge ? charge.rateVersion : null, 'reason' in charge ? charge.reason : null,
+          charge.status === 'excluded' ? null : model);
         totals.members++;
         totals[disposition]++;
         totals[charge.status]++;
@@ -185,22 +200,22 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
           window.members++;
           window.tokens += tokens;
           window.baselineCost += visible.cost;
-          if (charge.status === 'unpriced' && !silent) window.unpricedTokens += tokens;
-          if (charge.status === 'recorded' && charge.currency === null) window.recordedUnknownCurrency++;
+          if (charge.status === 'unpriced') window.unpricedTokens += tokens;
+          if (charge.status === 'excluded') window.excludedTokens += tokens;
+          if (event.recordedCost !== undefined) window.recordedUnknownCurrency++;
           if (charge.status === 'estimated') {
-            const units = decimalUnits(charge.amount, 24);
-            window.estimated.set(charge.currency, (window.estimated.get(charge.currency) ?? 0n) + units);
+            window.estimatedTokens += tokens;
+            window.estimated += decimalUnits(charge.amount, 24);
           }
         }
       });
       if (view.dataRevision !== cursor.revision || identityLedgerStamp(sourcePath) !== stamp) throw Error('BILLING_SOURCE_CHANGED');
       const indexedMembers = Number(db.prepare('SELECT COUNT(*) AS n FROM usage_ledger_identity').get()?.n);
       if (indexedMembers !== totals.consideredCurrent) throw Error('BILLING_VISIBLE_MEMBER_COUNT_MISMATCH');
-      const result = { ok: true, run, ...ledgerVersion, catalog: rates.version, indexedMembers, ...totals,
+      const result = { ok: true, run, pricingBasis: 'official-api-usd/1', ...ledgerVersion, catalog: rates.version, indexedMembers, ...totals,
         ...(mappings.rules.length ? { channelMappings: mappings.rules } : {}),
-        windows: windows.map(({ range, members, tokens, baselineCost, unpricedTokens, recordedUnknownCurrency, estimated }) =>
-          ({ range, members, tokens, baselineCost, unpricedTokens, recordedUnknownCurrency,
-            estimatedByCurrency: Object.fromEntries([...estimated].map(([currency, amount]) => [currency, formatDecimal(amount, 24)])) })) };
+        windows: windows.map(({ from: _from, to: _to, calendarDays: _calendarDays, estimated, ...window }) =>
+          ({ ...window, estimatedCostUsd: formatDecimal(estimated, 24) })) };
       db.prepare('UPDATE usage_billing_runs SET result_json=? WHERE id=?').run(JSON.stringify(result), run);
       return result;
     });

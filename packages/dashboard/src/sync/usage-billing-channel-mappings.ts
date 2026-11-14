@@ -3,7 +3,7 @@ import { TRANSFER_SOURCES, type TransferSource } from '../domain/imports';
 import defaults from './usage-billing-channel-mappings.json';
 
 type ChannelMapping = { channel: TransferSource; model: string; evidence: string } & (
-  | { action: 'rate'; rateModel: string; rateChannel?: TransferSource }
+  | { action: 'map'; canonicalModel: string }
   | { action: 'exclude' }
   | { action: 'silence-missing-cache-write' }
 );
@@ -14,17 +14,16 @@ const isText = (value: unknown): value is string => typeof value === 'string' &&
 export function readBillingChannelMappings(path?: string) {
   const rules = new Map<string, ChannelMapping>();
   const input = path === undefined ? defaults : JSON.parse(readFileSync(path, 'utf8'));
-  if (input?.version !== 1 || !Array.isArray(input.rules)) throw Error('INVALID_BILLING_CHANNEL_MAPPINGS');
+  if (input?.version !== 2 || !Array.isArray(input.rules)) throw Error('INVALID_BILLING_CHANNEL_MAPPINGS');
   for (const rule of input.rules) {
     if (!rule || !TRANSFER_SOURCES.includes(rule.channel) || !isText(rule.model) || !isText(rule.evidence)) {
       throw Error('INVALID_BILLING_CHANNEL_MAPPING');
     }
-    const { channel, model, evidence, action, rateModel, rateChannel } = rule;
+    const { channel, model, evidence, action, canonicalModel } = rule;
     const id = key(channel, model);
     if (rules.has(id)) throw Error('DUPLICATE_BILLING_CHANNEL_MAPPING');
-    if (action === 'rate' && isText(rateModel) && (rateChannel === undefined || TRANSFER_SOURCES.includes(rateChannel))
-      && (rateModel !== model || (rateChannel !== undefined && rateChannel !== channel))) {
-      rules.set(id, { channel, model, evidence, action, rateModel, ...(rateChannel === undefined ? {} : { rateChannel }) });
+    if (action === 'map' && isText(canonicalModel) && canonicalModel !== model) {
+      rules.set(id, { channel, model, evidence, action, canonicalModel });
     } else if (action === 'exclude' || action === 'silence-missing-cache-write') {
       rules.set(id, { channel, model, evidence, action });
     } else throw Error('INVALID_BILLING_CHANNEL_MAPPING');

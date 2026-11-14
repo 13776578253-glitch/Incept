@@ -11,7 +11,7 @@ const isDigest = (value: unknown) => typeof value === 'string' && /^[a-f0-9]{64}
 
 function validPublication(data: BillingPublication) {
   const approval = data?.approval;
-  return data?.version === 1 && typeof data.run === 'string' && !!data.run.trim()
+  return data?.version === 2 && data.pricingBasis === 'official-api-usd/1' && typeof data.run === 'string' && !!data.run.trim()
     && isCount(data.revision) && isDigest(data.input) && isDigest(data.catalog) && isDigest(data.ledger)
     && Number.isFinite(Date.parse(data.asOf))
     && !!approval && [approval.actor, approval.reason, approval.baselineEvidence, approval.pricingEvidence]
@@ -20,10 +20,9 @@ function validPublication(data: BillingPublication) {
     && Array.isArray(data.windows) && data.windows.length === usageRanges.length
     && usageRanges.every(range => data.windows.some(window => window?.range === range && isCount(window.members)
       && isCount(window.tokens) && isCount(window.recordedUnknownCurrency) && window.recordedUnknownCurrency <= window.members
-      && isCount(window.unpricedTokens) && window.unpricedTokens <= window.tokens && window.estimatedByCurrency
-      && !Array.isArray(window.estimatedByCurrency) && typeof window.estimatedByCurrency === 'object'
-      && Object.entries(window.estimatedByCurrency).every(([currency, amount]) =>
-        /^[A-Z]{3}$/.test(currency) && typeof amount === 'string' && /^\d+(\.\d{1,24})?$/.test(amount))));
+      && isCount(window.unpricedTokens) && isCount(window.estimatedTokens) && isCount(window.excludedTokens)
+      && window.estimatedTokens + window.unpricedTokens + window.excludedTokens === window.tokens
+      && typeof window.estimatedCostUsd === 'string' && /^\d+(\.\d{1,24})?$/.test(window.estimatedCostUsd)));
 }
 
 export async function readPublishedBilling(range: UsageRange, database: string, publication: string): Promise<BillingReadResponse> {
@@ -36,6 +35,7 @@ export async function readPublishedBilling(range: UsageRange, database: string, 
   if (live.revision !== data.revision || live.ledger !== data.ledger) throw Error('BILLING_PUBLICATION_STALE');
   const window = data.windows.find(row => row.range === range)!;
   return { run: data.run, revision: data.revision, catalog: data.catalog, asOf: data.asOf,
-    range, members: window.members, tokens: window.tokens, estimatedByCurrency: window.estimatedByCurrency,
+    range, members: window.members, tokens: window.tokens, estimatedCostUsd: window.estimatedCostUsd,
+    estimatedTokens: window.estimatedTokens, excludedTokens: window.excludedTokens,
     recordedUnknownCurrency: window.recordedUnknownCurrency, unpricedTokens: window.unpricedTokens };
 }

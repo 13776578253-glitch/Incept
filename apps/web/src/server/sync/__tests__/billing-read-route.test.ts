@@ -34,7 +34,8 @@ it('keeps the pilot disabled by default and rejects other roles before reading',
 });
 
 it('serves the approved window only to Owner and keeps currency groups separate', async () => {
-  const data = { range: '14d', estimatedByCurrency: { USD: '0.01', EUR: '0.03' }, recordedUnknownCurrency: 2 };
+  const data = { range: '14d', estimatedCostUsd: '0.01', tokens: 4, estimatedTokens: 1,
+    unpricedTokens: 2, excludedTokens: 1, recordedUnknownCurrency: 2 };
   mocks.read.mockResolvedValue(data);
   const response = await GET(request('14d'));
   expect(response.status).toBe(200);

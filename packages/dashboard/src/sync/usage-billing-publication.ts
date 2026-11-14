@@ -8,7 +8,8 @@ import type { BillingReadWindow } from '../domain/usage-billing-read';
 import type { SyncActor } from '../domain/sync';
 
 type BillingCandidate = {
-  version: 1;
+  version: 2;
+  pricingBasis: 'official-api-usd/1';
   run: string;
   input: string;
   revision: number;
@@ -40,23 +41,27 @@ function readCandidate(path: string, run: string) {
     if (!row?.result_json || typeof row.input !== 'string') throw Error('BILLING_RUN_NOT_FOUND');
     const result = JSON.parse(String(row.result_json));
     const baseline = JSON.parse(String(row.baseline_json));
-    if (typeof result.ledger !== 'string') throw Error('BILLING_RUN_REBUILD_REQUIRED');
+    if (result.pricingBasis !== 'official-api-usd/1' || typeof result.ledger !== 'string') {
+      throw Error('BILLING_RUN_REBUILD_REQUIRED');
+    }
     const catalog = readUsageRates(db);
     if (row.catalog !== catalog.version) throw Error('BILLING_CATALOG_CHANGED');
-    const priceVersions = Number(db.prepare('SELECT COUNT(*) n FROM usage_rate_versions').get()?.n);
+    const priceVersions = Number(db.prepare('SELECT COUNT(*) n FROM usage_reference_rate_versions').get()?.n);
     const unpriced = db.prepare(`SELECT channel,model,reason,observations FROM usage_unpriced_models
       WHERE run=? ORDER BY channel,model,reason`).all(run);
-    const recorded = db.prepare(`SELECT source,model,COUNT(*) observations FROM usage_billing_details
-      WHERE run=? AND charge_status='recorded' AND currency IS NULL GROUP BY source,model ORDER BY source,model`).all(run);
+    const recorded = db.prepare(`SELECT d.source,d.model,COUNT(*) observations FROM usage_billing_recorded_audit a
+      JOIN usage_billing_details d ON d.run=a.run AND d.member=a.member
+      WHERE a.run=? AND a.currency IS NULL GROUP BY d.source,d.model ORDER BY d.source,d.model`).all(run);
     const publication: BillingCandidate = {
-      version: 1, run, input: row.input, revision: result.revision, ledger: result.ledger, catalog: catalog.version,
+      version: 2, pricingBasis: 'official-api-usd/1', run, input: row.input,
+      revision: result.revision, ledger: result.ledger, catalog: catalog.version,
       asOf: new Date(baseline.checkedAt).toISOString(), windows: result.windows,
     };
     return {
       publication, priceVersions, unpriced, recorded,
       ...(result.channelMappings ? { channelMappings: result.channelMappings,
         excluded: result.excluded, silentUnpriced: result.silentUnpriced } : {}),
-      pricingReviewDigest: hash(['billing-pricing-review/1', row.input, catalog.version, unpriced, recorded]),
+      pricingReviewDigest: hash(['billing-pricing-review/2', publication, unpriced]),
     };
   } finally { db.close(); }
 }

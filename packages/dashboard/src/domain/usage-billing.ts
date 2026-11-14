@@ -1,13 +1,12 @@
-import type { TransferEvent, TransferSource } from './imports';
+import type { TransferEvent } from './imports';
 import { dashboardDate } from './window';
 
 export const billingComponents = ['input', 'output', 'cacheRead', 'cacheWrite', 'reasoning'] as const;
 export type BillingComponent = typeof billingComponents[number];
 export type BillingRate = {
-  channel: TransferSource;
   model: string;
   provider: string;
-  currency: string;
+  currency: 'USD';
   evidence: string;
   effectiveFrom: number;
   effectiveTo?: number;
@@ -32,8 +31,7 @@ export function billingInterval(event: BillingUsage): readonly [number, number] 
 }
 
 export type UsageCharge =
-  | { status: 'recorded'; currency: string | null; amount: string }
-  | { status: 'estimated'; currency: string; amount: string; rateVersion: string }
+  | { status: 'estimated'; currency: 'USD'; amount: string; rateVersion: string }
   | { status: 'unpriced'; reason: 'RATE_NOT_FOUND' | 'RATE_COMPONENT_MISSING' | 'OCCURRENCE_TIME_UNKNOWN' | 'DAY_RATE_AMBIGUOUS' };
 
 export function decimalUnits(value: string, scale: number): bigint {
@@ -62,10 +60,6 @@ export function ledgerDecimal(value: number): string {
 }
 
 export function estimateUsage(event: BillingUsage, selected?: { version: string; rate: BillingRate }): UsageCharge {
-  if (event.recordedCost !== undefined) {
-    // The old transfer format records a number and carries no currency field.
-    return { status: 'recorded', currency: null, amount: ledgerDecimal(event.recordedCost) };
-  }
   if (!Number.isSafeInteger(event.timestampMs) || event.timestampMs <= 0) {
     return { status: 'unpriced', reason: 'OCCURRENCE_TIME_UNKNOWN' };
   }

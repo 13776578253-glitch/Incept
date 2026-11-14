@@ -4,7 +4,9 @@ export type BillingReadWindow = {
   range: UsageRange;
   members: number;
   tokens: number;
-  estimatedByCurrency: Record<string, string>;
+  estimatedCostUsd: string;
+  estimatedTokens: number;
+  excludedTokens: number;
   recordedUnknownCurrency: number;
   unpricedTokens: number;
 };
