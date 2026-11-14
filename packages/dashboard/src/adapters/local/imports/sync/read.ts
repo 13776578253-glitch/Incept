@@ -20,8 +20,6 @@ export const CURRENT_READ_SQL = `SELECT c.*,o.record_json,g.basis_json,g.mapping
  JOIN sync_generations g ON g.id=s.visible_generation JOIN sync_origins r ON r.scope_id=c.scope_id ORDER BY c.scope_id,c.position`;
 export const PROVENANCE_READ_SQL='SELECT p.* FROM sync_provenance p JOIN sync_scopes s ON s.scope_id=p.scope_id WHERE s.visible_generation IS NOT NULL ORDER BY p.source_order';
 
-// O(distinct eligible legacy variants + visible v2 records), independent of the
-// number of duplicate historical batch JSON payloads. No temporary compat DB.
 export type LedgerUsageMember = {
   kind: 'current' | 'legacy';
   container: string;
@@ -31,7 +29,18 @@ export type LedgerUsageMember = {
 };
 
 export function readSyncView(service: Pick<CompatibleSyncService, 'db' | 'revision'>, native: RawUsageEvent[] = [],
-  receiver = new Map<string,UnitPricing>(), aliases: Record<string,string> = {},
+  receiver = new Map<string,UnitPricing>(), aliases: Record<string,string> = {}) {
+  return scanSyncView(service, native, receiver, aliases);
+}
+
+export function visitSyncUsage(service: Pick<CompatibleSyncService, 'db' | 'revision'>,
+  receiver: Map<string, UnitPricing>, aliases: Record<string, string>,
+  onMember: (member: LedgerUsageMember, visible: RawUsageEvent) => void) {
+  return scanSyncView(service, [], receiver, aliases, onMember).dataRevision;
+}
+
+function scanSyncView(service: Pick<CompatibleSyncService, 'db' | 'revision'>, native: RawUsageEvent[],
+  receiver: Map<string, UnitPricing>, aliases: Record<string, string>,
   onMember?: (member: LedgerUsageMember, visible: RawUsageEvent) => void) {
   const db=service.db; db.exec('BEGIN');
   try {
@@ -52,6 +61,8 @@ export function readSyncView(service: Pick<CompatibleSyncService, 'db' | 'revisi
     for(const row of db.prepare(LEGACY_READ_SQL).iterate()) records.push({event:(JSON.parse(String(row.record_json)) as SyncRecord).event,
       catalog:catalogs.get(String(row.batch_id))!,batchId:String(row.batch_id),project:String(row.project),
       position:Number(row.position),observation:String(row.observation_id)});
+    // Legacy duplicates can refer to a later variant. Keep the legacy identity
+    // index, while the billing visitor consumes v2 members as they are read.
     const local=identityIndex(native.map(raw=>({raw,event:{...raw,eventId:nativeEventId(raw),source:raw.sourceId} as TransferEvent})),resolve), transferred=identityIndex(records,resolve);
     const seen=new Set<string>(), replacedIndexed=new Set<RawUsageEvent>(), events:RawUsageEvent[]=[], issues:string[]=[], targets=new Map(native.map(row=>[row.projectKey,row]));
     for(const {event,catalog,batchId,project:effectiveProject,position,observation} of records) {
@@ -75,11 +86,11 @@ export function readSyncView(service: Pick<CompatibleSyncService, 'db' | 'revisi
       const visible = applyCommandCodeQuota({...event,modelName,sourceId:event.source,sourceLabel:labels[event.source],deviceId:catalog.bundle.device.id,deviceLabel:catalog.bundle.device.label,importBatchId:batchId,
         projectKey:effectiveProject,projectName:project?.projectName??(target?event.projectName:event.projectName+' · '+catalog.bundle.device.label),workspacePath:project?.workspacePath??event.workspacePath,
         costSource:event.recordedCost===undefined?'calculated':'recorded',cost:event.recordedCost??computeCostFromPricing(price,event),missingPricing:event.recordedCost===undefined&&!canPriceUsage(price,event),dateKey,monthKey:dateKey.slice(0,7)});
-      events.push(visible);
-      onMember?.({ kind: 'legacy', container: batchId, position, observation, event }, visible);
+      if (onMember) onMember({ kind: 'legacy', container: batchId, position, observation, event }, visible);
+      else events.push(visible);
     }
     const ancestors=new Map<string,{batchId:string;legacyEventId:string}[]>();
-    for(const row of db.prepare(PROVENANCE_READ_SQL).iterate()) {
+    for(const row of onMember ? [] : db.prepare(PROVENANCE_READ_SQL).iterate()) {
       const key=JSON.stringify([row.scope_id,row.kind,row.target_key]),list=ancestors.get(key)??[];
       // Only the earliest general support and earliest exact legacy ID support
       // are needed; duplicate memberships never become per-read event copies.
@@ -96,12 +107,14 @@ export function readSyncView(service: Pick<CompatibleSyncService, 'db' | 'revisi
       // pricing map only for legacy/partial bases that predate a model entry.
       const basis:SyncBasis={...storedBasis,rates:{...Object.fromEntries(pricing),...storedBasis.rates}};
       const event=priceSyncRecord(scope,record,basis,JSON.parse(String(row.mappings_json)),String(row.label));
-      const kind=record.nativeKey?'native':record.pointKey?'point':'retained',key=record.nativeKey?.keyHash??record.pointKey??hash(record);
-      const supports=ancestors.get(JSON.stringify([row.scope_id,kind,key]))??ancestors.get(JSON.stringify([row.scope_id,'session',row.scope_id]))??[];
-      const ancestor=(supports.find(item=>item.legacyEventId===record.event.eventId)??supports[0])?.batchId,target=targets.get(event.projectKey);
-      const visible = {...event,...(target?{projectName:target.projectName,workspacePath:target.workspacePath}:{}),...(ancestor?{importBatchId:ancestor}:{})};
-      events.push(visible);
-      onMember?.({ kind: 'current', container: String(row.scope_id), position: Number(row.position), observation: String(row.observation_id), event: record.event }, visible);
+      if (onMember) {
+        onMember({ kind: 'current', container: String(row.scope_id), position: Number(row.position), observation: String(row.observation_id), event: record.event }, event);
+      } else {
+        const kind=record.nativeKey?'native':record.pointKey?'point':'retained',key=record.nativeKey?.keyHash??record.pointKey??hash(record);
+        const supports=ancestors.get(JSON.stringify([row.scope_id,kind,key]))??ancestors.get(JSON.stringify([row.scope_id,'session',row.scope_id]))??[];
+        const ancestor=(supports.find(item=>item.legacyEventId===record.event.eventId)??supports[0])?.batchId,target=targets.get(event.projectKey);
+        events.push({...event,...(target?{projectName:target.projectName,workspacePath:target.workspacePath}:{}),...(ancestor?{importBatchId:ancestor}:{})});
+      }
     }
     if(Number(db.prepare('SELECT COUNT(*) n FROM sync_legacy_quarantine').get()!.n))issues.push('LEGACY_OVERLAP_REVIEW_REQUIRED');
     const combined=[...native.filter(row=>!replacedIndexed.has(row)),...events];let tokens=0;

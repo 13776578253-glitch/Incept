@@ -8,6 +8,7 @@ import {createSyncHandler} from './controller';
 import {response,DeviceRequestLimiter,PreAuthRequestLimiter} from './http';
 import {RemoteSync} from './remote';
 import {configureTrustedDashboardExecutor, trustedDashboardEnabled} from '@incept/dashboard/adapters';
+import {scheduleManagedRefresh} from '@incept/dashboard/adapters/billing';
 const limiter=new DeviceRequestLimiter();
 const preAuthLimiter=new PreAuthRequestLimiter();
 
@@ -25,6 +26,8 @@ export function syncExecutor() {
       warnFreeBytes:configured('INCEPT_SYNC_WARN_FREE_BYTES',DEFAULT_CAPACITY.warnFreeBytes),rejectFreeBytes:configured('INCEPT_SYNC_REJECT_FREE_BYTES',DEFAULT_CAPACITY.rejectFreeBytes),
       maxStoreBytes:configured('INCEPT_SYNC_MAX_STORE_BYTES',DEFAULT_CAPACITY.maxStoreBytes!),memoryPercent:configured('INCEPT_SYNC_MEMORY_PERCENT',85),maxBatchRecords:configured('INCEPT_SYNC_MAX_BATCH_RECORDS',100_000)};
     globalThis.__inceptSyncExecutor={path,executor:new SyncExecutor(path,{legacyPath:trusted?undefined:legacyPath,trusted,policy,maxQueue:configured('INCEPT_SYNC_MAX_QUEUE',16),timeoutMs:configured('INCEPT_SYNC_TIMEOUT_MS',120_000)})};
+    if (trusted) globalThis.__inceptSyncExecutor.executor.onCommitted(() =>
+      scheduleManagedRefresh(path, process.env.INCEPT_BILLING_PUBLICATION_FILE ?? '', 1500));
   }
   if(trustedDashboardEnabled())configureTrustedDashboardExecutor(globalThis.__inceptSyncExecutor.executor);
   return globalThis.__inceptSyncExecutor.executor;

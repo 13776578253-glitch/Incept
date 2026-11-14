@@ -1,11 +1,11 @@
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { initializeUsageRateCatalog, publishUsageRates, readUsageRates } from '../adapters/local/usage-rate-catalog';
-import { readSyncView, type LedgerUsageMember } from '../adapters/local/imports/sync/read';
+import { visitSyncUsage, type LedgerUsageMember } from '../adapters/local/imports/sync/read';
 import { hash } from '../adapters/local/imports/identity';
 import type { UnitPricing } from '../adapters/local/types';
-import { billingComponents, decimalUnits, estimateUsage, formatDecimal, ledgerDecimal, usageComponentRates,
-  type BillingComponent, type BillingRate } from '../domain/usage-billing';
+import { decimalUnits, formatDecimal, ledgerDecimal, type BillingRate } from '../domain/usage-billing';
+import { estimateLedgerUsage } from './billing-usage-estimate';
 import { identityLedgerStamp } from './usage-identity-backfill';
 import { dateWindow, usageRanges } from '../domain/window';
 import { billingLedgerVersion } from './billing-ledger-version';
@@ -95,8 +95,8 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
       if (cursor?.source !== stamp) throw Error('BILLING_SOURCE_CHANGED');
       const rates = readUsageRates(db);
       const ledgerVersion = billingLedgerVersion(source);
-      const input = hash(['usage-billing-run/4', baseline, stamp, rates.version, ledgerVersion.ledger,
-        db.prepare('SELECT COALESCE(MAX(id),0) AS revision FROM usage_identity_audit').get()?.revision,
+      const identityRevision = Number(db.prepare('SELECT COALESCE(MAX(id),0) AS revision FROM usage_identity_audit').get()?.revision);
+      const input = hash(['usage-billing-run/4', baseline, stamp, rates.version, ledgerVersion.ledger, identityRevision,
         ...(mappings.rules.length ? [mappings.rules] : [])]);
       db.exec(`
         CREATE TABLE IF NOT EXISTS usage_billing_runs (
@@ -145,7 +145,7 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
         members: 0, tokens: 0, baselineCost: 0, unpricedTokens: 0, estimatedTokens: 0, excludedTokens: 0,
         recordedUnknownCurrency: 0, estimated: 0n }));
       const revision = () => Number(source.prepare('SELECT data_revision FROM sync_meta WHERE id=1').get()?.data_revision);
-      const view = readSyncView({ db: source, revision }, [], new Map(Object.entries(baseline.rates)), baseline.aliases, (member, visible) => {
+      const dataRevision = visitSyncUsage({ db: source, revision }, new Map(Object.entries(baseline.rates)), baseline.aliases, (member, visible) => {
         totals.considered++;
         if (member.kind === 'current') totals.consideredCurrent++;
         else totals.consideredLegacy++;
@@ -160,25 +160,11 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
           throw Error('INVALID_BILLING_DISPOSITION');
         }
         const event = { ...member.event, timestampPrecision: visible.timestampPrecision };
-        const counters: Record<BillingComponent, number> = { input: event.inputTokens, output: event.outputTokens,
-          cacheRead: event.cacheReadTokens, cacheWrite: event.cacheCreationTokens, reasoning: event.reasoningTokens };
-        const tokens = Object.values(counters).reduce((sum, count) => sum + count, 0);
+        const { counters, tokens, model, charge, silent } = estimateLedgerUsage(event, rates, mappings);
         if (tokens <= 0) {
           totals.skippedZeroTokens++;
           return;
         }
-        const mapping = mappings.get(event.source, event.modelName);
-        const model = mapping?.action === 'map' ? mapping.canonicalModel : event.modelName;
-        const selected = rates.select(model, event);
-        const charge = mapping?.action === 'exclude'
-          ? { status: 'excluded' as const, reason: 'CHANNEL_ROUTE_EXCLUDED' }
-          : estimateUsage(event, selected);
-        const perMillion = selected && usageComponentRates(event, selected.rate);
-        const silent = charge.status === 'unpriced' && charge.reason === 'RATE_COMPONENT_MISSING'
-          && mapping?.action === 'silence-missing-cache-write' && perMillion && counters.cacheWrite > 0
-          && perMillion.cacheWrite === undefined
-          && billingComponents.every(component => component === 'cacheWrite' || counters[component] === 0
-            || perMillion[component] !== undefined);
         if (silent) totals.silentUnpriced++;
         const memberKey = referenceKey(member);
         if (event.recordedCost !== undefined) {
@@ -209,10 +195,10 @@ export function buildBillingDetails(sourcePath: string, sidecarPath: string, bas
           }
         }
       });
-      if (view.dataRevision !== cursor.revision || identityLedgerStamp(sourcePath) !== stamp) throw Error('BILLING_SOURCE_CHANGED');
+      if (dataRevision !== cursor.revision || identityLedgerStamp(sourcePath) !== stamp) throw Error('BILLING_SOURCE_CHANGED');
       const indexedMembers = Number(db.prepare('SELECT COUNT(*) AS n FROM usage_ledger_identity').get()?.n);
       if (indexedMembers !== totals.consideredCurrent) throw Error('BILLING_VISIBLE_MEMBER_COUNT_MISMATCH');
-      const result = { ok: true, run, pricingBasis: 'official-api-usd/1', ...ledgerVersion, catalog: rates.version, indexedMembers, ...totals,
+      const result = { ok: true, run, pricingBasis: 'official-api-usd/1', ...ledgerVersion, catalog: rates.version, identity: identityRevision, indexedMembers, ...totals,
         ...(mappings.rules.length ? { channelMappings: mappings.rules } : {}),
         windows: windows.map(({ from: _from, to: _to, calendarDays: _calendarDays, estimated, ...window }) =>
           ({ ...window, estimatedCostUsd: formatDecimal(estimated, 24) })) };

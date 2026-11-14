@@ -175,4 +175,18 @@ node packages/dashboard/dist/sync-maintenance.mjs publish-usage-billing-read --s
 
 发布文件的 `approval` 区保存 CLI 填报的操作者标识、发布原因、发布时间、两项证据引用及费率审阅摘要。Owner API 仅返回汇总字段。早期生成的无审计发布文件需要重新发布。证据字段填写归档引用，避免写入凭据。
 
-API 验收后可额外设置 `INCEPT_BILLING_UI_MODE=owner`，在 Owner 的概览主费用卡和费用区读取新版快照。同步 revision、可见谱系或旧导入状态变化时接口返回 503，页面显示快照暂不可用。撤回 UI 试读时关闭 UI 开关，撤回 API 试读时关闭读取开关。趋势、模型和项目费用明细将在取得同口径聚合后单独迁移。开启真实环境试读前需完成 `pnpm build`、同期四窗口对账和目标目录审核。持续使用前需建立后台重估与发布机制。
+API 验收后可额外设置 `INCEPT_BILLING_UI_MODE=owner`，在 Owner 的概览主费用卡和费用区读取新版快照。冻结发布模式在同步 revision、可见谱系或旧导入状态变化时返回 503。撤回 UI 试读时关闭 UI 开关，撤回 API 试读时关闭读取开关。开启真实环境试读前需完成 `pnpm build`、同期四窗口对账和目标目录审核。趋势、模型和项目费用明细将在取得同口径聚合后单独迁移。
+
+### 托管计费投影
+
+托管模式适用于无活动 v1 导入批次的受信任账本。先以目标账本当前 revision 的审批件初始化独立状态库。用新版本的 `review-usage-billing-read` 和 `publish-usage-billing-read` 生成含映射摘要与身份审计修订的发布件。初始化时比对审批件的四窗口成员数、Token、覆盖及 USD 精确金额。
+
+```text
+node packages/dashboard/dist/sync-maintenance.mjs refresh-managed-billing --source=<账本绝对路径> --catalog-sidecar=<已审核旁路库> --publication=<已审核发布件> --state=<新状态库绝对路径>
+```
+
+把 `INCEPT_BILLING_PUBLICATION_MODE` 设为 `managed`，并配置 `INCEPT_BILLING_MANAGED_STATE`、`INCEPT_BILLING_APPROVED_CATALOG` 与既有的 `INCEPT_BILLING_PUBLICATION_FILE`。自定义渠道映射通过 `--channel-mappings` 和 `INCEPT_BILLING_APPROVED_MAPPINGS` 使用同一文件。把已审核发布件、旁路库与映射视作只读归档。费率升级、渠道映射调整或身份消歧使用新重估批次、新审批件和新状态库。包含活动 v1 批次的账本继续执行离线对账。
+
+Sync 提交后后台按可见代际的 `sync_changes` 更新受影响位置，回滚或谱系分叉时重核对应 scope。同步继续推进时，Owner 接口返回最近完成的快照，并给出快照 `revision` 和当前 `liveRevision`。新缺价和锚点冲突保留用量，分别记录待审分组和冲突笔数。空间低于 2 GiB 或容器内存余量小于 160 MiB 时延后后台更新。状态库内的汇总和游标在同一 SQLite 事务中提交。
+
+Revision 3265 在隔离的 Linux/amd64 容器中重放 84,677 条可见成员，容器限额 224 MiB，Node 旧生代上限 128 MiB。流式全量重估与原版四窗口结果逐项一致，托管初始化也与已审结果逐项一致。回填仍保留 v1 历史去重索引。

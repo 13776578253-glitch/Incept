@@ -14,8 +14,10 @@ import { PHASE0_NOW, phase0Export, phase0Import, writePhase0Home } from './fixtu
 import { projection } from '../sync/projection';
 import { loadLocalPricingMap } from '../adapters/local/pricing';
 import { readLocalOverrides } from '../adapters/local/overrides';
-import { readPublishedBilling } from '../adapters/runtime/billing-publication';
+import { managedInput, readPublishedBilling, scheduleManagedRefresh } from '../adapters/runtime/billing-publication';
 import { readUsageRates } from '../adapters/local/usage-rate-catalog';
+import { updateManagedBilling } from '../sync/managed-billing';
+import { SyncExecutor } from '../sync/executor';
 
 const time = Date.UTC(2026, 9, 15);
 const scope = { source: 'antigravity', sessionId: 'billing', originId: 'origin',
@@ -118,6 +120,10 @@ it('retains all member references, publishes exact new rates, and pins previous 
     await expect(publish([{ ...weekly, schedule: { ...weekly.schedule, holidays: [
       { from: '2026-02-30', to: '2026-03-01' },
     ] } }])).rejects.toThrow('INVALID_USAGE_RATE_SCHEDULE');
+    for (const key of Object.keys(weekly.schedule).filter(key => key !== 'version')) {
+      const schedule = { version: 'mixed', periods: [], [key]: weekly.schedule[key as keyof typeof weekly.schedule] };
+      await expect(publish([{ ...weekly, schedule }])).rejects.toThrow('INVALID_USAGE_RATE_SCHEDULE');
+    }
     await expect(build('first')).resolves.toMatchObject({ members: 4, mapped: 1, unproven: 1, conflict: 2,
       considered: 6, skippedAfterCutoff: 1, skippedZeroTokens: 1,
       recorded: 1, estimated: 1, unpriced: 3, windows: expect.arrayContaining([{ range: 'all', members: 4,
@@ -216,6 +222,16 @@ it('retains all member references, publishes exact new rates, and pins previous 
       expect(result).toEqual({ run: 'reviewed', revision: report.publication.revision, catalog: report.publication.catalog,
         asOf: new Date(time).toISOString(), range: 'all', members: 4, tokens: 400, estimatedTokens: 200,
         unpricedTokens: 200, excludedTokens: 0, recordedUnknownCurrency: 1, estimatedCostUsd: '0.000025' });
+      const managed = managedInput(source, artifact, {
+        INCEPT_BILLING_MANAGED_STATE: join(directory, 'managed.db'), INCEPT_BILLING_APPROVED_CATALOG: sidecar,
+      });
+      expect(updateManagedBilling(managed, time).windows.find(window => window.range === 'all'))
+        .toMatchObject({ conflicted: 0, members: 4, estimatedCostUsd: '0.000025' });
+      const managedState = new DatabaseSync(managed.state, { readOnly: true });
+      try {
+        expect(managedState.prepare("SELECT COUNT(*) n FROM billing_members WHERE anchor_kind='usage-row/1' AND event_id IS NOT NULL").get()?.n).toBe(2);
+        expect(managedState.prepare('SELECT COUNT(*) n FROM billing_quarantined_anchors').get()?.n).toBe(1);
+      } finally { managedState.close(); }
       const replaced = new CompatibleSyncService(source);
       try {
         replaced.db.exec("UPDATE sync_scopes SET fenced=1");
@@ -224,6 +240,90 @@ it('retains all member references, publishes exact new rates, and pins previous 
     } finally { db.close(); }
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
+
+it('publishes appended and rolled-back observations with pinned rates while the prior snapshot stays readable', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'incept-managed-billing-'));
+  const source = join(directory, 'source.db'), sidecar = join(directory, 'billing.db');
+  const state = join(directory, 'managed.db'), catalog = join(directory, 'rates.json');
+  const baseline = join(directory, 'baseline.json'), report = join(directory, 'review.json');
+  const approval = join(directory, 'approval.json'), publication = join(directory, 'publication.json');
+  const first = fromEvents([event], scope, undefined, 'managed-first');
+  const commit = (batch: typeof first, register = false) => {
+    const service = new CompatibleSyncService(source);
+    try {
+      if (register) service.register(batch.header.manifest.scope, 'fixture', owner);
+      service.begin(batch.header, owner);
+      service.stage(scope.deviceId, batch.header.batchId, 0, batch.records, owner);
+      expect(service.commit(scope.deviceId, batch.header.batchId, owner).status).toBe('committed');
+    } finally { service.close(); }
+  };
+  try {
+    commit(first, true);
+    expect(backfillUsageIdentity(source, sidecar, 100).complete).toBe(true);
+    writeFileSync(baseline, JSON.stringify({ checkedAt: time, rates: {}, aliases: {} }));
+    writeFileSync(catalog, JSON.stringify({ rates: [rate] }));
+    await runMaintenance(['publish-usage-rates', '--sidecar=' + sidecar, '--catalog=' + catalog], {});
+    await runMaintenance(['build-usage-billing', '--source=' + source, '--sidecar=' + sidecar,
+      '--baseline=' + baseline, '--run=managed-approved'], {});
+    await runMaintenance(['review-usage-billing-read', '--sidecar=' + sidecar, '--run=managed-approved', '--report=' + report], {});
+    const review = JSON.parse(readFileSync(report, 'utf8'));
+    writeFileSync(approval, JSON.stringify({ ...review.publication, pricingReviewDigest: review.pricingReviewDigest,
+      baselineEvidence: 'fixture baseline', pricingEvidence: 'fixture rates' }));
+    await runMaintenance(['publish-usage-billing-read', '--sidecar=' + sidecar, '--run=managed-approved', '--approval=' + approval,
+      '--output=' + publication, '--owner-confirm=I_AM_THE_OWNER', '--actor=fixture', '--reason=fixture'], {});
+    const artifact = JSON.parse(readFileSync(publication, 'utf8'));
+    const env = { INCEPT_BILLING_MANAGED_STATE: state, INCEPT_BILLING_APPROVED_CATALOG: sidecar };
+    const input = managedInput(source, artifact, env);
+    expect(() => updateManagedBilling(input, time, false)).toThrow('MANAGED_BILLING_BOOTSTRAP_REQUIRED');
+    expect(updateManagedBilling(input, time)).toMatchObject({ revision: artifact.revision, estimatedMembers: 1 });
+    for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
+    vi.stubEnv('INCEPT_BILLING_PUBLICATION_MODE', 'managed');
+    vi.stubEnv('INCEPT_BILLING_READ_MODE', '');
+    const second = fromEvents([event, { ...event, eventId: hash('managed-added'), modelName: 'new/unknown' }],
+      scope, first.header, 'managed-append');
+    const executor = new SyncExecutor(source, { trusted: true });
+    const actor = { role: 'device', deviceId: scope.deviceId } as const;
+    vi.stubEnv('INCEPT_BILLING_READ_MODE', 'owner');
+    let stop = () => {};
+    const scheduled = new Promise<void>(done => {
+      stop = executor.onCommitted(() => { scheduleManagedRefresh(source, publication, 1000); done(); });
+    });
+    try {
+      await executor.execute({ op: 'begin', header: second.header, actor });
+      await executor.execute({ op: 'stage', device: scope.deviceId, batch: second.header.batchId, offset: 0, records: second.records, actor });
+      await executor.execute({ op: 'commit', device: scope.deviceId, batch: second.header.batchId, actor });
+      await scheduled;
+      vi.stubEnv('INCEPT_BILLING_READ_MODE', '');
+      await expect(readPublishedBilling('all', source, publication)).resolves.toMatchObject({
+        revision: artifact.revision, liveRevision: artifact.revision + 1, estimatedCostUsd: '0.0000125',
+      });
+      vi.stubEnv('INCEPT_BILLING_READ_MODE', 'owner');
+      await vi.waitFor(() => {
+        const db = new DatabaseSync(state, { readOnly: true });
+        try { expect(db.prepare('SELECT revision FROM billing_checkpoint').get()?.revision).toBe(artifact.revision + 1); }
+        finally { db.close(); }
+      }, { timeout: 4000 });
+    } finally { stop(); await executor.close(); }
+    vi.stubEnv('INCEPT_BILLING_READ_MODE', '');
+    expect(updateManagedBilling(input, time).estimatedMembers).toBe(0);
+    await expect(readPublishedBilling('all', source, publication)).resolves.toMatchObject({
+      revision: artifact.revision + 1, liveRevision: artifact.revision + 1, estimatedCostUsd: '0.0000125',
+      members: 2, unpricedGroups: 1, unpricedTokens: 100,
+    });
+    const service = new CompatibleSyncService(source);
+    try { service.rollback(second.header.manifest.generationId, owner); }
+    finally { service.close(); }
+    expect(updateManagedBilling(input, time)).toMatchObject({ revision: artifact.revision + 2, estimatedMembers: 0,
+      windows: expect.arrayContaining([expect.objectContaining({ range: 'all', members: 1, unpricedGroups: 0, unpricedTokens: 0 })]) });
+    writeFileSync(catalog, JSON.stringify({ rates: [{ ...rate, model: 'new/unknown' }] }));
+    await runMaintenance(['publish-usage-rates', '--sidecar=' + sidecar, '--catalog=' + catalog], {});
+    expect(() => updateManagedBilling(input, time)).toThrow('MANAGED_BILLING_RULES_CHANGED');
+    await expect(readPublishedBilling('all', source, publication)).resolves.toMatchObject({ revision: artifact.revision + 2 });
+  } finally {
+    vi.unstubAllEnvs();
+    rmSync(directory, { recursive: true, force: true });
+  }
+}, 10_000);
 
 it('reconciles a migrated v1 fixture against the trusted Dashboard across all four windows', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'incept-billing-v1-'));

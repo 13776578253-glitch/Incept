@@ -25,4 +25,6 @@ const syncTemporary=syncOutput+'.'+randomUUID()+'.tmp';
 try {await writeFile(syncTemporary,syncResult.outputFiles[0].contents,{flag:'wx'});await rename(syncTemporary,syncOutput);}
 finally {await unlink(syncTemporary).catch(()=>{});}
 console.log('Dashboard sync worker built');
+await build({entryPoints:[join(root,'src/sync/managed-billing-worker.ts')],
+  outfile:join(root,'dist/dashboard-billing-worker.mjs'),bundle:true,platform:'node',format:'esm',target:'node24'});
 await build({entryPoints:[join(root,'src/sync/index.ts')],outfile:join(root,'dist/sync-executor.mjs'),bundle:true,platform:'node',format:'esm',target:'node22'});

@@ -17,6 +17,8 @@ import {backfillUsageIdentity} from './usage-identity-backfill';
 import {buildBillingDetails,publishBillingCatalog} from './usage-billing-maintenance';
 import {resolveIdentityConflict} from './usage-identity-resolution';
 import {publishBillingRead,reviewBillingRead} from './usage-billing-publication';
+import {managedInput,readBillingPublication} from '../adapters/runtime/billing-publication';
+import {updateManagedBilling} from './managed-billing';
 import type {SyncActor} from '../domain/sync';
 import type {TokenDashboardData,UsageRange} from '../domain';
 
@@ -146,6 +148,16 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
     return buildBillingDetails(absolute(options,'source'),absolute(options,'sidecar'),
       absolute(options,'baseline'),required(options,'run'),
       options['channel-mappings']===undefined?undefined:absolute(options,'channel-mappings'));
+  }
+  if(command==='refresh-managed-billing'){
+    const source = absolute(options, 'source');
+    const publication = await readBillingPublication(absolute(options, 'publication'));
+    return updateManagedBilling(managedInput(source, publication, {
+      INCEPT_BILLING_MANAGED_STATE: absolute(options, 'state'),
+      INCEPT_BILLING_APPROVED_CATALOG: absolute(options, 'catalog-sidecar'),
+      INCEPT_BILLING_APPROVED_MAPPINGS: options['channel-mappings'] === undefined
+        ? undefined : absolute(options, 'channel-mappings'),
+    }));
   }
   if(command==='resolve-usage-identity-conflict'){
     const actor=owner(options);

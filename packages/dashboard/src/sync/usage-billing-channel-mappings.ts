@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { hash } from '../adapters/local/imports/identity';
 import { TRANSFER_SOURCES, type TransferSource } from '../domain/imports';
 import defaults from './usage-billing-channel-mappings.json';
 
@@ -32,4 +33,8 @@ export function readBillingChannelMappings(path?: string) {
     rules: [...rules.keys()].sort().map(id => rules.get(id)!),
     get: (channel: TransferSource, model: string) => rules.get(key(channel, model)),
   };
+}
+
+export function billingMappingDigest(mappings: Pick<ReturnType<typeof readBillingChannelMappings>, 'rules'>) {
+  return hash(['billing-mappings/1', mappings.rules]);
 }

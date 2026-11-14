@@ -6,6 +6,7 @@ import { readUsageRates } from '../adapters/local/usage-rate-catalog';
 import { usageRanges } from '../domain/window';
 import type { BillingReadWindow } from '../domain/usage-billing-read';
 import type { SyncActor } from '../domain/sync';
+import { billingMappingDigest } from './usage-billing-channel-mappings';
 
 type BillingCandidate = {
   version: 2;
@@ -15,6 +16,8 @@ type BillingCandidate = {
   revision: number;
   ledger: string;
   catalog: string;
+  mappings?: string;
+  identity?: number;
   asOf: string;
   windows: (BillingReadWindow & { baselineCost: number })[];
 };
@@ -56,6 +59,8 @@ function readCandidate(path: string, run: string) {
       version: 2, pricingBasis: 'official-api-usd/1', run, input: row.input,
       revision: result.revision, ledger: result.ledger, catalog: catalog.version,
       asOf: new Date(baseline.checkedAt).toISOString(), windows: result.windows,
+      mappings: billingMappingDigest({ rules: result.channelMappings ?? [] }),
+      identity: result.identity,
     };
     return {
       publication, priceVersions, unpriced, recorded,

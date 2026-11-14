@@ -28,7 +28,8 @@ function normalizeSchedule(schedule: BillingSchedule, rate: BillingRate): Billin
   if (!schedule || typeof schedule.version !== 'string' || !schedule.version.trim()) throw invalid();
   const { version } = schedule;
   if ('periods' in schedule) {
-    if ('peakHours' in schedule || !Array.isArray(schedule.periods) || schedule.periods.some((period, i) =>
+    if (['utcOffsetMinutes', 'weekdays', 'peakHours', 'holidays', 'peakMultiplier'].some(key => key in schedule)
+      || !Array.isArray(schedule.periods) || schedule.periods.some((period, i) =>
       !period || !Number.isSafeInteger(period.from) || !Number.isSafeInteger(period.to) || period.to <= period.from
       || period.from < rate.effectiveFrom || (rate.effectiveTo !== undefined && period.to > rate.effectiveTo)
       || (i > 0 && period.from < schedule.periods[i - 1].to))) throw invalid();

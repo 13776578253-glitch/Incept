@@ -16,4 +16,7 @@ export type BillingReadResponse = BillingReadWindow & {
   revision: number;
   catalog: string;
   asOf: string;
+  conflicted?: number;
+  unpricedGroups?: number;
+  liveRevision?: number;
 };

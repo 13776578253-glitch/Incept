@@ -219,8 +219,8 @@
       "model": "gpt-5.6-sol",
       "provider": "OpenAI",
       "currency": "USD",
-      "evidence": "OpenAI Standard API promotional USD price through November 30, 2026 (UTC catalog boundary); https://developers.openai.com/api/docs/models/gpt-5.6-sol",
-      "effectiveFrom": 1787356800000,
+      "evidence": "OpenAI Standard API promotion announced August 21 through November 30, 2026; catalog uses UTC dates; https://developers.openai.com/api/docs/changelog?mw_entry=2026-08-20-974ac0734e053853 ; https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "effectiveFrom": 1787270400000,
       "effectiveTo": 1796083200000,
       "perMillion": {"input": "4", "output": "20", "cacheRead": "0.4", "reasoning": "20"},
       "longPrompt": {
@@ -245,8 +245,8 @@
       "model": "gpt-5.6-terra",
       "provider": "OpenAI",
       "currency": "USD",
-      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-5.6-terra ; https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/",
-      "effectiveFrom": 1785456000000,
+      "evidence": "OpenAI Standard API price effective July 30, 2026; catalog uses UTC dates; https://developers.openai.com/api/docs/models/gpt-5.6-terra ; https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/",
+      "effectiveFrom": 1785369600000,
       "perMillion": {"input": "2", "output": "12", "cacheRead": "0.2", "reasoning": "12"},
       "longPrompt": {
         "aboveInputTokens": 272000,
