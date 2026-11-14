@@ -11,6 +11,7 @@ import type { ProjectsState } from './use-projects-state';
 
 type ProjectAttributionTableProps = {
   data: TokenDashboardData;
+  showLegacyCosts?: boolean;
 } & Pick<ProjectsState, 'selectedProjectKey' | 'setSelectedProjectKey' | 'maxProjectTokens'>;
 
 export function ProjectAttributionTable({
@@ -18,6 +19,7 @@ export function ProjectAttributionTable({
   setSelectedProjectKey,
   maxProjectTokens,
   data,
+  showLegacyCosts = true,
 }: ProjectAttributionTableProps) {
   const t = useTranslations('dashboard');
   const { expanded, visibleRows, toggle } = useExpandableRows(data.projects, 10, data.range ?? 'all');
@@ -61,9 +63,9 @@ export function ProjectAttributionTable({
               <th className="px-3 py-2.5 text-right">
                 {t('projects.attribution.colShare')}
               </th>
-              <th className="py-2.5 pl-3 text-right">
+              {showLegacyCosts && <th className="py-2.5 pl-3 text-right">
                 {t('projects.attribution.colCost')}
-              </th>
+              </th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)] tabular-nums">
@@ -133,9 +135,9 @@ export function ProjectAttributionTable({
                   <td className="px-3 py-2.5 text-right font-mono text-[var(--color-text-muted)]">
                     {formatPercent(proj.shareOfTokens, 1)}
                   </td>
-                  <td className="py-2.5 pl-3 text-right font-mono font-semibold text-[var(--color-text)]">
+                  {showLegacyCosts && <td className="py-2.5 pl-3 text-right font-mono font-semibold text-[var(--color-text)]">
                     {formatKnownCost(proj.cost, proj.missingPricing)}
-                  </td>
+                  </td>}
                 </tr>
               );
             })}

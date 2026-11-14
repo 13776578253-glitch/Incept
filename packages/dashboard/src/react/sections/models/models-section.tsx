@@ -10,10 +10,12 @@ import { ModelsTable } from './models-table';
 
 type ModelsSectionProps = {
   data: TokenDashboardData;
+  showLegacyCosts?: boolean;
 };
 
 export function ModelsSection({
   data,
+  showLegacyCosts = true,
 }: ModelsSectionProps) {
   const t = useTranslations('dashboard');
   const {
@@ -26,7 +28,7 @@ export function ModelsSection({
     maxSortedModelMetric,
     tokenTypeItems,
     maxTokenTypeVolume,
-  } = useModelsState(data);
+  } = useModelsState(data, showLegacyCosts);
 
   return (
     <section
@@ -47,11 +49,12 @@ export function ModelsSection({
         <TokenTypesPanel tokenTypeItems={tokenTypeItems} maxTokenTypeVolume={maxTokenTypeVolume} />
 
         {/* Flat Panel 2: Client & Source Distribution (All 7 Local Sources) */}
-        <SourcesPanel data={data} />
+        <SourcesPanel data={data} showLegacyCosts={showLegacyCosts} />
       </div>
 
       {/* Full Model & Slot Breakdown Table (30 Models across all sources) */}
       <ModelsTable
+        showLegacyCosts={showLegacyCosts}
         selectedModelSource={selectedModelSource}
         setSelectedModelSource={setSelectedModelSource}
         modelSort={modelSort}

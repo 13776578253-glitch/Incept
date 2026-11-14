@@ -8,9 +8,10 @@ import type { OverviewState } from './use-overview-state';
 import { modelSeries, modelShares, tokenShares, type ShareSegment } from './trend-series';
 
 type TrendChartProps = Pick<OverviewState, 'trendItems' | 'activeTrendIndex' | 'trendMetric' | 'maxTrendValue'>
-  & { setSelectedTrendIndex: DashboardWindow['setSelectedTrendIndex'] };
+  & { setSelectedTrendIndex: DashboardWindow['setSelectedTrendIndex']; showLegacyCosts?: boolean };
 
-export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrendValue, setSelectedTrendIndex }: TrendChartProps) {
+export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrendValue, setSelectedTrendIndex,
+  showLegacyCosts = true }: TrendChartProps) {
   const t = useTranslations('dashboard');
   const series = useMemo(() => modelSeries(trendItems), [trendItems]);
   const isShare = trendMetric === 'stacked' || trendMetric === 'models';
@@ -22,7 +23,7 @@ export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrend
     : t('overview.trend.parts.' + part.id);
   const segmentDetail = (part: ShareSegment) => segmentName(part) + ': ' + formatPercent(part.share, 1)
     + ' · ' + formatCompactTokens(part.tokens)
-    + (trendMetric === 'models' ? ' · ' + formatUsd(part.cost ?? 0) : '');
+    + (trendMetric === 'models' && showLegacyCosts ? ' · ' + formatUsd(part.cost ?? 0) : '');
 
   return (
     <div className="dashboard-trend-chart">
@@ -73,7 +74,7 @@ export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrend
         {legend.map(part => (
           <span key={part.id} className="dashboard-trend-legend-item" title={segmentDetail(part)}>
             <i style={{ backgroundColor: part.color }} />
-            {segmentName(part)} <span>{formatPercent(part.share, 1)}{trendMetric === 'models' ? ' · ' + formatUsd(part.cost ?? 0) : ''}</span>
+            {segmentName(part)} <span>{formatPercent(part.share, 1)}{trendMetric === 'models' && showLegacyCosts ? ' · ' + formatUsd(part.cost ?? 0) : ''}</span>
           </span>
         ))}
       </div>

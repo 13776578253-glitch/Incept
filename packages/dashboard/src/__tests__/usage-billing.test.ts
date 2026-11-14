@@ -309,12 +309,34 @@ it('publishes appended and rolled-back observations with pinned rates while the 
     await expect(readPublishedBilling('all', source, publication)).resolves.toMatchObject({
       revision: artifact.revision + 1, liveRevision: artifact.revision + 1, estimatedCostUsd: '0.0000125',
       members: 2, unpricedGroups: 1, unpricedTokens: 100,
+      breakdown: {
+        days: [{ day: '2026-10-15', estimatedCostUsd: '0.0000125', estimatedTokens: 100, unpricedTokens: 100 }],
+        models: expect.arrayContaining([
+          { model: 'provider/a', estimatedCostUsd: '0.0000125',
+            channels: [{ channel: 'antigravity', estimatedCostUsd: '0.0000125' }] },
+          { model: 'new/unknown', unpricedTokens: 100, estimatedCostUsd: '0' },
+        ]),
+        unpriced: [{ channel: 'antigravity', model: 'new/unknown', observations: 1 }],
+      },
     });
     const service = new CompatibleSyncService(source);
     try { service.rollback(second.header.manifest.generationId, owner); }
     finally { service.close(); }
     expect(updateManagedBilling(input, time)).toMatchObject({ revision: artifact.revision + 2, estimatedMembers: 0,
       windows: expect.arrayContaining([expect.objectContaining({ range: 'all', members: 1, unpricedGroups: 0, unpricedTokens: 0 })]) });
+    await expect(readPublishedBilling('all', source, publication)).resolves.toMatchObject({
+      breakdown: { days: [{ estimatedCostUsd: '0.0000125', unpricedTokens: 0 }],
+        models: [{ model: 'provider/a', estimatedTokens: 100 }], unpriced: [] },
+    });
+    // An existing P1 checkpoint stays readable during the aggregate migration.
+    const existing = new DatabaseSync(state);
+    try { existing.exec('DROP TABLE billing_model_days; DROP TABLE billing_breakdown'); }
+    finally { existing.close(); }
+    expect((await readPublishedBilling('all', source, publication)).breakdown).toBeUndefined();
+    expect(updateManagedBilling(input, time).estimatedMembers).toBe(0);
+    await expect(readPublishedBilling('all', source, publication)).resolves.toMatchObject({
+      breakdown: { models: [{ model: 'provider/a', estimatedTokens: 100 }] },
+    });
     writeFileSync(catalog, JSON.stringify({ rates: [{ ...rate, model: 'new/unknown' }] }));
     await runMaintenance(['publish-usage-rates', '--sidecar=' + sidecar, '--catalog=' + catalog], {});
     expect(() => updateManagedBilling(input, time)).toThrow('MANAGED_BILLING_RULES_CHANGED');

@@ -8,10 +8,12 @@ import { MODEL_COLORS } from '../../model-colors';
 
 type SourcesPanelProps = {
   data: TokenDashboardData;
+  showLegacyCosts?: boolean;
 };
 
 export function SourcesPanel({
   data,
+  showLegacyCosts = true,
 }: SourcesPanelProps) {
   const t = useTranslations('dashboard');
 
@@ -99,10 +101,10 @@ export function SourcesPanel({
                 <span>{t(`models.sources.${src.descriptionKey}`)}</span>
                 <span className="shrink-0 font-mono tabular-nums">
                   {isActive
-                    ? `${t('models.sources.sessionsModels', {
+                    ? t('models.sources.sessionsModels', {
                       sessions: src.sessionCount,
                       models: src.modelsUsed.length,
-                    })} · ${formatKnownCost(src.cost, src.missingPricing)}`
+                    }) + (showLegacyCosts ? ' · ' + formatKnownCost(src.cost, src.missingPricing) : '')
                     : '—'}
                 </span>
               </div>

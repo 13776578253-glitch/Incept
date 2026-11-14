@@ -11,6 +11,7 @@ export function ReferenceCostMetric({ preview, showBreakdown = false }: { previe
     ? format.number(data.estimatedTokens / eligible, { style: 'percent', maximumFractionDigits: 2 })
     : t('notApplicable');
   const amount = data && data.estimatedTokens > 0 ? `${formatUsd(Number(data.estimatedCostUsd))} USD` : '—';
+  const catchingUp = data?.liveRevision !== undefined && data.revision < data.liveRevision;
 
   return (
     <div role="status" aria-busy={preview.status === 'loading'}
@@ -19,6 +20,9 @@ export function ReferenceCostMetric({ preview, showBreakdown = false }: { previe
       <div className="mt-2 text-[1.75rem] font-semibold tracking-[-0.04em] tabular-nums text-[var(--color-text)]">{amount}</div>
       <p className="mt-1.5 min-h-5 text-[0.7rem] text-[var(--color-nav-muted)]">
         {data ? t('coverage', { coverage }) : t(preview.status === 'loading' ? 'loading' : 'unavailable')}
+      </p>
+      <p className="min-h-5 text-[0.7rem] text-[var(--badge-amber-fg)]">
+        {catchingUp && data && t('catchingUp', { revision: String(data.revision), liveRevision: String(data.liveRevision) })}
       </p>
       {showBreakdown && (
         <dl className="mt-4 grid min-h-28 gap-3 text-sm text-[var(--color-text-muted)] sm:min-h-14 sm:grid-cols-4">

@@ -12,6 +12,7 @@ import type { ModelsState } from './use-models-state';
 
 type ModelsTableProps = {
   data: TokenDashboardData;
+  showLegacyCosts?: boolean;
 } & Pick<ModelsState,
   'selectedModelSource'
   | 'setSelectedModelSource'
@@ -31,6 +32,7 @@ export function ModelsTable({
   sortedModels,
   maxSortedModelMetric,
   data,
+  showLegacyCosts = true,
 }: ModelsTableProps) {
   const t = useTranslations('dashboard');
   const { expanded, visibleRows, toggle } = useExpandableRows(sortedModels, 10, (data.range ?? 'all') + ':' + selectedModelSource);
@@ -54,7 +56,7 @@ export function ModelsTable({
                 { id: 'cost', label: t('models.table.sortByCost') },
                 { id: 'output', label: t('models.table.sortByOutput') },
               ] as const
-            ).map((item) => (
+            ).filter(item => showLegacyCosts || item.id !== 'cost').map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -116,7 +118,7 @@ export function ModelsTable({
               <th className="px-3 py-2.5 text-right">{t('models.table.colOutput')}</th>
               <th className="px-3 py-2.5 text-right">{t('models.table.colCacheHit')}</th>
               <th className="px-4 py-2.5">{t('models.table.colTotal')}</th>
-              <th className="py-2.5 pl-3 text-right">{t('models.table.colCost')}</th>
+              {showLegacyCosts && <th className="py-2.5 pl-3 text-right">{t('models.table.colCost')}</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)] tabular-nums">
@@ -187,7 +189,7 @@ export function ModelsTable({
                     {isSlot ? (
                       <div className="space-y-1">
                         <div className="flex items-center justify-between font-mono text-[0.73rem] text-[var(--color-nav-muted)]">
-                          <span>{formatKnownCost(model.cost, model.missingPricing)}</span>
+                          {showLegacyCosts && <span>{formatKnownCost(model.cost, model.missingPricing)}</span>}
                           <span>{t('models.table.slotBadge')}</span>
                         </div>
                         <div className="h-1.5 w-36 rounded-full border border-dashed border-[var(--color-border)]" />
@@ -214,7 +216,7 @@ export function ModelsTable({
                       </>
                     )}
                   </td>
-                  <td className="py-3 pl-3 text-right font-mono">
+                  {showLegacyCosts && <td className="py-3 pl-3 text-right font-mono">
                     {isSlot ? (
                       <CredibilityPill
                         label={t('models.table.slotBadge')}
@@ -233,7 +235,7 @@ export function ModelsTable({
                         {formatKnownCost(model.cost, model.missingPricing)}
                       </span>
                     )}
-                  </td>
+                  </td>}
                 </tr>
               );
             })}

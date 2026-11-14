@@ -45,10 +45,9 @@ export async function readPublishedBilling(range: UsageRange, database: string, 
   if (process.env.INCEPT_BILLING_PUBLICATION_MODE === 'managed') {
     const input = managedInput(database, data);
     const live = readSyncDatabaseVersion(database);
-    const cached = existsSync(input.state) ? readManagedBillingCheckpoint(input) : undefined;
-    const window = cached?.windows.find(row => row.range === range);
+    const window = existsSync(input.state) ? readManagedBillingCheckpoint(input, range) : undefined;
     if (window && window.revision <= live.revision) {
-      if (window.revision < live.revision || Date.now() - Date.parse(window.asOf) >= 60_000) {
+      if (!window.breakdown || window.revision < live.revision || Date.now() - Date.parse(window.asOf) >= 60_000) {
         scheduleManagedRefresh(database, publication, 1500);
       }
       return { ...window, liveRevision: live.revision };

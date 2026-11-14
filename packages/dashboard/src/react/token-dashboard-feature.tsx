@@ -84,7 +84,7 @@ export function TokenDashboardFeature({
         {/* =====================================================================
             SECTION 02: MODELS & SOURCES (按模型、客户端来源、Token 类型拆解)
         ===================================================================== */}
-        <DeferredSection section="models" enabled={hasSnapshot}><ModelsSection data={data} /></DeferredSection>
+        <DeferredSection section="models" enabled={hasSnapshot}><ModelsSection data={data} showLegacyCosts={!billingPreview} /></DeferredSection>
 
         {/* =====================================================================
             SECTION 03: COSTS & COVERAGE (API 等效费用、价格覆盖率)
@@ -96,7 +96,9 @@ export function TokenDashboardFeature({
         {/* =====================================================================
             SECTION 04: PROJECTS & SESSIONS (项目排行表格 + 会话主从检查器)
         ===================================================================== */}
-        <DeferredSection section="projects" enabled={hasSnapshot || !canViewDetails}><ProjectsSection data={data} canViewDetails={canViewDetails} /></DeferredSection>
+        <DeferredSection section="projects" enabled={hasSnapshot || !canViewDetails}>
+          <ProjectsSection data={data} canViewDetails={canViewDetails} showLegacyCosts={!billingPreview} />
+        </DeferredSection>
       </div>
     </div>
   );

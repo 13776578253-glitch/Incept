@@ -11,6 +11,7 @@ import { SessionInspector } from './session-inspector';
 type ProjectsSectionProps = {
   data: TokenDashboardData;
   canViewDetails?: boolean;
+  showLegacyCosts?: boolean;
 };
 
 function RestrictedPanel({ title, message }: { title: string; message: string }) {
@@ -25,6 +26,7 @@ function RestrictedPanel({ title, message }: { title: string; message: string })
 export function ProjectsSection({
   data,
   canViewDetails = true,
+  showLegacyCosts = true,
 }: ProjectsSectionProps) {
   const t = useTranslations('dashboard');
   const {
@@ -43,7 +45,7 @@ export function ProjectsSection({
     visibleSessions,
     maxSessionTokens,
     inspectedSession,
-  } = useProjectsState(data);
+  } = useProjectsState(data, showLegacyCosts);
 
   return (
     <section
@@ -60,6 +62,7 @@ export function ProjectsSection({
 
       {/* Flat Project Attribution Ranking Table */}
       {canViewDetails ? <ProjectAttributionTable
+        showLegacyCosts={showLegacyCosts}
         selectedProjectKey={selectedProjectKey}
         setSelectedProjectKey={setSelectedProjectKey}
         maxProjectTokens={maxProjectTokens}
@@ -70,6 +73,7 @@ export function ProjectsSection({
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
         {/* Left: Sessions Table */}
         {canViewDetails ? <SessionsTable
+          showLegacyCosts={showLegacyCosts}
           sessionSearch={sessionSearch}
           setSessionSearch={setSessionSearch}
           sessionSort={sessionSort}
@@ -84,7 +88,7 @@ export function ProjectsSection({
         /> : <RestrictedPanel title={t('projects.sessions.title')} message={t('projects.noAccess')} />}
 
         {/* Right: Session Detail Inspector */}
-        {canViewDetails ? <SessionInspector inspectedSession={inspectedSession} />
+        {canViewDetails ? <SessionInspector inspectedSession={inspectedSession} showLegacyCosts={showLegacyCosts} />
           : <RestrictedPanel title={t('projects.sessions.inspector.title')} message={t('projects.noAccess')} />}
       </div>
     </section>

@@ -5,12 +5,13 @@ import { readUsageRates } from '../adapters/local/usage-rate-catalog';
 import { hash } from '../adapters/local/imports/identity';
 import { decimalUnits, formatDecimal } from '../domain/usage-billing';
 import type { SyncRecord } from '../domain/sync';
-import type { BillingReadResponse, BillingReadWindow } from '../domain/usage-billing-read';
-import { dashboardDate, dateWindow, usageRanges } from '../domain/window';
+import type { BillingReadBreakdown, BillingDailyCost, BillingReadResponse, BillingReadWindow } from '../domain/usage-billing-read';
+import { dashboardDate, dateWindow, usageRanges, type UsageRange } from '../domain/window';
 import { billingLedgerVersion } from './billing-ledger-version';
 import { syncDatabaseFileIdentity } from './database-version';
 import { estimateLedgerUsage } from './billing-usage-estimate';
 import { billingMappingDigest, readBillingChannelMappings } from './usage-billing-channel-mappings';
+import { costBreakdown, prepareBillingBreakdown, type BillingMemberCost } from './managed-billing-breakdown';
 
 export type ManagedBillingInput = {
   source: string;
@@ -26,6 +27,7 @@ const schema = `
     id INTEGER PRIMARY KEY CHECK (id=1), approval TEXT NOT NULL, identity TEXT NOT NULL,
     revision INTEGER NOT NULL, ledger TEXT NOT NULL, result TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS billing_breakdown (range TEXT PRIMARY KEY, result TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS billing_scopes (scope TEXT PRIMARY KEY, generation TEXT);
   CREATE TABLE IF NOT EXISTS billing_members (
     scope TEXT NOT NULL, position INTEGER NOT NULL, observation TEXT NOT NULL, origin TEXT NOT NULL,
@@ -58,8 +60,8 @@ const schema = `
 
 type Daily = { members: number; tokens: number; estimated: number; unpriced: number; excluded: number; recorded: number; amount: bigint };
 const emptyDaily = (): Daily => ({ members: 0, tokens: 0, estimated: 0, unpriced: 0, excluded: 0, recorded: 0, amount: BigInt(0) });
-type Member = { position: number; observation: string; origin: string; anchor_kind: string | null; anchor_value: string | null;
-  day: string; tokens: number; status: 'estimated' | 'unpriced' | 'excluded'; amount: string; recorded: number };
+type Member = BillingMemberCost & { position: number; observation: string; origin: string;
+  anchor_kind: string | null; anchor_value: string | null; recorded: number };
 
 function seedIdentity(state: DatabaseSync, catalog: DatabaseSync, approved: ManagedBillingInput['approved']) {
   const run = catalog.prepare('SELECT input,catalog FROM usage_billing_runs WHERE id=?').get(approved.run);
@@ -133,6 +135,7 @@ export function updateManagedBilling(input: ManagedBillingInput, now = Date.now(
       if (!allowBootstrap) throw Error('MANAGED_BILLING_BOOTSTRAP_REQUIRED');
       seedIdentity(state, catalog, approved);
     }
+    const breakdown = prepareBillingBreakdown(state);
 
     const daily = new Map<string, Daily>();
     const savedDay = state.prepare('SELECT * FROM billing_days WHERE day=?');
@@ -145,6 +148,7 @@ export function updateManagedBilling(input: ManagedBillingInput, now = Date.now(
       change.recorded += direction * member.recorded;
       change.amount += BigInt(direction) * BigInt(member.amount);
       daily.set(member.day, change);
+      breakdown.apply(member, direction);
     }
 
     const knownScope = state.prepare('SELECT generation FROM billing_scopes WHERE scope=?');
@@ -191,12 +195,13 @@ export function updateManagedBilling(input: ManagedBillingInput, now = Date.now(
         : nativeKey?.keyHash.trim() ? ['native/2', nativeKey.keyHash] : pointKey?.trim() ? ['point/2', pointKey] : [null, null];
       const member = { position, observation, origin, anchor_kind: anchor[0], anchor_value: anchor[1],
         day: dashboardDate(event.timestampMs), tokens, status: charge.status,
+        source: event.source, model: event.modelName, canonical_model: charge.status === 'excluded' ? null : model,
         amount: charge.status === 'estimated' ? String(decimalUnits(charge.amount, 24)) : '0',
         recorded: Number(event.recordedCost !== undefined) };
       put.run(scope, position, observation, origin, ...anchor, event.source, event.modelName, event.timestampMs,
         member.day, tokens, member.status, member.amount, member.recorded,
         charge.status === 'unpriced' && tokens > 0 ? charge.reason : null, Number(silent),
-        charge.status === 'excluded' ? null : model, 'rateVersion' in charge ? charge.rateVersion : null, pinned?.event_id ?? null);
+        member.canonical_model, 'rateVersion' in charge ? charge.rateVersion : null, pinned?.event_id ?? null);
       apply(member, 1);
       dirty(member);
       estimatedMembers++;
@@ -266,11 +271,10 @@ export function updateManagedBilling(input: ManagedBillingInput, now = Date.now(
         change.excluded + (saved?.excluded ?? 0), change.recorded + (saved?.recorded ?? 0),
         String(change.amount + BigInt(saved?.amount ?? '0')));
     }
-    const conflicted = Number(state.prepare('SELECT count(*) n FROM billing_members WHERE anchor_kind IS NOT NULL AND event_id IS NULL').get()?.n);
-    const unpricedGroups = Number(state.prepare('SELECT count(*) n FROM usage_unpriced_models').get()?.n);
-    const readDays = state.prepare('SELECT * FROM billing_days WHERE day BETWEEN ? AND ?');
+    breakdown.flush();
+    const readDays = state.prepare('SELECT * FROM billing_days WHERE day BETWEEN ? AND ? AND members>0 ORDER BY day');
     const laterToday = state.prepare('SELECT * FROM billing_members WHERE timestamp>? AND timestamp<? AND tokens>0');
-    function summarize(at: number): BillingReadResponse[] {
+    function summarize(at: number, withBreakdown: boolean): BillingReadResponse[] {
       const future = emptyDaily();
       const nextDay = Date.parse(dashboardDate(at) + 'T00:00:00+08:00') + 86_400_000;
       for (const row of laterToday.iterate(at, nextDay)) {
@@ -283,29 +287,44 @@ export function updateManagedBilling(input: ManagedBillingInput, now = Date.now(
       }
       return usageRanges.map(range => {
         const { from, to } = dateWindow(range, at);
+        const firstDay = range === 'all' ? '' : from;
         const total = emptyDaily();
-        for (const row of readDays.iterate(range === 'all' ? '' : from, to)) {
-          const day = row as unknown as Omit<Daily, 'amount'> & { amount: string };
+        const days: BillingDailyCost[] = [];
+        for (const row of readDays.iterate(firstDay, to)) {
+          const day = row as unknown as Omit<Daily, 'amount'> & { day: string; amount: string };
           total.members += day.members; total.tokens += day.tokens; total.estimated += day.estimated;
           total.unpriced += day.unpriced; total.excluded += day.excluded; total.recorded += day.recorded;
           total.amount += BigInt(day.amount);
+          if (withBreakdown && (day.day !== to || day.members > future.members)) {
+            const offset = day.day === to ? future : emptyDaily();
+            days.push({ day: day.day, ...costBreakdown({ estimated: day.estimated - offset.estimated,
+              unpriced: day.unpriced - offset.unpriced, excluded: day.excluded - offset.excluded,
+              amount: BigInt(day.amount) - offset.amount }) });
+          }
         }
+        const details = withBreakdown ? breakdown.read(firstDay, to, at,
+          laterToday.iterate(at, nextDay) as Iterable<BillingMemberCost>) : undefined;
         return { run: approved.run, range, revision, catalog: approved.catalog, asOf: new Date(at).toISOString(),
           members: total.members - future.members, tokens: total.tokens - future.tokens,
           estimatedCostUsd: formatDecimal(total.amount - future.amount, 24),
           estimatedTokens: total.estimated - future.estimated, unpricedTokens: total.unpriced - future.unpriced,
           excludedTokens: total.excluded - future.excluded, recordedUnknownCurrency: total.recorded - future.recorded,
-          conflicted, unpricedGroups };
+          ...(details && { conflicted: details.conflicted, unpricedGroups: details.unpriced.length,
+            breakdown: { days, models: details.models, unpriced: details.unpriced } }) };
       });
     }
-    if (!previous && !summarize(Date.parse(approved.asOf)).every(window => {
+    if (!previous && !summarize(Date.parse(approved.asOf), false).every(window => {
       const reviewed = input.approvedWindows.find(candidate => candidate.range === window.range);
       return reviewed && reviewed.members === window.members && reviewed.tokens === window.tokens
         && reviewed.estimatedCostUsd === window.estimatedCostUsd && reviewed.estimatedTokens === window.estimatedTokens
         && reviewed.unpricedTokens === window.unpricedTokens && reviewed.excludedTokens === window.excludedTokens
         && reviewed.recordedUnknownCurrency === window.recordedUnknownCurrency;
     })) throw Error('MANAGED_BILLING_BASELINE_MISMATCH');
-    const windows = summarize(now);
+    const saveBreakdown = state.prepare('INSERT OR REPLACE INTO billing_breakdown VALUES (?,?)');
+    const windows = summarize(now, true).map(({ breakdown, ...window }) => {
+      saveBreakdown.run(window.range, JSON.stringify(breakdown));
+      return window;
+    });
     if (identity !== syncDatabaseFileIdentity(sourcePath)) throw Error('SYNC_DATABASE_REPLACED');
     state.prepare('INSERT OR REPLACE INTO billing_checkpoint VALUES (1,?,?,?,?,?)')
       .run(approval, identity, revision, ledger, JSON.stringify(windows));
@@ -318,7 +337,7 @@ export function updateManagedBilling(input: ManagedBillingInput, now = Date.now(
   }
 }
 
-export function readManagedBillingCheckpoint(input: ManagedBillingInput) {
+export function readManagedBillingCheckpoint(input: ManagedBillingInput, range: UsageRange) {
   const state = new DatabaseSync(input.state, { readOnly: true });
   try {
     state.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=25; BEGIN');
@@ -326,6 +345,12 @@ export function readManagedBillingCheckpoint(input: ManagedBillingInput) {
     const row = state.prepare('SELECT approval, identity, revision, result FROM billing_checkpoint WHERE id=1').get();
     if (!row || row.approval !== hash(['managed-billing/1', input.approved])
       || row.identity !== syncDatabaseFileIdentity(input.source)) return undefined;
-    return { revision: Number(row.revision), windows: JSON.parse(String(row.result)) as BillingReadResponse[] };
+    const window = (JSON.parse(String(row.result)) as BillingReadResponse[]).find(item => item.range === range);
+    if (!window) return undefined;
+    if (state.prepare("SELECT 1 FROM sqlite_schema WHERE name='billing_breakdown'").get()) {
+      const details = state.prepare('SELECT result FROM billing_breakdown WHERE range=?').get(range);
+      if (details) window.breakdown = JSON.parse(String(details.result)) as BillingReadBreakdown;
+    }
+    return window;
   } finally { state.close(); }
 }

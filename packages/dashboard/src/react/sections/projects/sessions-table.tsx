@@ -18,7 +18,7 @@ type SessionsTableProps = Pick<ProjectsState,
   | 'visibleSessions'
   | 'maxSessionTokens'
   | 'inspectedSession'
->;
+> & { showLegacyCosts?: boolean };
 
 function formatSessionProject(name: string): string {
   if (!name) return '';
@@ -41,6 +41,7 @@ export function SessionsTable({
   visibleSessions,
   maxSessionTokens,
   inspectedSession,
+  showLegacyCosts = true,
 }: SessionsTableProps) {
   const t = useTranslations('dashboard');
 
@@ -67,7 +68,7 @@ export function SessionsTable({
               { id: 'cost', label: 'sortCost', short: 'sortCostShort' },
               { id: 'recent', label: 'sortRecent', short: 'sortRecentShort' },
               { id: 'duration', label: 'sortDuration', short: 'sortDurationShort' },
-            ] as const).map(item => (
+            ] as const).filter(item => showLegacyCosts || item.id !== 'cost').map(item => (
               <button key={item.id} type="button" aria-label={t('projects.sessions.' + item.label)}
                 aria-pressed={sessionSort === item.id} data-active={sessionSort === item.id} onClick={() => setSessionSort(item.id)}>
                 <span className="hidden sm:inline">{t('projects.sessions.' + item.label)}</span>
@@ -88,9 +89,9 @@ export function SessionsTable({
               <th className="px-2.5 py-2.5 text-right">
                 {t('projects.sessions.colTotal')}
               </th>
-              <th className="py-2.5 pl-2.5 text-right">
+              {showLegacyCosts && <th className="py-2.5 pl-2.5 text-right">
                 {t('projects.sessions.colCost')}
-              </th>
+              </th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)] tabular-nums">
@@ -159,9 +160,9 @@ export function SessionsTable({
                   <td className="px-2.5 py-3 text-right font-mono font-semibold text-[var(--color-text)]">
                     {formatCompactTokens(session.totalTokens)}
                   </td>
-                  <td className="py-3 pl-2.5 text-right font-mono font-semibold text-[var(--color-text)]">
+                  {showLegacyCosts && <td className="py-3 pl-2.5 text-right font-mono font-semibold text-[var(--color-text)]">
                     {formatKnownCost(session.cost, session.missingPricing)}
-                  </td>
+                  </td>}
                 </tr>
               );
             })}

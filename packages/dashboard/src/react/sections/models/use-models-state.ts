@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { TokenDashboardData } from '../../../domain/index';
 
-export function useModelsState(data: TokenDashboardData) {
+export function useModelsState(data: TokenDashboardData, showLegacyCosts = true) {
   const t = useTranslations('dashboard');
 
   const [selectedModelSource, setSelectedModelSource] = useState<string>('all');
 
-  const [modelSort, setModelSort] = useState<'tokens' | 'cost' | 'output'>('tokens');
+  const [selectedSort, setModelSort] = useState<'tokens' | 'cost' | 'output'>('tokens');
+  const modelSort = !showLegacyCosts && selectedSort === 'cost' ? 'tokens' : selectedSort;
 
   const modelSourceFilters = useMemo(() => {
     const counts = new Map<string, number>();

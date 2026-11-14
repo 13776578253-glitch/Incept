@@ -9,6 +9,7 @@ import { PricingCoveragePanel } from './pricing-coverage-panel';
 import { ModelPricingTable } from './model-pricing-table';
 import { ReferenceCostMetric } from '../../components/reference-cost-metric';
 import type { BillingPreview } from '../../hooks/use-billing-preview';
+import { ReferenceCostBreakdown } from './reference-cost-breakdown';
 
 type CostsSectionProps = {
   data: TokenDashboardData;
@@ -38,7 +39,11 @@ export function CostsSection({
         accentColor="var(--badge-emerald-dot)"
       />
 
-      {billingPreview ? <ReferenceCostMetric preview={billingPreview} showBreakdown /> : (
+      {billingPreview ? <>
+        <ReferenceCostMetric preview={billingPreview} showBreakdown />
+        {billingPreview.status === 'ready' && <ReferenceCostBreakdown key={billingPreview.data.range}
+          data={billingPreview.data} sources={data.sources} />}
+      </> : (
         <>
           <CostMetrics data={data} />
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)]">

@@ -5,10 +5,11 @@ import { formatKnownCost, formatCompactTokens, formatUsd, formatDateTimeShort, f
 import { CredibilityPill } from '../../components/credibility-pill';
 import type { ProjectsState } from './use-projects-state';
 
-type SessionInspectorProps = Pick<ProjectsState, 'inspectedSession'>;
+type SessionInspectorProps = Pick<ProjectsState, 'inspectedSession'> & { showLegacyCosts?: boolean };
 
 export function SessionInspector({
   inspectedSession,
+  showLegacyCosts = true,
 }: SessionInspectorProps) {
   const t = useTranslations('dashboard');
 
@@ -63,7 +64,7 @@ export function SessionInspector({
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 text-[0.72rem] text-[var(--color-text-muted)]">
               <span>{t('projects.sessions.inspector.coverageStatus')}</span>
-              {inspectedSession.modelBreakdowns.some((m) => m.missingPricing) ? (
+              {showLegacyCosts && (inspectedSession.modelBreakdowns.some((m) => m.missingPricing) ? (
                 <CredibilityPill
                   label={t('projects.sessions.inspector.coveragePartial')}
                   tone="indigo"
@@ -73,7 +74,7 @@ export function SessionInspector({
                   label={t('projects.sessions.inspector.coverageFull')}
                   tone="emerald"
                 />
-              )}
+              ))}
             </div>
           </div>
 
@@ -87,8 +88,8 @@ export function SessionInspector({
                 {t('projects.sessions.inspector.tokenBreakdown')}
               </span>
               <span className="font-mono font-semibold tabular-nums text-[var(--color-text)]">
-                {formatCompactTokens(inspectedSession.totalTokens)} ·{' '}
-                {formatKnownCost(inspectedSession.cost, inspectedSession.missingPricing)}
+                {formatCompactTokens(inspectedSession.totalTokens)}
+                {showLegacyCosts && ' · ' + formatKnownCost(inspectedSession.cost, inspectedSession.missingPricing)}
               </span>
             </div>
 
@@ -156,9 +157,9 @@ export function SessionInspector({
                       <span className="font-medium text-[var(--color-text)]">
                         {mb.modelName}
                       </span>
-                      <span className="font-semibold tabular-nums text-[var(--color-text)]">
+                      {showLegacyCosts && <span className="font-semibold tabular-nums text-[var(--color-text)]">
                         {mb.missingPricing ? '—' : formatUsd(mb.cost)}
-                      </span>
+                      </span>}
                     </div>
                     <div className="mt-0.5 flex items-center justify-between text-[0.68rem] tabular-nums text-[var(--color-nav-muted)]">
                       <span>

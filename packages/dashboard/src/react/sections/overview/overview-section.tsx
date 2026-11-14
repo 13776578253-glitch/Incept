@@ -59,6 +59,7 @@ export function OverviewSection({
       <div className="grid min-w-0 grid-cols-1 gap-5">
         {/* Full-width usage analysis */}
         <UsageAnalysisPanel
+          billingPreview={billingPreview}
           activityView={activityView}
           setActivityView={setActivityView}
           trendMetric={trendMetric}
@@ -74,6 +75,7 @@ export function OverviewSection({
 
         {/* Model throughput ranking below analysis */}
         <ModelDistributionPanel
+          showLegacyCosts={!billingPreview}
           showAllOverviewModels={showAllOverviewModels}
           setShowAllOverviewModels={setShowAllOverviewModels}
           maxModelTokens={maxModelTokens}

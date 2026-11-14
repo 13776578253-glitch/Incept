@@ -9,6 +9,7 @@ import type { OverviewState } from './use-overview-state';
 
 type ModelDistributionPanelProps = {
   data: TokenDashboardData;
+  showLegacyCosts?: boolean;
 } & Pick<OverviewState, 'showAllOverviewModels' | 'setShowAllOverviewModels' | 'maxModelTokens' | 'overviewModelsVisible'>;
 
 export function ModelDistributionPanel({
@@ -17,6 +18,7 @@ export function ModelDistributionPanel({
   maxModelTokens,
   overviewModelsVisible,
   data,
+  showLegacyCosts = true,
 }: ModelDistributionPanelProps) {
   const t = useTranslations('dashboard');
 
@@ -108,13 +110,13 @@ export function ModelDistributionPanel({
                     />
                   </div>
                 )}
-                <span className="w-28 shrink-0 whitespace-nowrap text-right font-mono text-[0.68rem] tabular-nums text-[var(--color-nav-muted)]">
+                {(isSlot || showLegacyCosts) && <span className="w-28 shrink-0 whitespace-nowrap text-right font-mono text-[0.68rem] tabular-nums text-[var(--color-nav-muted)]">
                   {isSlot
                     ? t('overview.distribution.slotBadge')
                     : model.missingPricing
                       ? '—'
                       : formatUsd(model.cost)}
-                </span>
+                </span>}
               </div>
             </div>
           );

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, expect, it, vi } from 'vitest';
 import zh from '../messages/zh.json';
@@ -26,6 +26,7 @@ it('Guest sees all navigation and statistical sections plus three permission pla
   expect(await screen.findByRole('heading', { name: zh.projects.title })).toBeDefined();
   expect(await screen.findAllByText('无权限查看')).toHaveLength(3);
   expect(screen.queryByRole('button', { name: '导入' })).toBeNull();
+  expect(screen.queryByRole('heading', { name: zh.costs.reference.diagnostics })).toBeNull();
 });
 
 it('restricted project panels never render private records or interactive data controls', () => {
@@ -52,10 +53,19 @@ it('Pro sees section 04 records while import remains Owner-only', async () => {
 it('shows the reviewed USD total and coverage to an Owner, then clears them when a window is unavailable', async () => {
   const data = emptyDashboard();
   data.totals.cost = 999;
+  const cost = { estimatedCostUsd: '1.25', estimatedTokens: 60, unpricedTokens: 20, excludedTokens: 40 };
+  const channel = { estimatedCostUsd: '0.25', estimatedTokens: 20, unpricedTokens: 0, excludedTokens: 0 };
   const fetchDashboard = vi.fn(async (url: string) => {
     if (url === '/api/dashboard/billing?range=30d') {
-      return Response.json({ range: '30d', estimatedCostUsd: '1.25', estimatedTokens: 60, unpricedTokens: 20,
-        excludedTokens: 40, tokens: 120, recordedUnknownCurrency: 1, asOf: '2026-10-28T01:00:00Z' });
+      return Response.json({ range: '30d', ...cost, tokens: 120, recordedUnknownCurrency: 1, asOf: '2026-10-28T01:00:00Z',
+        revision: 3287, liveRevision: 3288, unpricedGroups: 1, conflicted: 2, breakdown: {
+          days: [{ day: '2026-10-28', ...cost }],
+          models: [{ model: 'provider/model', ...cost, channels: [
+            { channel: 'claudeCode', ...channel },
+            { channel: 'codex', estimatedCostUsd: '1.00', estimatedTokens: 40, unpricedTokens: 20, excludedTokens: 40 },
+          ] }],
+          unpriced: [{ channel: 'codex', model: 'provider/unknown', reason: 'RATE_NOT_FOUND', observations: 1 }],
+        } });
     }
     if (url.startsWith('/api/dashboard/billing?')) return new Response(null, { status: 503 });
     return Response.json(emptyDashboard('7d'));
@@ -64,11 +74,23 @@ it('shows the reviewed USD total and coverage to an Owner, then clears them when
   render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));
   await waitFor(() => expect(screen.getAllByText('$1.25 USD')).toHaveLength(2));
   expect(screen.getAllByText('估算覆盖率 75%')).toHaveLength(2);
-  expect(screen.getByText(zh.costs.reference.unpricedTokens)).toBeDefined();
+  expect(screen.getAllByText(zh.costs.reference.unpricedTokens).length).toBeGreaterThan(0);
+  expect(screen.getByText(zh.costs.reference.liveRevision)).toBeDefined();
+  expect(screen.getByText('3288')).toBeDefined();
+  expect(screen.getAllByText('计费正在从版本 3287 更新至 3288')).toHaveLength(2);
+  expect(screen.getByText(zh.costs.reference.unpricedGroups)).toBeDefined();
+  expect(screen.getByText(zh.costs.reference.conflicted)).toBeDefined();
+  const modelTable = screen.getByRole('table', { name: zh.costs.reference.modelCosts });
+  expect(within(modelTable).getByText('$1.25')).toBeDefined();
+  fireEvent.change(screen.getByRole('combobox', { name: zh.costs.reference.channel }), { target: { value: 'claudeCode' } });
+  expect(within(modelTable).getByText('$0.25')).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: zh.overview.trend.metricCost }));
+  expect(screen.getByRole('button', { name: '2026-10-28 · $1.25 USD · 20 未估算 Token' })).toBeDefined();
   expect(screen.queryByText('$999.00')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: zh.page.range7d }));
-  await waitFor(() => expect(screen.getAllByText(zh.costs.reference.unavailable)).toHaveLength(2));
+  await waitFor(() => expect(screen.getAllByText(zh.costs.reference.unavailable).length).toBeGreaterThanOrEqual(2));
   expect(screen.queryByText('$1.25 USD')).toBeNull();
+  expect(screen.queryByRole('table', { name: zh.costs.reference.modelCosts })).toBeNull();
 });
 
 it('keeps the current billing state during refresh and loads anew when the range changes', async () => {

@@ -2,14 +2,15 @@ import { useMemo, useState } from 'react';
 import { useExpandableRows } from '../../hooks/use-expandable-rows';
 import type { TokenDashboardData } from '../../../domain/index';
 
-export function useProjectsState(data: TokenDashboardData) {
+export function useProjectsState(data: TokenDashboardData, showLegacyCosts = true) {
   const [selectedProjectKey, setSelectedProjectKey] = useState<string>('all');
 
   const [sessionSearch, setSessionSearch] = useState<string>('');
 
-  const [sessionSort, setSessionSort] = useState<'tokens' | 'cost' | 'recent' | 'duration'>(
+  const [selectedSort, setSessionSort] = useState<'tokens' | 'cost' | 'recent' | 'duration'>(
     'tokens',
   );
+  const sessionSort = !showLegacyCosts && selectedSort === 'cost' ? 'tokens' : selectedSort;
 
   const [inspectedSessionId, setInspectedSessionId] = useState<string | null>(
     data.sessions[0]?.sessionKey ?? data.sessions[0]?.sessionId ?? null,
