@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, type CSSProperties } from 'react';
+import { useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 import { formatCompactTokens, formatPercent, formatUsd } from '../../formatters';
 import type { DashboardWindow } from '../../hooks/use-dashboard-window';
@@ -8,12 +8,25 @@ import type { OverviewState } from './use-overview-state';
 import { modelSeries, modelShares, tokenShares, type ShareSegment } from './trend-series';
 
 type TrendChartProps = Pick<OverviewState, 'trendItems' | 'activeTrendIndex' | 'trendMetric' | 'maxTrendValue'>
-  & { setSelectedTrendIndex: DashboardWindow['setSelectedTrendIndex']; showLegacyCosts?: boolean };
+  & {
+    setSelectedTrendIndex: DashboardWindow['setSelectedTrendIndex'];
+    showLegacyCosts?: boolean;
+    initialScrollLeft?: number;
+    onScrollLeftChange?: (scrollLeft: number) => void;
+  };
 
 export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrendValue, setSelectedTrendIndex,
-  showLegacyCosts = true }: TrendChartProps) {
+  showLegacyCosts = true, initialScrollLeft, onScrollLeftChange }: TrendChartProps) {
   const t = useTranslations('dashboard');
+  const scrollRef = useRef<HTMLDivElement>(null);
   const series = useMemo(() => modelSeries(trendItems), [trendItems]);
+
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    if (element && initialScrollLeft !== undefined) {
+      element.scrollLeft = initialScrollLeft;
+    }
+  }, [initialScrollLeft]);
   const isShare = trendMetric === 'stacked' || trendMetric === 'models';
   const color = trendMetric === 'cost' ? 'var(--badge-emerald-dot)' : 'var(--badge-sky-dot)';
   const legend = trendMetric === 'models' && trendItems.length ? modelShares(trendItems[activeTrendIndex], series)
@@ -27,7 +40,11 @@ export function TrendChart({ trendItems, activeTrendIndex, trendMetric, maxTrend
 
   return (
     <div className="dashboard-trend-chart">
-      <div className="dashboard-trend-scroll dashboard-subtle-scrollbar">
+      <div
+        ref={scrollRef}
+        className="dashboard-trend-scroll dashboard-subtle-scrollbar"
+        onScroll={event => onScrollLeftChange?.(event.currentTarget.scrollLeft)}
+      >
         <div className="dashboard-trend-columns" style={{ minWidth: Math.max(480, trendItems.length * 32) }}>
           {trendItems.map((item, index) => {
             const selected = index === activeTrendIndex;

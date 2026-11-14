@@ -75,7 +75,6 @@ export function OverviewSection({
 
         {/* Model throughput ranking below analysis */}
         <ModelDistributionPanel
-          showLegacyCosts={!billingPreview}
           showAllOverviewModels={showAllOverviewModels}
           setShowAllOverviewModels={setShowAllOverviewModels}
           maxModelTokens={maxModelTokens}

@@ -7,6 +7,7 @@ import zh from '../messages/zh.json';
 import en from '../messages/en.json';
 import { emptyDashboard, type BillingReadResponse, type UsageRange } from '../domain';
 import { useBillingPreview } from '../react/hooks/use-billing-preview';
+import { buildReferenceTrendDays } from '../react/sections/overview/reference-cost-trend';
 import { ProjectsSection } from '../react/sections/projects/projects-section';
 import { TokenDashboardFeature } from '../react/token-dashboard-feature';
 
@@ -225,4 +226,68 @@ it('keeps en and zh costs.reference localization keys aligned without Chinese fu
   for (const text of collectStrings(zh.costs.reference)) {
     expect(text).not.toContain('。');
   }
+});
+
+it('fills continuous calendar dates for all-range reference cost trend and preserves model ranking prices for Owner', async () => {
+  const allData = {
+    range: 'all',
+    estimatedCostUsd: '3.00',
+    estimatedTokens: 300,
+    unpricedTokens: 0,
+    excludedTokens: 0,
+    members: 2,
+    tokens: 300,
+    recordedUnknownCurrency: 0,
+    asOf: '2026-10-28T01:00:00Z',
+    run: 'continuous',
+    revision: 3331,
+    catalog: 'test',
+    breakdown: {
+      days: [
+        { day: '2026-10-26', estimatedCostUsd: '1.00', estimatedTokens: 100, unpricedTokens: 0, excludedTokens: 0 },
+        { day: '2026-10-28', estimatedCostUsd: '2.00', estimatedTokens: 200, unpricedTokens: 0, excludedTokens: 0 },
+      ],
+      models: [],
+      unpriced: [],
+    },
+  } satisfies BillingReadResponse;
+
+  expect(buildReferenceTrendDays(allData).map(day => [day.day, day.estimatedCostUsd])).toEqual([
+    ['2026-10-26', '1.00'],
+    ['2026-10-27', '0'],
+    ['2026-10-28', '2.00'],
+  ]);
+
+  const data = emptyDashboard('30d');
+  data.totals.cost = 999;
+  data.models = [{
+    modelName: 'gpt-5.4',
+    displayName: 'GPT-5.4',
+    provider: 'openai',
+    source: 'Codex',
+    sourcesUsed: ['Codex'],
+    inputTokens: 100,
+    outputTokens: 50,
+    cacheCreationTokens: 0,
+    cacheReadTokens: 0,
+    reasoningTokens: 0,
+    totalTokens: 150,
+    cost: 12.34,
+    shareOfTokens: 1,
+    shareOfCost: 1,
+    cacheHitRate: 0,
+    missingPricing: false,
+    sessionCount: 1,
+    activeDays: 1,
+  }];
+
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url === '/api/dashboard/billing?range=30d') return Response.json({ ...allData, range: '30d' });
+    return Response.json(data);
+  }));
+
+  render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));
+  await waitFor(() => expect(screen.getAllByText('$3.00 USD')).toHaveLength(2));
+  expect(screen.queryByText('$999.00')).toBeNull();
+  expect(screen.getAllByText('$12.34').length).toBeGreaterThan(0);
 });

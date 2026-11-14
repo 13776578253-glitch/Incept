@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { DailyUsagePoint } from '../../../domain';
 import type { DashboardWindow } from '../../hooks/use-dashboard-window';
@@ -25,7 +25,19 @@ export function UsageAnalysisPanel(props: UsageAnalysisPanelProps) {
   const t = useTranslations('dashboard');
   const { activityView, filteredDaily, matrixModels, selectedPeriodItem, billingPreview } = props;
   const [selectedBillingDay, setSelectedBillingDay] = useState<string>();
+  const trendScrollLeftRef = useRef<number | undefined>(undefined);
   const referenceTrend = activityView === 'trend' && props.trendMetric === 'cost' && billingPreview;
+  const firstDate = filteredDaily[0]?.date;
+  const activeBillingDay = selectedPeriodItem?.fullLabel ?? selectedBillingDay;
+  const handleSelectBillingDay = (day: string) => {
+    const index = filteredDaily.findIndex(point => point.date === day);
+    if (index >= 0) {
+      props.setSelectedTrendIndex(index);
+      setSelectedBillingDay(undefined);
+    } else {
+      setSelectedBillingDay(day);
+    }
+  };
   return (
     <div className="dashboard-analysis-panel" role="region" aria-label={t('overview.trend.title')}>
       <div className="dashboard-analysis-header">
@@ -35,17 +47,30 @@ export function UsageAnalysisPanel(props: UsageAnalysisPanelProps) {
       <div className="dashboard-analysis-body">
         <div className="dashboard-analysis-viewport dashboard-subtle-scrollbar">
           {activityView === 'trend' ? referenceTrend ? (
-            <ReferenceCostTrend preview={referenceTrend} selectedDay={selectedBillingDay} onSelectDay={setSelectedBillingDay} />
-          ) : <TrendChart {...props} showLegacyCosts={!billingPreview} /> : null}
+            <ReferenceCostTrend
+              preview={referenceTrend}
+              selectedDay={activeBillingDay}
+              onSelectDay={handleSelectBillingDay}
+              firstDate={firstDate}
+              initialScrollLeft={trendScrollLeftRef.current}
+              onScrollLeftChange={scrollLeft => { trendScrollLeftRef.current = scrollLeft; }}
+            />
+          ) : (
+            <TrendChart
+              {...props}
+              initialScrollLeft={trendScrollLeftRef.current}
+              onScrollLeftChange={scrollLeft => { trendScrollLeftRef.current = scrollLeft; }}
+            />
+          ) : null}
           {activityView === 'calendar' ? <UsageCalendar points={filteredDaily}
             selectedDate={selectedPeriodItem?.fullLabel}
             onSelect={props.setSelectedTrendIndex} /> : null}
           {activityView === 'matrix' ? <ModelHeatmap points={filteredDaily} models={matrixModels} /> : null}
         </div>
         <div className="dashboard-analysis-footer">
-          {referenceTrend ? <ReferenceCostPeriodSummary preview={referenceTrend} selectedDay={selectedBillingDay} />
+          {referenceTrend ? <ReferenceCostPeriodSummary preview={referenceTrend} selectedDay={activeBillingDay} firstDate={firstDate} />
             : activityView === 'matrix' ? <p className="text-[0.7rem] text-[var(--color-nav-muted)]">{t('overview.trend.matrixHint', { count: matrixModels.length })}</p>
-              : <PeriodSummary selectedPeriodItem={selectedPeriodItem} showLegacyCosts={!billingPreview} />}
+              : <PeriodSummary selectedPeriodItem={selectedPeriodItem} />}
         </div>
       </div>
     </div>

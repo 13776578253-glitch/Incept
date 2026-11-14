@@ -1,14 +1,15 @@
-import { useState, type CSSProperties } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { dateWindow, type BillingDailyCost, type BillingReadResponse } from '../../../domain';
 import type { BillingPreview } from '../../hooks/use-billing-preview';
 import { CredibilityPill } from '../../components/credibility-pill';
 import { formatCompactTokens, formatReferenceUsd, formatShortDate, referenceCoverageRatio } from '../../formatters';
 
-export function buildReferenceTrendDays(data: BillingReadResponse): BillingDailyCost[] {
+export function buildReferenceTrendDays(data: BillingReadResponse, firstDate?: string): BillingDailyCost[] {
   const observed = data.breakdown?.days ?? [];
   if (!observed.length) return [];
-  return data.range === 'all' ? observed : calendarDays(observed, dateWindow(data.range, Date.parse(data.asOf)));
+  const startDay = firstDate && firstDate < observed[0].day ? firstDate : observed[0].day;
+  return calendarDays(observed, dateWindow(data.range, Date.parse(data.asOf), startDay));
 }
 
 export function resolveSelectedBillingDay(
@@ -16,29 +17,52 @@ export function resolveSelectedBillingDay(
   observed: BillingDailyCost[],
   selectedDay?: string,
 ): BillingDailyCost | undefined {
-  return days.find(day => day.day === selectedDay) ?? observed[observed.length - 1];
+  return days.find(day => day.day === selectedDay) ?? days[days.length - 1] ?? observed[observed.length - 1];
 }
 
 export function ReferenceCostTrend({
   preview,
   selectedDay: controlledDay,
   onSelectDay,
+  firstDate,
+  initialScrollLeft,
+  onScrollLeftChange,
 }: {
   preview: BillingPreview;
   selectedDay?: string;
   onSelectDay?: (day: string) => void;
+  firstDate?: string;
+  initialScrollLeft?: number;
+  onScrollLeftChange?: (scrollLeft: number) => void;
 }) {
   const t = useTranslations('dashboard.costs.reference');
   const format = useFormatter();
   const [internalDay, setInternalDay] = useState<string>();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const selectedDay = onSelectDay ? controlledDay : internalDay;
   const selectDay = onSelectDay ?? setInternalDay;
   const observed = preview.status === 'ready' ? preview.data.breakdown?.days : undefined;
-  if (preview.status !== 'ready' || !observed?.length) {
+  const isReady = preview.status === 'ready' && !!observed?.length;
+
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    if (element && initialScrollLeft !== undefined) {
+      element.scrollLeft = initialScrollLeft;
+    }
+  }, [isReady, initialScrollLeft]);
+
+  if (!isReady || preview.status !== 'ready' || !observed?.length) {
     const message = observed ? 'emptyBreakdown' : preview.status === 'ready' ? 'breakdownUnavailable' : preview.status;
-    return <p role="status" className="px-3 py-5 text-sm text-[var(--color-text-muted)]">{t(message)}</p>;
+    return (
+      <div className="dashboard-trend-chart">
+        <div className="dashboard-trend-scroll dashboard-subtle-scrollbar flex items-center justify-center">
+          <p role="status" className="px-3 py-5 text-sm text-[var(--color-text-muted)]">{t(message)}</p>
+        </div>
+        <div className="dashboard-trend-legend dashboard-subtle-scrollbar" aria-hidden="true" />
+      </div>
+    );
   }
-  const days = buildReferenceTrendDays(preview.data);
+  const days = buildReferenceTrendDays(preview.data, firstDate);
   const active = resolveSelectedBillingDay(days, observed, selectedDay);
   if (!active) return null;
   const max = days.reduce((value, day) => Math.max(value, Number(day.estimatedCostUsd)), 0);
@@ -46,7 +70,11 @@ export function ReferenceCostTrend({
 
   return (
     <div className="dashboard-trend-chart">
-      <div className="dashboard-trend-scroll dashboard-subtle-scrollbar">
+      <div
+        ref={scrollRef}
+        className="dashboard-trend-scroll dashboard-subtle-scrollbar"
+        onScroll={event => onScrollLeftChange?.(event.currentTarget.scrollLeft)}
+      >
         <div className="dashboard-trend-columns" style={{ minWidth: Math.max(480, days.length * 32) }}>
           {days.map((day, index) => {
             const selected = day === active;
@@ -74,16 +102,18 @@ export function ReferenceCostTrend({
           })}
         </div>
       </div>
-      {!onSelectDay && (
+      {!onSelectDay ? (
         <p className="px-3 py-2 text-sm tabular-nums text-[var(--color-text)]">
           {t('dailyPoint', { day: active.day, amount: formatReferenceUsd(active.estimatedCostUsd, active.estimatedTokens, true), tokens: format.number(active.unpricedTokens) })}
         </p>
+      ) : (
+        <div className="dashboard-trend-legend dashboard-subtle-scrollbar" aria-hidden="true" />
       )}
     </div>
   );
 }
 
-export function ReferenceCostPeriodSummary({ preview, selectedDay }: { preview: BillingPreview; selectedDay?: string }) {
+export function ReferenceCostPeriodSummary({ preview, selectedDay, firstDate }: { preview: BillingPreview; selectedDay?: string; firstDate?: string }) {
   const t = useTranslations('dashboard.costs.reference');
   const format = useFormatter();
   const observed = preview.status === 'ready' ? preview.data.breakdown?.days : undefined;
@@ -96,7 +126,7 @@ export function ReferenceCostPeriodSummary({ preview, selectedDay }: { preview: 
       </div>
     );
   }
-  const days = buildReferenceTrendDays(preview.data);
+  const days = buildReferenceTrendDays(preview.data, firstDate);
   const active = resolveSelectedBillingDay(days, observed, selectedDay);
   if (!active) return null;
   const ratio = referenceCoverageRatio(active.estimatedTokens, active.unpricedTokens);

@@ -16,13 +16,13 @@ export function ReferenceCostMetric({ preview, showBreakdown = false }: { previe
 
   return (
     <div aria-busy={preview.status === 'loading'}
-      className="rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-card)] p-4">
+      className="flex flex-col rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-card)] p-4">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[0.76rem] font-medium text-[var(--color-text-muted)]">{t('label')}</span>
         <CredibilityPill label={t('reviewedBadge')} tone="emerald" />
       </div>
       <div className="mt-2 text-[1.75rem] font-semibold tracking-[-0.04em] tabular-nums text-[var(--color-text)]">{amount}</div>
-      <p className="mt-1.5 truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-nav-muted)]">
+      <p className="mt-1.5 truncate font-mono text-[0.7rem] leading-5 tabular-nums text-[var(--color-nav-muted)]">
         {data ? t('coverage', { coverage }) : t(preview.status === 'loading' ? 'loading' : 'unavailable')}
       </p>
       {catchingUp && data && (

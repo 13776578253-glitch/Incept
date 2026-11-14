@@ -14,12 +14,12 @@ import {
 } from '../../formatters';
 
 const card = 'min-w-0 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-card)]';
-const cardHeader = 'border-b border-[var(--color-border)] px-5 py-3.5';
-const kpiCard = 'rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-card)] p-4';
+const cardHeader = 'border-b border-[var(--color-border)] px-5 py-3.5 lg:min-h-[68px]';
+const kpiCard = 'flex flex-col rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-card)] p-4';
 const heading = 'text-[0.95rem] font-semibold text-[var(--color-text)]';
 const subtext = 'text-[0.73rem] text-[var(--color-nav-muted)]';
-const tableHeaderCell = 'px-2.5 py-2.5 text-right';
-const tableValueCell = 'px-2.5 py-2.5 text-right font-mono tabular-nums';
+const tableHeaderCell = 'whitespace-nowrap px-2.5 py-2.5 text-right';
+const tableValueCell = 'whitespace-nowrap px-2.5 py-2.5 text-right font-mono tabular-nums';
 
 function ShareBar({
   amount,
@@ -75,13 +75,13 @@ export function ReferenceCostMetrics({ preview }: { preview: BillingPreview }) {
       <ReferenceCostMetric preview={preview} />
 
       <div className={kpiCard}>
-        <span className="text-[0.75rem] font-medium text-[var(--color-text-muted)]">
+        <span className="text-[0.76rem] font-medium text-[var(--color-text-muted)]">
           {t('estimatedTokens')}
         </span>
-        <div className="mt-2 text-[1.7rem] font-semibold tracking-[-0.04em] tabular-nums text-[var(--color-text)]">
+        <div className="mt-2 text-[1.75rem] font-semibold tracking-[-0.04em] tabular-nums text-[var(--color-text)]">
           {data ? formatCompactTokens(data.estimatedTokens) : '—'}
         </div>
-        <p className="mt-1 text-[0.7rem] leading-5 text-[var(--color-nav-muted)]">
+        <p className="mt-1.5 text-[0.7rem] leading-5 text-[var(--color-nav-muted)]">
           {data
             ? t('estimatedTokensDesc', {
               count: format.number(data.estimatedTokens),
@@ -92,13 +92,13 @@ export function ReferenceCostMetrics({ preview }: { preview: BillingPreview }) {
       </div>
 
       <div className={kpiCard}>
-        <span className="text-[0.75rem] font-medium text-[var(--color-text-muted)]">
+        <span className="text-[0.76rem] font-medium text-[var(--color-text-muted)]">
           {t('peakDayTitle')}
         </span>
-        <div className="mt-2 text-[1.7rem] font-semibold tracking-[-0.04em] tabular-nums text-[var(--color-text)]">
+        <div className="mt-2 text-[1.75rem] font-semibold tracking-[-0.04em] tabular-nums text-[var(--color-text)]">
           {peakDay ? formatReferenceUsd(peakDay.estimatedCostUsd, peakDay.estimatedTokens) : '—'}
         </div>
-        <p className="mt-1 text-[0.7rem] leading-5 text-[var(--color-nav-muted)]">
+        <p className="mt-1.5 text-[0.7rem] leading-5 text-[var(--color-nav-muted)]">
           {peakDay
             ? t('peakDayDesc', {
               date: peakDay.day,
@@ -109,13 +109,13 @@ export function ReferenceCostMetrics({ preview }: { preview: BillingPreview }) {
       </div>
 
       <div className={kpiCard}>
-        <span className="text-[0.75rem] font-medium text-[var(--color-text-muted)]">
+        <span className="text-[0.76rem] font-medium text-[var(--color-text-muted)]">
           {t('coverageTitle')}
         </span>
-        <div className="mt-2 text-[1.7rem] font-semibold tracking-[-0.04em] tabular-nums text-[var(--color-text)]">
+        <div className="mt-2 text-[1.75rem] font-semibold tracking-[-0.04em] tabular-nums text-[var(--color-text)]">
           {ratio === null ? '—' : formatPercent(ratio, 2)}
         </div>
-        <p className="mt-1 text-[0.7rem] leading-5 text-[var(--color-nav-muted)]">
+        <p className="mt-1.5 text-[0.7rem] leading-5 text-[var(--color-nav-muted)]">
           {data
             ? t('coverageDesc', {
               asOf: formatDateTimeShort(data.asOf),
@@ -177,12 +177,12 @@ export function ReferenceCostBreakdown({
   function headers(label: string) {
     return (
       <tr className="border-b border-[var(--color-border)] text-[0.68rem] font-semibold uppercase tracking-[0.06em] text-[var(--color-nav-muted)]">
-        <th scope="col" className="py-2.5 pr-3 text-left">{label}</th>
+        <th scope="col" className="whitespace-nowrap py-2.5 pr-3 text-left">{label}</th>
         <th scope="col" className={tableHeaderCell}>{t('usdColumn')}</th>
         <th scope="col" className={tableHeaderCell}>{t('estimatedTokens')}</th>
         <th scope="col" className={tableHeaderCell}>{t('unpricedTokens')}</th>
         <th scope="col" className={tableHeaderCell}>{t('excludedTokens')}</th>
-        <th scope="col" className="py-2.5 pl-2.5 text-right">{t('costShareColumn')}</th>
+        <th scope="col" className="whitespace-nowrap py-2.5 pl-2.5 text-right">{t('costShareColumn')}</th>
       </tr>
     );
   }
@@ -190,13 +190,19 @@ export function ReferenceCostBreakdown({
   function cells(cost: BillingCostBreakdown, maxAmount: number, totalAmount: number) {
     return (
       <>
-        <td className="px-2.5 py-2.5 text-right font-mono font-semibold tabular-nums text-[var(--color-text)]">
+        <td className="whitespace-nowrap px-2.5 py-2.5 text-right font-mono font-semibold tabular-nums text-[var(--color-text)]">
           {formatReferenceUsd(cost.estimatedCostUsd, cost.estimatedTokens)}
         </td>
-        <td className={`${tableValueCell} text-[var(--color-text-muted)]`}>{format.number(cost.estimatedTokens)}</td>
-        <td className={`${tableValueCell} text-[var(--color-text-muted)]`}>{format.number(cost.unpricedTokens)}</td>
-        <td className={`${tableValueCell} text-[var(--color-text-muted)]`}>{format.number(cost.excludedTokens)}</td>
-        <td className="py-2.5 pl-2.5 text-right">
+        <td className={`${tableValueCell} text-[var(--color-text-muted)]`} title={format.number(cost.estimatedTokens)}>
+          {formatCompactTokens(cost.estimatedTokens)}
+        </td>
+        <td className={`${tableValueCell} text-[var(--color-text-muted)]`} title={format.number(cost.unpricedTokens)}>
+          {formatCompactTokens(cost.unpricedTokens)}
+        </td>
+        <td className={`${tableValueCell} text-[var(--color-text-muted)]`} title={format.number(cost.excludedTokens)}>
+          {formatCompactTokens(cost.excludedTokens)}
+        </td>
+        <td className="whitespace-nowrap py-2.5 pl-2.5 text-right">
           <ShareBar
             amount={Number(cost.estimatedCostUsd)}
             maxAmount={maxAmount}
@@ -276,26 +282,26 @@ export function ReferenceCostBreakdown({
                     ({format.number(details.unpriced.length)})
                   </span>
                 </summary>
-                <div className="-mx-5 pb-2">
+                <div className="border-t border-[var(--color-border)] pb-1">
                   <DashboardTableFrame maxHeight={320} scrollLabel={t('unpricedDetails')}>
-                    <table aria-label={t('unpricedDetails')} className="dashboard-data-table w-full min-w-[30rem] border-collapse text-left text-[0.75rem]">
+                    <table aria-label={t('unpricedDetails')} className="dashboard-data-table w-full min-w-[24rem] border-collapse text-left text-[0.75rem]">
                       <thead>
                         <tr className="border-b border-[var(--color-border)] text-[0.68rem] font-semibold uppercase tracking-[0.06em] text-[var(--color-nav-muted)]">
-                          <th scope="col" className="whitespace-nowrap py-2 pr-2">{t('channel')}</th>
-                          <th scope="col" className="whitespace-nowrap px-2 py-2">{t('model')}</th>
-                          <th scope="col" className="whitespace-nowrap px-2 py-2">{t('reason')}</th>
-                          <th scope="col" className="whitespace-nowrap py-2 pl-2 text-right">{t('observations')}</th>
+                          <th scope="col" className="whitespace-nowrap py-2 pr-2.5">{t('channel')}</th>
+                          <th scope="col" className="whitespace-nowrap px-2.5 py-2">{t('model')}</th>
+                          <th scope="col" className="whitespace-nowrap px-2.5 py-2">{t('reason')}</th>
+                          <th scope="col" className="whitespace-nowrap py-2 pl-2.5 text-right">{t('observations')}</th>
                         </tr>
                       </thead>
                       <tbody className="tabular-nums">
                         {details.unpriced.map(group => (
                           <tr key={JSON.stringify([group.channel, group.model, group.reason])}>
-                            <td className="whitespace-nowrap py-2 pr-2 text-[var(--color-text-muted)]">{sourceName(group.channel)}</td>
-                            <th scope="row" className="whitespace-nowrap px-2 py-2 text-left font-mono font-normal text-[var(--color-text)]">{group.model}</th>
-                            <td className="px-2 py-2 text-[var(--color-text-muted)]" title={group.reason}>
+                            <td className="whitespace-nowrap py-2 pr-2.5 text-[var(--color-text-muted)]">{sourceName(group.channel)}</td>
+                            <th scope="row" className="whitespace-nowrap px-2.5 py-2 text-left font-mono font-normal text-[var(--color-text)]">{group.model}</th>
+                            <td className="px-2.5 py-2 text-[var(--color-text-muted)]" title={group.reason}>
                               {t.has('reasons.' + group.reason) ? t('reasons.' + group.reason) : group.reason}
                             </td>
-                            <td className="py-2 pl-2 text-right font-mono text-[var(--color-text)]">{format.number(group.observations)}</td>
+                            <td className="py-2 pl-2.5 text-right font-mono text-[var(--color-text)]">{format.number(group.observations)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -324,7 +330,7 @@ export function ReferenceCostBreakdown({
                 <select
                   id={channelSelectId}
                   name="billing-channel"
-                  className="dashboard-refresh-button"
+                  className="dashboard-refresh-button !h-8 !min-w-0 !px-3 !pr-8 !text-[0.74rem]"
                   value={activeChannel ?? ''}
                   onChange={event => {
                     onChannelChange(event.target.value);
@@ -343,8 +349,8 @@ export function ReferenceCostBreakdown({
           {!details ? (
             <p className="px-5 py-6 text-sm text-[var(--color-text-muted)]">{t('breakdownUnavailable')}</p>
           ) : models.length ? (
-            <DashboardTableFrame maxHeight={expanded ? 460 : undefined} scrollLabel={t('modelCosts')}>
-              <table aria-label={t('modelCosts')} className="dashboard-data-table w-full min-w-[40rem] border-collapse text-left text-[0.76rem]">
+            <DashboardTableFrame rowLimit={10} expanded={expanded} maxHeight={expanded ? 460 : undefined} scrollLabel={t('modelCosts')}>
+              <table aria-label={t('modelCosts')} className="dashboard-data-table w-full min-w-[34rem] border-collapse text-left text-[0.76rem]">
                 <thead>{headers(t('model'))}</thead>
                 <tbody className="tabular-nums">
                   {(expanded ? models : models.slice(0, 10)).map(({ model, cost }) => (
@@ -385,7 +391,7 @@ export function ReferenceCostBreakdown({
               <div className="border-t border-[var(--color-border)]">
                 {daysDesc.length ? (
                   <DashboardTableFrame maxHeight={420} scrollLabel={t('dailyCosts')}>
-                    <table aria-label={t('dailyCosts')} className="dashboard-data-table w-full min-w-[40rem] border-collapse text-left text-[0.76rem]">
+                    <table aria-label={t('dailyCosts')} className="dashboard-data-table w-full min-w-[34rem] border-collapse text-left text-[0.76rem]">
                       <thead>{headers(t('day'))}</thead>
                       <tbody className="tabular-nums">
                         {daysDesc.map(day => (
