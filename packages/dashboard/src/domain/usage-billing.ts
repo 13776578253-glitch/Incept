@@ -3,6 +3,13 @@ import { dashboardDate } from './window';
 
 export const billingComponents = ['input', 'output', 'cacheRead', 'cacheWrite', 'reasoning'] as const;
 export type BillingComponent = typeof billingComponents[number];
+type ScheduleMultiplier = string | number;
+type RatePeriod = { from: number; to: number; multiplier: ScheduleMultiplier };
+export type BillingSchedule = { version: string } & (
+  | { periods: RatePeriod[] }
+  | { utcOffsetMinutes: number; weekdays: number[]; peakMultiplier: ScheduleMultiplier;
+      peakHours: { from: string; to: string }[]; holidays: { from: string; to: string }[] }
+);
 export type BillingRate = {
   model: string;
   provider: string;
@@ -12,8 +19,7 @@ export type BillingRate = {
   effectiveTo?: number;
   perMillion: Partial<Record<BillingComponent, string>>;
   longPrompt?: { aboveInputTokens: number; perMillion: Partial<Record<BillingComponent, string>> };
-  // An independently versioned rule can be published as explicit UTC periods.
-  schedule?: { version: string; periods: { from: number; to: number; multiplier: string | number }[] };
+  schedule?: BillingSchedule;
 };
 
 export type BillingUsage = TransferEvent & { timestampPrecision?: 'event' | 'day' };
@@ -28,6 +34,35 @@ export function billingInterval(event: BillingUsage): readonly [number, number] 
   if (event.timestampPrecision !== 'day') return [event.timestampMs, event.timestampMs + 1];
   const start = Date.parse(dashboardDate(event.timestampMs) + 'T00:00:00+08:00');
   return [start, start + 86_400_000];
+}
+
+const minuteMs = 60_000;
+const dayMs = 24 * 60 * minuteMs;
+
+export function clockMinutes(value: string) {
+  if (typeof value !== 'string' || !/^(?:[01]\d|2[0-3]):[0-5]\d$|^24:00$/.test(value)) return NaN;
+  const [hour, minute] = value.split(':').map(Number);
+  return hour * 60 + minute;
+}
+
+function scheduledPeriods(schedule: BillingSchedule | undefined, start: number, end: number): RatePeriod[] {
+  if (!schedule) return [];
+  if ('periods' in schedule) return schedule.periods.filter(period => period.from < end && period.to > start);
+
+  const offset = schedule.utcOffsetMinutes * minuteMs;
+  const periods: RatePeriod[] = [];
+  for (let day = Math.floor((start + offset) / dayMs) * dayMs; day < end + offset; day += dayMs) {
+    const date = new Date(day);
+    if (!schedule.weekdays.includes(date.getUTCDay())) continue;
+    const dateKey = date.toISOString().slice(0, 10);
+    if (schedule.holidays.some(({ from, to }) => from <= dateKey && dateKey <= to)) continue;
+    for (const hours of schedule.peakHours) {
+      const from = day - offset + clockMinutes(hours.from) * minuteMs;
+      const to = day - offset + clockMinutes(hours.to) * minuteMs;
+      if (from < end && to > start) periods.push({ from, to, multiplier: schedule.peakMultiplier });
+    }
+  }
+  return periods;
 }
 
 export type UsageCharge =
@@ -65,7 +100,7 @@ export function estimateUsage(event: BillingUsage, selected?: { version: string;
   }
   if (!selected) return { status: 'unpriced', reason: 'RATE_NOT_FOUND' };
   const [start, end] = billingInterval(event);
-  const periods = selected.rate.schedule?.periods.filter(period => period.from < end && period.to > start) ?? [];
+  const periods = scheduledPeriods(selected.rate.schedule, start, end);
   const multipliers = new Set<bigint>();
   const baseMultiplier = BigInt(1_000_000);
   let coveredThrough = start;

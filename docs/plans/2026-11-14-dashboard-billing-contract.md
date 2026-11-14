@@ -10,7 +10,7 @@
 
 ## 文件与维护入口
 
-- [USD 费率目录](./dashboard-billing-reference-catalog-2026-11-13.json)由 `publish-usage-rates` 显式发布。DeepSeek V4 Flash 保留 8 月旧版每天的峰谷时段，9 月 10 日 04:00 UTC 起采用 V4.1 Flash 版本。2027 年按已发布的节假日表展开峰时，沿用截至本轮核查的官网刊例，适用期截至北京时间 2027 年底。小米 MiMo V2.6 Pro 的官网仅给出发布日，本目录将 2026-09-22 按北京时间日期生效。[DeepSeek 旧版费率](https://api-docs.deepseek.com/img/v4_260813_price_en.png) · [V4.1 Flash 变更](https://api-docs.deepseek.com/news/news260910/) · [DeepSeek 现行价目](https://api-docs.deepseek.com/quick_start/pricing/) · [2027 放假安排](https://english.www.gov.cn/policies/latestreleases/202611/06/content_WS6aed74dcc6d00ca5f9a0e22e.html) · [小米模型更新](https://mimo.mi.com/docs/en-US/updates/model)
+- [USD 费率目录](./dashboard-billing-reference-catalog-2026-11-13.json)由 `publish-usage-rates` 显式发布。DeepSeek V4 Flash 保留 8 月旧版每天的 UTC 峰谷时段，9 月 10 日 04:00 UTC 起采用 V4.1 Flash 版本。V4.1 Flash 在北京时间周一至周五 09:00–12:00、14:00–18:00 收峰时价，周末和配置中的节假日全天用闲时价。目录保存每周规则和节假日日期范围，适用期截至北京时间 2027 年底。小米 MiMo V2.6 Pro 的官网仅给出发布日，本目录将 2026-09-22 按北京时间日期生效。[DeepSeek 旧版费率](https://api-docs.deepseek.com/img/v4_260813_price_en.png) · [V4.1 Flash 变更](https://api-docs.deepseek.com/news/news260910/) · [DeepSeek 现行价目](https://api-docs.deepseek.com/quick_start/pricing/) · [2027 放假安排](https://english.www.gov.cn/policies/latestreleases/202611/06/content_WS6aed74dcc6d00ca5f9a0e22e.html) · [小米模型更新](https://mimo.mi.com/docs/en-US/updates/model)
 - [渠道映射表](../../packages/dashboard/src/sync/usage-billing-channel-mappings.json)记录 `(channel, model)` 的精确匹配、规范模型和证据。原始键已是规范模型时可直接选价。新增有前缀的模型时补显式映射，保留原始键用于对账。
 - [发布与撤回步骤](./2026-11-13-dashboard-sync-billing-refactor.md#owner-灰度读取)描述同期四窗口对账与 Owner 开关。旧 Dashboard 的 `baselineCost` 供迁移验收使用。新版 Owner 界面仅展示 USD 估算与覆盖率。
 

@@ -52,6 +52,25 @@ it('computes exact estimates and applies versioned periods independently of reco
     .toEqual({ status: 'unpriced', reason: 'DAY_RATE_AMBIGUOUS' });
 });
 
+it('applies recurring peak hours in the schedule time zone with full-day holiday exceptions', () => {
+  const schedule = { version: 'weekly', utcOffsetMinutes: 480, weekdays: [1, 2, 3, 4, 5],
+    peakHours: [{ from: '09:00', to: '12:00' }, { from: '14:00', to: '18:00' }],
+    peakMultiplier: '2', holidays: [{ from: '2026-10-01', to: '2026-10-07' }] };
+  const selected = { version: 'weekly', rate: { ...rate, schedule } };
+  const estimate = (at: string, timestampPrecision: 'event' | 'day' = 'event') =>
+    estimateUsage({ ...event, timestampMs: Date.parse(at), timestampPrecision }, selected);
+
+  for (const at of ['2026-10-08T01:00:00Z', '2026-10-08T03:59:59.999Z', '2026-10-08T06:00:00Z', '2026-10-15T06:00:00Z']) {
+    expect(estimate(at)).toMatchObject({ amount: '0.000025' });
+  }
+  for (const at of ['2026-10-08T00:59:59.999Z', '2026-10-08T04:00:00Z', '2026-10-08T10:00:00Z',
+    '2026-10-01T01:00:00Z', '2026-10-07T09:59:59.999Z', '2026-10-10T06:00:00Z']) {
+    expect(estimate(at)).toMatchObject({ amount: '0.0000125' });
+  }
+  expect(estimate('2026-09-30T16:00:00Z', 'day')).toMatchObject({ amount: '0.0000125' });
+  expect(estimate('2026-10-07T16:00:00Z', 'day')).toEqual({ status: 'unpriced', reason: 'DAY_RATE_AMBIGUOUS' });
+});
+
 it('retains all member references, publishes exact new rates, and pins previous billing runs', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'incept-billing-'));
   try {
@@ -89,6 +108,16 @@ it('retains all member references, publishes exact new rates, and pins previous 
     await expect(publish([rate])).resolves.toMatchObject({ added: 1 });
     const annotated = { ...rate, perMillion: { input: '0.1250' }, comment: 'operator note' };
     await expect(publish([annotated])).resolves.toMatchObject({ added: 0 });
+    const weekly = { ...rate, model: 'weekly/fixture', schedule: {
+      version: 'weekly', utcOffsetMinutes: 0, weekdays: [5, 1], peakHours: [{ from: '01:00', to: '04:00' }],
+      peakMultiplier: 2, holidays: [{ from: '2026-10-01', to: '2026-10-07' }],
+    } };
+    await expect(publish([{ ...weekly, schedule: { ...weekly.schedule, peakHours: [
+      { from: '01:00', to: '04:00' }, { from: '03:00', to: '05:00' },
+    ] } }])).rejects.toThrow('INVALID_USAGE_RATE_SCHEDULE');
+    await expect(publish([{ ...weekly, schedule: { ...weekly.schedule, holidays: [
+      { from: '2026-02-30', to: '2026-03-01' },
+    ] } }])).rejects.toThrow('INVALID_USAGE_RATE_SCHEDULE');
     await expect(build('first')).resolves.toMatchObject({ members: 4, mapped: 1, unproven: 1, conflict: 2,
       considered: 6, skippedAfterCutoff: 1, skippedZeroTokens: 1,
       recorded: 1, estimated: 1, unpriced: 3, windows: expect.arrayContaining([{ range: 'all', members: 4,

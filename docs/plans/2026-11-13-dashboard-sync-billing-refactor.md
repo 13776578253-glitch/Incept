@@ -133,7 +133,7 @@ node packages/dashboard/dist/sync-maintenance.mjs publish-usage-rates --sidecar=
 node packages/dashboard/dist/sync-maintenance.mjs build-usage-billing --source=<原账本副本> --sidecar=<旁路库> --baseline=<基线JSON> --run=<批次名>
 ```
 
-目录 JSON 使用 `{ rates, close? }`。费率包含规范 `model`、`provider`、固定为 `USD` 的 `currency`、`evidence`、毫秒时间 `effectiveFrom` 与可选 `effectiveTo`、十进制字符串 `perMillion`。首次见到的新模型按缺价原因归集在 `usage_unpriced_models`。需要峰谷的价格可提供规则版本及不重叠的 UTC 区间，区间外使用基础价。发布新费率时可在同一事务用 `close: [{ version, at }]` 关闭旧开放区间。重复发布相同版本可重入，冲突使整次发布回滚。旧账本随设备上报的数值价格继续作为旧口径输入，并在新版旁路库保存为审计记录。
+目录 JSON 使用 `{ rates, close? }`。费率包含规范 `model`、`provider`、固定为 `USD` 的 `currency`、`evidence`、毫秒时间 `effectiveFrom` 与可选 `effectiveTo`、十进制字符串 `perMillion`。首次见到的新模型按缺价原因归集在 `usage_unpriced_models`。峰谷费率通过 `schedule` 声明规则版本、固定 UTC 偏移、每周峰时适用日（周日为 0）、半开峰时区间、峰时倍数和首尾均包含的节假日日期范围。其余时段用基础价。日精度记录遇到当日峰谷混合时保留未估算状态。新规则从空旁路库回填和发布，历史旁路库保留其原费率版本和结算结果。发布新费率时可在同一事务用 `close: [{ version, at }]` 关闭旧开放区间。重复发布相同版本可重入，冲突使整次发布回滚。旧账本随设备上报的数值价格继续作为旧口径输入，并在新版旁路库保存为审计记录。
 
 基线 JSON 使用 `{ checkedAt, rates, aliases }`，其中 `rates` 和 `aliases` 是旧读取路径实际使用的接收端费率与别名，`checkedAt` 为冻结的毫秒时间。工具从原同步库只读获取 v1 批次的费用、映射、可见性和认领证据。账本、身份审计或目录版本变更后，重估使用新批次名，旧明细和费率版本保留。
 
