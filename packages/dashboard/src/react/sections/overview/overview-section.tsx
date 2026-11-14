@@ -5,12 +5,14 @@ import type { DailyUsagePoint, TokenDashboardData } from '../../../domain/index'
 import { SectionHeader } from '../../components/section-header';
 import { useOverviewState } from './use-overview-state';
 import type { DashboardWindow } from '../../hooks/use-dashboard-window';
+import type { BillingPreview } from '../../hooks/use-billing-preview';
 import { OverviewMetrics } from './overview-metrics';
 import { UsageAnalysisPanel } from './usage-analysis-panel';
 import { ModelDistributionPanel } from './model-distribution-panel';
 
 type OverviewSectionProps = {
   data: TokenDashboardData;
+  billingPreview?: BillingPreview;
   filteredDaily: DailyUsagePoint[];
   selectedTrendIndex: number;
   setSelectedTrendIndex: DashboardWindow['setSelectedTrendIndex'];
@@ -18,6 +20,7 @@ type OverviewSectionProps = {
 
 export function OverviewSection({
   data,
+  billingPreview,
   filteredDaily,
   selectedTrendIndex,
   setSelectedTrendIndex,
@@ -50,7 +53,7 @@ export function OverviewSection({
       />
 
       {/* 4 Core KPI Cards */}
-      <OverviewMetrics data={data} />
+      <OverviewMetrics data={data} billingPreview={billingPreview} />
 
       {/* Full-width analysis followed by an independent ranking panel */}
       <div className="grid min-w-0 grid-cols-1 gap-5">

@@ -7,13 +7,17 @@ import { SectionHeader } from '../../components/section-header';
 import { CostMetrics } from './cost-metrics';
 import { PricingCoveragePanel } from './pricing-coverage-panel';
 import { ModelPricingTable } from './model-pricing-table';
+import { ReferenceCostMetric } from '../../components/reference-cost-metric';
+import type { BillingPreview } from '../../hooks/use-billing-preview';
 
 type CostsSectionProps = {
   data: TokenDashboardData;
+  billingPreview?: BillingPreview;
 };
 
 export function CostsSection({
   data,
+  billingPreview,
 }: CostsSectionProps) {
   const t = useTranslations('dashboard');
   const maxModelCost = useMemo(
@@ -30,21 +34,19 @@ export function CostsSection({
         id="costs"
         eyebrow={t('costs.eyebrow')}
         title={t('costs.title')}
-        description={t('costs.description')}
+        description={t(billingPreview ? 'costs.reference.description' : 'costs.description')}
         accentColor="var(--badge-emerald-dot)"
       />
 
-      {/* 4 Cost Highlight KPI Cards */}
-      <CostMetrics data={data} />
-
-      {/* 2-Column Flat Panels: Coverage Diagnostics + Unit Rate Table */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)]">
-        {/* Flat Panel: Price Coverage & Credibility Diagnostics */}
-        <PricingCoveragePanel data={data} />
-
-        {/* Flat Panel: Unit Rates & Cost Attribution Table */}
-        <ModelPricingTable maxModelCost={maxModelCost} data={data} />
-      </div>
+      {billingPreview ? <ReferenceCostMetric preview={billingPreview} showBreakdown /> : (
+        <>
+          <CostMetrics data={data} />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)]">
+            <PricingCoveragePanel data={data} />
+            <ModelPricingTable maxModelCost={maxModelCost} data={data} />
+          </div>
+        </>
+      )}
     </section>
   );
 }

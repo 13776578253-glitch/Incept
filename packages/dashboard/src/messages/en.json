@@ -191,6 +191,18 @@
     "eyebrow": "COSTS & COVERAGE",
     "title": "API Equivalent Costs & Price Coverage",
     "description": "Recorded known costs and costs estimated using local rates, with explicit unpriced-request coverage gaps.",
+    "reference": {
+      "label": "Official API equivalent cost",
+      "description": "Estimated in USD from official rates. Coverage measures the share of eligible tokens with a complete estimate.",
+      "coverage": "Estimation coverage {coverage}",
+      "estimatedTokens": "Estimated tokens",
+      "unpricedTokens": "Unestimated tokens",
+      "excludedTokens": "Out-of-scope tokens",
+      "asOf": "Snapshot time (UTC+8)",
+      "loading": "Loading the reviewed cost snapshot",
+      "unavailable": "Reviewed cost snapshot unavailable",
+      "notApplicable": "—"
+    },
     "cards": {
       "totalCost": "Known API Equiv. Cost",
       "totalCostDesc": "Calculated from per-model Input / Output / Cache Read unit rates",

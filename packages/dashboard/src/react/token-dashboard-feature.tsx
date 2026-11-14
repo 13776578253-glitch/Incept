@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 
 import type { TokenDashboardData } from '../domain/index';
 import { useDashboardWindow } from './hooks/use-dashboard-window';
+import { useBillingPreview } from './hooks/use-billing-preview';
 import { DashboardToolbar } from './components/dashboard-toolbar';
 import { OverviewSection } from './sections/overview/overview-section';
 import { DeferredSection } from './components/deferred-section';
@@ -25,7 +26,8 @@ export function TokenDashboardFeature({
   canViewDetails = canImport,
   initialStatus = 'live',
   initialValidator,
-}: { data: TokenDashboardData; canImport?: boolean; canViewDetails?: boolean; initialStatus?: 'history' | 'empty' | 'live'; initialValidator?: string }) {
+  billingPreviewEnabled = false,
+}: { data: TokenDashboardData; canImport?: boolean; canViewDetails?: boolean; initialStatus?: 'history' | 'empty' | 'live'; initialValidator?: string; billingPreviewEnabled?: boolean }) {
   const [importOpen, setImportOpen] = useState(false);
   const {
     rangePreset,
@@ -43,6 +45,7 @@ export function TokenDashboardFeature({
     showingHistory,
     remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval,lastPageUpdatedAt,
   } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport, canViewDetails, initialValidator, loadRemoteOnMount: initialStatus === 'live' });
+  const billingPreview = useBillingPreview(canImport && billingPreviewEnabled, rangePreset, refreshCycle);
 
   return (
     <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-24 md:pt-8 lg:px-10 lg:pt-9 lg:pb-28">
@@ -72,6 +75,7 @@ export function TokenDashboardFeature({
         ===================================================================== */}
         {hasSnapshot ? <OverviewSection
           data={data}
+          billingPreview={billingPreview}
           filteredDaily={filteredDaily}
           selectedTrendIndex={selectedTrendIndex}
           setSelectedTrendIndex={setSelectedTrendIndex}
@@ -85,7 +89,9 @@ export function TokenDashboardFeature({
         {/* =====================================================================
             SECTION 03: COSTS & COVERAGE (API 等效费用、价格覆盖率)
         ===================================================================== */}
-        <DeferredSection section="costs" enabled={hasSnapshot}><CostsSection data={data} /></DeferredSection>
+        <DeferredSection section="costs" enabled={hasSnapshot || !!billingPreview}>
+          <CostsSection data={data} billingPreview={billingPreview} />
+        </DeferredSection>
 
         {/* =====================================================================
             SECTION 04: PROJECTS & SESSIONS (项目排行表格 + 会话主从检查器)

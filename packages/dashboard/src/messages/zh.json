@@ -191,6 +191,18 @@
     "eyebrow": "COSTS & COVERAGE",
     "title": "API 等效费用与价格覆盖率",
     "description": "汇总记录中的已知费用及本地价格表折算费用",
+    "reference": {
+      "label": "官网 API 等效成本",
+      "description": "按官网费率折算为 USD，覆盖率按可计价范围内已完成估算的 Token 占比计算",
+      "coverage": "估算覆盖率 {coverage}",
+      "estimatedTokens": "已估算 Token",
+      "unpricedTokens": "未估算 Token",
+      "excludedTokens": "计价范围外 Token",
+      "asOf": "快照时间（UTC+8）",
+      "loading": "正在加载已审核的费用快照",
+      "unavailable": "已审核的费用快照暂不可用",
+      "notApplicable": "—"
+    },
     "cards": {
       "totalCost": "已知累计等效费用",
       "totalCostDesc": "基于已覆盖单价模型的 Input / Output / Cache 阶梯费率折算",

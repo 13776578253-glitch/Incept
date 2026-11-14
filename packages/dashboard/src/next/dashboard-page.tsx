@@ -15,5 +15,10 @@ export async function TokenDashboardPage({ canImport = false, canViewDetails = c
   const initialValidator = history && !canImport
     ? dashboardUsageRepresentation(visibleData, canViewDetails).validator
     : undefined;
-  return <TokenDashboardFeature key={canImport ? 'owner' : canViewDetails ? 'pro' : 'public'} data={visibleData} canImport={canImport} canViewDetails={canViewDetails} initialStatus={history ? 'live' : 'empty'} initialValidator={initialValidator} />;
+  const billingPreviewEnabled = canImport && process.env.INCEPT_BILLING_READ_MODE === 'owner'
+    && process.env.INCEPT_BILLING_UI_MODE === 'owner';
+  return <TokenDashboardFeature key={canImport ? 'owner' : canViewDetails ? 'pro' : 'public'}
+    data={visibleData} canImport={canImport} canViewDetails={canViewDetails}
+    initialStatus={history ? 'live' : 'empty'} initialValidator={initialValidator}
+    billingPreviewEnabled={billingPreviewEnabled} />;
 }

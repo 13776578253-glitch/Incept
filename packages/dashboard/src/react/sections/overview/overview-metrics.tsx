@@ -4,13 +4,17 @@ import { useTranslations } from 'next-intl';
 import type { TokenDashboardData } from '../../../domain/index';
 import { formatCompactTokens, formatUsd, formatPercent } from '../../formatters';
 import { CredibilityPill } from '../../components/credibility-pill';
+import { ReferenceCostMetric } from '../../components/reference-cost-metric';
+import type { BillingPreview } from '../../hooks/use-billing-preview';
 
 type OverviewMetricsProps = {
   data: TokenDashboardData;
+  billingPreview?: BillingPreview;
 };
 
 export function OverviewMetrics({
   data,
+  billingPreview,
 }: OverviewMetricsProps) {
   const t = useTranslations('dashboard');
 
@@ -79,7 +83,7 @@ export function OverviewMetrics({
       </div>
 
       {/* Card 4: Known API Equiv. Cost */}
-      <div className="rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-card)] p-4">
+      {billingPreview ? <ReferenceCostMetric preview={billingPreview} /> : <div className="rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface-card)] p-4">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[0.76rem] font-medium text-[var(--color-text-muted)]">
             {t('overview.kpi.apiCost')}
@@ -96,7 +100,7 @@ export function OverviewMetrics({
             coverage: formatPercent(data.costs.tokenCoverageRate, 1),
           })}
         </p>
-      </div>
+      </div>}
     </div>
   );
 }

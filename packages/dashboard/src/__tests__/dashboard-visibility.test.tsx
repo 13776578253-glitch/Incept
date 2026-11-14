@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import zh from '../messages/zh.json';
 import { emptyDashboard } from '../domain';
 import { ProjectsSection } from '../react/sections/projects/projects-section';
 import { TokenDashboardFeature } from '../react/token-dashboard-feature';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 function withMessages(children: React.ReactNode) {
   return <NextIntlClientProvider locale="zh" timeZone="Asia/Singapore" messages={{ dashboard: zh }}>{children}</NextIntlClientProvider>;
@@ -43,4 +46,26 @@ it('Pro sees section 04 records while import remains Owner-only', async () => {
   expect(await screen.findByText('Readable project')).toBeDefined();
   expect(screen.queryByText('无权限查看')).toBeNull();
   expect(screen.queryByRole('button', { name: '导入' })).toBeNull();
+});
+
+it('shows the reviewed USD total and coverage to an Owner, then clears them when a window is unavailable', async () => {
+  const data = emptyDashboard();
+  data.totals.cost = 999;
+  const fetchDashboard = vi.fn(async (url: string) => {
+    if (url === '/api/dashboard/billing?range=30d') {
+      return Response.json({ range: '30d', estimatedCostUsd: '1.25', estimatedTokens: 60, unpricedTokens: 20,
+        excludedTokens: 40, tokens: 120, recordedUnknownCurrency: 1, asOf: '2026-10-28T01:00:00Z' });
+    }
+    if (url.startsWith('/api/dashboard/billing?')) return new Response(null, { status: 503 });
+    return Response.json(emptyDashboard('7d'));
+  });
+  vi.stubGlobal('fetch', fetchDashboard);
+  render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));
+  await waitFor(() => expect(screen.getAllByText('$1.25 USD')).toHaveLength(2));
+  expect(screen.getAllByText('估算覆盖率 75%')).toHaveLength(2);
+  expect(screen.getByText(zh.costs.reference.unpricedTokens)).toBeDefined();
+  expect(screen.queryByText('$999.00')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: zh.page.range7d }));
+  await waitFor(() => expect(screen.getAllByText(zh.costs.reference.unavailable)).toHaveLength(2));
+  expect(screen.queryByText('$1.25 USD')).toBeNull();
 });
