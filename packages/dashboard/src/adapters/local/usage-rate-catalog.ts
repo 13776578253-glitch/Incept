@@ -13,7 +13,7 @@ function normalizeComponents(perMillion: BillingRate['perMillion']) {
 
 function scheduleMultiplier(value: string | number) {
   const units = decimalUnits(String(value), 6);
-  if (units <= 0n) throw Error('INVALID_USAGE_RATE_SCHEDULE');
+  if (units <= BigInt(0)) throw Error('INVALID_USAGE_RATE_SCHEDULE');
   return formatDecimal(units, 6);
 }
 
