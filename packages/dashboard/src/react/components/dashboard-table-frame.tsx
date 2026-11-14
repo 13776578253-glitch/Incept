@@ -7,9 +7,10 @@ type DashboardTableFrameProps = {
   maxHeight?: number;
   rowLimit?: number;
   expanded?: boolean;
+  scrollLabel?: string;
 };
 
-export function DashboardTableFrame({ children, maxHeight, rowLimit, expanded = false }: DashboardTableFrameProps) {
+export function DashboardTableFrame({ children, maxHeight, rowLimit, expanded = false, scrollLabel }: DashboardTableFrameProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const measuredWidth = useRef<number | undefined>(undefined);
   const [edges, setEdges] = useState({ left: false, right: false });
@@ -58,6 +59,7 @@ export function DashboardTableFrame({ children, maxHeight, rowLimit, expanded = 
     <div className="dashboard-table-frame" data-expandable={Boolean(rowLimit)} data-expanded={expanded}
       data-scroll-left={edges.left} data-scroll-right={edges.right}>
       <div ref={scrollRef} className="dashboard-table-scroll dashboard-subtle-scrollbar"
+        role={scrollLabel ? 'region' : undefined} aria-label={scrollLabel} tabIndex={scrollLabel ? 0 : undefined}
         style={{ maxHeight, height: rowLimit ? viewportHeight : undefined,
           overflowY: rowLimit && !expanded ? 'hidden' : 'auto' }} onScroll={updateEdges}>
         {children}

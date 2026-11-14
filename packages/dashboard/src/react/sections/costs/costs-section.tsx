@@ -1,15 +1,14 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { TokenDashboardData } from '../../../domain/index';
 import { SectionHeader } from '../../components/section-header';
 import { CostMetrics } from './cost-metrics';
 import { PricingCoveragePanel } from './pricing-coverage-panel';
 import { ModelPricingTable } from './model-pricing-table';
-import { ReferenceCostMetric } from '../../components/reference-cost-metric';
 import type { BillingPreview } from '../../hooks/use-billing-preview';
-import { ReferenceCostBreakdown } from './reference-cost-breakdown';
+import { ReferenceCostBreakdown, ReferenceCostMetrics } from './reference-cost-breakdown';
 
 type CostsSectionProps = {
   data: TokenDashboardData;
@@ -21,6 +20,7 @@ export function CostsSection({
   billingPreview,
 }: CostsSectionProps) {
   const t = useTranslations('dashboard');
+  const [channel, setChannel] = useState('');
   const maxModelCost = useMemo(
     () => Math.max(0.01, ...data.models.map((m) => m.cost)),
     [data.models],
@@ -40,9 +40,15 @@ export function CostsSection({
       />
 
       {billingPreview ? <>
-        <ReferenceCostMetric preview={billingPreview} showBreakdown />
-        {billingPreview.status === 'ready' && <ReferenceCostBreakdown key={billingPreview.data.range}
-          data={billingPreview.data} sources={data.sources} />}
+        <ReferenceCostMetrics preview={billingPreview} />
+        {billingPreview.status === 'ready' && (
+          <ReferenceCostBreakdown
+            data={billingPreview.data}
+            sources={data.sources}
+            channel={channel}
+            onChannelChange={setChannel}
+          />
+        )}
       </> : (
         <>
           <CostMetrics data={data} />

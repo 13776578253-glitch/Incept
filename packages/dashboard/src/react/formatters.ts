@@ -21,6 +21,20 @@ export function formatUsd(value: number, digits = 2): string {
   return `$${value.toFixed(digits)}`;
 }
 
+export function formatReferenceUsd(estimatedCostUsd: string, estimatedTokens: number, withCurrency = false): string {
+  if (estimatedTokens <= 0) return '—';
+  const value = Number(estimatedCostUsd);
+  if (!Number.isFinite(value)) return '—';
+  const suffix = withCurrency ? ' USD' : '';
+  if (value > 0 && value < 0.01) return `<$0.01${suffix}`;
+  return `${formatUsd(value)}${suffix}`;
+}
+
+export function referenceCoverageRatio(estimatedTokens: number, unpricedTokens: number): number | null {
+  const eligible = estimatedTokens + unpricedTokens;
+  return eligible > 0 ? estimatedTokens / eligible : null;
+}
+
 export function formatPercent(ratio: number, digits = 1): string {
   return `${(ratio * 100).toFixed(digits)}%`;
 }

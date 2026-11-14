@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } 
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, expect, it, vi } from 'vitest';
 import zh from '../messages/zh.json';
+import en from '../messages/en.json';
 import { emptyDashboard, type BillingReadResponse, type UsageRange } from '../domain';
 import { useBillingPreview } from '../react/hooks/use-billing-preview';
 import { ProjectsSection } from '../react/sections/projects/projects-section';
@@ -132,4 +133,96 @@ it('keeps the current billing state during refresh and loads anew when the range
   expect(result.current).toEqual({ status: 'loading' });
   await respond(5, Response.json(second));
   expect(result.current).toEqual({ status: 'ready', data: second });
+});
+
+it('preserves channel selection across range switches, formats sub-cent totals without rounding to zero, and toggles billing disclosures', async () => {
+  const data = emptyDashboard('30d');
+  const makeSnapshot = (range: UsageRange, claudeUsd: string, codexUsd: string) => ({
+    range,
+    estimatedCostUsd: range === 'all' ? '4.00' : '0.0042',
+    estimatedTokens: 150,
+    unpricedTokens: 50,
+    excludedTokens: 10,
+    tokens: 210,
+    recordedUnknownCurrency: 0,
+    asOf: '2026-10-28T01:00:00Z',
+    revision: 3290,
+    liveRevision: 3290,
+    unpricedGroups: 1,
+    conflicted: 0,
+    breakdown: {
+      days: [
+        { day: '2026-10-27', estimatedCostUsd: '0', estimatedTokens: 0, unpricedTokens: 50, excludedTokens: 0 },
+        { day: '2026-10-28', estimatedCostUsd: range === 'all' ? '4.00' : '0.0042', estimatedTokens: 150, unpricedTokens: 0, excludedTokens: 10 },
+      ],
+      models: [{
+        model: 'deepseek/v4.1-flash',
+        estimatedCostUsd: range === 'all' ? '4.00' : '0.0042',
+        estimatedTokens: 150,
+        unpricedTokens: 0,
+        excludedTokens: 0,
+        channels: [
+          { channel: 'claudeCode', estimatedCostUsd: claudeUsd, estimatedTokens: 50, unpricedTokens: 0, excludedTokens: 0 },
+          { channel: 'codex', estimatedCostUsd: codexUsd, estimatedTokens: 100, unpricedTokens: 0, excludedTokens: 0 },
+        ],
+      }],
+      unpriced: [{ channel: 'codex', model: 'provider/new-model', reason: 'RATE_NOT_FOUND', observations: 2 }],
+    },
+  });
+
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url === '/api/dashboard/billing?range=30d') return Response.json(makeSnapshot('30d', '0.0042', '0.00'));
+    if (url === '/api/dashboard/billing?range=all') return Response.json(makeSnapshot('all', '1.50', '2.50'));
+    return Response.json(emptyDashboard('all'));
+  }));
+
+  render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));
+  await waitFor(() => expect(screen.getAllByText('<$0.01 USD')).toHaveLength(2));
+  expect(screen.queryByText('$0.00 USD')).toBeNull();
+
+  const channelSelect = screen.getByRole('combobox', { name: zh.costs.reference.channel }) as HTMLSelectElement;
+  fireEvent.change(channelSelect, { target: { value: 'claudeCode' } });
+  const modelTable = screen.getByRole('table', { name: zh.costs.reference.modelCosts });
+  expect(within(modelTable).getByText('<$0.01')).toBeDefined();
+
+  fireEvent.click(screen.getByRole('button', { name: zh.page.rangeAll }));
+  await waitFor(() => expect(screen.getAllByText('$4.00 USD')).toHaveLength(2));
+  expect((screen.getByRole('combobox', { name: zh.costs.reference.channel }) as HTMLSelectElement).value).toBe('claudeCode');
+  expect(within(screen.getByRole('table', { name: zh.costs.reference.modelCosts })).getByText('$1.50')).toBeDefined();
+
+  const unpricedSummary = screen.getByText(zh.costs.reference.unpricedDetails).closest('summary')!;
+  const unpricedDetails = unpricedSummary.closest('details')!;
+  unpricedDetails.open = true;
+  fireEvent(unpricedDetails, new Event('toggle'));
+  const unpricedTable = screen.getByRole('table', { name: zh.costs.reference.unpricedDetails });
+  expect(unpricedTable.className).toContain('dashboard-data-table');
+  expect(within(unpricedTable).getByText('provider/new-model')).toBeDefined();
+
+  const dailySummary = screen.getByText(zh.costs.reference.dailyCosts).closest('summary')!;
+  const dailyDetails = dailySummary.closest('details')!;
+  dailyDetails.open = true;
+  fireEvent(dailyDetails, new Event('toggle'));
+  const dailyTable = screen.getByRole('table', { name: zh.costs.reference.dailyCosts });
+  expect(dailyTable.className).toContain('dashboard-data-table');
+  expect(within(dailyTable).getByText('2026-10-27')).toBeDefined();
+
+  fireEvent.click(screen.getByRole('button', { name: zh.overview.trend.metricCost }));
+  expect(screen.getByRole('button', { name: '2026-10-28 · $4.00 USD · 0 未估算 Token' })).toBeDefined();
+});
+
+it('keeps en and zh costs.reference localization keys aligned without Chinese full stops', () => {
+  const collectKeys = (node: unknown, prefix = ''): string[] => {
+    if (!node || typeof node !== 'object') return [prefix];
+    return Object.entries(node as Record<string, unknown>)
+      .flatMap(([key, value]) => collectKeys(value, prefix ? `${prefix}.${key}` : key));
+  };
+  const collectStrings = (node: unknown): string[] => {
+    if (typeof node === 'string') return [node];
+    if (!node || typeof node !== 'object') return [];
+    return Object.values(node as Record<string, unknown>).flatMap(collectStrings);
+  };
+  expect(collectKeys(zh.costs.reference).sort()).toEqual(collectKeys(en.costs.reference).sort());
+  for (const text of collectStrings(zh.costs.reference)) {
+    expect(text).not.toContain('。');
+  }
 });
