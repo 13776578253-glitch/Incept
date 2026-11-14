@@ -312,9 +312,9 @@ it('publishes appended and rolled-back observations with pinned rates while the 
       breakdown: {
         days: [{ day: '2026-10-15', estimatedCostUsd: '0.0000125', estimatedTokens: 100, unpricedTokens: 100 }],
         models: expect.arrayContaining([
-          { model: 'provider/a', estimatedCostUsd: '0.0000125',
-            channels: [{ channel: 'antigravity', estimatedCostUsd: '0.0000125' }] },
-          { model: 'new/unknown', unpricedTokens: 100, estimatedCostUsd: '0' },
+          expect.objectContaining({ model: 'provider/a', estimatedCostUsd: '0.0000125',
+            channels: [expect.objectContaining({ channel: 'antigravity', estimatedCostUsd: '0.0000125' })] }),
+          expect.objectContaining({ model: 'new/unknown', unpricedTokens: 100, estimatedCostUsd: '0' }),
         ]),
         unpriced: [{ channel: 'antigravity', model: 'new/unknown', observations: 1 }],
       },

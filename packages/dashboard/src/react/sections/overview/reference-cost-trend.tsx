@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
+import { dateWindow, type BillingDailyCost } from '../../../domain';
 import type { BillingPreview } from '../../hooks/use-billing-preview';
 import { formatShortDate, formatUsd } from '../../formatters';
 
@@ -7,12 +8,14 @@ export function ReferenceCostTrend({ preview }: { preview: BillingPreview }) {
   const t = useTranslations('dashboard.costs.reference');
   const format = useFormatter();
   const [selectedDay, setSelectedDay] = useState<string>();
-  const days = preview.status === 'ready' ? preview.data.breakdown?.days : undefined;
-  if (!days?.length) {
-    const message = days ? 'emptyBreakdown' : preview.status === 'ready' ? 'breakdownUnavailable' : preview.status;
+  const observed = preview.status === 'ready' ? preview.data.breakdown?.days : undefined;
+  if (preview.status !== 'ready' || !observed?.length) {
+    const message = observed ? 'emptyBreakdown' : preview.status === 'ready' ? 'breakdownUnavailable' : preview.status;
     return <p role="status" className="px-3 py-5 text-sm text-[var(--color-text-muted)]">{t(message)}</p>;
   }
-  const active = days.find(day => day.day === selectedDay) ?? days[days.length - 1];
+  const { range, asOf } = preview.data;
+  const days = range === 'all' ? observed : calendarDays(observed, dateWindow(range, Date.parse(asOf)));
+  const active = days.find(day => day.day === selectedDay) ?? observed[observed.length - 1];
   const max = days.reduce((value, day) => Math.max(value, Number(day.estimatedCostUsd)), 0);
   const amount = (day: typeof active) => day.estimatedTokens > 0 ? formatUsd(Number(day.estimatedCostUsd)) + ' USD' : '—';
   const color = 'var(--badge-emerald-dot)';
@@ -43,4 +46,13 @@ export function ReferenceCostTrend({ preview }: { preview: BillingPreview }) {
       {t('dailyPoint', { day: active.day, amount: amount(active), tokens: format.number(active.unpricedTokens) })}
     </p>
   </div>;
+}
+
+function calendarDays(observed: BillingDailyCost[], window: { from: string; calendarDays: number }): BillingDailyCost[] {
+  const byDate = new Map(observed.map(day => [day.day, day]));
+  const start = Date.parse(window.from);
+  return Array.from({ length: window.calendarDays }, (_, index) => {
+    const day = new Date(start + index * 86_400_000).toISOString().slice(0, 10);
+    return byDate.get(day) ?? { day, estimatedCostUsd: '0', estimatedTokens: 0, unpricedTokens: 0, excludedTokens: 0 };
+  });
 }
