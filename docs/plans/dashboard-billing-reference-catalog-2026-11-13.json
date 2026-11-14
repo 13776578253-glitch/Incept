@@ -780,6 +780,23 @@
       "perMillion": {"input": "1.5", "output": "7.5", "cacheRead": "0.15", "reasoning": "7.5"}
     },
     {
+      "model": "gemini-4-argon",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Gemini Standard API introductory USD reference from the public launch date through November 30 using UTC day boundaries; https://cloud.google.com/blog/products/ai-machine-learning/gemini-4-argon-available-on-google-cloud ; https://aistudio.google.com/docs/pricing#gemini-4-argon",
+      "effectiveFrom": 1791849600000,
+      "effectiveTo": 1796083200000,
+      "perMillion": {"input": "2", "output": "10", "cacheRead": "0.1", "reasoning": "10"}
+    },
+    {
+      "model": "gemini-4-argon",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Gemini Standard API USD reference from December 1 using the UTC day boundary; https://aistudio.google.com/docs/pricing#gemini-4-argon",
+      "effectiveFrom": 1796083200000,
+      "perMillion": {"input": "4", "output": "20", "cacheRead": "0.2", "reasoning": "20"}
+    },
+    {
       "model": "gemini-4-hydrogen",
       "provider": "Google",
       "currency": "USD",

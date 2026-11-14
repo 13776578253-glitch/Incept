@@ -171,7 +171,7 @@ node packages/dashboard/dist/sync-maintenance.mjs publish-usage-billing-read --s
 
 验收 JSON 绑定 `input`、`revision`、`ledger`、`asOf`、`catalog` 和 `pricingReviewDigest`。`windows` 填写同期现网采集的四个 `{ range, tokens, baselineCost }`，`baselineEvidence` 填写来源。`pricingEvidence` 引用对生产 USD 费率及待审未估算分组的审核结果。命令核对四个窗口数值和审阅摘要，空费率目录或目录变更均拒绝发布。先发布到新文件，再将 Web 配置指向已发布文件。
 
-默认关闭。灰度环境设置 `INCEPT_BILLING_READ_MODE=owner` 和 `INCEPT_BILLING_PUBLICATION_FILE`，由 Owner 访问 `GET /api/dashboard/billing?range=14d`。接口响应包括 `asOf`、十进制字符串 `estimatedCostUsd` 及三个覆盖率 Token 计数 `estimatedTokens`、`unpricedTokens`、`excludedTokens`。审计计数 `recordedUnknownCurrency` 仅用于核对历史原额留存。使用新版计费契约的批次生成 v2 发布件。
+默认关闭。灰度环境设置 `INCEPT_BILLING_READ_MODE=owner` 和 `INCEPT_BILLING_PUBLICATION_FILE`，由 Owner 访问 `GET /api/dashboard/billing?range=14d`。生产 Compose 将这两个变量及 UI 开关传给 Web 容器，发布文件路径填写容器可读的 `/data` 下绝对路径。接口响应包括 `asOf`、十进制字符串 `estimatedCostUsd` 及三个覆盖率 Token 计数 `estimatedTokens`、`unpricedTokens`、`excludedTokens`。审计计数 `recordedUnknownCurrency` 仅用于核对历史原额留存。使用新版计费契约的批次生成 v2 发布件。
 
 发布文件的 `approval` 区保存 CLI 填报的操作者标识、发布原因、发布时间、两项证据引用及费率审阅摘要。Owner API 仅返回汇总字段。早期生成的无审计发布文件需要重新发布。证据字段填写归档引用，避免写入凭据。
 

@@ -3,6 +3,20 @@
   "rules": [
     {
       "channel": "antigravity",
+      "model": "claude-opus-5-5-low",
+      "action": "map",
+      "canonicalModel": "claude-opus-5-5",
+      "evidence": "Antigravity effort label mapped to the standard Claude Opus 5.5 API rate; https://platform.claude.com/docs/en/build-with-claude/effort ; https://platform.claude.com/docs/en/models/opus-5-5/whats-new-opus-5-5"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-argon-trial",
+      "action": "map",
+      "canonicalModel": "gemini-4-argon",
+      "evidence": "Antigravity trial access to Gemini 4 Argon uses the same model identity for the API-equivalent estimate; https://antigravity.google/docs/models ; https://aistudio.google.com/docs/pricing#gemini-4-argon"
+    },
+    {
+      "channel": "antigravity",
       "model": "claude-opus-4-6-thinking",
       "action": "map",
       "evidence": "Approved Antigravity reference mapping; https://antigravity.google/docs/models ; https://cloud.google.com/model-garden/partner-models/pricing",
@@ -46,6 +60,13 @@
       "action": "map",
       "evidence": "Incept official-channel reference mapping; https://api-docs.deepseek.com/quick_start/pricing/",
       "canonicalModel": "deepseek-flash"
+    },
+    {
+      "channel": "deepseekHarness",
+      "model": "deepseek/deepseek-v4.1-flash-ultrafast",
+      "action": "map",
+      "canonicalModel": "deepseek-flash",
+      "evidence": "Harness label mapped to the official V4.1 Flash API-equivalent rate under the channel policy; https://api-docs.deepseek.com/news/news261017/ ; https://api-docs.deepseek.com/quick_start/pricing/"
     },
     {
       "channel": "deepseekHarness",

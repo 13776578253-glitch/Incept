@@ -28,3 +28,18 @@
 54,475 条明细中，51,107 条完成估算，3,301 条内部审核路由在计价范围外。其余 67 条是已知的 Opus 5.5 缓存写入分项问题，共 12,678,053 Token。6,840 条历史原额逐笔核对一致，关联用量均按官网费率重新估算。Revision 843 继续用作历史重放。灰度放行以目标环境同版本的四窗口结果及待发布目录审核为准。
 
 Revision 846 的 v1 导入与 v2 回滚组合副本另跑了同口径重估。62,419 条明细包含 7,944 条可见 v1 成员，58,945 条完成估算，3,407 条内部审核路由在计价范围外，仍有相同的 67 条缓存写入分项缺失。新增 GPT-5.2-Codex 和 GPT-5.3-Codex 的 USD 费率版本覆盖了组合副本的 1,256 条旧用量，生效与停止日期按官网公布日期的 UTC 日界限登记。[GPT-5.2-Codex 价目](https://developers.openai.com/api/docs/models/gpt-5.2-codex) · [GPT-5.3-Codex 价目](https://developers.openai.com/api/docs/models/gpt-5.3-codex) · [API 变更日志](https://developers.openai.com/api/docs/changelog) · [退役时间表](https://developers.openai.com/api/docs/deprecations)
+
+## 目标环境四窗口验收
+
+2026-11-14 对生产 release `4666731` 的活动 v4 账本做只读采集。SQLite 一致副本和四个已发布窗口均为 revision 3265，四窗口共用截止时点 `2026-11-14T05:49:59.952Z`。基线使用现网覆盖配置及当前旧读取代码解析出的 26 个接收端价格键和 3 个别名。四窗口的 Token 和旧口径金额逐项精确相等。
+
+| 窗口 | 总 Token | 现网旧口径金额 | 官网 API 等效成本（USD） | 估算覆盖率 |
+|---|---:|---:|---:|---:|
+| 7 天 | 1,755,761,265 | 151.5467466329999 | 224.36 | 100.00% |
+| 14 天 | 3,648,479,614 | 313.64474746300056 | 416.78 | 100.00% |
+| 30 天 | 10,428,157,643 | 942.4908630039923 | 1,067.56 | 100.00% |
+| 全量 | 14,889,550,879 | 1,803.513759448228 | 1,984.76 | 99.91% |
+
+重估批次 `target-3265-reviewed-usd` 使用 29 个费率版本和 30 条渠道映射或策略。将 69 条 `gemini-4-argon-trial`、1 条 `claude-opus-5-5-low` 和 1 条 `deepseek/deepseek-v4.1-flash-ultrafast` 分别映射到对应规范模型。Argon 使用 11 月 30 日前的官网首发价和 12 月 1 日起的标准价，以 UTC 日期为边界。全量 84,677 条明细中 80,601 条完成估算，4,009 条审查路由列在计价范围外，67 条已知 Opus 5.5 缓存写入缺拆分，待审缺价分组为 0。12,553 条来源原额仅供审计。该副本中 GPT-5.6 Sol 和 Terra 在 UTC 7 月 30 日、8 月 21 日及相邻两侧日期均无可见调用。[Google Argon 发布与定价](https://cloud.google.com/blog/products/ai-machine-learning/gemini-4-argon-available-on-google-cloud) · [Antigravity 模型访问](https://antigravity.google/docs/models) · [Anthropic Effort](https://platform.claude.com/docs/en/build-with-claude/effort) · [DeepSeek Flash 价目](https://api-docs.deepseek.com/quick_start/pricing/)
+
+已在隔离容器中加载审核件和账本副本，使用独立 PostgreSQL 的测试 Owner 会话验证开关关闭返回 404、开启时访客返回 403、Owner 的四个窗口均返回 200，以及账本推进后返回 503。线上复查时已到 revision 3268。受控试读开始时重新采集并审核同版本发布件。
