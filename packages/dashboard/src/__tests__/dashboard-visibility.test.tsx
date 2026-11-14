@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, expect, it, vi } from 'vitest';
 import zh from '../messages/zh.json';
-import { emptyDashboard } from '../domain';
+import { emptyDashboard, type BillingReadResponse, type UsageRange } from '../domain';
+import { useBillingPreview } from '../react/hooks/use-billing-preview';
 import { ProjectsSection } from '../react/sections/projects/projects-section';
 import { TokenDashboardFeature } from '../react/token-dashboard-feature';
 
@@ -68,4 +69,45 @@ it('shows the reviewed USD total and coverage to an Owner, then clears them when
   fireEvent.click(screen.getByRole('button', { name: zh.page.range7d }));
   await waitFor(() => expect(screen.getAllByText(zh.costs.reference.unavailable)).toHaveLength(2));
   expect(screen.queryByText('$1.25 USD')).toBeNull();
+});
+
+it('keeps the current billing state during refresh and loads anew when the range changes', async () => {
+  const respondTo: ((response: Response) => void)[] = [];
+  const fetchBilling = vi.fn(() => new Promise<Response>(resolve => {
+    respondTo.push(resolve);
+  }));
+  vi.stubGlobal('fetch', fetchBilling);
+  const { result, rerender } = renderHook(
+    ({ range, cycle }: { range: UsageRange; cycle: number }) => useBillingPreview(true, range, cycle),
+    { initialProps: { range: '30d', cycle: 0 } },
+  );
+  const first: BillingReadResponse = {
+    range: '30d', estimatedCostUsd: '1.25', estimatedTokens: 60, unpricedTokens: 20, excludedTokens: 40,
+    members: 3, tokens: 120, recordedUnknownCurrency: 1, asOf: '2026-10-28T01:00:00Z',
+    run: 'first', revision: 1, catalog: 'test',
+  };
+  const second = { ...first, estimatedCostUsd: '2.50', estimatedTokens: 80, unpricedTokens: 0, revision: 2, run: 'second' };
+  const respond = (index: number, response: Response) => act(async () => respondTo[index](response));
+
+  expect(result.current).toEqual({ status: 'loading' });
+  await respond(0, Response.json(first));
+  rerender({ range: '30d', cycle: 1 });
+  expect(result.current).toEqual({ status: 'ready', data: first });
+  await respond(1, Response.json(second));
+  expect(result.current).toEqual({ status: 'ready', data: second });
+
+  rerender({ range: '30d', cycle: 2 });
+  expect(result.current).toEqual({ status: 'ready', data: second });
+  await respond(2, new Response(null, { status: 503 }));
+  expect(result.current).toEqual({ status: 'unavailable' });
+  rerender({ range: '30d', cycle: 3 });
+  expect(result.current).toEqual({ status: 'unavailable' });
+
+  rerender({ range: '7d', cycle: 3 });
+  expect(result.current).toEqual({ status: 'loading' });
+  rerender({ range: '30d', cycle: 3 });
+  await respond(3, Response.json(first));
+  expect(result.current).toEqual({ status: 'loading' });
+  await respond(5, Response.json(second));
+  expect(result.current).toEqual({ status: 'ready', data: second });
 });
