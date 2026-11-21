@@ -37,6 +37,18 @@ const CANONICAL_ALIASES: Readonly<Record<string, {
   'xiaomi/mimo-v2.6-pro': { canonicalModelId: 'mimo-v2.6-pro', displayName: 'Mimo V2.6 Pro', defaultProvider: 'Xiaomi', providerFamily: 'xiaomi' },
   'mimo-v2.6-pro': { canonicalModelId: 'mimo-v2.6-pro', displayName: 'Mimo V2.6 Pro', defaultProvider: 'Xiaomi', providerFamily: 'xiaomi' },
 
+  // Gemini 4 Neon
+  'gemini-4-neon': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
+  'google/gemini-4-neon': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
+  'gemini-4-neon-medium': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
+  'gemini-4-neon-low': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
+  'gemini-4-neon-high': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
+
+  // GPT-6.2 Sol
+  'gpt-6.2-sol': { canonicalModelId: 'gpt-6.2-sol', displayName: 'GPT-6.2 Sol', defaultProvider: 'OpenAI', providerFamily: 'openai' },
+  'openai/gpt-6.2-sol': { canonicalModelId: 'gpt-6.2-sol', displayName: 'GPT-6.2 Sol', defaultProvider: 'OpenAI', providerFamily: 'openai' },
+  'gpt/gpt-6.2-sol': { canonicalModelId: 'gpt-6.2-sol', displayName: 'GPT-6.2 Sol', defaultProvider: 'OpenAI', providerFamily: 'openai' },
+
   // GPT-6.1 Sol
   'gpt-6.1-sol': { canonicalModelId: 'gpt-6.1-sol', displayName: 'GPT-6.1 Sol', defaultProvider: 'OpenAI', providerFamily: 'openai' },
   'openai/gpt-6.1-sol': { canonicalModelId: 'gpt-6.1-sol', displayName: 'GPT-6.1 Sol', defaultProvider: 'OpenAI', providerFamily: 'openai' },

@@ -230,13 +230,55 @@ function reconcileSources(
   });
 }
 
+function reconcileBillingPeriods(
+  billing: DailyUsagePoint['modelBreakdowns'][number]['billing'],
+  nextCost: number,
+  totalTokens: number,
+) {
+  if (!billing) return undefined;
+  const periods = ['standard', 'offPeak', 'peak'] as const;
+  const weightSum = periods.reduce((sum, key) => sum + (billing[key]?.totalTokens ?? 0), 0);
+  const denom = weightSum > 0 ? weightSum : totalTokens;
+  const next = { ...billing };
+  for (const key of periods) {
+    const part = billing[key];
+    if (!part) continue;
+    next[key] = {
+      ...part,
+      cost: denom > 0 ? nextCost * (part.totalTokens / denom) : 0,
+    };
+  }
+  return next;
+}
+
 function reconcileDaily(
   daily: DailyUsagePoint[],
   dayTotals: ReadonlyMap<string, number>,
+  reconciledModels: ModelUsageSummary[],
+  excludedModels: ReadonlySet<string>,
 ): DailyUsagePoint[] {
+  const modelByName = new Map<string, ModelUsageSummary>();
+  for (const model of reconciledModels) {
+    modelByName.set(model.modelName.trim().toLowerCase(), model);
+  }
   return daily.map((day) => {
-    const cost = dayTotals.get(day.date);
-    return cost === undefined ? day : { ...day, cost };
+    const cost = dayTotals.get(day.date) ?? day.cost;
+    const modelBreakdowns = day.modelBreakdowns.map((mb) => {
+      if (excludedModels.has(mb.modelName) || isExcludedBillingModelName(mb.modelName)) {
+        return { ...mb, cost: 0, missingPricing: true, ...(mb.billing ? { billing: reconcileBillingPeriods(mb.billing, 0, 0) } : {}) };
+      }
+      const matched = modelByName.get(mb.modelName.trim().toLowerCase());
+      if (!matched || matched.missingPricing || matched.totalTokens <= 0) return mb;
+      const tokens = mb.inputTokens + mb.outputTokens + mb.cacheReadTokens + mb.cacheCreationTokens + (mb.reasoningTokens ?? 0);
+      const nextCost = tokens > 0 ? matched.cost * (tokens / matched.totalTokens) : 0;
+      return {
+        ...mb,
+        cost: nextCost,
+        missingPricing: false,
+        ...(mb.billing ? { billing: reconcileBillingPeriods(mb.billing, nextCost, tokens) } : {}),
+      };
+    });
+    return { ...day, cost, modelBreakdowns };
   });
 }
 
@@ -264,11 +306,11 @@ export function reconcileDashboardWithBilling(
   const sources = reconcileSources(data.sources, breakdown.models);
 
   const dayTotals = new Map(breakdown.days.map(day => [day.day, Number(day.estimatedCostUsd)]));
-  const daily = reconcileDaily(data.daily, dayTotals);
+  const daily = reconcileDaily(data.daily, dayTotals, models, excludedModels);
 
   return {
     data: { ...data, models, sources, daily },
-    filteredDaily: filteredDaily === data.daily ? daily : reconcileDaily(filteredDaily, dayTotals),
+    filteredDaily: filteredDaily === data.daily ? daily : reconcileDaily(filteredDaily, dayTotals, models, excludedModels),
     excludedModels,
   };
 }

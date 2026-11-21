@@ -121,7 +121,7 @@ describe('package local usage adapter', () => {
     } }));
     const { loadLocalPricingMap } = await import('../adapters/local/pricing');
     const pricing = loadLocalPricingMap(localHome.path);
-    expect([...pricing.keys()]).toEqual(['gpt-5.3-codex', 'gpt-5.2-codex', 'provider/from-data']);
+    expect([...pricing.keys()]).toEqual(['gpt-5.3-codex', 'gpt-5.2-codex', 'gpt-6.2-sol', 'gemini-4-hydrogen', 'gemini-4-neon', 'provider/from-data']);
     expect(pricing.get('provider/from-data')?.outputPerMillion).toBe(3);
     const codex = join(localHome.path, '.codex', 'sessions');
     mkdirSync(codex, { recursive: true });

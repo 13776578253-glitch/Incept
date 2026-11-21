@@ -7,4 +7,7 @@ import type { UnitPricing } from './types';
 export const TEMPORARY_MODEL_PRICES: Readonly<Record<string, UnitPricing>> = {
   'gpt-5.3-codex': { inputPerMillion: 1.75, outputPerMillion: 14, cacheReadPerMillion: 0.175 },
   'gpt-5.2-codex': { inputPerMillion: 1.75, outputPerMillion: 14, cacheReadPerMillion: 0.175 },
+  'gpt-6.2-sol': { inputPerMillion: 2, outputPerMillion: 10, cacheReadPerMillion: 0.1 },
+  'gemini-4-hydrogen': { inputPerMillion: 1.5, outputPerMillion: 7.5, cacheReadPerMillion: 0.075 },
+  'gemini-4-neon': { inputPerMillion: 3, outputPerMillion: 15, cacheReadPerMillion: 0.15 },
 };

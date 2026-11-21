@@ -18,6 +18,8 @@ describe('temporary historical Codex rates', () => {
       }
       const override = { inputPerMillion: 2, outputPerMillion: 8 };
       expect(loadLocalPricingMap(home, { aliases: {}, prices: { 'gpt-5.2-codex': override }, updatedAt: 0 }).get('gpt-5.2-codex')).toEqual(override);
+      expect(lookupPricing(prices, 'gpt/gpt-6.2-sol')).toEqual({ inputPerMillion: 2, outputPerMillion: 10, cacheReadPerMillion: 0.1 });
+      expect(lookupPricing(prices, 'gemini-4-hydrogen')).toEqual({ inputPerMillion: 1.5, outputPerMillion: 7.5, cacheReadPerMillion: 0.075 });
     } finally {
       rmSync(home, { recursive: true, force: true });
     }

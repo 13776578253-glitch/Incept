@@ -17,6 +17,34 @@
     },
     {
       "channel": "antigravity",
+      "model": "gemini-4-hydrogen-tiered-high",
+      "action": "map",
+      "canonicalModel": "gemini-4-hydrogen",
+      "evidence": "Antigravity tiered effort label mapped to standard Gemini 4 Hydrogen API rate; https://aistudio.google.com/docs/pricing#gemini-4-hydrogen"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-neon-medium",
+      "action": "map",
+      "canonicalModel": "gemini-4-neon",
+      "evidence": "Antigravity effort label mapped to standard Gemini 4 Neon API rate; https://aistudio.google.com/docs/pricing#gemini-4-neon"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-neon-low",
+      "action": "map",
+      "canonicalModel": "gemini-4-neon",
+      "evidence": "Antigravity effort label mapped to standard Gemini 4 Neon API rate; https://aistudio.google.com/docs/pricing#gemini-4-neon"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-neon-high",
+      "action": "map",
+      "canonicalModel": "gemini-4-neon",
+      "evidence": "Antigravity effort label mapped to standard Gemini 4 Neon API rate; https://aistudio.google.com/docs/pricing#gemini-4-neon"
+    },
+    {
+      "channel": "antigravity",
       "model": "claude-opus-4-6-thinking",
       "action": "map",
       "evidence": "Approved Antigravity reference mapping; https://antigravity.google/docs/models ; https://cloud.google.com/model-garden/partner-models/pricing",

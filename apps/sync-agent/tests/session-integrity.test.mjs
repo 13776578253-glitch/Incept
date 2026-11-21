@@ -141,3 +141,21 @@ test('a new Codex session identity cannot reuse an isolated historical locator',
     const result=await engine.run();assert.equal(result.sent,0);assert.equal(result.outcome,'source_failed');assert(state.sessionIsolations().some(row=>row.sessionId==='renamed-session'&&row.reason==='ROTATION_UNVERIFIED'&&row.active));assert.deepEqual(state.parents()[0],parent);assert.equal(f.readSyncView(service).events.reduce((sum,e)=>sum+e.inputTokens,0),10);
   }finally{state.close();service.close();}
 }));
+
+test('missing Antigravity session DB isolates only that session without blocking new Antigravity sessions',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Pricing(home);f.writePhase0Source(home,'antigravity',{session:'ag-old',count:2});
+  const state=new AgentState(join(dir,'state')),service=new f.CompatibleSyncService(join(dir,'cloud.db')),config={version:1,endpoint:'https://synthetic.invalid',deviceId,home,allowedSources:['antigravity']},engine=new SyncEngine(state,config,localHttp(service),async(h,a,parents)=>{const snapshot=join(dir,'snapshot-'+randomUUID());try{return await captureHome(h,snapshot,a,parents);}finally{rmSync(snapshot,{recursive:true,force:true});}});
+  try{
+    assert.equal((await engine.run()).sent,1);
+    const oldParent=structuredClone(state.parents()[0]);
+    rmSync(join(home,'.gemini','antigravity','conversations','ag-old.db'));
+    f.writePhase0Source(home,'antigravity',{session:'ag-new',count:1});
+    const next=await engine.run();
+    assert.equal(next.sent,1);
+    assert.equal(next.outcome,'partial_success');
+    assert(!next.issues.includes('antigravity:ROTATION_UNVERIFIED'));
+    assert(state.sessionIsolations().some(row=>row.source==='antigravity'&&row.sessionId==='ag-old'&&row.reason==='MISSING_ORIGIN_RETAINED'&&row.active));
+    assert.deepEqual(state.parents().find(p=>p.header.manifest.scope.sessionId==='ag-old'),oldParent);
+    assert(state.parents().some(p=>p.header.manifest.scope.sessionId==='ag-new'));
+  }finally{state.close();service.close();}
+}));

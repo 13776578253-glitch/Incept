@@ -83,17 +83,18 @@ export class SyncEngine {
           this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),'HELD_WRITE_FAILED']);}
         continue;
       }
-      // A native, session-anchored Codex log has its own identity. Missing unrelated
-      // history cannot block it; reused old evidence still requires isolation.
-      const independentCodex=capture.source==='codex'&&capture.reader==='codex'&&capture.proofs.length>0
-        &&capture.proofs.every(proof=>proof.range.sessionAnchorHash===hash(capture.sessionId)
-          &&!oldParents.some(parent=>parent.header.manifest.scope.source==='codex'&&parent.header.manifest.scope.sessionId!==capture.sessionId
+      // A native, session-anchored Codex or Antigravity log has its own identity.
+      // Missing unrelated history cannot block it; reused old evidence still requires isolation.
+      const independentSessionSource=capture.source==='codex'||capture.source==='antigravity';
+      const independentSession=independentSessionSource&&capture.reader===capture.source&&capture.proofs.length>0
+        &&capture.proofs.every(proof=>(capture.source==='antigravity'||proof.range.sessionAnchorHash===hash(capture.sessionId))
+          &&!oldParents.some(parent=>parent.header.manifest.scope.source===capture.source&&parent.header.manifest.scope.sessionId!==capture.sessionId
             &&parent.proofs.some(old=>old.range.locatorHash===proof.range.locatorHash||old.range.identityHash===proof.range.identityHash||old.range.root===proof.range.root)));
-      if(!previous&&capture.source!=='codex'&&oldParents.some(p=>p.header.manifest.scope.source===capture.source&&!allSeen.has(scopeKey(capture.source,p.header.manifest.scope.sessionId))
+      if(!previous&&!independentSessionSource&&oldParents.some(p=>p.header.manifest.scope.source===capture.source&&!allSeen.has(scopeKey(capture.source,p.header.manifest.scope.sessionId))
         &&!this.state.isHistoricalPolicyCurrent(p,this.config.deviceId)
         &&!activeIsolated.some(item=>item.source===capture.source&&item.sessionId===p.header.manifest.scope.sessionId))){this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),capture.source+':ROTATION_UNVERIFIED']);continue;}
       try{
-        if(!previous&&capture.source==='codex'&&!independentCodex)throw Error('ROTATION_UNVERIFIED');
+        if(!previous&&independentSessionSource&&!independentSession)throw Error('ROTATION_UNVERIFIED');
         const scope=previous?.parent.header.manifest.scope??{deviceId:this.config.deviceId,source:capture.source,sessionId:capture.sessionId,originId:hash(['incept-origin/1',capture.source,capture.sessionId])};
         this.state.enqueue(buildCandidate(capture,scope,previous?.parent,randomUUID()),signature);
         if(sourceReports[capture.source])sourceReports[capture.source].changedSessions=(sourceReports[capture.source].changedSessions??0)+1;
@@ -115,18 +116,24 @@ export class SyncEngine {
     if(policyMissing.length)this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),...new Set(policyMissing.map(parent=>parent.header.manifest.scope.source+(policyFor(parent.header.manifest.scope.source,parent.header.manifest.scope.sessionId)?.disposition==='isolated'?':HELD_ORIGIN_RETAINED':':SEALED_ORIGIN_RETAINED')))]);
     const isolated=this.state.sessionIsolations().filter(item=>item.active&&this.config.allowedSources.includes(item.source));
     const unexpectedMissing=missing.filter(parent=>!isolated.some(item=>item.source===parent.header.manifest.scope.source&&item.sessionId===parent.header.manifest.scope.sessionId));
-    // Retain the old head and receipt; quarantine only the absent Codex session.
-    // Its own strict continuation can clear the quarantine on a later scan.
-    const missingCodex=unexpectedMissing.filter(parent=>parent.header.manifest.scope.source==='codex');
-    if(missingCodex.length){
-      const items:SessionIsolation[]=missingCodex.map(parent=>({source:'codex',sessionId:parent.header.manifest.scope.sessionId,
-        reason:'MISSING_ORIGIN_RETAINED',affectedRecords:parent.header.manifest.recordCount,unattributedTokens:0,coverage:'session',
-        locatorHashes:parent.proofs.map(proof=>proof.range.locatorHash)}));
-      quarantineNew+=this.state.observeSessionIsolations('codex',items,[]);
+    // Retain the old head and receipt; quarantine only absent per-session origins
+    // (Codex, Antigravity). Their own strict continuation can clear the quarantine on a later scan.
+    const missingSessionScoped=unexpectedMissing.filter(parent=>parent.header.manifest.scope.source==='codex'||parent.header.manifest.scope.source==='antigravity');
+    if(missingSessionScoped.length){
+      const bySource=new Map<string,SessionIsolation[]>();
+      for(const parent of missingSessionScoped){
+        const src=parent.header.manifest.scope.source;
+        const list=bySource.get(src)??[];
+        list.push({source:src as typeof this.config.allowedSources[number],sessionId:parent.header.manifest.scope.sessionId,
+          reason:'MISSING_ORIGIN_RETAINED',affectedRecords:parent.header.manifest.recordCount,unattributedTokens:0,coverage:'session',
+          locatorHashes:parent.proofs.map(proof=>proof.range.locatorHash)});
+        bySource.set(src,list);
+      }
+      for(const [src,items] of bySource)quarantineNew+=this.state.observeSessionIsolations(src as typeof this.config.allowedSources[number],items,[]);
     }
-    const otherMissing=unexpectedMissing.filter(parent=>parent.header.manifest.scope.source!=='codex');
+    const otherMissing=unexpectedMissing.filter(parent=>parent.header.manifest.scope.source!=='codex'&&parent.header.manifest.scope.source!=='antigravity');
     if(otherMissing.length)this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),...new Set(otherMissing.map(parent=>parent.header.manifest.scope.source+':MISSING_ORIGIN_RETAINED'))]);
-    if(missingCodex.length)this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),'codex:ISOLATED_ORIGIN_RETAINED']);
+    if(missingSessionScoped.length)this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),...new Set(missingSessionScoped.map(parent=>parent.header.manifest.scope.source+':ISOLATED_ORIGIN_RETAINED'))]);
     if(missing.length!==unexpectedMissing.length)this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),...new Set(missing.filter(parent=>!unexpectedMissing.includes(parent)).map(parent=>parent.header.manifest.scope.source+':ISOLATED_ORIGIN_RETAINED'))]);
     // Offline captures above are durable BEFORE any network operation. Planned
     // outbox parents do not advance the separate confirmed lineage table.

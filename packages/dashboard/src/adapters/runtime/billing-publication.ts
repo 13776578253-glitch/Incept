@@ -106,12 +106,12 @@ export function scheduleManagedRefresh(database: string, publication: string, de
       const disk = statfsSync(dirname(input.state), { bigint: true });
       if (disk.bavail * disk.bsize < BigInt(2 * 1024 ** 3)) throw Error('MANAGED_BILLING_DISK_PRESSURE');
       const pressure = memoryPressure();
-      if (pressure && pressure.maximumBytes - (pressure.workingSetBytes ?? pressure.currentBytes) < 160 * 1024 ** 2) {
+      if (pressure && pressure.maximumBytes - (pressure.workingSetBytes ?? pressure.currentBytes) < 96 * 1024 ** 2) {
         throw Error('MANAGED_BILLING_MEMORY_PRESSURE');
       }
       await new Promise<void>((resolve, reject) => {
         const worker = Reflect.construct(Worker, [workerPath(), { workerData: input,
-          resourceLimits: { maxOldGenerationSizeMb: 96 } }]) as Worker;
+          resourceLimits: { maxOldGenerationSizeMb: 128 } }]) as Worker;
         worker.once('error', reject);
         worker.once('exit', code => code === 0 ? resolve() : reject(Error('MANAGED_BILLING_WORKER_FAILED')));
       });
