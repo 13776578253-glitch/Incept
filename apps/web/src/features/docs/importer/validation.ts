@@ -1,4 +1,5 @@
 import type { DbDocsSection } from '@incept/db/docs';
+import { markdownLikeAllowedFrontmatterKeys } from './parsers/markdown-like/syntax';
 import type {
   DocsImportArticleSource,
   DocsImportNormalizedSource,
@@ -6,29 +7,7 @@ import type {
 } from './types';
 
 // 定义允许的元信息字段和正文字段，提供数据验证和规范化的功能，确保导入的文档数据符合预期的结构和要求，并收集潜在的问题以供用户参考和修正
-// 待对齐
-const allowedMetaKeys = new Set([
-  'documentKey',
-  'locale',
-  'routeType',
-  'kind',
-  'layoutMode',
-  'accessRole',
-  'isListed',
-  'slug',
-  'title',
-  'summary',
-  'eyebrow',
-  'seoTitle',
-  'seoDescription',
-  'publishedAt',
-  'collectionKey',
-  'collectionSlug',
-  'collectionTitle',
-  'collectionSummary',
-  'collectionEyebrow',
-  'position',
-] as const);
+const allowedMetaKeys = markdownLikeAllowedFrontmatterKeys;
 
 const allowedBodyKeys = new Set(['sections'] as const);
 

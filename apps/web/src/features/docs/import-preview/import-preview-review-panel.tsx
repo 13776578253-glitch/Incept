@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { DocsImportPreviewModel } from '@/features/docs/importer';
 
@@ -8,30 +9,33 @@ type ImportPreviewReviewPanelProps = {
 };
 
 function buildRouteDescription(locale: string, preview: DocsImportPreviewModel) {
-  if (preview.draft.source.meta.kind === 'note') {
-    return `/${locale}/notes/${preview.draft.source.meta.slug}`;
+  if (preview.selectedSource.meta.kind === 'note') {
+    return `/${locale}/notes/${preview.selectedSource.meta.slug}`;
   }
 
-  return preview.draft.source.meta.routeType === 'collectionArticle'
-    ? `/${locale}/docs/series/${preview.draft.source.meta.collectionSlug}/${preview.draft.source.meta.slug}`
-    : `/${locale}/docs/${preview.draft.source.meta.slug}`;
+  return preview.selectedSource.meta.routeType === 'collectionArticle'
+    ? `/${locale}/docs/series/${preview.selectedSource.meta.collectionSlug}/${preview.selectedSource.meta.slug}`
+    : `/${locale}/docs/${preview.selectedSource.meta.slug}`;
 }
 
 function buildCollectionDescription(preview: DocsImportPreviewModel) {
-  if (preview.draft.source.meta.routeType !== 'collectionArticle') {
+  if (preview.selectedSource.meta.routeType !== 'collectionArticle') {
     return null;
   }
 
-  return `This draft will be inserted into the "${preview.draft.source.meta.collectionTitle}" collection at position ${preview.draft.source.meta.position}.`;
+  return `This draft will be inserted into the "${preview.selectedSource.meta.collectionTitle}" collection at position ${preview.selectedSource.meta.position}.`;
 }
 
-function renderCollectionSources(preview: DocsImportPreviewModel) {
+function renderCollectionSources(preview: DocsImportPreviewModel, previewPath: string) {
   const sources = preview.draft.collectionSources ?? [preview.draft.source];
 
   return sources.map((source) => (
-    <div
-      key={`${source.meta.locale}-${source.meta.documentKey ?? source.meta.slug}`}
-      className="rounded-[0.75rem] border border-[color:var(--color-border-subtle)] px-3 py-2"
+    <Link
+      key={`${source.meta.locale}-${source.meta.slug}`}
+      href={`${previewPath}?article=${encodeURIComponent(source.meta.slug)}`}
+      prefetch={false}
+      aria-current={preview.selectedSource.meta.slug === source.meta.slug ? 'page' : undefined}
+      className="block rounded-[0.75rem] border border-[color:var(--color-border-subtle)] px-3 py-2 hover:bg-[var(--color-surface-card)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-text-soft)] aria-[current=page]:border-[var(--color-text-soft)] aria-[current=page]:bg-[var(--color-surface-card)]"
     >
       <div className="flex items-start justify-between gap-3">
         <p className="min-w-0 break-words text-[0.9rem] text-[var(--color-text)]">
@@ -45,7 +49,7 @@ function renderCollectionSources(preview: DocsImportPreviewModel) {
         {source.meta.documentKey ?? source.meta.slug}
         {source.meta.position !== undefined ? ` · position ${source.meta.position}` : ''}
       </p>
-    </div>
+    </Link>
   ));
 }
 
@@ -65,19 +69,19 @@ function renderCollectionTree(
 }
 
 function buildWriteTargetDescription(preview: DocsImportPreviewModel) {
-  if (preview.draft.source.meta.kind === 'note') {
+  if (preview.selectedSource.meta.kind === 'note') {
     return 'Standalone note';
   }
 
-  return preview.draft.source.meta.routeType === 'collectionArticle'
+  return preview.selectedSource.meta.routeType === 'collectionArticle'
     ? 'Collection article'
     : 'Standalone article';
 }
 
 function buildHomepageVisibilityDescription(preview: DocsImportPreviewModel) {
-  const accessRole = preview.draft.source.meta.accessRole;
+  const accessRole = preview.selectedSource.meta.accessRole;
 
-  if (preview.draft.source.meta.kind === 'note') {
+  if (preview.selectedSource.meta.kind === 'note') {
     if (accessRole === 'guest') {
       return 'Appears as a standalone notes entry for guest viewers.';
     }
@@ -85,7 +89,7 @@ function buildHomepageVisibilityDescription(preview: DocsImportPreviewModel) {
     return `Appears as a standalone notes entry, but only to ${accessRole} viewers or above.`;
   }
 
-  if (preview.draft.source.meta.routeType === 'collectionArticle') {
+  if (preview.selectedSource.meta.routeType === 'collectionArticle') {
     if (accessRole === 'guest') {
       return 'Shown through the collection entry on docs home, not as a separate article row.';
     }
@@ -101,7 +105,7 @@ function buildHomepageVisibilityDescription(preview: DocsImportPreviewModel) {
 }
 
 function buildAccessVisibilityDescription(preview: DocsImportPreviewModel) {
-  const accessRole = preview.draft.source.meta.accessRole;
+  const accessRole = preview.selectedSource.meta.accessRole;
 
   if (accessRole === 'guest') {
     return 'Visible to all viewers.';
@@ -115,7 +119,9 @@ export function ImportPreviewReviewPanel({
   draftId,
   preview,
 }: ImportPreviewReviewPanelProps) {
-  const targetLocale = preview.draft.source.meta.locale;
+  const isBatch = preview.draft.draftType === 'collectionDirectory';
+  const previewPath = `/${locale}/docs/import-preview/${draftId}`;
+  const targetLocale = preview.selectedSource.meta.locale;
   const routeDescription = buildRouteDescription(targetLocale, preview);
   const collectionDescription = buildCollectionDescription(preview);
   const writeTargetDescription = buildWriteTargetDescription(preview);
@@ -129,25 +135,25 @@ export function ImportPreviewReviewPanel({
           Import preview
         </p>
         <h1 className="text-[1.2rem] font-semibold text-[var(--color-text)]">
-          {preview.draft.draftType === 'collectionDirectory'
-            ? preview.draft.source.meta.collectionTitle
-            : preview.draft.source.meta.title}
+          {isBatch
+            ? preview.selectedSource.meta.collectionTitle
+            : preview.selectedSource.meta.title}
         </h1>
         <p className="text-[0.95rem] leading-7 text-[var(--color-text-soft)]">
-          {preview.draft.draftType === 'collectionDirectory'
+          {isBatch
             ? `Review ${preview.draft.collectionSources?.length ?? 0} articles and their navigation before importing the collection.`
             : 'Review the normalized article shape before importing it into the docs database.'}
         </p>
       </div>
 
-      {preview.draft.draftType === 'collectionDirectory' ? (
+      {isBatch ? (
         <div className="space-y-2.5 border-t border-[color:var(--color-border-divider)] pt-4">
           <p className="text-[0.82rem] font-medium uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
             Articles in this batch
           </p>
-          <div className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--surface-recessed-bg)] p-2.5">
-            {renderCollectionSources(preview)}
-          </div>
+          <nav aria-label="Articles in this batch" className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--surface-recessed-bg)] p-2.5">
+            {renderCollectionSources(preview, previewPath)}
+          </nav>
         </div>
       ) : null}
 
@@ -210,7 +216,7 @@ export function ImportPreviewReviewPanel({
         </p>
         <p>
           <span className="font-medium text-[var(--color-text)]">Route type:</span>{' '}
-          {preview.draft.source.meta.routeType}
+          {preview.selectedSource.meta.routeType}
         </p>
         <p>
           <span className="font-medium text-[var(--color-text)]">Target locale:</span>{' '}
@@ -220,19 +226,19 @@ export function ImportPreviewReviewPanel({
           <span className="font-medium text-[var(--color-text)]">Target route:</span>{' '}
           {routeDescription}
         </p>
-        {preview.draft.source.meta.routeType === 'collectionArticle' ? (
+        {preview.selectedSource.meta.routeType === 'collectionArticle' ? (
           <>
             <p>
               <span className="font-medium text-[var(--color-text)]">Collection slug:</span>{' '}
-              {preview.draft.source.meta.collectionSlug}
+              {preview.selectedSource.meta.collectionSlug}
             </p>
             <p>
               <span className="font-medium text-[var(--color-text)]">Collection title:</span>{' '}
-              {preview.draft.source.meta.collectionTitle}
+              {preview.selectedSource.meta.collectionTitle}
             </p>
             <p>
               <span className="font-medium text-[var(--color-text)]">Collection position:</span>{' '}
-              {preview.draft.source.meta.position}
+              {preview.selectedSource.meta.position}
             </p>
           </>
         ) : null}
@@ -349,13 +355,13 @@ export function ImportPreviewReviewPanel({
       </div>
 
       <div className="space-y-3">
-        <form action={`/${locale}/docs/import-preview/${draftId}/confirm`} method="post">
+        <form action={`${previewPath}/confirm`} method="post">
           <button
             type="submit"
             disabled={preview.hasErrors}
             className="inline-flex w-full items-center justify-center rounded-[0.8rem] bg-[var(--color-nav-create-bg)] px-4 py-3 text-[0.95rem] font-medium text-[var(--color-nav-create-text)] transition-colors hover:bg-[var(--color-nav-create-hover-bg)] disabled:cursor-not-allowed disabled:opacity-45"
           >
-            Confirm import
+            {isBatch ? 'Confirm batch import' : 'Confirm import'}
           </button>
         </form>
         {preview.hasErrors ? (

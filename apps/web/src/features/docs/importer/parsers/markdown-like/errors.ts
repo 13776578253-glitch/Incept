@@ -29,6 +29,10 @@ export type MarkdownLikeParseIssueCode =
   | 'unclosed_callout'
   | 'invalid_callout'
   | 'invalid_image'
+  | 'invalid_equation'
+  | 'duplicate_equation_number'
+  | 'unclosed_equation'
+  | 'invalid_table'
   | 'empty_section'
   | 'content_before_section';
 

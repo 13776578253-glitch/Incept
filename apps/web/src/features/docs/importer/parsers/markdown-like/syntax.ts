@@ -1,3 +1,12 @@
+import {
+  docsCalloutTones,
+  docsCalloutVariants,
+  docsCodeVariants,
+  docsDividerVariants,
+  docsParagraphSpacings,
+  docsParagraphVariants,
+} from '../../../block-system/presets';
+
 // 支持字段
 export const markdownLikeSupportedExtensions = new Set(['.md', '.docs.md']);
 
@@ -45,24 +54,14 @@ export const markdownLikeAllowedAccessRoles = new Set([
   'private',
 ]);
 
-export const markdownLikeAllowedCalloutTones = new Set([
-  'note',
-  'tip',
-  'attention',
-  'warning',
-  'meta',
-]);
+export const markdownLikeAllowedCalloutTones = new Set<string>(docsCalloutTones);
 
-export const markdownLikeAllowedCalloutVariants = new Set([
-  'default',
-  'soft',
-  'context',
-]);
+export const markdownLikeAllowedCalloutVariants = new Set<string>(docsCalloutVariants);
 
-export const markdownLikeAllowedCodeVariants = new Set(['block', 'compact']);
+export const markdownLikeAllowedCodeVariants = new Set<string>(docsCodeVariants);
 
-export const markdownLikeAllowedDividerVariants = new Set(['default', 'spacious']);
+export const markdownLikeAllowedDividerVariants = new Set<string>(docsDividerVariants);
 
-export const markdownLikeAllowedParagraphVariants = new Set(['default', 'lead', 'muted']);
+export const markdownLikeAllowedParagraphVariants = new Set<string>(docsParagraphVariants);
 
-export const markdownLikeAllowedParagraphSpacings = new Set(['default', 'relaxed']);
+export const markdownLikeAllowedParagraphSpacings = new Set<string>(docsParagraphSpacings);

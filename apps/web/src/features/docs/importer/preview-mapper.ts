@@ -1,7 +1,8 @@
 import type { DocsArticlePageModel, DocsNavGroupModel, DocsOutlineItemModel, DocsSectionModel } from '../shared/types';
 import { calculateDocsReadingStats } from '@incept/db/docs';
-import type { DocsImportNormalizedSource, DocsImportPreviewModel } from './types';
+import type { DocsImportDraft, DocsImportNormalizedSource, DocsImportPreviewModel } from './types';
 import { buildDocsOutline } from '../shared/outline';
+import { resolveDocsImportPreviewLinks } from './preview-links';
 
 // 预览模型映射器，将导入草稿数据转换为预览展示所需的结构，主要负责将原始的导入源数据规范化为文档页面模型，并计算预览中需要展示的错误和警告信息等 --- IGNORE ---
 function toDocsSections(source: DocsImportNormalizedSource): DocsSectionModel[] {
@@ -72,12 +73,18 @@ export function mapDocsImportSourceToPageModel(
   };
 }
 
-export function toDocsImportPreviewModel(draft: import('./types').DocsImportDraft): DocsImportPreviewModel {
+export function toDocsImportPreviewModel(draft: DocsImportDraft, articleSlug?: string): DocsImportPreviewModel {
+  const selectedSource = draft.draftType === 'collectionDirectory' && articleSlug
+    ? draft.collectionSources?.find(({ meta }) => meta.slug === articleSlug) ?? draft.source
+    : draft.source;
   const errorCount = draft.issues.filter((issue) => issue.level === 'error').length;
   const warningCount = draft.issues.filter((issue) => issue.level === 'warning').length;
+  const page = selectedSource === draft.source ? draft.page : mapDocsImportSourceToPageModel(selectedSource);
 
   return {
     draft,
+    selectedSource,
+    page: resolveDocsImportPreviewLinks(page, selectedSource, draft.collectionSources ?? []),
     hasErrors: errorCount > 0,
     errorCount,
     warningCount,

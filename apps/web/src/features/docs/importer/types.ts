@@ -99,6 +99,8 @@ export type DocsImportDraft = {
 
 export type DocsImportPreviewModel = {
   draft: DocsImportDraft;
+  selectedSource: DocsImportNormalizedSource;
+  page: DocsArticlePageModel;
   hasErrors: boolean;
   errorCount: number;
   warningCount: number;

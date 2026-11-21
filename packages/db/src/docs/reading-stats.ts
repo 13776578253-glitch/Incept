@@ -1,4 +1,4 @@
-import type { DbDocsBody, DbDocsSectionBlock } from './types';
+import type { DbDocsBody, DbDocsInlineContent, DbDocsSectionBlock } from './types';
 
 export type DocsReadingStats = {
   chineseCharacterCount: number;  // 中文字符数（每个汉字计 1）
@@ -7,35 +7,41 @@ export type DocsReadingStats = {
   estimatedMinutes: number;       // 预估阅读分钟数 / 至少1分钟
 };
 
-function getParagraphText(block: Extract<DbDocsSectionBlock, { type: 'paragraph' }>) {
-  if (block.text) {
-    return block.text;
-  }
-
-  return (block.content ?? [])
-    .map((item) => (item.type === 'link' ? item.label : item.type === 'inlineCode' ? item.code : item.text))
-    .join(' ');
+function getInlineText(content: DbDocsInlineContent[]) {
+  return content.map((item) => {
+    switch (item.type) {
+      case 'link': return item.label;
+      case 'inlineCode': return item.code;
+      case 'inlineMath': return '';
+      default: return item.text;
+    }
+  }).join(' ');
 }
 
 function getBlockText(block: DbDocsSectionBlock) {
   switch (block.type) {
     case 'paragraph':
-      return getParagraphText(block);
+      return block.text || getInlineText(block.content ?? []);
     case 'list':
-      return block.items.join(' ');
+      return block.items.map((item) => typeof item === 'string' ? item : getInlineText(item)).join(' ');
     case 'checklist':
       return block.items.map((item) => item.text).join(' ');
     case 'callout':
       return `${block.title} ${block.text}`;
     case 'heading':
-      return block.text;
-    case 'quote':
-      return `${block.text} ${block.attribution ?? ''}`;
+      return block.content ? getInlineText(block.content) : block.text;
+    case 'quote': {
+      const text = block.content ? getInlineText(block.content) : block.text;
+      return `${text} ${block.attribution ?? ''}`;
+    }
     case 'image':
       return block.caption ?? '';
     case 'code':
     case 'divider':
+    case 'equation':
       return '';
+    case 'table':
+      return [block.header, ...block.rows].flat().map(getInlineText).join(' ');
   }
 }
 

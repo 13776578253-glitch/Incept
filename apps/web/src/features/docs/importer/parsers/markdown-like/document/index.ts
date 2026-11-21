@@ -1,15 +1,18 @@
 import { addMarkdownLikeIssue } from '../errors';
 import {
   isMarkdownLikeParagraphBoundary,
+  isMarkdownLikeTableRow,
   parseMarkdownLikeCallout,
   parseMarkdownLikeChecklist,
   parseMarkdownLikeCode,
   parseMarkdownLikeDivider,
+  parseMarkdownLikeEquation,
   parseMarkdownLikeHeading,
   parseMarkdownLikeImage,
   parseMarkdownLikeList,
   parseMarkdownLikeParagraph,
   parseMarkdownLikeQuote,
+  parseMarkdownLikeTable,
   startMarkdownLikeSection,
 } from './blocks';
 import { parseMarkdownLikeFrontmatter } from './frontmatter';
@@ -30,6 +33,7 @@ function parseMarkdownLikeBody(
     sections: [],                      // 解析出的章节列表
     blockIndex: 0,                     // 全局块序号 / 用于生成唯一 ID
     checklistItemIndex: 0,             // 全局待办项序号
+    equationIds: new Set(),
   };
 
   let index = 0;
@@ -56,15 +60,13 @@ function parseMarkdownLikeBody(
       continue;
     }
 
-    // 暂不支持 Markdown 表格 / 以 | 开头结尾
-    if (/^\|.*\|$/.test(line)) {
-      addMarkdownLikeIssue(
-        state.issues,
-        lineNumber,
-        'unsupported_syntax',
-        'Markdown tables are not supported in markdown-like v1.',
-      );
-      index += 1;
+    if (line === '$$') {
+      index = parseMarkdownLikeEquation(state, index, lineNumber);
+      continue;
+    }
+
+    if (isMarkdownLikeTableRow(line)) {
+      index = parseMarkdownLikeTable(state, index, lineNumber);
       continue;
     }
 
@@ -167,6 +169,9 @@ function parseMarkdownLikeBody(
   }
 
   for (const section of state.sections) {
+    if (state.equationIds.has(section.id)) {
+      addMarkdownLikeIssue(state.issues, section.line, 'duplicate_equation_number', 'Section ID "' + section.id + '" conflicts with a numbered equation.');
+    }
     if (section.blocks.length === 0) {
       addMarkdownLikeIssue(
         state.issues,

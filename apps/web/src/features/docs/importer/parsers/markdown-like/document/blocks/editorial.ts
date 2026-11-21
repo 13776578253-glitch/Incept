@@ -5,6 +5,7 @@ import {
   markdownLikeAllowedDividerVariants,
 } from '../../syntax';
 import { parseMarkdownLikeAttributes } from '../attributes';
+import { parseMarkdownLikeMathContent } from '../inline';
 import { ensureMarkdownLikeSection, makeMarkdownLikeBlockId } from '../state';
 import type { MarkdownLikeParseState } from '../types';
 
@@ -24,11 +25,14 @@ export function parseMarkdownLikeQuote(state: MarkdownLikeParseState, startIndex
     index += 1;
   }
 
+  const text = lines.join('\n').trim();
+  const content = parseMarkdownLikeMathContent(text);
   section.blocks.push({
     id: makeMarkdownLikeBlockId(state, section, 'quote', lines[0]),
     line: startIndex + 1,
     type: 'quote',
-    text: lines.join('\n').trim(),
+    text,
+    ...(content && { content }),
   });
 
   return index;

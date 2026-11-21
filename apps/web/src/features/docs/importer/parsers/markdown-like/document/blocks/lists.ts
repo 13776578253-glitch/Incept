@@ -1,3 +1,4 @@
+import { parseMarkdownLikeMathContent } from '../inline';
 import {
   ensureMarkdownLikeSection,
   makeMarkdownLikeBlockId,
@@ -32,7 +33,7 @@ export function parseMarkdownLikeList(
     type: 'list',
     listStyle: ordered ? 'ordered' : 'unordered',
     variant: 'default',
-    items,
+    items: items.map((item) => parseMarkdownLikeMathContent(item) ?? item),
   });
 
   return index;

@@ -1,13 +1,17 @@
 import { slugifyMarkdownLikeId } from '../ids';
+import { parseMarkdownLikeMathContent } from '../inline';
 import { ensureMarkdownLikeSection, makeMarkdownLikeBlockId } from '../state';
 import type { MarkdownLikeParseState, MarkdownLikeSection } from '../types';
+import { isMarkdownLikeTableRow } from './table';
 
 // 重导出各区块解析器
 export { parseMarkdownLikeCode } from './code';
 export { parseMarkdownLikeCallout, parseMarkdownLikeDivider, parseMarkdownLikeQuote } from './editorial';
+export { parseMarkdownLikeEquation } from './equation';
 export { parseMarkdownLikeImage } from './image';
 export { parseMarkdownLikeChecklist, parseMarkdownLikeList } from './lists';
 export { parseMarkdownLikeParagraph } from './paragraph';
+export { isMarkdownLikeTableRow, parseMarkdownLikeTable } from './table';
 
 // history: # creates a section and ## through #### already parse as body heading blocks.
 // TODO: When nested On this page navigation is added, map heading blocks into the outline without changing section IDs or article-writing syntax.
@@ -45,12 +49,22 @@ export function parseMarkdownLikeHeading(
   line: number,
 ) {
   const section = ensureMarkdownLikeSection(state, line);
+  const content = parseMarkdownLikeMathContent(text);
+  const label = content?.map((item) => {
+    switch (item.type) {
+      case 'inlineMath': return item.tex;
+      case 'inlineCode': return item.code;
+      case 'link': return item.label;
+      default: return item.text;
+    }
+  }).join('');
   section.blocks.push({
     id: makeMarkdownLikeBlockId(state, section, 'heading', text),
     line,
     type: 'heading',
     level,
-    text,
+    text: label ?? text,
+    ...(content && { content }),
     variant: 'default',
   });
 }
@@ -79,6 +93,7 @@ export function isMarkdownLikeParagraphBoundary(rawLine: string) {
 
   return (
     !line ||                          // 空行
+    line === '$$' ||
     /^#{1,4}\s+/.test(line) ||        // 1-4 级标题
     line.startsWith('```') ||         // 代码块开始/结束
     line.startsWith(':::') ||         // 自定义容器 / callout等
@@ -89,6 +104,6 @@ export function isMarkdownLikeParagraphBoundary(rawLine: string) {
     /^---\s*\{/.test(line) ||         // 带属性的分割线
     line.startsWith('![') ||          // 图片
     /^<[^>]+>/.test(line) ||          // 原始 HTML 标签
-    /^\|.*\|$/.test(line)             // 表格行
+    isMarkdownLikeTableRow(line)
   );
 }

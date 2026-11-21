@@ -34,7 +34,7 @@ export const docsHomeIntro: DocsHomeIntroModel = {
 function toDocsContentBlocks(
   blocks: DbDocsArticleRecord['bodyJson']['sections'][number]['blocks'],
 ): DocsContentBlockModel[] {
-  return blocks as DocsContentBlockModel[];
+  return blocks;
 }
 
 // 文档页面

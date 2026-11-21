@@ -13,8 +13,6 @@ import type {
 
 // 定义文档内容块的预设选项，包含不同类型块的可选值列表，方便在创建和编辑文档内容时使用
 
-// 待修改
-
 export const docsHeadingLevels = [1, 2, 3, 4] as const;
 
 export const docsHeadingVariants = [

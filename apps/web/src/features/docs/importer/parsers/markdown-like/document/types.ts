@@ -1,91 +1,98 @@
+import type {
+  DocsCalloutBlockModel,
+  DocsCalloutVariant,
+  DocsChecklistBlockModel,
+  DocsCodeBlockModel,
+  DocsCodeVariant,
+  DocsDividerBlockModel,
+  DocsDividerVariant,
+  DocsEquationBlockModel,
+  DocsHeadingBlockModel,
+  DocsImageBlockModel,
+  DocsListBlockModel,
+  DocsListStyle,
+  DocsParagraphBlockModel,
+  DocsParagraphInlineModel,
+  DocsParagraphLinkInlineModel,
+  DocsParagraphSpacing,
+  DocsParagraphVariant,
+  DocsQuoteBlockModel,
+  DocsTableBlockModel,
+} from '../../../../block-system/schema';
 import type { MarkdownLikeParseIssue } from '../errors';
 
 export type MarkdownLikeFrontmatter = Record<string, string>;
 
+type WithParserLine<TBlock, TOverrides = Record<never, never>> = Omit<
+  TBlock,
+  keyof TOverrides
+> &
+  TOverrides & {
+    line: number;
+  };
+
 export type MarkdownLikeInline =
-  | { type: 'text'; text: string }
-  | { type: 'link'; label: string; href: string; external: boolean }
-  | { type: 'inlineCode'; code: string }
-  | { type: 'mark'; text: string }
-  | { type: 'delete'; text: string };
+  | Exclude<DocsParagraphInlineModel, { type: 'link' }>
+  | (Omit<DocsParagraphLinkInlineModel, 'external'> & { external: boolean });
 
-export type MarkdownLikeHeadingBlock = {
-  id: string;
-  line: number;
-  type: 'heading';
-  level: 2 | 3 | 4;
-  text: string;
-  variant: 'default';
-};
+export type MarkdownLikeHeadingBlock = WithParserLine<
+  DocsHeadingBlockModel,
+  {
+    level: 2 | 3 | 4;
+    variant: 'default';
+  }
+>;
 
-export type MarkdownLikeParagraphBlock = {
-  id: string;
-  line: number;
-  type: 'paragraph';
-  variant: 'default' | 'lead' | 'muted';
-  spacing: 'default' | 'relaxed';
-  content: MarkdownLikeInline[];
-};
+export type MarkdownLikeParagraphBlock = WithParserLine<
+  Omit<DocsParagraphBlockModel, 'text'>,
+  {
+    variant: DocsParagraphVariant;
+    spacing: DocsParagraphSpacing;
+    content: MarkdownLikeInline[];
+  }
+>;
 
-export type MarkdownLikeListBlock = {
-  id: string;
-  line: number;
-  type: 'list';
-  listStyle: 'ordered' | 'unordered';
-  variant: 'default';
-  items: string[];
-};
+export type MarkdownLikeListBlock = WithParserLine<
+  DocsListBlockModel,
+  {
+    listStyle: DocsListStyle;
+    variant: 'default';
+  }
+>;
 
-export type MarkdownLikeChecklistBlock = {
-  id: string;
-  line: number;
-  type: 'checklist';
-  variant: 'default';
-  items: Array<{ id: string; checked: boolean; text: string }>;
-};
+export type MarkdownLikeChecklistBlock = WithParserLine<
+  DocsChecklistBlockModel,
+  {
+    variant: 'default';
+  }
+>;
 
-export type MarkdownLikeQuoteBlock = {
-  id: string;
-  line: number;
-  type: 'quote';
-  text: string;
-};
+export type MarkdownLikeQuoteBlock = WithParserLine<
+  Omit<DocsQuoteBlockModel, 'attribution'>
+>;
 
-export type MarkdownLikeCalloutBlock = {
-  id: string;
-  line: number;
-  type: 'callout';
-  tone: 'note' | 'tip' | 'attention' | 'warning' | 'meta';
-  title: string;
-  text: string;
-  variant: 'default' | 'soft' | 'context';
-};
+export type MarkdownLikeCalloutBlock = WithParserLine<
+  DocsCalloutBlockModel,
+  {
+    variant: DocsCalloutVariant;
+  }
+>;
 
-export type MarkdownLikeCodeBlock = {
-  id: string;
-  line: number;
-  type: 'code';
-  language: string;
-  caption?: string;
-  variant: 'block' | 'compact';
-  code: string;
-};
+export type MarkdownLikeCodeBlock = WithParserLine<
+  DocsCodeBlockModel,
+  {
+    variant: DocsCodeVariant;
+  }
+>;
 
-export type MarkdownLikeImageBlock = {
-  id: string;
-  line: number;
-  type: 'image';
-  src: string;
-  alt: string;
-  caption?: string;
-};
+export type MarkdownLikeImageBlock = WithParserLine<DocsImageBlockModel>;
 
-export type MarkdownLikeDividerBlock = {
-  id: string;
-  line: number;
-  type: 'divider';
-  variant: 'default' | 'spacious';
-};
+export type MarkdownLikeDividerBlock = WithParserLine<
+  DocsDividerBlockModel,
+  {
+    variant: DocsDividerVariant;
+  }
+>;
 
 export type MarkdownLikeBlock =
   | MarkdownLikeHeadingBlock
@@ -96,7 +103,9 @@ export type MarkdownLikeBlock =
   | MarkdownLikeCalloutBlock
   | MarkdownLikeCodeBlock
   | MarkdownLikeImageBlock
-  | MarkdownLikeDividerBlock;
+  | MarkdownLikeDividerBlock
+  | WithParserLine<DocsEquationBlockModel>
+  | WithParserLine<DocsTableBlockModel>;
 
 export type MarkdownLikeSection = {
   id: string;
@@ -122,4 +131,5 @@ export type MarkdownLikeParseState = {
   section?: MarkdownLikeSection;
   blockIndex: number;
   checklistItemIndex: number;
+  equationIds: Set<string>;
 };

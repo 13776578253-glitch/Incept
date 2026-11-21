@@ -67,6 +67,7 @@ export type {
   DbDocsLibraryRouteType,
   DbDocsLibraryStatsRecord,
   DbDocsLocale,
+  DbDocsInlineContent,
   DbDocsSection,
   DbDocsSectionBlock,
   DbDocsNavGroup,

@@ -1,30 +1,38 @@
 import { addMarkdownLikeIssue } from '../errors';
 import type { MarkdownLikeInline } from './types';
 
+export function* matchMarkdownLikeInlineTokens(text: string) {
+  // Math delimiters hug their content. A digit after the closing dollar would instead start a price.
+  const pattern = /(\[[^\]]+\]\([^)]+\)|`[^`]+`|==[^=]+==|~~[^~]+~~)|(?<![\\$])\$(?![\s$])((?:\\[^\r\n]|[^\\$\r\n])+?)(?<!\s)\$(?![\d$])/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(text)) !== null) yield match;
+}
+
 /**
  * 支持的内联语法：
  *   - [label](url)   / 链接
  *   - `code`         / 行内代码
  *   - ==text==       / 高亮（mark）
  *   - ~~text~~       / 删除线
+ *   - $tex$          / 行内公式
  *   - 普通文本作为{ type: 'text' }
  */
 
 // 解析 Markdown-like 文本中的内联语法，返回一个 MarkdownLikeInline 数组
 export function parseMarkdownLikeInline(text: string): MarkdownLikeInline[] {
   const content: MarkdownLikeInline[] = [];
-  const pattern = /(\[[^\]]+\]\([^)]+\)|`[^`]+`|==[^=]+==|~~[^~]+~~)/g;
   let cursor = 0;
-  let match: RegExpExecArray | null;
 
-  while ((match = pattern.exec(text)) !== null) {
+  for (const match of matchMarkdownLikeInlineTokens(text)) {
     if (match.index > cursor) {
       content.push({ type: 'text', text: text.slice(cursor, match.index) });
     }
 
     const token = match[0];
 
-    if (token.startsWith('[')) {
+    if (match[2] !== undefined) {
+      content.push({ type: 'inlineMath', tex: match[2] });
+    } else if (token.startsWith('[')) {
       const linkMatch = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
 
       if (linkMatch) {
@@ -54,6 +62,12 @@ export function parseMarkdownLikeInline(text: string): MarkdownLikeInline[] {
   return content;
 }
 
+export function parseMarkdownLikeMathContent(text: string): MarkdownLikeInline[] | undefined {
+  if (!text.includes('$')) return undefined;
+  const content = parseMarkdownLikeInline(text);
+  return content.some((item) => item.type === 'inlineMath') ? content : undefined;
+}
+
 /**
  * 检测文本中是否出现了 v1 规范不支持的加粗、斜体语法，
  * 通过 addMarkdownLikeIssue 报告为 unsupported_syntax 问题
@@ -67,7 +81,15 @@ export function reportUnsupportedMarkdownLikeInlineSyntax(
   text: string,
   line: number,
 ) {
-  const textOutsideSupportedTokens = text.replace(/(\[[^\]]+\]\([^)]+\)|`[^`]+`)/g, '');
+  let textOutsideMath = '';
+  let cursor = 0;
+  for (const token of matchMarkdownLikeInlineTokens(text)) {
+    if (token[2] === undefined) continue;
+    textOutsideMath += text.slice(cursor, token.index);
+    cursor = token.index + token[0].length;
+  }
+  textOutsideMath += text.slice(cursor);
+  const textOutsideSupportedTokens = textOutsideMath.replace(/(\[[^\]]+\]\([^)]+\)|`[^`]+`)/g, '');
 
   if (/\*\*[^*]+\*\*/.test(textOutsideSupportedTokens)) {
     addMarkdownLikeIssue(

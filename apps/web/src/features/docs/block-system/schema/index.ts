@@ -27,5 +27,7 @@ export type {
   DocsCodeBlockModel,
   DocsDividerBlockModel,
   DocsImageBlockModel,
+  DocsEquationBlockModel,
+  DocsTableBlockModel,
   DocsContentBlockModel,
 } from './docs-block-types';

@@ -90,7 +90,7 @@ export function DocsArticleBody({
 
               <div className="space-y-5">
                 {section.blocks.map((block) => (
-                  <DocsBlockRenderer key={block.id} block={block} />
+                  <DocsBlockRenderer key={block.id} block={block} locale={page.locale} />
                 ))}
               </div>
             </div>

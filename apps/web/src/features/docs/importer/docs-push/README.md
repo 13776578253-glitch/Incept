@@ -197,12 +197,25 @@ export const answer = 42;
 
 Code fences preserve source text. Rendering, syntax highlighting, light/dark palettes, and eye-comfort colors are handled by the Docs code renderer.
 
+### Equations and tables
+
+Use `$…$` for inline math in paragraphs, list items, quotes, body headings, and table cells.
+For display math, open and close the block with `$$` on separate lines. Add an optional
+`\tag{M0-01}` as the last line before closing. The number appears beneath the formula on
+the right and is linkable as `#eq-m0-01`. Use letters, digits, dots, and hyphens in tags.
+Tags must be unique within an article, ignoring case. The number comes from the source.
+
+Start and end each table row with `|`. Write a header and a separator row with at least
+three hyphens per column. Use colons for alignment (`:---`, `:---:`, or `---:`).
+Columns without explicit alignment are centered. Each data row must have the same number of
+columns. An empty cell still needs its separators.
+Use `\|` for a literal pipe in plain text. Pipes inside math or inline code stay in their cells.
+
 ## Unsupported Syntax
 
 The parser reports source lines for unsupported syntax rather than guessing a conversion.
 
 - Raw HTML, scripts, iframes, video, and embed blocks.
-- Markdown tables.
 - Bold and italic Markdown syntax.
 - Nested or multiline checklist items.
 - Heading attributes, list/checklist emphasis containers, and quote attribution syntax.
@@ -368,7 +381,7 @@ account-access/
 pnpm docs:import --dir account-access --dry-run
 ```
 
-目录命令当前只负责校验并打印推导出的树。批量 draft 与 Owner confirm 是 B-06 的下一部分，目录扫描不能当作正式发布命令。
+目录命令会校验并打印推导出的树；不带 --dry-run 时还会创建批量草稿并输出预览 URL，需由 Owner 在预览页确认后才会正式发布。目录扫描本身不是直接发布命令。
 
 ## Markdown-like 正文
 
@@ -395,6 +408,8 @@ pnpm docs:import --dir account-access --dry-run
 | `> quote` | Quote block；连续引用行会合并。 |
 | `:::callout ...` | Callout block。 |
 | fenced code | 含可选语言与属性的代码块。 |
+| `$$` 独立围栏 | 块级 LaTeX，支持显式编号。 |
+| 管道分隔表格 | 保留列对齐、行内公式和链接的表格。 |
 | `---` / `--- {variant=spacious}` | 分割线。 |
 | `![alt](src "caption")` | 图片 block。 |
 
@@ -420,12 +435,34 @@ export const answer = 42;
 
 代码围栏保留原始文本；语法高亮、亮暗主题与护眼配色由 Docs 代码渲染器处理。
 
+### 公式和表格
+
+行内公式用 `$…$`，适用于段落、列表项、引用、正文小标题和表格单元格。
+独立公式用两行 `$$` 包围。需要编号时，在闭合符之前的最后一行写 `\tag{M0-01}`。
+编号显示在公式右下角，可通过 `#eq-m0-01` 跳转。编号可用字母、数字、点和连字符，
+在同一篇文章内忽略大小写后须唯一。
+
+```md
+$$
+\frac{TP}{TP+FP}
+\tag{M0-01}
+$$
+
+| 公式编号 | 名称 | 公式概览 |
+| --- | --- | :---: |
+| [M0-01](#eq-m0-01) | 精确率 | $\frac{TP}{TP+FP}$ |
+```
+
+表格每行用 `|` 开头和结尾。表头之后要有分隔行，每列至少三个连字符，可写为
+`:---`、`:---:` 或 `---:` 设置列对齐。未指定对齐时默认居中。
+数据行必须与表头列数一致，空单元格也要保留分隔符。
+普通文本里的竖线用 `\|`，行内代码或公式内部的竖线留在单元格中。
+
 ## 不支持的语法
 
 Parser 会报告不支持语法所在行，而不是猜测转换结果。
 
 - 原始 HTML、script、iframe、video、embed。
-- Markdown 表格。
 - Markdown bold 与 italic。
 - 嵌套或多行 checklist。
 - heading attributes、list/checklist emphasis 容器、quote attribution。

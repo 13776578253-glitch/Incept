@@ -1,7 +1,8 @@
 import type { DocsHeadingBlockModel } from '@/features/docs/block-system';
+import { DocsInlineContent } from '../docs-inline-content';
 
 // 标题块组件，根据提供的标题级别、文本内容和可选的变体（如显示、紧凑、细微等）渲染不同样式的标题，适用于文档中的章节标题和小节标题等不同层级的标题展示
-export function DocsHeadingBlock({ id, level, text, variant = 'default' }: DocsHeadingBlockModel) {
+export function DocsHeadingBlock({ id, level, text, content, variant = 'default' }: DocsHeadingBlockModel) {
   const className =
     variant === 'display'
       ? 'text-[1.52rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[1.7rem]'
@@ -22,7 +23,7 @@ export function DocsHeadingBlock({ id, level, text, variant = 'default' }: DocsH
 
   return (
     <HeadingTag id={id} className={`${className} scroll-mt-28`}>
-      {text}
+      {content ? <DocsInlineContent content={content} /> : text}
     </HeadingTag>
   );
 }

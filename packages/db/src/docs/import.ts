@@ -650,7 +650,7 @@ export async function upsertDocsCollectionArticle({
     : null;
 
   const conflictingPosition = await db.docsCollectionItem.findFirst({
-    where: { collectionId, parentId: parentNode?.id ?? null, position },
+    where: { collectionId, parentId: parentNode?.id ?? null, position, isActive: true },
     select: {
       documentId: true,
     },
@@ -1139,7 +1139,48 @@ export async function importDocsCollectionDirectory({
       db,
     });
     const changes: DocsCollectionBatchChange[] = [];
+    const removedChanges: DocsCollectionBatchChange[] = [];
     const documentIds: number[] = [];
+
+    const desiredNodeKeys = new Set(nodes.map((node) => node.nodeKey));
+    const nodesByKey = new Map(nodes.map((node) => [node.nodeKey, node]));
+    const activeItems = await db.docsCollectionItem.findMany({
+      where: { collectionId, isActive: true },
+      select: { id: true, nodeKey: true, parentId: true, position: true, type: true },
+    });
+
+    if (replace) {
+      // TODO: nodeKey is shared across locales, so a single-locale --replace that shrinks the tree also deactivates nodes the other locale still needs; scope this removal per locale before acceptance.
+      // Deactivate removed items before upserting folders and articles so promoted or reparented nodes can reuse their positions.
+      const removedItems = activeItems.filter((item) => !desiredNodeKeys.has(item.nodeKey));
+      if (removedItems.length > 0) {
+        await db.docsCollectionItem.updateMany({
+          where: { id: { in: removedItems.map((item) => item.id) } },
+          data: { isActive: false },
+        });
+        for (const item of removedItems) {
+          removedChanges.push({ key: item.nodeKey, type: item.type, status: 'removed' });
+        }
+      }
+    }
+
+    const idToNodeKey = new Map(activeItems.map((item) => [item.id, item.nodeKey]));
+    const reorderedIds = activeItems
+      .filter((item) => {
+        const target = nodesByKey.get(item.nodeKey);
+        if (!target) {
+          return false;
+        }
+        const currentParentKey = item.parentId ? idToNodeKey.get(item.parentId) : undefined;
+        return item.position !== target.position || currentParentKey !== target.parentNodeKey;
+      })
+      .map((item) => item.id);
+    if (reorderedIds.length > 0) {
+      await db.docsCollectionItem.updateMany({
+        where: { id: { in: reorderedIds } },
+        data: { position: 0 },
+      });
+    }
 
     for (const folder of nodes.filter((node) => node.type === 'folder')) {
       const result = await upsertDocsCollectionFolder({
@@ -1232,42 +1273,7 @@ export async function importDocsCollectionDirectory({
       });
     }
 
-    if (replace) {
-      // TODO: nodeKey is shared across locales, so a single-locale --replace that shrinks the tree also deactivates nodes the other locale still needs; scope this removal per locale before acceptance.
-      const desiredNodeKeys = new Set(nodes.map((node) => node.nodeKey));
-      const activeItems = await db.docsCollectionItem.findMany({
-        where: { collectionId, isActive: true },
-        select: { id: true, nodeKey: true, parentId: true, type: true },
-      });
-      const removedIds = new Set(
-        activeItems
-          .filter((item) => !desiredNodeKeys.has(item.nodeKey))
-          .map((item) => item.id),
-      );
-
-      let changed = true;
-      while (changed) {
-        changed = false;
-        for (const item of activeItems) {
-          if (item.parentId && removedIds.has(item.parentId) && !removedIds.has(item.id)) {
-            removedIds.add(item.id);
-            changed = true;
-          }
-        }
-      }
-
-      if (removedIds.size > 0) {
-        await db.docsCollectionItem.updateMany({
-          where: { id: { in: [...removedIds] } },
-          data: { isActive: false },
-        });
-        for (const item of activeItems) {
-          if (removedIds.has(item.id)) {
-            changes.push({ key: item.nodeKey, type: item.type, status: 'removed' });
-          }
-        }
-      }
-    }
+    changes.push(...removedChanges);
 
     return {
       collectionId,

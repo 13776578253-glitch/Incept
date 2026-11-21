@@ -33,9 +33,8 @@ This is the reviewable backlog for explicit source-code TODOs. It intentionally 
 ### B-05 Structured Content Extensions
 
 - Source: `apps/web/src/features/docs/block-system/schema/docs-block-types.ts` (`DocsBlockType` union)
-- Note: the former `docs-block-types.ts:1` marker is already an in-place `history:` note; `table` remains unimplemented across the block union, the renderers, and the importer. The `block-system/examples/` directory was retired with the Style Lab route on 2026-10-15.
-- Status: Active only after the authoring contract is designed.
-- Image support is complete. The remaining concrete candidate is `table`; embeds, video, timeline, and interactive blocks remain separate proposals rather than implicit additions.
+- Status: Implemented for pipe tables, display equations with explicit tags, and inline math. The stored body and the shared renderer cover both Preview and published articles.
+- The authoring contract is in the Docs import README. Embeds, video, timeline, and interactive blocks remain separate proposals.
 
 ### B-06 Multi-Article Markdown-like Source
 
@@ -257,7 +256,7 @@ Verified against the working tree: these sources already carry the planned in-pl
 
 | Source | In-place note now present |
 | --- | --- |
-| `apps/web/src/features/docs/block-system/schema/docs-block-types.ts:1` | `history: image blocks and local media publishing are implemented; table remains B-05.` |
+| `apps/web/src/features/docs/block-system/schema/docs-block-types.ts:1` | `history: image blocks and local media publishing are implemented; B-05 added tables and equations.` |
 | `apps/web/src/features/docs/block-system/catalog/docs-block-catalog.ts:36-37` | `history:` real-media pipeline note; the Style Lab fixture note was retired with the route on 2026-10-15. |
 | `apps/web/src/server/docs/mappers.ts:23-24` | `history:` annual-description removal and mapper-consolidation notes. |
 | `packages/db/src/docs/types.ts:10-11` | `history:` block-union note. The earlier `:6` reference pointed at an import statement, not a comment. |

@@ -7,6 +7,34 @@ import type {
 
 export type DbDocsLocale = 'en' | 'zh';
 
+export type DbDocsInlineContent =
+  | {
+      type: 'text';
+      text: string;
+    }
+  | {
+      type: 'link';
+      label: string;
+      href: string;
+      external?: boolean;
+    }
+  | {
+      type: 'delete';
+      text: string;
+    }
+  | {
+      type: 'mark';
+      text: string;
+    }
+  | {
+      type: 'inlineCode';
+      code: string;
+    }
+  | {
+      type: 'inlineMath';
+      tex: string;
+    };
+
 // history: The current block union matches the implemented renderer and importer contract.
 // Future block additions require an explicit schema, importer, renderer, and database contract change.
 export type DbDocsSectionBlock =
@@ -14,37 +42,14 @@ export type DbDocsSectionBlock =
       id: string;
       type: 'paragraph';
       text?: string;
-      content?: (
-        | {
-            type: 'text';
-            text: string;
-          }
-        | {
-            type: 'link';
-            label: string;
-            href: string;
-            external?: boolean;
-          }
-        | {
-            type: 'delete';
-            text: string;
-          }
-        | {
-            type: 'mark';
-            text: string;
-          }
-        | {
-            type: 'inlineCode';
-            code: string;
-          }
-      )[];
+      content?: DbDocsInlineContent[];
       variant?: 'default' | 'lead' | 'muted';
       spacing?: 'default' | 'relaxed';
     }
   | {
       id: string;
       type: 'list';
-      items: string[];
+      items: (string | DbDocsInlineContent[])[];
       listStyle?: 'unordered' | 'ordered';
       variant?: 'default' | 'emphasis';
     }
@@ -71,12 +76,14 @@ export type DbDocsSectionBlock =
       type: 'heading';
       level: 1 | 2 | 3 | 4;
       text: string;
+      content?: DbDocsInlineContent[];
       variant?: 'display' | 'default' | 'compact' | 'subtle';
     }
   | {
       id: string;
       type: 'quote';
       text: string;
+      content?: DbDocsInlineContent[];
       attribution?: string;
     }
   | {
@@ -98,6 +105,19 @@ export type DbDocsSectionBlock =
       src: string;
       alt: string;
       caption?: string;
+    }
+  | {
+      id: string;
+      type: 'equation';
+      tex: string;
+      number?: string;
+    }
+  | {
+      id: string;
+      type: 'table';
+      align: ('left' | 'center' | 'right' | null)[];
+      header: DbDocsInlineContent[][];
+      rows: DbDocsInlineContent[][][];
     };
 
 export type DbDocsSection = {

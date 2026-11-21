@@ -37,8 +37,9 @@ export function ImportPreviewFeature({
       }
       aside={
         <DocsArticleRightRail
-          items={preview.draft.page.outline}
-          label={preview.draft.page.outlineLabel}
+          key={preview.page.id}
+          items={preview.page.outline}
+          label={preview.page.outlineLabel}
         />
       }
     >
@@ -50,7 +51,7 @@ export function ImportPreviewFeature({
             preview={preview}
           />
         </div>
-        <DocsArticleBody page={preview.draft.page} />
+        <DocsArticleBody page={preview.page} />
       </div>
     </DocsReferenceShell>
   );
