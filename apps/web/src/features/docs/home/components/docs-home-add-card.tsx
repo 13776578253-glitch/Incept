@@ -7,7 +7,7 @@ import { withLocalePath } from '@/i18n/utils/locale-path';
 
 function PlusIcon() {
   return (
-    <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4 text-[#334155] dark:text-[#cbd5e1]" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+    <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4 text-[var(--color-text)]/80" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
       <path d="M8 3v10M3 8h10" />
     </svg>
   );
@@ -29,10 +29,10 @@ export function DocsHomeAddCard() {
   return (
     <Link
       href={href}
-      className="group relative block h-[116px] w-full rounded-[14px] outline-none focus-visible:ring-1 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+      className="group relative block h-[116px] w-full rounded-[var(--radius-card,14px)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
     >
       <article
-        className="relative flex h-[116px] w-full flex-col justify-between rounded-[14px] border border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-br from-[#c6ced8] via-[#cad2dc] to-[#d4d4d9] dark:from-[#1e232b] dark:via-[#1c2027] dark:to-[#23252a] p-3.5 transition-all duration-150 hover:from-[#bfc8d3] hover:to-[#cdced3] dark:hover:from-[#252a35] dark:hover:to-[#2c2d33]"
+        className="docs-add-card-surface relative flex h-[116px] w-full flex-col justify-between rounded-[var(--radius-card,14px)] border border-[var(--color-border-card,var(--color-border))] p-3.5 shadow-[var(--shadow-card-sm)] transition-all duration-150 group-hover:border-[var(--color-border-strong)] group-hover:shadow-[var(--shadow-card-hover)]"
         aria-label={t('home.addDoc')}
       >
         <div className="min-w-0">
@@ -40,7 +40,7 @@ export function DocsHomeAddCard() {
           <PlusIcon />
 
           {/* Title right below plus icon without redundant subtitle */}
-          <h3 className="mt-2.5 text-[0.95rem] font-medium leading-snug tracking-[-0.01em] text-[#1e293b] dark:text-[#f8fafc]">
+          <h3 className="mt-2.5 text-[length:var(--text-base)] font-medium leading-snug tracking-[-0.01em] text-[var(--color-text)]">
             {t('home.addDoc')}
           </h3>
         </div>
@@ -48,7 +48,7 @@ export function DocsHomeAddCard() {
         {/* Footer: Circular arrow button on bottom-right matching DocsHomeCard baseline */}
         <div className="flex items-center justify-end pt-1">
           <div
-            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#d5d5d9] dark:bg-white/12 text-[#334155] dark:text-[#e2e8f0] transition-all duration-150 group-hover:bg-[#cbccd1] dark:group-hover:bg-white/20 group-hover:translate-x-0.5"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-card)]/60 text-[var(--color-text)]/75 transition-all duration-150 group-hover:bg-[color-mix(in_oklab,var(--color-accent)_16%,var(--color-surface-card))] group-hover:text-[var(--color-accent)] group-hover:translate-x-0.5"
             aria-hidden="true"
           >
             <ArrowRightIcon />

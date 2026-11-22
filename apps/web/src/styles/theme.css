@@ -55,6 +55,8 @@
   --color-text-strikethrough: color-mix(in oklab, var(--color-text-soft) 72%, transparent);
   --color-link-decoration: color-mix(in oklab, var(--color-text) 20%, transparent);
   --docs-code-btn-hover-dark: color-mix(in oklab, var(--color-bg) 72%, var(--color-text) 28%);
+  --docs-add-card-bg: linear-gradient(135deg, color-mix(in oklab, #cfd8e3 64%, var(--color-accent-soft)), color-mix(in oklab, #dddde7 62%, var(--color-surface)) 54%, color-mix(in oklab, #d6d3e4 64%, var(--color-accent-soft)));
+  --docs-add-card-bg-hover: linear-gradient(135deg, color-mix(in oklab, #c6d0dd 70%, var(--color-accent-soft)), color-mix(in oklab, #d6d6e2 68%, var(--color-surface)) 54%, color-mix(in oklab, #cec9df 70%, var(--color-accent-soft)));
 
   --color-navbar-bg: rgba(255, 255, 255, 0.78);
   --color-navbar-border: rgba(17, 17, 17, 0.045);
@@ -336,6 +338,8 @@
   --callout-warning-bg: rgba(224, 96, 48, 0.15);
   --callout-meta-border: rgba(152, 126, 228, 0.28);
   --callout-meta-bg: rgba(152, 126, 228, 0.09);
+  --docs-add-card-bg: linear-gradient(135deg, color-mix(in oklab, #1e2430 85%, var(--color-accent-soft)), color-mix(in oklab, #1a1c25 88%, var(--color-surface-card)) 54%, color-mix(in oklab, #231f2c 85%, var(--color-accent-soft)));
+  --docs-add-card-bg-hover: linear-gradient(135deg, color-mix(in oklab, #242b3a 88%, var(--color-accent-soft)), color-mix(in oklab, #20222d 90%, var(--color-surface-card)) 54%, color-mix(in oklab, #2a2535 88%, var(--color-accent-soft)));
 }
 
 /* =========================================================================
@@ -387,6 +391,8 @@ html[data-theme-preset='warm-paper'] {
   --roadmap-card-hover-bg: #fffdf8;
   --roadmap-modal-bg: #fcf8ef;
   --roadmap-popover-bg: #fcf8ef;
+  --docs-add-card-bg: linear-gradient(135deg, color-mix(in oklab, #e6d9c4 82%, var(--color-accent-soft)), color-mix(in oklab, #ece1d0 86%, var(--color-surface)) 54%, color-mix(in oklab, #e8d5c2 82%, var(--color-accent-soft)));
+  --docs-add-card-bg-hover: linear-gradient(135deg, color-mix(in oklab, #dfd0b8 85%, var(--color-accent-soft)), color-mix(in oklab, #e7dac6 88%, var(--color-surface)) 54%, color-mix(in oklab, #e2ccb7 85%, var(--color-accent-soft)));
 }
 
 /* =========================================================================
@@ -436,6 +442,8 @@ html[data-theme-preset='catppuccin-latte'] {
   --badge-emerald-fg: #2b7a1f;
   --badge-amber-fg: #9f5a12;
   --badge-rose-fg: #b21735;
+  --docs-add-card-bg: linear-gradient(135deg, color-mix(in oklab, #dbe2ee 80%, var(--color-accent-soft)), color-mix(in oklab, #e6e8f1 84%, var(--color-surface)) 54%, color-mix(in oklab, #e2ddf0 80%, var(--color-accent-soft)));
+  --docs-add-card-bg-hover: linear-gradient(135deg, color-mix(in oklab, #d2dbe9 84%, var(--color-accent-soft)), color-mix(in oklab, #dfe2ec 86%, var(--color-surface)) 54%, color-mix(in oklab, #dad4eb 84%, var(--color-accent-soft)));
 }
 
 /* =========================================================================
@@ -479,6 +487,8 @@ html[data-theme-preset='catppuccin-mocha'] {
   --roadmap-card-hover-bg: #27273b;
   --roadmap-modal-bg: #1e1e2e;
   --roadmap-popover-bg: #252538;
+  --docs-add-card-bg: linear-gradient(135deg, color-mix(in oklab, #24283b 86%, var(--color-accent-soft)), color-mix(in oklab, #222335 88%, var(--color-surface-card)) 54%, color-mix(in oklab, #2c263e 86%, var(--color-accent-soft)));
+  --docs-add-card-bg-hover: linear-gradient(135deg, color-mix(in oklab, #2b3047 88%, var(--color-accent-soft)), color-mix(in oklab, #28293e 90%, var(--color-surface-card)) 54%, color-mix(in oklab, #332c47 88%, var(--color-accent-soft)));
 }
 
 /* =========================================================================
@@ -533,6 +543,8 @@ html[data-theme-preset='rose-pine-dawn'] {
   --badge-indigo-dot: #907aa9;
   --badge-rose-fg: #9f4660;
   --badge-rose-dot: #b4637a;
+  --docs-add-card-bg: linear-gradient(135deg, color-mix(in oklab, #e9dad0 82%, var(--color-accent-soft)), color-mix(in oklab, #efe3da 86%, var(--color-surface)) 54%, color-mix(in oklab, #ead8df 82%, var(--color-accent-soft)));
+  --docs-add-card-bg-hover: linear-gradient(135deg, color-mix(in oklab, #e2d1c5 85%, var(--color-accent-soft)), color-mix(in oklab, #e9dbd1 88%, var(--color-surface)) 54%, color-mix(in oklab, #e4ced7 85%, var(--color-accent-soft)));
 }
 
 /* =========================================================================
@@ -576,6 +588,8 @@ html[data-theme-preset='rose-pine'] {
   --roadmap-card-hover-bg: #2a2740;
   --roadmap-modal-bg: #232136;
   --roadmap-popover-bg: #2a2740;
+  --docs-add-card-bg: linear-gradient(135deg, color-mix(in oklab, #28243a 86%, var(--color-accent-soft)), color-mix(in oklab, #242135 88%, var(--color-surface-card)) 54%, color-mix(in oklab, #312538 86%, var(--color-accent-soft)));
+  --docs-add-card-bg-hover: linear-gradient(135deg, color-mix(in oklab, #302b44 88%, var(--color-accent-soft)), color-mix(in oklab, #2b273e 90%, var(--color-surface-card)) 54%, color-mix(in oklab, #392b41 88%, var(--color-accent-soft)));
 }
 
 /* =========================================================================
@@ -712,6 +726,17 @@ html[data-font-size] {
   --text-lg: calc(var(--ui-font-size) * 1.08);
   --text-xl: calc(var(--ui-font-size) * 1.25);
   --text-2xl: calc(var(--ui-font-size) * 1.45);
+}
+
+/* Docs home "Add doc" soft iridescent surface (adapts per preset + accent) */
+.docs-add-card-surface {
+  background-color: var(--color-surface);
+  background-image: var(--docs-add-card-bg);
+}
+
+.group:hover .docs-add-card-surface,
+.docs-add-card-surface:hover {
+  background-image: var(--docs-add-card-bg-hover);
 }
 
 /* =========================================================================

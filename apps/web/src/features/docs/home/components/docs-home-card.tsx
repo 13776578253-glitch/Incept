@@ -68,9 +68,15 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
   const isCollection = article.entryType === 'collection';
   const tag = article.eyebrow || (article.tags && article.tags[0]);
 
+  const interactive = !isLocked && Boolean(href);
+
   const cardContent = (
     <article
-      className="group relative flex h-[116px] w-full flex-col justify-between rounded-[14px] border border-black/[0.06] dark:border-white/[0.08] bg-[var(--color-row-bg)] p-3.5 transition-all duration-150 hover:bg-black/[0.055] dark:hover:bg-white/[0.07] hover:border-black/[0.09] dark:hover:border-white/[0.12]"
+      className={`group relative flex h-[116px] w-full flex-col justify-between rounded-[var(--radius-card,14px)] border border-[var(--color-border-card,var(--color-border))] bg-[var(--color-row-bg)] p-3.5 shadow-[var(--shadow-card-sm)] transition-all duration-150 ${
+        interactive
+          ? 'hover:bg-[var(--color-row-hover-bg)] hover:border-[var(--color-border-strong)]'
+          : ''
+      }`}
       aria-label={article.title}
     >
       <div className="min-w-0">
@@ -99,21 +105,21 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
         ) : null}
       </div>
 
-      {/* Footer: Metadata on left, DeepWiki circular arrow button on right */}
+      {/* Footer: Metadata on left, circular arrow button on right */}
       <div className="flex items-center justify-between gap-2 pt-1">
-        <div className="flex min-w-0 items-center gap-1.5 text-[0.75rem] text-[var(--color-text-muted)]">
+        <div className="flex min-w-0 items-center gap-1.5 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
           {isCollection ? (
-            <span className="inline-flex items-center gap-1 text-[var(--badge-amber-fg)] font-medium">
+            <span className="inline-flex shrink-0 items-center gap-1 font-medium text-[var(--color-accent)]">
               <CollectionIcon />
               <span>{t('home.filter.collections')}</span>
             </span>
           ) : tag ? (
-            <span className="inline-flex items-center gap-1 truncate font-medium">
-              <span className="text-[var(--color-text-soft)]">#</span>
+            <span className="inline-flex min-w-0 items-center gap-0.5 truncate font-medium text-[var(--color-text)]/80">
+              <span className="text-[var(--color-accent)] opacity-75">#</span>
               <span className="truncate">{tag}</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
               <ArticleIcon />
               <span>{t('home.filter.standalone')}</span>
             </span>
@@ -123,15 +129,19 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
 
           <time
             dateTime={article.publishedAt}
-            className="shrink-0 font-mono text-[0.7rem] tabular-nums text-[var(--color-nav-muted)]"
+            className="shrink-0 font-mono text-[length:var(--text-2xs)] tabular-nums text-[var(--color-nav-muted)]"
           >
             {formatPublishedDate(article.publishedAt, locale)}
           </time>
         </div>
 
-        {/* DeepWiki style circular arrow with stem */}
+        {/* Circular arrow button */}
         <div
-          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-black/[0.06] dark:bg-white/[0.09] text-[var(--color-text-muted)] transition-all duration-150 group-hover:bg-black/[0.1] dark:group-hover:bg-white/[0.15] group-hover:text-[var(--color-text)] group-hover:translate-x-0.5"
+          className={`flex size-7 shrink-0 items-center justify-center rounded-full transition-all duration-150 ${
+            interactive
+              ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text-muted)] group-hover:bg-[var(--color-accent-soft)] group-hover:text-[var(--color-accent)] group-hover:translate-x-0.5'
+              : 'bg-[var(--color-surface-subtle)] text-[var(--color-text-soft)] opacity-55'
+          }`}
           aria-hidden="true"
         >
           <ArrowRightIcon />
@@ -147,7 +157,7 @@ export function DocsHomeCard({ article }: DocsHomeCardProps) {
   return (
     <Link
       href={href}
-      className="group block h-[116px] w-full rounded-[14px] outline-none focus-visible:ring-1 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+      className="group block h-[116px] w-full rounded-[var(--radius-card,14px)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
     >
       {cardContent}
     </Link>

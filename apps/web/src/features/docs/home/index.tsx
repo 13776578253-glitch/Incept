@@ -79,18 +79,18 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
           <div className="space-y-8 md:space-y-9">
             {filteredGroups.map((group, groupIndex) => (
               <section key={group.id} className="space-y-2.5">
-                <header className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
+                <header className="flex items-center justify-between border-b border-[var(--color-border-faint)] pb-2">
                   <div className="flex items-center gap-2">
                     <span
                       aria-hidden="true"
                       className="size-1.5 rounded-full"
-                      style={{ backgroundColor: 'var(--badge-sky-dot)' }}
+                      style={{ backgroundColor: 'var(--color-accent)' }}
                     />
-                    <h2 className="text-[0.95rem] font-semibold tracking-[-0.015em] text-[var(--color-text)]">
+                    <h2 className="text-[length:var(--text-base)] font-semibold tracking-[-0.015em] text-[var(--color-text)]">
                       {group.label}
                     </h2>
                   </div>
-                  <span className="font-mono text-[0.7rem] tabular-nums text-[var(--color-nav-muted)]">
+                  <span className="font-mono text-[length:var(--text-2xs)] tabular-nums text-[var(--color-nav-muted)]">
                     {t('groups.entries', { count: group.entries.length })}
                   </span>
                 </header>

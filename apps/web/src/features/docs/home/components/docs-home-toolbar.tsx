@@ -53,7 +53,7 @@ export function DocsHomeToolbar({
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={t('home.filter.searchPlaceholder')}
           aria-label={t('home.filter.searchPlaceholder')}
-          className="h-[38px] w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-card)] pl-9.5 pr-9 text-[0.82rem] text-[var(--color-text)] placeholder:text-[var(--color-nav-muted)] shadow-[var(--shadow-card-sm)] transition-colors focus:border-[var(--color-text-soft)] focus:outline-none"
+          className="h-[38px] w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-card)] pl-9.5 pr-9 text-[length:var(--text-sm)] text-[var(--color-text)] placeholder:text-[var(--color-nav-muted)] shadow-[var(--shadow-card-sm)] transition-colors focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-ring-focus)] focus:outline-none"
         />
 
         {searchValue ? (
@@ -61,12 +61,12 @@ export function DocsHomeToolbar({
             type="button"
             aria-label={t('home.filter.clearSearch')}
             onClick={() => onSearchChange('')}
-            className="absolute right-2.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-nav-muted)] hover:text-[var(--color-text)]"
+            className="absolute right-2.5 top-1/2 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
           >
             ×
           </button>
         ) : (
-          <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-[var(--color-border)] bg-[var(--color-row-bg)] px-1.5 py-0.5 font-mono text-[0.62rem] text-[var(--color-nav-muted)] sm:inline-block">
+          <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-[var(--color-border)] bg-[var(--color-row-bg)] px-1.5 py-0.5 font-mono text-[length:var(--text-2xs)] text-[var(--color-nav-muted)] sm:inline-block">
             /
           </kbd>
         )}

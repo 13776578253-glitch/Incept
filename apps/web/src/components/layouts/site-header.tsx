@@ -42,10 +42,15 @@ function isItemActive(
 
 function BrandLogoIcon() {
   return (
-    <svg viewBox="0 0 24 16" className="size-[1.55rem] shrink-0" fill="none" aria-hidden="true">
-      <path d="M1 3h14v4.2H1z" fill="currentColor" />
-      <path d="M9.5 8.8H23V13H9.5z" fill="currentColor" />
-      <path d="M18 3h5v4.2h-5z" fill="currentColor" />
+    <svg viewBox="0 0 24 24" className="size-[1.35rem] shrink-0" fill="none" aria-hidden="true">
+      <path
+        d="M7 4.7A1.2 1.2 0 0 1 8.2 3.5h5.1a1.2 1.2 0 0 1 1.2 1.2v3.15a1.2 1.2 0 0 1-.53 1L8.87 12.25A1.2 1.2 0 0 1 7 11.25V4.7Z"
+        fill="currentColor"
+      />
+      <path
+        d="M17 19.3a1.2 1.2 0 0 1-1.2 1.2h-5.1a1.2 1.2 0 0 1-1.2-1.2v-3.15a1.2 1.2 0 0 1 .53-1l5.1-3.4a1.2 1.2 0 0 1 1.87 1v6.55Z"
+        fill="currentColor"
+      />
     </svg>
   );
 }
