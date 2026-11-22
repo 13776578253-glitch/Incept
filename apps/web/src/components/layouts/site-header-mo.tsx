@@ -4,21 +4,21 @@ import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import type { PrimaryNavItem } from '@/components/layouts/navigation.types';
 
 type MobileSiteHeaderProps = {
+  id?: string;
   navigation: PrimaryNavItem[];
   isOpen: boolean;
   settingsHref: string;
   nextThemeLabel: string;
-  searchLabel: string;
   settingsLabel: string;
   onThemeChange: () => void;
 };
 
 export function MobileSiteHeader({
+  id,
   navigation,
   isOpen,
   settingsHref,
   nextThemeLabel,
-  searchLabel,
   settingsLabel,
   onThemeChange,
 }: MobileSiteHeaderProps) {
@@ -27,27 +27,22 @@ export function MobileSiteHeader({
   }
 
   return (
-    <div className="border-t border-[var(--color-navbar-border)] bg-[var(--color-navbar-bg)] px-5 py-4 md:hidden">
+    <div
+      id={id}
+      className="max-h-[calc(100dvh-var(--navbar-height))] overflow-y-auto border-t border-[var(--color-navbar-border)] bg-[var(--color-navbar-bg)] px-5 py-4 md:hidden"
+    >
       <div className="space-y-4">
-        <div className="space-y-3">
-          <button
-            type="button"
-            className="flex w-full items-center justify-between rounded-[var(--radius-lg)] border border-[var(--color-nav-search-border)] bg-[var(--color-nav-search-bg)] px-4 py-2 text-sm text-[var(--color-nav-search-placeholder)]"
-          >
-            <span>{searchLabel}</span>
-          </button>
-          <Link
-            href={settingsHref}
-            className="flex w-full items-center justify-center rounded-full border border-[var(--color-nav-search-border)] px-4 py-2 text-sm font-medium text-[var(--color-text)]"
-          >
-            {settingsLabel}
-          </Link>
-        </div>
+        <Link
+          href={settingsHref}
+          className="flex w-full items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-card)] px-4 py-2 text-sm font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)]"
+        >
+          {settingsLabel}
+        </Link>
 
         {navigation.map((item) => (
           <div
             key={item.id}
-            className="rounded-[var(--radius-lg)] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-3"
+            className="rounded-[var(--radius-lg,18px)] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-3"
           >
             <Link
               href={item.href ?? '#'}
@@ -62,7 +57,7 @@ export function MobileSiteHeader({
                     <Link
                       key={navItem.id}
                       href={navItem.href}
-                      className="block rounded-[var(--radius-md)] p-2"
+                      className="block rounded-[var(--radius-md,10px)] p-2 hover:bg-[var(--color-nav-item-hover)]"
                     >
                       <p className="text-sm text-[var(--color-text)]">
                         {navItem.label}
@@ -82,7 +77,7 @@ export function MobileSiteHeader({
         <button
           type="button"
           onClick={onThemeChange}
-          className="w-full rounded-full border border-[var(--color-nav-search-border)] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-[var(--color-nav-item)]"
+          className="w-full cursor-pointer rounded-full border border-[var(--color-border)] bg-[var(--color-surface-card)] px-3 py-2 text-xs font-medium uppercase tracking-[0.14em] text-[var(--color-nav-item)]"
         >
           {nextThemeLabel}
         </button>

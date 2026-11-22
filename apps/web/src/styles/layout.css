@@ -122,21 +122,24 @@
 
 .page-shell-settings {
   display: grid;
-  grid-template-columns: 188px minmax(0, 1fr);
+  grid-template-columns: 216px minmax(0, 1fr);
   align-items: start;
-  column-gap: 32px;
-  max-width: 1160px;
+  column-gap: 44px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 32px 24px 72px;
+  padding: 32px 28px 80px;
 }
 
 .page-shell-settings-sidebar {
   min-width: 0;
   position: fixed;
   top: calc(var(--navbar-height) + 32px);
-  left: max(24px, calc((100% - 1160px) / 2 + 24px));
-  width: 188px;
-  z-index: 20;
+  left: max(28px, calc((100% - 1240px) / 2 + 28px));
+  width: 216px;
+  min-height: calc(100vh - var(--navbar-height) - 64px);
+  padding-right: 20px;
+  border-right: 1px solid var(--color-border-faint);
+  z-index: var(--z-sidebar, 20);
 }
 
 .page-shell-settings-content {

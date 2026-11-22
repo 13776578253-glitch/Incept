@@ -94,14 +94,14 @@ export function CustomSelect({
             }
           }
         }}
-        className="flex min-h-10 w-full items-center justify-between gap-3 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-bg)] pl-3.5 pr-5 text-left text-[0.8125rem] shadow-[var(--shadow-card-sm)] transition-all hover:border-[var(--color-text-soft)]/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex min-h-9 w-full items-center justify-between gap-3 rounded-[10px] border border-[var(--color-border-input,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] pl-3 pr-3.5 text-left text-[length:var(--text-xs)] transition-all hover:border-[var(--color-border-strong)] focus:border-[var(--color-border-focus,var(--color-border-strong))] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
       >
-        <span className={`truncate ${!value || currentOption?.value === '' ? 'text-[var(--color-nav-muted)]' : 'text-[var(--color-text)]'}`}>
+        <span className={`truncate ${!value || currentOption?.value === '' ? 'text-[var(--color-text-subtle)]' : 'text-[var(--color-text)]'}`}>
           {currentOption?.label ?? value}
         </span>
         <svg
           viewBox="0 0 16 16"
-          className={`size-3 text-[var(--color-nav-muted)] transition-transform duration-200 shrink-0 ${
+          className={`size-3 text-[var(--color-text-subtle)] transition-transform duration-200 shrink-0 ${
             isOpen ? 'rotate-180 text-[var(--color-text)]' : ''
           }`}
           fill="none"
@@ -117,7 +117,7 @@ export function CustomSelect({
       {/* Custom styled floating dropdown popover */}
       {isOpen && (
         <div
-          className="absolute left-0 right-0 top-full z-40 mt-1.5 max-h-60 overflow-y-auto rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg)] p-1.5 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-md"
+          className="absolute left-0 right-0 top-full z-40 mt-1.5 max-h-60 overflow-y-auto rounded-[12px] border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-popover-bg,var(--color-surface-card,var(--color-bg)))] p-1 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-xl"
         >
           <div className="space-y-0.5">
             {options.map((option) => {
@@ -131,17 +131,17 @@ export function CustomSelect({
                     setIsOpen(false);
                     triggerRef.current?.focus();
                   }}
-                  className={`flex w-full items-center justify-between rounded-[9px] px-3 py-2 text-left text-[0.8125rem] transition-all duration-150 ${
+                  className={`flex w-full items-center justify-between rounded-[8px] px-2.5 py-1.5 text-left text-[length:var(--text-xs)] transition-colors cursor-pointer ${
                     active
-                      ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                      : 'text-[var(--color-nav-dropdown-description)] hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]'
+                      ? 'bg-[var(--surface-pill-on-bg,var(--color-surface-hover))] font-medium text-[var(--color-text)]'
+                      : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]'
                   }`}
                 >
                   <span className="truncate">{option.label}</span>
                   {active && (
                     <svg
                       viewBox="0 0 16 16"
-                      className="size-3.5 text-[var(--badge-sky-dot)] shrink-0 ml-2"
+                      className="size-3.5 text-[var(--color-text)] shrink-0 ml-2"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"

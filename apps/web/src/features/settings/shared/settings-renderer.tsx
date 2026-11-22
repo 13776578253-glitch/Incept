@@ -13,8 +13,8 @@ type SettingsInteractionProps = {
   eyeComfortFilterEnabled: boolean;
   setEyeComfortFilter: (value: boolean) => void;
   isEyeComfortFilterReady: boolean;
-  codePalette: 'vscode' | 'github' | 'vitesse';
-  setCodePalette: (value: 'vscode' | 'github' | 'vitesse') => void;
+  codePalette: 'auto' | 'vscode' | 'github' | 'vitesse';
+  setCodePalette: (value: 'auto' | 'vscode' | 'github' | 'vitesse') => void;
   isCodePaletteReady: boolean;
   language: string;
   setLanguage: (value: 'zh' | 'en') => void;
@@ -211,7 +211,7 @@ function SettingsRowControl({
       <SettingsSegmentedControl
         options={row.options ?? []}
         selected={isCodePaletteReady ? codePalette : ''}
-        onSelect={(id) => setCodePalette(id as 'vscode' | 'github' | 'vitesse')}
+        onSelect={(id) => setCodePalette(id as 'auto' | 'vscode' | 'github' | 'vitesse')}
         isInteractive={isCodePaletteReady && !eyeComfortFilterEnabled}
       />
     );

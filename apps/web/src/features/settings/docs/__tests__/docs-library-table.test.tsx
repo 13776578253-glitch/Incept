@@ -42,3 +42,10 @@ it('appends the kind only when it is not a plain article',()=>{
   renderTable([{...entry,kind:'note'}]);
   expect(cells()[1]).toBe('合集文章 · note');
 });
+
+it('renders the open route link without the copy route button',()=>{
+  renderTable([entry]);
+  const openLink=document.querySelector('a[href="/zh/docs/design-patterns/design-patterns-overview"]');
+  expect(openLink?.textContent).toContain('打开路由');
+  expect(document.body.textContent).not.toContain('复制路由');
+});

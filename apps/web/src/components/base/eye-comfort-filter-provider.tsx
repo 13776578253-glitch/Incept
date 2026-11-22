@@ -1,10 +1,6 @@
 'use client';
 
-import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
-
-// Restores the saved preference before any route-specific settings UI is mounted.
+// Legacy no-op wrapper; warm paper preset is managed by AppearanceProvider.
 export function EyeComfortFilterProvider() {
-  useEyeComfortFilter();
-
   return null;
 }

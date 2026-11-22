@@ -202,17 +202,7 @@ export function MusicUploadZone({
   };
 
   return (
-    <section className="space-y-4 rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5">
-      <div className="flex items-center gap-2.5">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-sky-icon)] shadow-[var(--shadow-card-sm)]">
-          <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6">
-            <path d="M4.5 12.5H12a2.5 2.5 0 0 0 .5-4.95A3.5 3.5 0 0 0 6.1 4.7 2.75 2.75 0 0 0 2 7.25a2.75 2.75 0 0 0 2.5 5.25Z" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M8 7v4.5M6 9l2-2 2 2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
-        <h4 className="text-[0.9375rem] font-medium text-[var(--color-text)]">{copy.uploadHeading}</h4>
-      </div>
-
+    <section id="music-upload" className="space-y-3">
       <div
         onDragOver={(event) => {
           event.preventDefault();
@@ -224,36 +214,47 @@ export function MusicUploadZone({
           setIsDragging(false);
           void handleFileList(Array.from(event.dataTransfer.files));
         }}
-        className={`rounded-xl border border-dashed p-4 transition-all ${
+        className={`flex flex-col gap-3 rounded-[10px] border border-dashed px-4 py-3.5 transition-colors ${
           isDragging
-            ? 'border-[var(--badge-sky-border)] bg-[var(--badge-sky-bg)]'
-            : 'border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-nav-search-hover-border)]'
+            ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)]'
+            : 'border-[var(--color-border-strong)] bg-transparent hover:bg-[var(--color-surface-subtle)]'
         }`}
       >
-        <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
-          {copy.uploadHint}
-        </p>
+        <div className="min-w-0 space-y-0.5">
+          <div className="flex items-center gap-2">
+            <svg viewBox="0 0 16 16" className="size-3.5 shrink-0 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M4.5 12.5H12a2.5 2.5 0 0 0 .5-4.95A3.5 3.5 0 0 0 6.1 4.7 2.75 2.75 0 0 0 2 7.25a2.75 2.75 0 0 0 2.5 5.25Z" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8 7v4.5M6 9l2-2 2 2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <h4 className="text-[length:var(--text-sm)] font-medium text-[var(--color-text)]">{copy.uploadHeading}</h4>
+          </div>
+          <p className="text-[length:var(--text-xs)] leading-5 text-[var(--color-text-muted)]">
+            {copy.uploadHint}
+          </p>
+        </div>
 
-        <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            disabled={!canUpload}
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {copy.chooseFiles}
-          </button>
-          <button
-            type="button"
-            disabled={!canUpload}
-            onClick={() => folderInputRef.current?.click()}
-            className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {copy.chooseFolder}
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={!canUpload}
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+            >
+              {copy.chooseFiles}
+            </button>
+            <button
+              type="button"
+              disabled={!canUpload}
+              onClick={() => folderInputRef.current?.click()}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+            >
+              {copy.chooseFolder}
+            </button>
+          </div>
 
-          <label className="ml-auto flex items-center gap-2 text-xs text-[var(--color-nav-dropdown-description)]">
-            <span>{copy.uploadLibraryLabel}</span>
+          <label className="flex items-center gap-1.5 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
+            <span className="sr-only sm:not-sr-only">{copy.uploadLibraryLabel}</span>
             <MusicSelect
               value={selectedLibrary}
               disabled={!canUpload}
@@ -263,14 +264,14 @@ export function MusicUploadZone({
                 value: library.key,
                 label: library.title,
               }))}
-              className="min-w-[7.5rem]"
-              buttonClassName="min-h-9 text-[0.8125rem]"
+              className="min-w-[6.75rem]"
+              buttonClassName="h-8 rounded-[8px] text-[length:var(--text-xs)]"
             />
           </label>
         </div>
 
         {activeLibraries.length === 0 ? (
-          <p className="mt-2 text-xs text-[var(--badge-amber-fg)]">{copy.uploadNeedsLibrary}</p>
+          <p className="w-full text-[length:var(--text-xs)] text-[var(--badge-amber-fg)]">{copy.uploadNeedsLibrary}</p>
         ) : null}
 
         <input
@@ -301,15 +302,15 @@ export function MusicUploadZone({
 
       {/* 无关文件只留一行概括，完整名单收在折叠里 */}
       {skipped.length > 0 ? (
-        <details className="rounded-xl bg-[var(--color-bg)] px-3.5 py-2.5 shadow-[var(--shadow-card-sm)]">
-          <summary className="cursor-pointer truncate text-xs font-medium text-[var(--color-text)]">
+        <details className="rounded-[10px] border border-[var(--color-border-faint)] bg-[var(--color-surface-card,var(--color-bg))] px-3.5 py-2.5">
+          <summary className="cursor-pointer truncate text-[length:var(--text-xs)] font-medium text-[var(--color-text)]">
             {copy.formatUploadSkipped(skipped[0].filename, skipped.length)}
           </summary>
-          <ul className="mt-2 max-h-40 space-y-1.5 overflow-y-auto border-t border-[var(--color-nav-dropdown-border)] pt-2">
+          <ul className="mt-2 max-h-40 space-y-1.5 overflow-y-auto border-t border-[var(--color-border-faint)] pt-2">
             {skipped.map((entry) => (
               <li
                 key={entry.id}
-                className="truncate text-xs text-[var(--color-nav-dropdown-description)]"
+                className="truncate text-[length:var(--text-xs)] text-[var(--color-text-muted)]"
               >
                 {entry.filename}
               </li>
@@ -319,9 +320,9 @@ export function MusicUploadZone({
       ) : null}
 
       {items.length > 0 ? (
-        <ul className="divide-y divide-[var(--color-nav-dropdown-border)] pt-1">
+        <ul className="divide-y divide-[var(--color-border-faint)] pt-1">
           {items.map((item) => (
-            <li key={item.id} className="flex items-center justify-between gap-3 py-2 text-xs first:pt-0 last:pb-0">
+            <li key={item.id} className="flex items-center justify-between gap-3 py-2 text-[length:var(--text-xs)] first:pt-0 last:pb-0">
               <span className="min-w-0 flex-1 truncate font-medium text-[var(--color-text)]">{item.filename}</span>
               <span
                 className={`shrink-0 ${
@@ -329,7 +330,7 @@ export function MusicUploadZone({
                     ? 'font-medium text-[var(--badge-rose-fg)]'
                     : item.status === 'done'
                       ? 'text-[var(--badge-emerald-fg)]'
-                      : 'text-[var(--color-nav-dropdown-description)]'
+                      : 'text-[var(--color-text-muted)]'
                 }`}
               >
                 {item.status === 'queued'

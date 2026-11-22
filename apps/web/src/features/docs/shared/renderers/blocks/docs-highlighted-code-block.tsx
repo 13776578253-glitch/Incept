@@ -11,17 +11,23 @@ function usesDefaultCodeColor(
   tokenStyle: Record<string, string>,
   blockStyle: Record<string, string>,
 ) {
-  return Object.keys(tokenStyle).length === 3 &&
-    typeof tokenStyle.color === 'string' &&
-    typeof tokenStyle['--shiki-dark'] === 'string' &&
-    typeof tokenStyle['--shiki-warm'] === 'string' &&
-    tokenStyle.color === blockStyle['--shiki-light'] &&
-    tokenStyle['--shiki-dark'] === blockStyle['--shiki-dark'] &&
-    tokenStyle['--shiki-warm'] === blockStyle['--shiki-warm'] &&
-    !blockStyle['--shiki-dark-font-style'] &&
-    !blockStyle['--shiki-dark-font-weight'] &&
-    !blockStyle['--shiki-warm-font-style'] &&
-    !blockStyle['--shiki-warm-font-weight'];
+  const tokenKeys = Object.keys(tokenStyle);
+  if (tokenKeys.length < 2 || typeof tokenStyle.color !== 'string') {
+    return false;
+  }
+  if (tokenStyle.color !== blockStyle['--shiki-light']) {
+    return false;
+  }
+  const hasTypographyOverride = (style: Record<string, string>) =>
+    Object.keys(style).some((key) => key.endsWith('-font-style') || key.endsWith('-font-weight'));
+
+  if (hasTypographyOverride(tokenStyle) || hasTypographyOverride(blockStyle)) {
+    return false;
+  }
+
+  return tokenKeys.every(
+    (key) => key === 'color' || (key.startsWith('--shiki-') && tokenStyle[key] === blockStyle[key]),
+  );
 }
 
 export async function DocsHighlightedCodeBlock(props: DocsCodeBlockModel) {

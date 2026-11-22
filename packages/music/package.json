@@ -52,6 +52,8 @@
   },
   "dependencies": {
     "@incept/db": "workspace:*",
+    "@incept/ui": "workspace:*",
+    "lucide-react": "^1.77.0",
     "music-metadata": "11.16.1"
   },
   "devDependencies": {

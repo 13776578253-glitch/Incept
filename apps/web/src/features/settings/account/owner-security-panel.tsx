@@ -6,11 +6,11 @@ import { PasswordInput } from './password-input';
 import type { OwnerManagementState } from './account-types';
 
 const inputStyle =
-  'min-h-10 w-full min-w-0 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] shadow-[var(--shadow-card-sm)] outline-none transition-all placeholder:text-[var(--color-nav-muted)] focus:outline-none';
+  'min-h-9 w-full min-w-0 rounded-[10px] border border-[var(--color-border-input,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-sm)] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-text-subtle,var(--color-nav-muted))] focus:border-[var(--color-border-focus,var(--color-border-strong))] focus:outline-none';
 const buttonStyle =
-  'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 text-[0.78rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 shrink-0';
+  'inline-flex min-h-7.5 items-center justify-center gap-1.5 rounded-full border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-all hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 shrink-0 cursor-pointer';
 const primaryButtonStyle =
-  'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full bg-[var(--color-primary-bg)] px-4 text-[length:var(--text-xs)] font-medium text-[color:var(--color-primary-fg)] transition-all hover:brightness-[1.06] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
 
 export function OwnerSecurityPanel({
   state,
@@ -93,14 +93,14 @@ export function OwnerSecurityPanel({
   ];
 
   return (
-    <div className="space-y-4 pt-1">
-      <div className="divide-y divide-[var(--color-nav-dropdown-border)]">
+    <div className="space-y-4">
+      <div className="divide-y divide-[var(--color-border-faint)] border-t border-[var(--color-border-faint)]">
         {rows.map(([key, name, description]) => (
-          <div key={key} className="py-3.5 space-y-3">
+          <div key={key} id={`account-sec-${key}`} className="py-3.5 space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 space-y-0.5">
-                <h4 className="text-[0.8125rem] font-medium text-[var(--color-text)]">{name}</h4>
-                <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                <h4 className="text-[length:var(--text-sm)] font-medium text-[var(--color-text)]">{name}</h4>
+                <p className="text-[length:var(--text-xs)] leading-5 text-[var(--color-text-muted)]">
                   {description}
                 </p>
               </div>
@@ -122,13 +122,13 @@ export function OwnerSecurityPanel({
 
             {open === key && (
               <div
-                className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 sm:p-5 shadow-[var(--shadow-card-sm)] space-y-4 ${
-                  key === 'approval' ? 'max-w-[480px]' : 'w-full'
+                className={`rounded-[10px] border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface)] p-4 sm:p-5 space-y-4 ${
+                  key === 'approval' ? 'max-w-[540px]' : 'w-full'
                 }`}
               >
                 {key === 'password' && (
                   <form noValidate onSubmit={changePassword} className="grid w-full gap-4 md:grid-cols-2">
-                    <div className="min-w-0 space-y-1.5 text-xs text-[var(--color-text)]">
+                    <div className="min-w-0 space-y-1.5 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
                       <label htmlFor={`${passwordId}-new`} className="font-medium">{t('新密码（至少8个字符）', 'New password (8+ characters)')}</label>
                       <PasswordInput
                         ref={passwordInput}
@@ -147,7 +147,7 @@ export function OwnerSecurityPanel({
                       />
                       {passwordError && <p id={`${passwordId}-new-error`} role="alert" className={errorStyle}><span aria-hidden="true">ⓘ</span>{passwordError}</p>}
                     </div>
-                    <div className="min-w-0 space-y-1.5 text-xs text-[var(--color-text)]">
+                    <div className="min-w-0 space-y-1.5 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
                       <label htmlFor={`${passwordId}-confirm`} className="font-medium">{t('确认新密码', 'Confirm new password')}</label>
                       <PasswordInput
                         ref={confirmationInput}
@@ -175,13 +175,13 @@ export function OwnerSecurityPanel({
 
                 {key === 'totp' && (
                   <div className="space-y-3">
-                    <p className="text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
+                    <p className="text-[length:var(--text-xs)] leading-5 text-[var(--color-text-muted)]">
                       {t(
                         '重新绑定完成后会撤销旧会话和设备，旧恢复码也将失效',
                         'Re-enrollment revokes existing sessions, devices and recovery codes',
                       )}
                     </p>
-                    <div className="flex flex-wrap gap-2.5">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         disabled={busy}
                         className={buttonStyle}
@@ -209,16 +209,16 @@ export function OwnerSecurityPanel({
                 {key === 'sessions' && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <h5 className="text-xs font-semibold text-[var(--color-text)]">
+                      <h5 className="text-[length:var(--text-xs)] font-semibold text-[var(--color-text)]">
                         {t('登录会话', 'Signed-in sessions')}
                       </h5>
-                      <ul className="divide-y divide-[var(--color-nav-dropdown-border)]">
+                      <ul className="divide-y divide-[var(--color-border-faint)]">
                         {state.sessions.map((session) => (
                           <li
                             key={session.id}
                             className="flex flex-wrap items-center justify-between gap-3 py-2.5"
                           >
-                            <div className="min-w-0 space-y-0.5 text-xs">
+                            <div className="min-w-0 space-y-0.5 text-[length:var(--text-xs)]">
                               <div className="flex items-center gap-2">
                                 <p className="font-medium text-[var(--color-text)] break-words">
                                   {session.id === state.sessionId
@@ -226,13 +226,13 @@ export function OwnerSecurityPanel({
                                     : session.deviceLabel ?? t('其他设备', 'Other device')}
                                 </p>
                                 {session.id === state.sessionId && (
-                                  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--badge-emerald-border)] bg-[var(--badge-emerald-bg)] px-2 py-0.5 text-[0.65rem] font-medium text-[var(--badge-emerald-fg)]">
+                                  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--badge-emerald-border)] bg-[var(--badge-emerald-bg)] px-2 py-0.5 text-[length:var(--text-2xs)] font-medium text-[var(--badge-emerald-fg)]">
                                     <span aria-hidden="true" className="size-1 rounded-full bg-[var(--badge-emerald-dot)]" />
                                     <span>{t('当前会话', 'Current')}</span>
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[var(--color-nav-muted)]">
+                              <p className="text-[var(--color-text-subtle)]">
                                 {t('最近活动', 'Last active')} {date(session.lastUsedAt ?? session.createdAt)} ·{' '}
                                 {t('到期', 'Expires')} {date(session.expiresAt)}
                               </p>
@@ -249,20 +249,20 @@ export function OwnerSecurityPanel({
                       </ul>
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-[var(--color-nav-dropdown-border)]">
-                      <h5 className="text-xs font-semibold text-[var(--color-text)]">
+                    <div className="space-y-2 pt-2 border-t border-[var(--color-border-faint)]">
+                      <h5 className="text-[length:var(--text-xs)] font-semibold text-[var(--color-text)]">
                         {t('可信设备', 'Trusted devices')}
                       </h5>
                       {state.devices.length ? (
-                        <ul className="divide-y divide-[var(--color-nav-dropdown-border)]">
+                        <ul className="divide-y divide-[var(--color-border-faint)]">
                           {state.devices.map((device) => (
                             <li
                               key={device.id}
-                              className="flex items-center justify-between gap-3 py-2 text-xs"
+                              className="flex items-center justify-between gap-3 py-2 text-[length:var(--text-xs)]"
                             >
                               <div className="min-w-0">
                                 <p className="font-medium text-[var(--color-text)] break-words">{device.label}</p>
-                                <p className="text-[var(--color-nav-muted)]">{date(device.expiresAt)}</p>
+                                <p className="text-[var(--color-text-subtle)]">{date(device.expiresAt)}</p>
                               </div>
                               <button
                                 disabled={busy}
@@ -275,13 +275,13 @@ export function OwnerSecurityPanel({
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-xs text-[var(--color-nav-muted)]">
+                        <p className="text-[length:var(--text-xs)] text-[var(--color-text-subtle)]">
                           {t('没有可信设备', 'No trusted devices')}
                         </p>
                       )}
                     </div>
 
-                    <div className="pt-2 border-t border-[var(--color-nav-dropdown-border)]">
+                    <div className="pt-2 border-t border-[var(--color-border-faint)]">
                       <button
                         disabled={busy}
                         className={`${buttonStyle} border-[var(--badge-rose-border)] text-[var(--badge-rose-fg)] hover:bg-[var(--badge-rose-bg)]`}
@@ -294,8 +294,8 @@ export function OwnerSecurityPanel({
                 )}
 
                 {key === 'approval' && (
-                  <div className="max-w-[480px] space-y-3.5">
-                    <div className="space-y-1.5 text-xs text-[var(--color-text)]">
+                  <div className="max-w-[540px] space-y-3.5">
+                    <div className="space-y-1.5 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
                       <span className="font-medium block">{t('待批准的登录', 'Pending sign-in')}</span>
                       <CustomSelect
                         id="pending-challenge"
@@ -322,11 +322,11 @@ export function OwnerSecurityPanel({
                       {t('签发一次性授权码', 'Issue one-time approval code')}
                     </button>
                     {approvedCode && (
-                      <div role="status" className="rounded-xl border border-[var(--badge-emerald-border)] bg-[var(--color-bg)] p-3.5 space-y-2 shadow-[var(--shadow-card-sm)]">
-                        <p className="text-xs text-[var(--color-nav-dropdown-description)]">
+                      <div role="status" className="rounded-[10px] border border-[var(--badge-emerald-border)] bg-[var(--color-surface)] p-3.5 space-y-2">
+                        <p className="text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
                           {t('完整码仅此次显示，交给请求登录的设备', 'Shown once. Enter it on the device requesting sign-in')}
                         </p>
-                        <code className="block break-all rounded-lg border border-[var(--color-border)] bg-[color:var(--color-row-bg)] px-3 py-2 font-mono text-sm font-semibold text-[var(--color-text)] select-all">
+                        <code className="block break-all rounded-[8px] border border-[var(--color-border-subtle)] bg-[var(--color-surface-card,var(--color-bg))] px-3 py-2 font-mono text-[length:var(--text-sm)] font-semibold text-[var(--color-text)] select-all">
                           {approvedCode}
                         </code>
                         <button className={buttonStyle} onClick={() => setApprovedCode(null)}>
@@ -335,15 +335,15 @@ export function OwnerSecurityPanel({
                       </div>
                     )}
                     {state.permits.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t border-[var(--color-nav-dropdown-border)]">
-                        <h6 className="text-xs font-semibold text-[var(--color-text)]">
+                      <div className="space-y-2 pt-2 border-t border-[var(--color-border-faint)]">
+                        <h6 className="text-[length:var(--text-xs)] font-semibold text-[var(--color-text)]">
                           {t('已签发的授权码', 'Active permits')}
                         </h6>
-                        <ul className="divide-y divide-[var(--color-nav-dropdown-border)]">
+                        <ul className="divide-y divide-[var(--color-border-faint)]">
                           {state.permits.map((permit) => (
-                            <li key={permit.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
+                            <li key={permit.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[length:var(--text-xs)]">
                               <span className="font-mono text-[var(--color-text)]">
-                                ••••{permit.codeHint} · <span className="text-[var(--color-nav-muted)]">{date(permit.expiresAt)}</span>
+                                ••••{permit.codeHint} · <span className="text-[var(--color-text-subtle)]">{date(permit.expiresAt)}</span>
                               </span>
                               <button disabled={busy} className={buttonStyle} onClick={() => action('permit', { id: permit.id })}>
                                 {t('撤销', 'Revoke')}
@@ -357,7 +357,7 @@ export function OwnerSecurityPanel({
                 )}
 
                 {key === 'audits' && (
-                  <ul className={`divide-y divide-[var(--color-nav-dropdown-border)] text-xs ${state.audits.length > 20 ? 'max-h-[45rem] overflow-y-auto overscroll-contain pr-2' : ''}`}>
+                  <ul className={`divide-y divide-[var(--color-border-faint)] text-[length:var(--text-xs)] ${state.audits.length > 20 ? 'max-h-[45rem] overflow-y-auto overscroll-contain pr-2' : ''}`}>
                     {state.audits.slice(0, 50).map((audit) => (
                       <li key={audit.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                         <div className="flex items-center gap-2">
@@ -372,9 +372,9 @@ export function OwnerSecurityPanel({
                             }}
                           />
                           <span className="font-medium text-[var(--color-text)] break-all">{audit.action}</span>
-                          <span className="text-[var(--color-nav-muted)]">· {audit.result}</span>
+                          <span className="text-[var(--color-text-subtle)]">· {audit.result}</span>
                         </div>
-                        <time className="text-[var(--color-nav-muted)]">{date(audit.createdAt)}</time>
+                        <time className="text-[var(--color-text-subtle)]">{date(audit.createdAt)}</time>
                       </li>
                     ))}
                   </ul>

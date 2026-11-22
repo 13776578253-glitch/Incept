@@ -53,7 +53,7 @@ function LibraryRow({
 
   return (
     <li
-      className="flex flex-wrap items-center gap-2.5 py-3 transition-colors hover:bg-[color:var(--color-row-hover-bg)]/30 rounded-xl px-2.5 -mx-2.5"
+      className="flex flex-wrap items-center gap-2.5 py-2.5 transition-colors hover:bg-[color:var(--color-surface-subtle)] rounded-[8px] px-2 -mx-2"
       onContextMenu={(event) => {
         event.preventDefault();
         onOpenDeleteMenu(event, library);
@@ -65,28 +65,22 @@ function LibraryRow({
         disabled={isBusy}
         aria-label={`${copy.librariesHeading} ${library.key}`}
         onChange={(event) => setTitle(event.target.value)}
-        className="h-8 min-w-[8rem] flex-1 rounded-[10px] bg-[var(--color-bg)] px-3 text-[0.8125rem] font-medium text-[var(--color-text)] outline-none shadow-[var(--shadow-card-sm)] transition-all focus:outline-none disabled:opacity-60"
+        className="h-7 min-w-[7rem] flex-1 rounded-[6px] border border-transparent bg-transparent -ml-1.5 px-1.5 text-[length:var(--text-sm)] font-medium text-[var(--color-text)] outline-none transition-colors hover:bg-[var(--color-surface-hover)] focus:border-[var(--color-border-focus)] focus:bg-[var(--color-surface-card,var(--color-bg))] focus:outline-none disabled:opacity-60"
       />
       {isDirty ? (
         <button
           type="button"
           disabled={isBusy || title.trim() === ''}
           onClick={() => onRename(library.key, title.trim())}
-          className="inline-flex h-7 items-center justify-center rounded-full bg-[var(--color-bg)] px-3 text-[0.75rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:opacity-50"
+          className="inline-flex h-7 items-center justify-center rounded-[6px] border border-[var(--color-border-subtle)] bg-[var(--color-surface-card,var(--color-bg))] px-2.5 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
         >
           {copy.actionSave}
         </button>
       ) : null}
-      <span className="inline-flex h-6 min-w-6 items-center justify-center px-1 text-[0.75rem] font-medium tabular-nums text-[var(--color-nav-muted)]">
+      <span className="inline-flex h-6 min-w-6 items-center justify-center px-1 text-[length:var(--text-xs)] tabular-nums text-[var(--color-text-soft)]">
         {library.memberCount}
       </span>
-      <span
-        className="inline-flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[0.7rem] font-medium leading-none"
-        style={{
-          color: library.isActive ? 'var(--badge-emerald-fg)' : 'var(--badge-amber-fg)',
-          backgroundColor: library.isActive ? 'var(--badge-emerald-bg)' : 'var(--badge-amber-bg)',
-        }}
-      >
+      <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-1 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
         <span
           aria-hidden="true"
           className="size-1.5 shrink-0 rounded-full"
@@ -101,7 +95,7 @@ function LibraryRow({
         aria-label={`${copy.actionMoveUp} ${library.key}`}
         disabled={isBusy || isFirst}
         onClick={() => onMove(library.key, -1)}
-        className="inline-flex size-7 items-center justify-center rounded-full text-[var(--color-nav-dropdown-description)] transition-all hover:bg-[var(--color-bg)] hover:text-[var(--color-text)] disabled:cursor-default disabled:opacity-25"
+        className="inline-flex size-6.5 items-center justify-center rounded-[6px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] disabled:cursor-default disabled:opacity-25 cursor-pointer"
       >
         <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.75">
           <path d="m4 10 4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
@@ -112,7 +106,7 @@ function LibraryRow({
         aria-label={`${copy.actionMoveDown} ${library.key}`}
         disabled={isBusy || isLast}
         onClick={() => onMove(library.key, 1)}
-        className="inline-flex size-7 items-center justify-center rounded-full text-[var(--color-nav-dropdown-description)] transition-all hover:bg-[var(--color-bg)] hover:text-[var(--color-text)] disabled:cursor-default disabled:opacity-25"
+        className="inline-flex size-6.5 items-center justify-center rounded-[6px] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] disabled:cursor-default disabled:opacity-25 cursor-pointer"
       >
         <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.75">
           <path d="m4 6 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
@@ -122,7 +116,7 @@ function LibraryRow({
       {library.isActive ? (
         isDeactivating ? (
           <span className="flex min-h-7 flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1.5 text-xs text-[var(--color-nav-dropdown-description)]">
+            <label className="flex items-center gap-1.5 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
               <span>{copy.libraryMoveMembersLabel}</span>
               <MusicSelect
                 value={destination}
@@ -137,14 +131,14 @@ function LibraryRow({
                   })),
                 ]}
                 className="min-w-20"
-                buttonClassName="h-7 text-[0.75rem]"
+                buttonClassName="h-7 rounded-[6px] text-[length:var(--text-xs)]"
               />
             </label>
             <button
               type="button"
               disabled={isBusy || (library.memberCount > 0 && destination === '')}
               onClick={() => onSetActive(library.key, false, destination === '' ? undefined : destination)}
-              className="inline-flex h-7 items-center justify-center rounded-full bg-[var(--badge-amber-bg)] px-3 text-[0.75rem] font-medium text-[var(--badge-amber-fg)] shadow-[var(--shadow-card-sm)] transition-all hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
+              className="inline-flex h-7 items-center justify-center rounded-[6px] border border-[var(--badge-amber-border)] bg-[var(--badge-amber-bg)] px-2.5 text-[length:var(--text-xs)] font-medium text-[var(--badge-amber-fg)] transition-all hover:brightness-105 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
               {copy.libraryDeactivate}
             </button>
@@ -152,7 +146,7 @@ function LibraryRow({
               type="button"
               disabled={isBusy}
               onClick={() => setIsDeactivating(false)}
-              className="inline-flex h-7 items-center justify-center rounded-full bg-[var(--color-bg)] px-3 text-[0.75rem] font-medium text-[var(--color-nav-dropdown-description)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]"
+              className="inline-flex h-7 items-center justify-center rounded-[6px] px-2.5 text-[length:var(--text-xs)] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] cursor-pointer"
             >
               {copy.actionCancel}
             </button>
@@ -170,7 +164,7 @@ function LibraryRow({
 
               setIsDeactivating(true);
             }}
-            className="inline-flex h-7.5 items-center justify-center rounded-full bg-[var(--color-bg)] px-3.5 text-[0.75rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:opacity-50"
+            className="inline-flex h-7 items-center justify-center rounded-[6px] px-2.5 text-[length:var(--text-xs)] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] active:scale-[0.98] disabled:opacity-40 cursor-pointer"
           >
             {copy.libraryDeactivate}
           </button>
@@ -180,7 +174,7 @@ function LibraryRow({
           type="button"
           disabled={isBusy}
           onClick={() => onSetActive(library.key, true)}
-          className="inline-flex h-7.5 items-center justify-center rounded-full bg-[var(--color-bg)] px-3.5 text-[0.75rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:opacity-50"
+          className="inline-flex h-7 items-center justify-center rounded-[6px] px-2.5 text-[length:var(--text-xs)] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] active:scale-[0.98] disabled:opacity-40 cursor-pointer"
         >
           {copy.libraryReactivate}
         </button>
@@ -203,41 +197,41 @@ export function MusicLibraryEditor({
   const [deleteTarget, setDeleteTarget] = useState<MusicDeleteTarget | null>(null);
 
   return (
-    <section className="space-y-4 rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5">
-      <div className="flex items-center gap-2.5">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-indigo-icon)] shadow-[var(--shadow-card-sm)]">
-          <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6">
-            <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3.086a1.5 1.5 0 0 1 1.06.44l1.315 1.314a1.5 1.5 0 0 0 1.06.446H12.5A1.5 1.5 0 0 1 14 6.7v5.8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 12.5v-8Z" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
-        <h4 className="text-[0.9375rem] font-medium text-[var(--color-text)]">{copy.librariesHeading}</h4>
+    <section id="music-libraries" className="space-y-3 border-t border-[var(--color-border-faint)] pt-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h4 className="text-[length:var(--text-sm)] font-medium text-[var(--color-text)]">{copy.librariesHeading}</h4>
+          <span className="text-[length:var(--text-2xs)] tabular-nums text-[var(--color-text-soft)]">
+            {libraries.length}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={newName}
+            aria-label={copy.newLibraryPlaceholder}
+            placeholder={copy.newLibraryPlaceholder}
+            onChange={(event) => setNewName(event.target.value)}
+            className="h-8 w-44 sm:w-56 rounded-[8px] border border-[var(--color-border-input,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] px-2.5 text-[length:var(--text-xs)] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-text-soft)] focus:border-[var(--color-border-focus,var(--color-border-strong))] focus:outline-none"
+          />
+          <button
+            type="button"
+            disabled={isBusy || newName.trim() === ''}
+            onClick={() => {
+              onCreate(newName.trim());
+              setNewName('');
+            }}
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-[8px] border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+          >
+            {copy.newLibraryAction}
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2.5">
-        <input
-          type="text"
-          value={newName}
-          aria-label={copy.newLibraryPlaceholder}
-          placeholder={copy.newLibraryPlaceholder}
-          onChange={(event) => setNewName(event.target.value)}
-          className="min-h-9.5 min-w-[12rem] flex-1 rounded-[12px] bg-[var(--color-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] outline-none shadow-[var(--shadow-card-sm)] transition-all placeholder:text-[var(--color-nav-muted)] focus:outline-none"
-        />
-        <button
-          type="button"
-          disabled={isBusy || newName.trim() === ''}
-          onClick={() => {
-            onCreate(newName.trim());
-            setNewName('');
-          }}
-          className="inline-flex min-h-9.5 items-center justify-center gap-1.5 rounded-full bg-[var(--color-bg)] px-4 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {copy.newLibraryAction}
-        </button>
-      </div>
-
-      <ul className="divide-y divide-[var(--color-nav-dropdown-border)] pt-1">
+      <ul className="divide-y divide-[var(--color-border-faint)] border-t border-[var(--color-border-faint)]">
         {libraries.length === 0 ? (
-          <li className="p-4 text-center text-xs text-[var(--color-nav-dropdown-description)]">
+          <li className="p-4 text-center text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
             {copy.libraryEmpty}
           </li>
         ) : (

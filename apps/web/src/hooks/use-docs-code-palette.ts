@@ -11,7 +11,7 @@ import {
   type DocsCodePalette,
 } from '@/features/docs/code-highlighting/palette';
 
-const DEFAULT_PALETTE: DocsCodePalette = 'vscode';
+const DEFAULT_PALETTE: DocsCodePalette = 'auto';
 
 function applyDocsCodePalette(palette: DocsCodePalette) {
   document.documentElement.setAttribute(DOCS_CODE_PALETTE_DATA_ATTRIBUTE, palette);

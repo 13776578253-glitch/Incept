@@ -120,79 +120,48 @@ function LiveAccountSettingsPanel({
     }
   }
 
-  const roleBadgeStyle =
+  const roleMeta =
     viewerRole === 'owner'
-      ? {
-          label: 'OWNER',
-          fg: 'var(--badge-indigo-fg)',
-          bg: 'var(--badge-indigo-bg)',
-          border: 'var(--badge-indigo-border)',
-          dot: 'var(--badge-indigo-dot)',
-          iconColor: 'text-[var(--badge-indigo-icon)]',
-        }
+      ? { label: 'OWNER', dot: 'var(--badge-emerald-dot)' }
       : viewerRole === 'pro'
-        ? {
-            label: 'PRO',
-            fg: 'var(--badge-sky-fg)',
-            bg: 'var(--badge-sky-bg)',
-            border: 'var(--badge-sky-border)',
-            dot: 'var(--badge-sky-dot)',
-            iconColor: 'text-[var(--badge-sky-icon)]',
-          }
-        : {
-            label: 'GUEST',
-            fg: 'var(--badge-amber-fg)',
-            bg: 'var(--badge-amber-bg)',
-            border: 'var(--badge-amber-border)',
-            dot: 'var(--badge-amber-dot)',
-            iconColor: 'text-[var(--badge-amber-icon)]',
-          };
+        ? { label: 'PRO', dot: 'var(--badge-sky-dot)' }
+        : { label: 'GUEST', dot: 'var(--color-text-soft)' };
 
   return (
-    <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-4">
+    <div
+      id={viewerRole === 'guest' ? 'account-pro-code' : undefined}
+      className="border-y border-[var(--color-border-faint)] py-4 space-y-4"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className={`flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] ${roleBadgeStyle.iconColor} shadow-[var(--shadow-card-sm)]`}>
-            {viewerRole === 'guest' ? (
-              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9.5 6.5a3 3 0 1 0-3 3c.3 0 .6-.05.9-.15L10 12l2-1v-1.5l1.5-1.5V6.5h-1.5L10.9 5.4a2.98 2.98 0 0 0-1.4-1.9" />
-                <circle cx="5" cy="5" r=".75" fill="currentColor" />
-              </svg>
-            ) : viewerRole === 'pro' ? (
-              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m8 1.5 1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5 1.5-4Z" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 1.5 2.5 4v4.5c0 3.5 3 5.5 5.5 6 2.5-.5 5.5-2.5 5.5-6V4L8 1.5Z" />
-                <path d="m6 8 1.5 1.5 3-3" />
-              </svg>
-            )}
-          </span>
-          <div>
-            <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
+        <div className="min-w-0 space-y-1">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h3 className="text-[length:var(--text-base)] font-medium text-[var(--color-text)]">
               {copy.title}
             </h3>
-            <p className="text-[0.8125rem] leading-5 text-[var(--color-nav-dropdown-description)]">
-              {copy.description}
-            </p>
+            <span className="inline-flex items-center gap-1.5 text-[length:var(--text-2xs)] font-medium tracking-[0.06em] text-[var(--color-text-muted)]">
+              <span
+                aria-hidden="true"
+                className="size-1.5 rounded-full"
+                style={{ backgroundColor: roleMeta.dot }}
+              />
+              <span>{roleMeta.label}</span>
+            </span>
           </div>
+          <p className="text-[length:var(--text-sm)] leading-relaxed text-[var(--color-text-muted)]">
+            {copy.description}
+          </p>
         </div>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.68rem] font-medium tracking-[0.06em]"
-          style={{
-            color: roleBadgeStyle.fg,
-            backgroundColor: roleBadgeStyle.bg,
-            borderColor: roleBadgeStyle.border,
-          }}
-        >
-          <span
-            aria-hidden="true"
-            className="size-1.5 rounded-full"
-            style={{ backgroundColor: roleBadgeStyle.dot }}
-          />
-          <span>{roleBadgeStyle.label}</span>
-        </span>
+
+        {viewerRole !== 'guest' ? (
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={handleLogout}
+            className="inline-flex min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface-card,var(--color-bg))] px-3.5 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSubmitting ? (language === 'zh' ? '处理中…' : 'Processing…') : copy.action}
+          </button>
+        ) : null}
       </div>
 
       {viewerRole === 'guest' ? (
@@ -204,34 +173,23 @@ function LiveAccountSettingsPanel({
               onChange={(event) => setCode(event.target.value)}
               placeholder={copy.placeholder}
               disabled={isSubmitting}
-              className="min-h-10 w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 text-[0.8125rem] text-[var(--color-text)] outline-none shadow-[var(--shadow-card-sm)] transition-all placeholder:text-[var(--color-nav-muted)] focus:outline-none"
+              className="min-h-9 w-full rounded-[9px] border border-[var(--color-border-input)] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-sm)] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-text-soft)] focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-ring-focus)]"
             />
           </div>
           <button
             type="submit"
             disabled={isSubmitting || !code.trim()}
-            className="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-5 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[var(--color-primary-bg)] px-4 text-[length:var(--text-xs)] font-medium text-[color:var(--color-primary-fg)] transition-all hover:brightness-[1.06] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? (language === 'zh' ? '处理中…' : 'Processing…') : copy.action}
           </button>
         </form>
-      ) : (
-        <div className="pt-0.5">
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={handleLogout}
-            className="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-5 text-[0.8125rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSubmitting ? (language === 'zh' ? '处理中…' : 'Processing…') : copy.action}
-          </button>
-        </div>
-      )}
+      ) : null}
 
       {error ? (
         <div
           role="status"
-          className="flex items-center gap-2 rounded-xl border border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] px-3.5 py-2.5 text-[0.8125rem] text-[var(--badge-rose-fg)]"
+          className="flex items-center gap-2 rounded-[10px] border border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] px-3.5 py-2.5 text-[length:var(--text-sm)] text-[var(--badge-rose-fg)]"
         >
           <span
             aria-hidden="true"
@@ -257,10 +215,15 @@ export function AccountSettingsPanel({
       aria-label={language === 'zh' ? '账户与访问' : 'Account and access'}
       className="max-w-[760px] space-y-6"
     >
-      <header className="space-y-1.5">
-        <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
+      <header className="space-y-1">
+        <h2 className="text-[length:var(--text-xl)] font-semibold tracking-[-0.025em] text-[var(--color-text)]">
           {language === 'zh' ? '账户与访问' : 'Account & access'}
         </h2>
+        <p className="text-[length:var(--text-sm)] leading-relaxed text-[var(--color-text-muted)]">
+          {language === 'zh'
+            ? '管理当前浏览器访问身份、Owner 安全凭据与受控授权'
+            : 'Manage browser access role, Owner security, and invitations'}
+        </p>
       </header>
 
       <LiveAccountSettingsPanel language={language} viewerRole={viewerRole} />

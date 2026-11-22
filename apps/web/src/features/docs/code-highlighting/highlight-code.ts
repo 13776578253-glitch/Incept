@@ -76,6 +76,9 @@ function getDocsCodeHighlighter() {
       'vitesse-light',
       'vitesse-dark',
       'rose-pine-dawn',
+      'rose-pine',
+      'catppuccin-latte',
+      'catppuccin-mocha',
     ],
     langs: [...docsHighlightLanguages],
   });
@@ -111,7 +114,7 @@ export function normalizeDocsCodeLanguage(language: string): DocsHighlightLangua
 export async function highlightDocsCode(
   code: string,
   language: string,
-  palette: DocsCodePalette = 'vscode',
+  palette: DocsCodePalette = 'auto',
 ): Promise<DocsHighlightedCode | null> {
   const normalizedLanguage = normalizeDocsCodeLanguage(language);
 
@@ -123,11 +126,7 @@ export async function highlightDocsCode(
   const selectedPalette = docsCodePalettes[palette];
   const highlighted = highlighter.codeToTokens(code, {
     lang: normalizedLanguage,
-    themes: {
-      light: selectedPalette.light,
-      dark: selectedPalette.dark,
-      warm: selectedPalette.warm,
-    },
+    themes: selectedPalette,
   });
 
   return {
