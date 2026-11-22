@@ -24,6 +24,7 @@ export type PlayerCopy = {
   catalogLoading: string;
   catalogError: string;
   catalogRetry: string;
+  dismissNotice: string;
   librarySwitcherLabel: string;
   allLibraries: string;
   defaultLibraryLabel: string;
@@ -56,6 +57,7 @@ const zhCopy: PlayerCopy = {
   catalogLoading: '正在载入曲目',
   catalogError: '曲目列表加载失败',
   catalogRetry: '重试',
+  dismissNotice: '关闭提示',
   librarySwitcherLabel: '曲库',
   allLibraries: '全部',
   defaultLibraryLabel: '默认',
@@ -88,6 +90,7 @@ const enCopy: PlayerCopy = {
   catalogLoading: 'Loading tracks',
   catalogError: 'Track list failed to load',
   catalogRetry: 'Retry',
+  dismissNotice: 'Dismiss notice',
   librarySwitcherLabel: 'Libraries',
   allLibraries: 'All',
   defaultLibraryLabel: 'Default',
