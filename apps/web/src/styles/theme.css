@@ -30,8 +30,8 @@
 
   --color-accent: #171717;
   --color-accent-fg: #ffffff;
-  --color-primary-bg: #171717;
-  --color-primary-fg: #ffffff;
+  --color-primary-bg: var(--color-accent);
+  --color-primary-fg: var(--color-accent-fg);
   --color-accent-soft: color-mix(in oklab, var(--color-accent) 9%, transparent);
   --color-accent-border: color-mix(in oklab, var(--color-accent) 26%, transparent);
   --color-accent-fill: color-mix(in oklab, var(--color-accent) 26%, var(--color-bg));
@@ -56,13 +56,13 @@
   --color-link-decoration: color-mix(in oklab, var(--color-text) 20%, transparent);
   --docs-code-btn-hover-dark: color-mix(in oklab, var(--color-bg) 72%, var(--color-text) 28%);
 
-  --color-navbar-bg: rgba(255, 255, 255, 0.86);
-  --color-navbar-border: rgba(17, 17, 17, 0.055);
+  --color-navbar-bg: rgba(255, 255, 255, 0.78);
+  --color-navbar-border: rgba(17, 17, 17, 0.045);
   --color-popover-bg: rgba(255, 255, 255, 0.9);
-  --color-nav-item: #3f3f46;
-  --color-nav-item-active: rgba(17, 17, 17, 0.06);
-  --color-nav-item-hover: rgba(17, 17, 17, 0.04);
-  --color-nav-muted: #71717a;
+  --color-nav-item: rgba(28, 29, 32, 0.62);
+  --color-nav-item-active: rgba(17, 17, 17, 0.048);
+  --color-nav-item-hover: rgba(17, 17, 17, 0.032);
+  --color-nav-muted: rgba(28, 29, 32, 0.5);
   --color-nav-dropdown-bg: #ffffff;
   --color-nav-dropdown-border: rgba(17, 17, 17, 0.065);
   --color-nav-dropdown-description: rgba(28, 29, 32, 0.58);
@@ -202,8 +202,8 @@
 
   --color-accent: #f3f4f6;
   --color-accent-fg: #09090b;
-  --color-primary-bg: #f3f4f6;
-  --color-primary-fg: #09090b;
+  --color-primary-bg: var(--color-accent);
+  --color-primary-fg: var(--color-accent-fg);
   --color-accent-soft: color-mix(in oklab, var(--color-accent) 13%, transparent);
   --color-accent-border: color-mix(in oklab, var(--color-accent) 32%, transparent);
   --color-accent-fill: color-mix(in oklab, var(--color-accent) 28%, var(--color-bg));
@@ -222,12 +222,12 @@
   --color-border-focus: color-mix(in oklab, var(--color-accent) 52%, var(--color-border));
   --color-ring-focus: color-mix(in oklab, var(--color-accent) 28%, transparent);
 
-  --color-navbar-bg: rgba(5, 5, 5, 0.86);
-  --color-navbar-border: rgba(255, 255, 255, 0.055);
+  --color-navbar-bg: rgba(8, 8, 10, 0.8);
+  --color-navbar-border: rgba(255, 255, 255, 0.06);
   --color-popover-bg: rgba(16, 16, 20, 0.9);
-  --color-nav-item: #d4d4d8;
-  --color-nav-item-active: rgba(255, 255, 255, 0.075);
-  --color-nav-item-hover: rgba(255, 255, 255, 0.048);
+  --color-nav-item: rgba(243, 244, 246, 0.66);
+  --color-nav-item-active: rgba(255, 255, 255, 0.08);
+  --color-nav-item-hover: rgba(255, 255, 255, 0.045);
   --color-nav-muted: rgba(243, 244, 246, 0.56);
   --color-nav-dropdown-bg: #121216;
   --color-nav-dropdown-border: rgba(255, 255, 255, 0.07);

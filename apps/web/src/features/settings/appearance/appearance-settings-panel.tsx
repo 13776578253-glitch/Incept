@@ -332,8 +332,8 @@ export function AppearanceSettingsPanel() {
           title={isZh ? '强调色' : 'Accent Color'}
           description={
             isZh
-              ? '克制点缀高亮选中项与聚焦轮廓；氛围主题下同时应用至主操作按钮'
-              : 'Subtly tint focus rings and highlights; atmospheric themes also tint primary buttons'
+              ? '克制点缀主操作按钮、高亮选中项与聚焦轮廓'
+              : 'Subtly tint primary buttons, active highlights, and focus rings'
           }
           control={
             <Select<AccentPresetId>

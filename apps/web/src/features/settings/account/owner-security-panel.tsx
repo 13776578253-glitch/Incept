@@ -11,6 +11,8 @@ const buttonStyle =
   'inline-flex min-h-7.5 items-center justify-center gap-1.5 rounded-full border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-all hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 shrink-0 cursor-pointer';
 const primaryButtonStyle =
   'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full bg-[var(--color-primary-bg)] px-4 text-[length:var(--text-xs)] font-medium text-[color:var(--color-primary-fg)] transition-all hover:brightness-[1.06] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
+const INITIAL_VISIBLE_AUDITS = 8;
+const AUDIT_PAGE_SIZE = 10;
 
 export function OwnerSecurityPanel({
   state,
@@ -37,6 +39,7 @@ export function OwnerSecurityPanel({
   const passwordId = useId();
   const [approvedCode, setApprovedCode] = useState<string | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState('');
+  const [visibleAuditCount, setVisibleAuditCount] = useState(INITIAL_VISIBLE_AUDITS);
   const date = (value: string | null) =>
     value ? new Date(value).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US') : '—';
   const passwordIssue = !newPassword ? t('请填写新密码', 'Enter a new password')
@@ -113,6 +116,7 @@ export function OwnerSecurityPanel({
                   setNewPassword('');
                   setConfirmation('');
                   setPasswordSubmitted(false);
+                  setVisibleAuditCount(INITIAL_VISIBLE_AUDITS);
                 }}
                 className={buttonStyle}
               >
@@ -356,29 +360,81 @@ export function OwnerSecurityPanel({
                   </div>
                 )}
 
-                {key === 'audits' && (
-                  <ul className={`divide-y divide-[var(--color-border-faint)] text-[length:var(--text-xs)] ${state.audits.length > 20 ? 'max-h-[45rem] overflow-y-auto overscroll-contain pr-2' : ''}`}>
-                    {state.audits.slice(0, 50).map((audit) => (
-                      <li key={audit.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <span
-                            aria-hidden="true"
-                            className="size-1.5 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor:
-                                audit.result === 'success' || audit.result === 'allow'
-                                  ? 'var(--badge-emerald-dot)'
-                                  : 'var(--badge-amber-dot)',
-                            }}
-                          />
-                          <span className="font-medium text-[var(--color-text)] break-all">{audit.action}</span>
-                          <span className="text-[var(--color-text-subtle)]">· {audit.result}</span>
+                {key === 'audits' && (() => {
+                  const totalAudits = state.audits.length;
+                  const displayedAudits = state.audits.slice(0, visibleAuditCount);
+                  const remainingAudits = Math.max(0, totalAudits - displayedAudits.length);
+
+                  if (totalAudits === 0) {
+                    return (
+                      <p className="py-3 text-center text-[length:var(--text-xs)] text-[var(--color-text-subtle)]">
+                        {t('暂无安全操作记录', 'No security activity yet')}
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-[length:var(--text-2xs)] text-[var(--color-text-subtle)] tabular-nums">
+                        <span>
+                          {t(
+                            `显示 ${displayedAudits.length} / ${totalAudits} 条（最近 50 条）`,
+                            `Showing ${displayedAudits.length} of ${totalAudits} (latest 50)`,
+                          )}
+                        </span>
+                      </div>
+                      <ul
+                        className={`divide-y divide-[var(--color-border-faint)] text-[length:var(--text-xs)] ${
+                          displayedAudits.length > INITIAL_VISIBLE_AUDITS
+                            ? 'max-h-[24rem] overflow-y-auto overscroll-contain pr-2 [scrollbar-width:thin] [scrollbar-color:var(--color-border)_transparent]'
+                            : ''
+                        }`}
+                      >
+                        {displayedAudits.map((audit) => (
+                          <li key={audit.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <span
+                                aria-hidden="true"
+                                className="size-1.5 shrink-0 rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    audit.result === 'success' || audit.result === 'allow'
+                                      ? 'var(--badge-emerald-dot)'
+                                      : 'var(--badge-amber-dot)',
+                                }}
+                              />
+                              <span className="font-medium text-[var(--color-text)] break-all">{audit.action}</span>
+                              <span className="text-[var(--color-text-subtle)]">· {audit.result}</span>
+                            </div>
+                            <time className="text-[var(--color-text-subtle)]">{date(audit.createdAt)}</time>
+                          </li>
+                        ))}
+                      </ul>
+                      {totalAudits > INITIAL_VISIBLE_AUDITS && (
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                          {remainingAudits > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setVisibleAuditCount((count) => count + AUDIT_PAGE_SIZE)}
+                              className="inline-flex h-7 cursor-pointer items-center rounded-full border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)]"
+                            >
+                              {t(`展开更多（剩余 ${remainingAudits} 条）`, `Show more (${remainingAudits} remaining)`)}
+                            </button>
+                          ) : <span />}
+                          {visibleAuditCount > INITIAL_VISIBLE_AUDITS && (
+                            <button
+                              type="button"
+                              onClick={() => setVisibleAuditCount(INITIAL_VISIBLE_AUDITS)}
+                              className="inline-flex h-7 cursor-pointer items-center rounded-full px-2.5 text-[length:var(--text-xs)] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+                            >
+                              {t('收起', 'Collapse')}
+                            </button>
+                          )}
                         </div>
-                        <time className="text-[var(--color-text-subtle)]">{date(audit.createdAt)}</time>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

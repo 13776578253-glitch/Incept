@@ -20,6 +20,8 @@ const buttonBase =
   'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full px-4 text-[length:var(--text-xs)] font-medium transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
 const primaryStyle = `${buttonBase} bg-[var(--color-primary-bg)] text-[color:var(--color-primary-fg)] hover:brightness-[1.06]`;
 const secondaryStyle = `${buttonBase} border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] text-[var(--color-text)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)]`;
+const INITIAL_VISIBLE_GRANTS = 5;
+const GRANT_PAGE_SIZE = 10;
 
 function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return (
@@ -78,12 +80,21 @@ export function OwnerAccountPanel({
   const [limit, setLimit] = useState('10');
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
   const [issuedApproval, setIssuedApproval] = useState<string | null>(null);
+  const [grantFilter, setGrantFilter] = useState<'all' | 'active'>('all');
+  const [visibleGrantCount, setVisibleGrantCount] = useState(INITIAL_VISIBLE_GRANTS);
   const challenge = state?.challenge;
   const stage = challenge?.stage ?? 'credentials';
   const enrolling = stage === 'setup' || stage === 'enroll';
   const step = stage === 'credentials' ? 0 : stage === 'totp' || stage === 'setup' ? 1 : 2;
   const role = state?.role ?? viewerRole;
   const grants = (state?.management?.grants ?? []).map(grant => ({ ...grant, kind: grant.mode ?? 'shared', revoked: !!grant.revokedAt }));
+  const isGrantInactive = (grant: (typeof grants)[number]) =>
+    grant.revoked || Boolean(grant.expiresAt && new Date(grant.expiresAt).getTime() <= checkedAt);
+  const activeGrantCount = grants.filter((grant) => !isGrantInactive(grant)).length;
+  const inactiveGrantCount = grants.length - activeGrantCount;
+  const filteredGrants = grantFilter === 'active' ? grants.filter((grant) => !isGrantInactive(grant)) : grants;
+  const displayedGrants = filteredGrants.slice(0, visibleGrantCount);
+  const remainingGrantCount = Math.max(0, filteredGrants.length - displayedGrants.length);
   const inputId = (name: string) => `${prefix}-${name}`;
   const steps = enrolling ? [t('账号密码', 'Credentials'), t('初始化授权', 'Setup approval'), t('绑定验证器', 'Enroll authenticator')]
     : [t('账号密码', 'Credentials'), 'TOTP', t('授权确认', 'Approval')];
@@ -843,22 +854,62 @@ export function OwnerAccountPanel({
               )}
 
               <div className="border-t border-[var(--color-border-faint)] pt-5 space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <h4 className="text-[length:var(--text-sm)] font-medium text-[var(--color-text)]">
                     {t('授权记录', 'Grant records')}
                   </h4>
-                  <span className="text-[length:var(--text-2xs)] text-[var(--color-text-subtle)] tabular-nums">
-                    {t(`${grants.length} 条记录`, `${grants.length} record(s)`)}
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    {inactiveGrantCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGrantFilter((current) => (current === 'all' ? 'active' : 'all'));
+                          setVisibleGrantCount(INITIAL_VISIBLE_GRANTS);
+                        }}
+                        className="inline-flex h-6 cursor-pointer items-center rounded-full border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] px-2.5 text-[length:var(--text-2xs)] font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)]"
+                      >
+                        {grantFilter === 'all'
+                          ? t(`仅看有效 (${activeGrantCount})`, `Active only (${activeGrantCount})`)
+                          : t(`显示全部 (${grants.length})`, `Show all (${grants.length})`)}
+                      </button>
+                    )}
+                    <span className="text-[length:var(--text-2xs)] text-[var(--color-text-subtle)] tabular-nums">
+                      {filteredGrants.length > displayedGrants.length
+                        ? t(`显示 ${displayedGrants.length} / ${filteredGrants.length} 条`, `Showing ${displayedGrants.length} of ${filteredGrants.length}`)
+                        : t(`${filteredGrants.length} 条记录`, `${filteredGrants.length} record(s)`)}
+                    </span>
+                  </div>
                 </div>
 
                 {grants.length === 0 ? (
                   <p className="py-4 text-center text-[length:var(--text-xs)] text-[var(--color-text-subtle)]">
                     {t('暂无授权记录', 'No grants yet')}
                   </p>
+                ) : filteredGrants.length === 0 ? (
+                  <div className="py-4 text-center space-y-2">
+                    <p className="text-[length:var(--text-xs)] text-[var(--color-text-subtle)]">
+                      {t('暂无有效授权记录', 'No active grants')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGrantFilter('all');
+                        setVisibleGrantCount(INITIAL_VISIBLE_GRANTS);
+                      }}
+                      className="inline-flex cursor-pointer items-center text-[length:var(--text-xs)] font-medium text-[var(--color-text-muted)] underline-offset-4 hover:text-[var(--color-text)] hover:underline"
+                    >
+                      {t(`查看已失效历史 (${inactiveGrantCount})`, `View inactive history (${inactiveGrantCount})`)}
+                    </button>
+                  </div>
                 ) : (
-                  <ul className="divide-y divide-[var(--color-border-faint)]">
-                    {grants.map((grant) => (
+                  <ul
+                    className={`divide-y divide-[var(--color-border-faint)] ${
+                      displayedGrants.length > INITIAL_VISIBLE_GRANTS
+                        ? 'max-h-[26rem] overflow-y-auto overscroll-contain pr-1.5 [scrollbar-width:thin] [scrollbar-color:var(--color-border)_transparent]'
+                        : ''
+                    }`}
+                  >
+                    {displayedGrants.map((grant) => (
                       <li
                         key={grant.id}
                         className="flex flex-wrap items-center justify-between gap-3 py-3"
@@ -922,10 +973,32 @@ export function OwnerAccountPanel({
                     ))}
                   </ul>
                 )}
+                {filteredGrants.length > INITIAL_VISIBLE_GRANTS && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    {remainingGrantCount > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleGrantCount((count) => count + GRANT_PAGE_SIZE)}
+                        className="inline-flex h-7 cursor-pointer items-center rounded-full border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)]"
+                      >
+                        {t(`展开更多（剩余 ${remainingGrantCount} 条）`, `Show more (${remainingGrantCount} remaining)`)}
+                      </button>
+                    ) : <span />}
+                    {visibleGrantCount > INITIAL_VISIBLE_GRANTS && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleGrantCount(INITIAL_VISIBLE_GRANTS)}
+                        className="inline-flex h-7 cursor-pointer items-center rounded-full px-2.5 text-[length:var(--text-xs)] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+                      >
+                        {t('收起', 'Collapse')}
+                      </button>
+                    )}
+                  </div>
+                )}
                 <p className="text-[length:var(--text-xs)] leading-5 text-[var(--color-text-subtle)]">
                   {t(
-                    '撤销后，对应授权与会话立即失效',
-                    'Revocation immediately invalidates the associated grant and sessions',
+                    '撤销后，对应授权与会话立即失效；列表最多保留展示最近 100 条记录',
+                    'Revocation immediately invalidates the associated grant and sessions; up to the latest 100 records are shown',
                   )}
                 </p>
               </div>

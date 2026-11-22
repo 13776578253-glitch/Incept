@@ -67,8 +67,11 @@ function MusicTrackRow({
         onOpenDeleteMenu(event, track);
       }}
     >
-      <td className="py-2.5 pl-0 pr-2">
-        <span className="block truncate font-medium text-[length:var(--text-sm)] leading-5 text-[var(--color-text)]">
+      <td className="py-2.5 pl-2 pr-2">
+        <span
+          style={{ fontFamily: 'var(--font-stack-system, system-ui, sans-serif)' }}
+          className="block truncate font-medium text-[length:var(--text-sm)] leading-5 text-[var(--color-text)]"
+        >
           {track.title}
         </span>
         <span className="mt-0.5 block truncate font-mono text-[length:var(--text-2xs)] text-[var(--color-text-subtle)]">
@@ -76,7 +79,12 @@ function MusicTrackRow({
         </span>
       </td>
       <td className="py-2.5 px-2 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
-        <span className="block truncate">{artist}</span>
+        <span
+          style={{ fontFamily: 'var(--font-stack-system, system-ui, sans-serif)' }}
+          className="block truncate"
+        >
+          {artist}
+        </span>
       </td>
       <td className="py-2.5 px-2 text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
         <span className="block tabular-nums">{formatTrackDuration(track.durationSeconds, copy)}</span>
@@ -139,7 +147,7 @@ function MusicTrackRow({
           <span>{track.isActive ? copy.statusActive : copy.statusInactive}</span>
         </span>
       </td>
-      <td className="py-2.5 pl-1 pr-0">
+      <td className="py-2.5 pl-1 pr-2">
         <div className="flex min-h-7 items-center justify-end gap-2 whitespace-nowrap">
           {track.isActive ? (
             <button
@@ -260,13 +268,13 @@ export function MusicTrackTable({
           </colgroup>
           <thead>
             <tr className="border-b border-[var(--color-border-faint)] whitespace-nowrap text-[length:var(--text-2xs)] uppercase tracking-[0.06em] text-[var(--color-text-soft)]">
-              <th className="py-2 pl-0 pr-2 font-medium">{copy.columnTrack}</th>
+              <th className="py-2 pl-2 pr-2 font-medium">{copy.columnTrack}</th>
               <th className="py-2 px-2 font-medium">{copy.columnArtist}</th>
               <th className="py-2 px-2 font-medium">{copy.columnDuration}</th>
               <th className="py-2 px-2 font-medium">{copy.columnLibraries}</th>
               <th className="py-2 px-1 text-center font-medium">{copy.columnOrder}</th>
               <th className="py-2 px-1 text-center font-medium">{copy.columnStatus}</th>
-              <th className="py-2 pl-1 pr-0 text-right font-medium">{copy.columnActions}</th>
+              <th className="py-2 pl-1 pr-4 text-right font-medium">{copy.columnActions}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border-faint)]">

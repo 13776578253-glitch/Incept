@@ -13,7 +13,7 @@ export function AboutFeature({ sections, activityHref }: AboutFeatureProps) {
   const t = useTranslations('about');
 
   return (
-    <main className="mx-auto w-full max-w-[var(--docs-shell-max-width)] px-5 pb-20 md:px-8 md:pb-28">
+    <div className="mx-auto w-full max-w-[var(--docs-shell-max-width)] px-5 pb-20 md:px-8 md:pb-28">
       <section className="mx-auto flex min-h-[27rem] w-full max-w-[var(--docs-content-width)] flex-col items-center justify-center border-b border-[var(--color-border)] py-10 text-center md:min-h-[34rem] md:py-14">
         <div className="flex flex-col items-center gap-7 md:gap-8">
           <div className="relative size-32 shrink-0 overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] p-1 shadow-[var(--shadow-avatar)] md:size-36">
@@ -73,6 +73,6 @@ export function AboutFeature({ sections, activityHref }: AboutFeatureProps) {
           <span aria-hidden="true">&rarr;</span>
         </Link>
       </div>
-    </main>
+    </div>
   );
 }

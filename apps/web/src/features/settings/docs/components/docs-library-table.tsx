@@ -143,13 +143,13 @@ export function DocsLibraryTable({
           </colgroup>
           <thead>
             <tr className="border-b border-[var(--color-border-faint)] whitespace-nowrap text-[length:var(--text-2xs)] uppercase tracking-[0.06em] text-[var(--color-text-soft)]">
-              <th className="py-2 pl-0 pr-2 font-medium">{t('columns.title')}</th>
+              <th className="py-2 pl-2 pr-2 font-medium">{t('columns.title')}</th>
               <th className="py-2 px-2 font-medium">{t('columns.type')}</th>
               <th className="py-2 px-2 font-medium">{t('columns.accessRole')}</th>
               <th className="py-2 px-2 font-medium">{t('columns.collection')}</th>
               <th className="py-2 px-1.5 text-center font-medium">{t('columns.position')}</th>
               <th className="py-2 px-2 font-medium">{t('columns.lastUpdated')}</th>
-              <th className="py-2 pl-2 pr-0 text-right font-medium">{t('columns.actions')}</th>
+              <th className="py-2 pl-2 pr-3 text-right font-medium">{t('columns.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border-faint)]">
@@ -169,7 +169,7 @@ export function DocsLibraryTable({
                   className="transition-colors hover:bg-[color:var(--color-surface-hover)] group"
                 >
                   {/* 标题与 slug */}
-                  <td className="py-2.5 pl-0 pr-2 align-middle">
+                  <td className="py-2.5 pl-2 pr-2 align-middle">
                     <p title={entry.title} className="truncate font-medium text-[length:var(--text-sm)] text-[var(--color-text)]">{entry.title}</p>
                     <p className="truncate font-mono text-[length:var(--text-2xs)] text-[var(--color-text-subtle)]">{entry.slug}</p>
                   </td>
@@ -214,7 +214,7 @@ export function DocsLibraryTable({
                   </td>
 
                   {/* 操作按钮 */}
-                  <td className="whitespace-nowrap py-2.5 pl-2 pr-0 align-middle text-right">
+                  <td className="whitespace-nowrap py-2.5 pl-2 pr-2 align-middle text-right">
                     <Link
                       href={entry.finalRoute}
                       target="_blank"

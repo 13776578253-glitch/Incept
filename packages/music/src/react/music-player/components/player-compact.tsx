@@ -131,7 +131,12 @@ export function PlayerCompact({
             }`}
           />
         </div>
-        <span className="truncate text-[0.82rem] font-medium text-[var(--color-text)]">{title}</span>
+        <span
+          style={{ fontFamily: 'var(--font-stack-system, system-ui, sans-serif)' }}
+          className="truncate text-[0.82rem] font-medium text-[var(--color-text)]"
+        >
+          {title}
+        </span>
       </div>
 
       {/* 倍速：档位定义在 adapter，在 core 的合法区间 */}

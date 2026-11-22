@@ -51,6 +51,7 @@ export function PlayerPlaylist({ items, emptyLabel, playLabel, onSelect }: Playe
             </span>
 
             <span
+              style={{ fontFamily: 'var(--font-stack-system, system-ui, sans-serif)' }}
               className={`min-w-0 flex-1 truncate text-[0.82rem] ${
                 item.isCurrent ? 'font-medium text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'
               }`}

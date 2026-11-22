@@ -68,7 +68,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
       </div>
 
       {/* Content Stream (Two-column compact vertical grid) */}
-      <main>
+      <div>
         {totalVisible === 0 ? (
           <DocsHomeEmpty
             onClear={() => {
@@ -107,7 +107,7 @@ export function DocsHomeFeature({ page }: DocsHomeFeatureProps) {
             ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

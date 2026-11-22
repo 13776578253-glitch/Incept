@@ -291,7 +291,7 @@ export function AboutActivityFeature({
     : t('activity.blog.calendarRange', { year: writingActivity.range.year });
 
   return (
-    <main className="mx-auto w-full max-w-[1060px] px-6 pb-24 pt-10 md:px-8 md:pb-32 md:pt-12 xl:px-10">
+    <div className="mx-auto w-full max-w-[1060px] px-6 pb-24 pt-10 md:px-8 md:pb-32 md:pt-12 xl:px-10">
       <section className="max-w-[1060px]">
         <Link
           href={backHref}
@@ -408,6 +408,6 @@ export function AboutActivityFeature({
           </section>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
