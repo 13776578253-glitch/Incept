@@ -45,6 +45,11 @@ describe('AppearanceSettingsPanel', () => {
       'data-contrast',
       'data-font',
       'data-font-size',
+      'data-docs-font',
+      'data-docs-font-size',
+      'data-docs-line-height',
+      'data-docs-code-accent',
+      'data-docs-inline-code-accent',
       'data-code-palette',
     ]) {
       document.documentElement.removeAttribute(attr);
@@ -137,5 +142,47 @@ describe('AppearanceSettingsPanel', () => {
     await user.click(await screen.findByRole('option', { name: 'Vitesse' }));
     expect(preview).toHaveAttribute('data-preview-palette', 'vitesse-light');
     expect(screen.getAllByText('const')[0]).toHaveStyle({ color: 'rgb(30, 117, 79)' });
+  });
+
+  it('configures independent docs reading font, font size, line height, and code accent with local persistence', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(screen.getByRole('combobox', { name: '文档字体' }));
+    await user.click(await screen.findByRole('option', { name: /编辑衬线/ }));
+    expect(document.documentElement).toHaveAttribute('data-docs-font', 'serif');
+    expect(window.localStorage.getItem('incept-docs-font')).toBe('serif');
+    expect(document.cookie).toContain('incept-docs-font=serif');
+
+    await user.click(screen.getByRole('combobox', { name: '文档字号' }));
+    await user.click(await screen.findByRole('option', { name: '12px' }));
+    expect(document.documentElement).toHaveAttribute('data-docs-font-size', '12');
+    expect(window.localStorage.getItem('incept-docs-font-size')).toBe('12');
+    expect(document.cookie).toContain('incept-docs-font-size=12');
+
+    await user.click(screen.getByRole('button', { name: '舒展' }));
+    expect(document.documentElement).toHaveAttribute('data-docs-line-height', 'relaxed');
+    expect(window.localStorage.getItem('incept-docs-line-height')).toBe('relaxed');
+    expect(document.cookie).toContain('incept-docs-line-height=relaxed');
+
+    await user.click(screen.getByRole('combobox', { name: '行内代码强调色' }));
+    await user.click(await screen.findByRole('option', { name: '鼠尾草' }));
+    expect(document.documentElement).toHaveAttribute('data-docs-inline-code-accent', 'sage');
+    expect(window.localStorage.getItem('incept-docs-inline-code-accent')).toBe('sage');
+    expect(document.cookie).toContain('incept-docs-inline-code-accent=sage');
+
+    await user.click(screen.getByRole('combobox', { name: '行内代码强调色' }));
+    await user.click(await screen.findByRole('option', { name: '关闭' }));
+    expect(document.documentElement).toHaveAttribute('data-docs-inline-code-accent', 'none');
+
+    await user.click(screen.getByRole('combobox', { name: '代码块强调色' }));
+    await user.click(await screen.findByRole('option', { name: '柔雾蓝' }));
+    expect(document.documentElement).toHaveAttribute('data-docs-code-accent', 'mist-blue');
+    expect(window.localStorage.getItem('incept-docs-code-accent')).toBe('mist-blue');
+    expect(document.cookie).toContain('incept-docs-code-accent=mist-blue');
+
+    await user.click(screen.getByRole('combobox', { name: '代码块强调色' }));
+    await user.click(await screen.findByRole('option', { name: '关闭' }));
+    expect(document.documentElement).toHaveAttribute('data-docs-code-accent', 'none');
   });
 });

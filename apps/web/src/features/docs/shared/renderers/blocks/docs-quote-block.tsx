@@ -8,12 +8,12 @@ export function DocsQuoteBlock({
   attribution,
 }: DocsQuoteBlockModel) {
   return (
-    <figure className="border-l-[4px] border-l-[var(--color-text)] pl-7">
-      <blockquote className="text-[1.02rem] leading-8 text-[var(--color-text)]">
+    <figure className="border-l-[2.5px] border-l-[color:var(--docs-quote-border)] py-0.5 pl-4 md:pl-5">
+      <blockquote className="text-[length:var(--docs-font-size)] leading-[var(--docs-paragraph-line-height)] text-[var(--color-text)]">
         {content ? <DocsInlineContent content={content} /> : text}
       </blockquote>
       {attribution ? (
-        <figcaption className="mt-3 text-[0.92rem] leading-7 text-[var(--color-text-muted)]">
+        <figcaption className="mt-2.5 text-[length:calc(var(--docs-font-size)*0.88)] leading-[1.6] text-[var(--color-text-soft)]">
           {attribution}
         </figcaption>
       ) : null}

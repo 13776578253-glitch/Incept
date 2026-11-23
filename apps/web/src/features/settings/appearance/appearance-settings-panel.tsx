@@ -9,9 +9,16 @@ import {
   ACCENT_PRESETS,
   UI_FONTS,
   UI_FONT_SIZES,
+  DOCS_FONT_SIZES,
+  DOCS_LINE_HEIGHTS,
   type AccentPresetId,
   type ColorScheme,
   type ContrastMode,
+  type DocsCodeAccentId,
+  type DocsFontId,
+  type DocsFontSizeId,
+  type DocsInlineCodeAccentId,
+  type DocsLineHeightId,
   type ThemePresetId,
   type UiFontId,
   type UiFontSizeId,
@@ -170,6 +177,11 @@ export function AppearanceSettingsPanel() {
     contrast,
     font,
     fontSize,
+    docsFont,
+    docsFontSize,
+    docsLineHeight,
+    docsCodeAccent,
+    docsInlineCodeAccent,
     isReady,
     setPreset,
     setThemeMode,
@@ -177,6 +189,11 @@ export function AppearanceSettingsPanel() {
     setContrast,
     setFont,
     setFontSize,
+    setDocsFont,
+    setDocsFontSize,
+    setDocsLineHeight,
+    setDocsCodeAccent,
+    setDocsInlineCodeAccent,
   } = useAppearance();
   const { codePalette, setCodePalette, isCodePaletteReady } = useDocsCodePaletteContext();
   const [codePreviewOpen, setCodePreviewOpen] = useState(false);
@@ -190,6 +207,44 @@ export function AppearanceSettingsPanel() {
   const codeColors = resolveCodePreviewColors(preset, resolvedPolarity, codePalette);
   const activeCodePaletteLabel = isZh ? CODE_PALETTE_LABELS[codePalette].zh : CODE_PALETTE_LABELS[codePalette].en;
   const previewPaletteId = codePalette === 'auto' ? preset : `${codePalette}-${resolvedPolarity}`;
+
+  const codeAccentOptions = [
+    {
+      value: 'inherit' as DocsCodeAccentId,
+      label: isZh ? '跟随全局' : 'Follow Global',
+      leading: (
+        <span
+          aria-hidden="true"
+          className="size-2.5 shrink-0 rounded-full border border-black/10 dark:border-white/15"
+          style={{ forcedColorAdjust: 'none', backgroundColor: 'var(--color-accent)' }}
+        />
+      ),
+    },
+    {
+      value: 'none' as DocsCodeAccentId,
+      label: isZh ? '关闭' : 'Off',
+      leading: (
+        <span
+          aria-hidden="true"
+          className="size-2.5 shrink-0 rounded-full border border-[var(--color-border-strong)] bg-transparent"
+        />
+      ),
+    },
+    ...ACCENT_PRESETS.filter((item) => item.id !== 'theme').map((item) => ({
+      value: item.id as DocsCodeAccentId,
+      label: isZh ? item.label.zh : item.label.en,
+      leading: (
+        <span
+          aria-hidden="true"
+          className="size-2.5 shrink-0 rounded-full border border-black/10 dark:border-white/15"
+          style={{
+            forcedColorAdjust: 'none',
+            backgroundColor: resolvedPolarity === 'dark' ? item.swatch.dark : item.swatch.light,
+          }}
+        />
+      ),
+    })),
+  ];
 
   return (
     <section id="appearance" className="max-w-[760px] space-y-7">
@@ -388,15 +443,15 @@ export function AppearanceSettingsPanel() {
         />
       </SettingsGroup>
 
-      {/* Group 3: Typography & Code */}
-      <SettingsGroup title={isZh ? '排版与代码块' : 'Typography & Code'}>
+      {/* Group 3: Interface Typography */}
+      <SettingsGroup title={isZh ? '界面排版' : 'Interface Typography'}>
         <SettingsRow
           id="appearance-font"
           title={isZh ? '界面字体' : 'Font'}
           description={
             isZh
-              ? '切换全局阅读与界面的字体风格'
-              : 'Choose the primary typeface used across the interface'
+              ? '切换全局导航与常规界面的字体风格'
+              : 'Choose the primary typeface used across navigation and controls'
           }
           control={
             <Select<UiFontId>
@@ -425,8 +480,8 @@ export function AppearanceSettingsPanel() {
           title={isZh ? '全局字号' : 'Font Size'}
           description={
             isZh
-              ? '调整常规界面与正文的基础文字大小'
-              : 'Adjust the base text size across controls and content'
+              ? '调整常规界面与控件的基础文字大小'
+              : 'Adjust the base text size across controls and navigation'
           }
           control={
             <Select<UiFontSizeId>
@@ -437,6 +492,89 @@ export function AppearanceSettingsPanel() {
               options={UI_FONT_SIZES.map((item) => ({
                 value: item.id,
                 label: item.label,
+              }))}
+            />
+          }
+        />
+      </SettingsGroup>
+
+      {/* Group 4: Docs Reading & Code */}
+      <SettingsGroup title={isZh ? '文档阅读与代码' : 'Docs Reading & Code'}>
+        <SettingsRow
+          id="appearance-docs-font"
+          title={isZh ? '文档字体' : 'Docs Font'}
+          description={
+            isZh
+              ? '单独设定文档长文阅读字体，默认跟随界面字体'
+              : 'Choose an independent reading typeface for docs or follow UI font'
+          }
+          control={
+            <Select<DocsFontId>
+              ariaLabel={isZh ? '文档字体' : 'Docs Font'}
+              value={docsFont}
+              disabled={!isReady}
+              onValueChange={setDocsFont}
+              options={[
+                {
+                  value: 'inherit',
+                  label: isZh ? '跟随界面' : 'Follow UI',
+                },
+                ...UI_FONTS.map((item) => ({
+                  value: item.id,
+                  label: isZh ? item.label.zh : item.label.en,
+                  leading: (
+                    <span
+                      className="inline-flex w-5 justify-center text-[length:var(--text-xs)] font-medium text-[var(--color-text-muted)]"
+                      style={{ fontFamily: item.previewStack }}
+                    >
+                      Aa
+                    </span>
+                  ),
+                })),
+              ]}
+            />
+          }
+        />
+
+        <SettingsRow
+          id="appearance-docs-font-size"
+          title={isZh ? '文档字号' : 'Docs Font Size'}
+          description={
+            isZh
+              ? '独立设定文档正文字号；手机端自动温和微缩约 1px'
+              : 'Set long-form article base size; gently tapers on mobile viewports'
+          }
+          control={
+            <Select<DocsFontSizeId>
+              ariaLabel={isZh ? '文档字号' : 'Docs Font Size'}
+              value={docsFontSize}
+              disabled={!isReady}
+              onValueChange={setDocsFontSize}
+              options={DOCS_FONT_SIZES.map((item) => ({
+                value: item.id,
+                label: isZh ? item.label.zh : item.label.en,
+              }))}
+            />
+          }
+        />
+
+        <SettingsRow
+          id="appearance-docs-line-height"
+          title={isZh ? '文档行距' : 'Docs Line Height'}
+          description={
+            isZh
+              ? '调节段落行间呼吸感，兼顾长文节奏与一屏密度'
+              : 'Tune paragraph line spacing for comfortable long-form reading'
+          }
+          control={
+            <SegmentedControl<DocsLineHeightId>
+              ariaLabel={isZh ? '文档行距' : 'Docs Line Height'}
+              value={isReady ? docsLineHeight : 'comfortable'}
+              disabled={!isReady}
+              onValueChange={setDocsLineHeight}
+              options={DOCS_LINE_HEIGHTS.map((item) => ({
+                id: item.id,
+                label: isZh ? item.label.zh : item.label.en,
               }))}
             />
           }
@@ -467,6 +605,44 @@ export function AppearanceSettingsPanel() {
           }
         />
 
+        <SettingsRow
+          id="appearance-docs-inline-code-accent"
+          title={isZh ? '行内代码强调色' : 'Inline Code Accent'}
+          description={
+            isZh
+              ? '柔和点缀正文内的术语与行内代码胶囊，默认跟随全局强调色，也可关闭'
+              : 'Subtly tints inline code pills in docs; follows global accent or can be turned off'
+          }
+          control={
+            <Select<DocsInlineCodeAccentId>
+              ariaLabel={isZh ? '行内代码强调色' : 'Inline Code Accent'}
+              value={docsInlineCodeAccent}
+              disabled={!isReady}
+              onValueChange={setDocsInlineCodeAccent}
+              options={codeAccentOptions}
+            />
+          }
+        />
+
+        <SettingsRow
+          id="appearance-docs-code-accent"
+          title={isZh ? '代码块强调色' : 'Code Accent'}
+          description={
+            isZh
+              ? '以极细侧边条与工具栏点缀代码块，默认跟随全局强调色，也可关闭'
+              : 'Subtly accents code blocks; follows global accent by default or can be turned off'
+          }
+          control={
+            <Select<DocsCodeAccentId>
+              ariaLabel={isZh ? '代码块强调色' : 'Code Accent'}
+              value={docsCodeAccent}
+              disabled={!isReady}
+              onValueChange={setDocsCodeAccent}
+              options={codeAccentOptions}
+            />
+          }
+        />
+
         {/* Quiet expandable Code Preview disclosure row */}
         <div className="py-3.5">
           <button
@@ -486,29 +662,36 @@ export function AppearanceSettingsPanel() {
           </button>
 
           {codePreviewOpen ? (
-            <pre
-              data-preview-palette={previewPaletteId}
-              className="mt-3 overflow-x-auto rounded-[10px] border p-3.5 font-mono text-[length:var(--text-xs)] leading-6"
-              style={{
-                forcedColorAdjust: 'none',
-                backgroundColor: codeColors.bg,
-                borderColor: codeColors.border,
-                color: codeColors.text,
-              }}
-            >
-              <code>
-                <span style={{ color: codeColors.comment }}>
-                  {isZh ? `// 代码块配色：${activeCodePaletteLabel}` : `// Code palette: ${activeCodePaletteLabel}`}
-                </span>
-                {'\n'}
-                <span style={{ color: codeColors.keyword }}>const</span>{' '}
-                <span>theme</span> ={' '}
-                <span style={{ color: codeColors.fn }}>useAppearance</span>();{'\n'}
-                <span style={{ color: codeColors.keyword }}>export const</span>{' '}
-                <span>preset</span> ={' '}
-                <span style={{ color: codeColors.string }}>&apos;{preset}&apos;</span>;
-              </code>
-            </pre>
+            <div className="relative mt-3 overflow-hidden rounded-[10px]">
+              <span
+                aria-hidden="true"
+                className="docs-code-accent-decor pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-[2px] opacity-65"
+                style={{ backgroundColor: 'var(--docs-code-accent)' }}
+              />
+              <pre
+                data-preview-palette={previewPaletteId}
+                className="overflow-x-auto rounded-[10px] border p-3.5 pl-4 font-mono text-[length:var(--text-xs)] leading-6"
+                style={{
+                  forcedColorAdjust: 'none',
+                  backgroundColor: codeColors.bg,
+                  borderColor: codeColors.border,
+                  color: codeColors.text,
+                }}
+              >
+                <code>
+                  <span style={{ color: codeColors.comment }}>
+                    {isZh ? `// 代码块配色：${activeCodePaletteLabel}` : `// Code palette: ${activeCodePaletteLabel}`}
+                  </span>
+                  {'\n'}
+                  <span style={{ color: codeColors.keyword }}>const</span>{' '}
+                  <span>theme</span> ={' '}
+                  <span style={{ color: codeColors.fn }}>useAppearance</span>();{'\n'}
+                  <span style={{ color: codeColors.keyword }}>export const</span>{' '}
+                  <span>preset</span> ={' '}
+                  <span style={{ color: codeColors.string }}>&apos;{preset}&apos;</span>;
+                </code>
+              </pre>
+            </div>
           ) : null}
         </div>
       </SettingsGroup>

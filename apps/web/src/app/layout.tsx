@@ -6,6 +6,11 @@ import {
   isAccentPreset,
   isColorScheme,
   isContrastMode,
+  isDocsCodeAccent,
+  isDocsFont,
+  isDocsFontSize,
+  isDocsInlineCodeAccent,
+  isDocsLineHeight,
   isThemePreset,
   isUiFont,
   isUiFontSize,
@@ -13,6 +18,11 @@ import {
   type AccentPresetId,
   type ColorScheme,
   type ContrastMode,
+  type DocsCodeAccentId,
+  type DocsFontId,
+  type DocsFontSizeId,
+  type DocsInlineCodeAccentId,
+  type DocsLineHeightId,
   type ThemePresetId,
   type UiFontId,
   type UiFontSizeId,
@@ -37,6 +47,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   let contrast: ContrastMode = 'default';
   let font: UiFontId = 'system';
   let fontSize: UiFontSizeId = '14';
+  let docsFont: DocsFontId = 'inherit';
+  let docsFontSize: DocsFontSizeId = 'inherit';
+  let docsLineHeight: DocsLineHeightId = 'comfortable';
+  let docsCodeAccent: DocsCodeAccentId = 'inherit';
+  let docsInlineCodeAccent: DocsInlineCodeAccentId = 'inherit';
   let codePalette: DocsCodePalette = 'auto';
 
   try {
@@ -47,6 +62,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     const rawContrast = store.get(APPEARANCE_COOKIES.contrast)?.value;
     const rawFont = store.get(APPEARANCE_COOKIES.font)?.value;
     const rawFontSize = store.get(APPEARANCE_COOKIES.fontSize)?.value;
+    const rawDocsFont = store.get(APPEARANCE_COOKIES.docsFont)?.value;
+    const rawDocsFontSize = store.get(APPEARANCE_COOKIES.docsFontSize)?.value;
+    const rawDocsLineHeight = store.get(APPEARANCE_COOKIES.docsLineHeight)?.value;
+    const rawDocsCodeAccent = store.get(APPEARANCE_COOKIES.docsCodeAccent)?.value;
+    const rawDocsInlineCodeAccent = store.get(APPEARANCE_COOKIES.docsInlineCodeAccent)?.value;
     const rawCodePalette = store.get(DOCS_CODE_PALETTE_COOKIE)?.value;
 
     if (isThemePreset(rawPreset)) preset = rawPreset;
@@ -55,6 +75,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     if (isContrastMode(rawContrast)) contrast = rawContrast;
     if (isUiFont(rawFont)) font = rawFont;
     if (isUiFontSize(rawFontSize)) fontSize = rawFontSize;
+    if (isDocsFont(rawDocsFont)) docsFont = rawDocsFont;
+    if (isDocsFontSize(rawDocsFontSize)) docsFontSize = rawDocsFontSize;
+    if (isDocsLineHeight(rawDocsLineHeight)) docsLineHeight = rawDocsLineHeight;
+    if (isDocsCodeAccent(rawDocsCodeAccent)) docsCodeAccent = rawDocsCodeAccent;
+    if (isDocsInlineCodeAccent(rawDocsInlineCodeAccent)) docsInlineCodeAccent = rawDocsInlineCodeAccent;
     if (isDocsCodePalette(rawCodePalette)) codePalette = rawCodePalette;
   } catch {
     // Fallback to defaults outside an active request scope
@@ -71,6 +96,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       data-contrast={contrast}
       data-font={font}
       data-font-size={fontSize}
+      data-docs-font={docsFont}
+      data-docs-font-size={docsFontSize}
+      data-docs-line-height={docsLineHeight}
+      data-docs-code-accent={docsCodeAccent}
+      data-docs-inline-code-accent={docsInlineCodeAccent}
       data-code-palette={codePalette}
     >
       <body>

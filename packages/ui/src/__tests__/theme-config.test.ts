@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  DOCS_CODE_ACCENT_IDS,
+  DOCS_FONT_IDS,
+  DOCS_FONT_SIZE_IDS,
+  DOCS_INLINE_CODE_ACCENT_IDS,
+  DOCS_LINE_HEIGHT_IDS,
   UI_FONTS,
   UI_FONT_SIZES,
   buildAppearanceInitScript,
   getColorSchemeMetaContent,
   getSmartToggleTarget,
+  isDocsCodeAccent,
+  isDocsFont,
+  isDocsFontSize,
+  isDocsInlineCodeAccent,
+  isDocsLineHeight,
   isUiFont,
   isUiFontSize,
   migrateLegacyEyeComfort,
@@ -92,10 +102,41 @@ describe('theme-config', () => {
     expect(isUiFontSize('12')).toBe(true);
   });
 
+  it('supports independent docs font, font size, line height, and code accent options', () => {
+    expect(DOCS_FONT_IDS).toContain('inherit');
+    expect(DOCS_FONT_IDS).toContain('serif');
+    expect(DOCS_FONT_SIZE_IDS).toEqual(['inherit', '12', '13', '14', '15', '16', '17', '18']);
+    expect(DOCS_LINE_HEIGHT_IDS).toEqual(['compact', 'comfortable', 'relaxed']);
+    expect(DOCS_CODE_ACCENT_IDS).toContain('inherit');
+    expect(DOCS_CODE_ACCENT_IDS).toContain('none');
+    expect(DOCS_CODE_ACCENT_IDS).toContain('mist-blue');
+    expect(DOCS_INLINE_CODE_ACCENT_IDS).toEqual(DOCS_CODE_ACCENT_IDS);
+    expect(isDocsFont('inherit')).toBe(true);
+    expect(isDocsFont('kai')).toBe(true);
+    expect(isDocsFont('unknown')).toBe(false);
+    expect(isDocsFontSize('12')).toBe(true);
+    expect(isDocsFontSize('13')).toBe(true);
+    expect(isDocsFontSize('17')).toBe(true);
+    expect(isDocsFontSize('11')).toBe(false);
+    expect(isDocsLineHeight('relaxed')).toBe(true);
+    expect(isDocsLineHeight('loose')).toBe(false);
+    expect(isDocsCodeAccent('inherit')).toBe(true);
+    expect(isDocsCodeAccent('none')).toBe(true);
+    expect(isDocsCodeAccent('sage')).toBe(true);
+    expect(isDocsCodeAccent('theme')).toBe(false);
+    expect(isDocsInlineCodeAccent('none')).toBe(true);
+    expect(isDocsInlineCodeAccent('amber')).toBe(true);
+  });
+
   it('produces a valid synchronous init script without syntax errors', () => {
     const script = buildAppearanceInitScript();
     expect(() => new Function(script)).not.toThrow();
     expect(script).toContain('"11"');
     expect(script).toContain('"kai"');
+    expect(script).toContain('data-docs-font');
+    expect(script).toContain('data-docs-font-size');
+    expect(script).toContain('data-docs-line-height');
+    expect(script).toContain('data-docs-code-accent');
+    expect(script).toContain('data-docs-inline-code-accent');
   });
 });

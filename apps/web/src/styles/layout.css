@@ -238,9 +238,8 @@
 
 @media (max-width: 1023px) {
   :root {
-    --docs-font-size: clamp(14px, calc(var(--ui-font-size) + 1px), 17px);
-    --docs-line-height: 1.72;
-    --docs-line-height-relaxed: 1.82;
+    --docs-font-size-mobile-offset: 0.5px;
+    --docs-line-height-offset: 0.06;
   }
 
   .page-shell-document {
@@ -288,9 +287,8 @@
 
 @media (max-width: 767px) {
   :root {
-    --docs-font-size: clamp(13.75px, calc(var(--ui-font-size) + 0.75px), 16px);
-    --docs-line-height: 1.66;
-    --docs-line-height-relaxed: 1.76;
+    --docs-font-size-mobile-offset: 1px;
+    --docs-line-height-offset: 0.12;
   }
 
   .page-shell-docs-reference:not(.page-shell-docs-import-preview),

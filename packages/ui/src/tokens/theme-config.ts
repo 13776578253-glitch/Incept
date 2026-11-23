@@ -33,6 +33,30 @@ export type UiFontId = (typeof UI_FONT_IDS)[number];
 export const UI_FONT_SIZE_IDS = ['11', '12', '13', '14', '15', '16'] as const;
 export type UiFontSizeId = (typeof UI_FONT_SIZE_IDS)[number];
 
+export const DOCS_FONT_IDS = ['inherit', ...UI_FONT_IDS] as const;
+export type DocsFontId = (typeof DOCS_FONT_IDS)[number];
+
+export const DOCS_FONT_SIZE_IDS = ['inherit', '12', '13', '14', '15', '16', '17', '18'] as const;
+export type DocsFontSizeId = (typeof DOCS_FONT_SIZE_IDS)[number];
+
+export const DOCS_LINE_HEIGHT_IDS = ['compact', 'comfortable', 'relaxed'] as const;
+export type DocsLineHeightId = (typeof DOCS_LINE_HEIGHT_IDS)[number];
+
+export const DOCS_CODE_ACCENT_IDS = [
+  'inherit',
+  'none',
+  'neutral',
+  'mist-blue',
+  'cobalt',
+  'dusty-rose',
+  'sage',
+  'amber',
+] as const;
+export type DocsCodeAccentId = (typeof DOCS_CODE_ACCENT_IDS)[number];
+
+export const DOCS_INLINE_CODE_ACCENT_IDS = DOCS_CODE_ACCENT_IDS;
+export type DocsInlineCodeAccentId = DocsCodeAccentId;
+
 export type ResolvedPolarity = 'light' | 'dark';
 
 export type ThemePresetPreview = {
@@ -232,6 +256,29 @@ export const UI_FONT_SIZES: ReadonlyArray<{
   { id: '16', label: '16px' },
 ];
 
+export const DOCS_FONT_SIZES: ReadonlyArray<{
+  id: DocsFontSizeId;
+  label: { zh: string; en: string };
+}> = [
+  { id: 'inherit', label: { zh: '跟随全局', en: 'Follow Global' } },
+  { id: '12', label: { zh: '12px', en: '12px' } },
+  { id: '13', label: { zh: '13px', en: '13px' } },
+  { id: '14', label: { zh: '14px', en: '14px' } },
+  { id: '15', label: { zh: '15px', en: '15px' } },
+  { id: '16', label: { zh: '16px', en: '16px' } },
+  { id: '17', label: { zh: '17px', en: '17px' } },
+  { id: '18', label: { zh: '18px', en: '18px' } },
+];
+
+export const DOCS_LINE_HEIGHTS: ReadonlyArray<{
+  id: DocsLineHeightId;
+  label: { zh: string; en: string };
+}> = [
+  { id: 'compact', label: { zh: '紧凑', en: 'Compact' } },
+  { id: 'comfortable', label: { zh: '适中', en: 'Comfortable' } },
+  { id: 'relaxed', label: { zh: '舒展', en: 'Relaxed' } },
+];
+
 export const APPEARANCE_STORAGE_KEYS = {
   preset: 'incept-theme-preset',
   colorScheme: 'incept-color-scheme',
@@ -239,6 +286,11 @@ export const APPEARANCE_STORAGE_KEYS = {
   contrast: 'incept-contrast',
   font: 'incept-font',
   fontSize: 'incept-font-size',
+  docsFont: 'incept-docs-font',
+  docsFontSize: 'incept-docs-font-size',
+  docsLineHeight: 'incept-docs-line-height',
+  docsCodeAccent: 'incept-docs-code-accent',
+  docsInlineCodeAccent: 'incept-docs-inline-code-accent',
   legacyEyeComfort: 'incept-eye-comfort-filter',
 } as const;
 
@@ -248,6 +300,11 @@ export const APPEARANCE_ATTRIBUTES = {
   contrast: 'data-contrast',
   font: 'data-font',
   fontSize: 'data-font-size',
+  docsFont: 'data-docs-font',
+  docsFontSize: 'data-docs-font-size',
+  docsLineHeight: 'data-docs-line-height',
+  docsCodeAccent: 'data-docs-code-accent',
+  docsInlineCodeAccent: 'data-docs-inline-code-accent',
 } as const;
 
 export const APPEARANCE_COOKIES = {
@@ -257,6 +314,11 @@ export const APPEARANCE_COOKIES = {
   contrast: 'incept-contrast',
   font: 'incept-font',
   fontSize: 'incept-font-size',
+  docsFont: 'incept-docs-font',
+  docsFontSize: 'incept-docs-font-size',
+  docsLineHeight: 'incept-docs-line-height',
+  docsCodeAccent: 'incept-docs-code-accent',
+  docsInlineCodeAccent: 'incept-docs-inline-code-accent',
 } as const;
 
 const THEME_PRESET_MAP = new Map<ThemePresetId, ThemePresetSpec>(
@@ -285,6 +347,26 @@ export function isUiFont(value: string | null | undefined): value is UiFontId {
 
 export function isUiFontSize(value: string | null | undefined): value is UiFontSizeId {
   return value !== null && value !== undefined && UI_FONT_SIZE_IDS.includes(value as UiFontSizeId);
+}
+
+export function isDocsFont(value: string | null | undefined): value is DocsFontId {
+  return value !== null && value !== undefined && DOCS_FONT_IDS.includes(value as DocsFontId);
+}
+
+export function isDocsFontSize(value: string | null | undefined): value is DocsFontSizeId {
+  return value !== null && value !== undefined && DOCS_FONT_SIZE_IDS.includes(value as DocsFontSizeId);
+}
+
+export function isDocsLineHeight(value: string | null | undefined): value is DocsLineHeightId {
+  return value !== null && value !== undefined && DOCS_LINE_HEIGHT_IDS.includes(value as DocsLineHeightId);
+}
+
+export function isDocsCodeAccent(value: string | null | undefined): value is DocsCodeAccentId {
+  return value !== null && value !== undefined && DOCS_CODE_ACCENT_IDS.includes(value as DocsCodeAccentId);
+}
+
+export function isDocsInlineCodeAccent(value: string | null | undefined): value is DocsInlineCodeAccentId {
+  return isDocsCodeAccent(value);
 }
 
 export function getThemePresetSpec(preset: ThemePresetId): ThemePresetSpec {
@@ -361,5 +443,5 @@ export function migrateLegacyEyeComfort(
 }
 
 export function buildAppearanceInitScript(): string {
-  return `(function(){try{var d=document.documentElement,ls=window.localStorage,p=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.preset)}),leg=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.legacyEyeComfort)}),sc=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.colorScheme)}),ac=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.accent)}),ct=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.contrast)}),fn=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.font)}),fs=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.fontSize)}),cp=ls.getItem('incept-code-palette');var vp=${JSON.stringify(THEME_PRESET_IDS)},va=${JSON.stringify(ACCENT_PRESET_IDS)},vc=${JSON.stringify(CONTRAST_MODE_IDS)},vf=${JSON.stringify(UI_FONT_IDS)},vs=${JSON.stringify(UI_FONT_SIZE_IDS)},vcp=['auto','vscode','github','vitesse'];if(vp.indexOf(p)===-1){p=leg==='true'?'warm-paper':'default';if(leg==='true'){ls.setItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.preset)},'warm-paper');ls.removeItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.legacyEyeComfort)});}}if(sc!=='light'&&sc!=='dark'&&sc!=='system'){sc='system';}if(va.indexOf(ac)===-1)ac='theme';if(vc.indexOf(ct)===-1)ct='default';if(vf.indexOf(fn)===-1)fn='system';if(vs.indexOf(fs)===-1)fs='14';if(vcp.indexOf(cp)===-1)cp='auto';var sys=window.matchMedia('(prefers-color-scheme: dark)').matches;var dark=(p==='catppuccin-mocha'||p==='rose-pine')?true:(p==='warm-paper'||p==='catppuccin-latte'||p==='rose-pine-dawn')?false:(sc==='dark'||(sc==='system'&&sys));var mc=(p==='default'&&sc==='system')?'light dark':(dark?'dark':'light');var m=document.querySelector('meta[name="color-scheme"]');if(m)m.setAttribute('content',mc);d.classList.toggle('dark',dark);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.preset)},p);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.accent)},ac);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.contrast)},ct);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.font)},fn);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.fontSize)},fs);d.setAttribute('data-code-palette',cp);}catch(e){}})();`;
+  return `(function(){try{var d=document.documentElement,ls=window.localStorage,p=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.preset)}),leg=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.legacyEyeComfort)}),sc=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.colorScheme)}),ac=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.accent)}),ct=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.contrast)}),fn=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.font)}),fs=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.fontSize)}),df=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsFont)}),dfs=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsFontSize)}),dlh=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsLineHeight)}),dca=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsCodeAccent)}),dica=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsInlineCodeAccent)}),cp=ls.getItem('incept-code-palette');var vp=${JSON.stringify(THEME_PRESET_IDS)},va=${JSON.stringify(ACCENT_PRESET_IDS)},vc=${JSON.stringify(CONTRAST_MODE_IDS)},vf=${JSON.stringify(UI_FONT_IDS)},vs=${JSON.stringify(UI_FONT_SIZE_IDS)},vdf=${JSON.stringify(DOCS_FONT_IDS)},vdfs=${JSON.stringify(DOCS_FONT_SIZE_IDS)},vdlh=${JSON.stringify(DOCS_LINE_HEIGHT_IDS)},vdca=${JSON.stringify(DOCS_CODE_ACCENT_IDS)},vcp=['auto','vscode','github','vitesse'];if(vp.indexOf(p)===-1){p=leg==='true'?'warm-paper':'default';if(leg==='true'){ls.setItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.preset)},'warm-paper');ls.removeItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.legacyEyeComfort)});}}if(sc!=='light'&&sc!=='dark'&&sc!=='system'){sc='system';}if(va.indexOf(ac)===-1)ac='theme';if(vc.indexOf(ct)===-1)ct='default';if(vf.indexOf(fn)===-1)fn='system';if(vs.indexOf(fs)===-1)fs='14';if(vdf.indexOf(df)===-1)df='inherit';if(vdfs.indexOf(dfs)===-1)dfs='inherit';if(vdlh.indexOf(dlh)===-1)dlh='comfortable';if(vdca.indexOf(dca)===-1)dca='inherit';if(vdca.indexOf(dica)===-1)dica='inherit';if(vcp.indexOf(cp)===-1)cp='auto';var sys=window.matchMedia('(prefers-color-scheme: dark)').matches;var dark=(p==='catppuccin-mocha'||p==='rose-pine')?true:(p==='warm-paper'||p==='catppuccin-latte'||p==='rose-pine-dawn')?false:(sc==='dark'||(sc==='system'&&sys));var mc=(p==='default'&&sc==='system')?'light dark':(dark?'dark':'light');var m=document.querySelector('meta[name="color-scheme"]');if(m)m.setAttribute('content',mc);d.classList.toggle('dark',dark);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.preset)},p);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.accent)},ac);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.contrast)},ct);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.font)},fn);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.fontSize)},fs);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsFont)},df);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsFontSize)},dfs);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsLineHeight)},dlh);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsCodeAccent)},dca);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsInlineCodeAccent)},dica);d.setAttribute('data-code-palette',cp);}catch(e){}})();`;
 }

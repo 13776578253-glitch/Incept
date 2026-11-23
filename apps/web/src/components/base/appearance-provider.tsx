@@ -19,6 +19,11 @@ import {
   isAccentPreset,
   isColorScheme,
   isContrastMode,
+  isDocsCodeAccent,
+  isDocsFont,
+  isDocsFontSize,
+  isDocsInlineCodeAccent,
+  isDocsLineHeight,
   isUiFont,
   isUiFontSize,
   migrateLegacyEyeComfort,
@@ -26,6 +31,11 @@ import {
   type AccentPresetId,
   type ColorScheme,
   type ContrastMode,
+  type DocsCodeAccentId,
+  type DocsFontId,
+  type DocsFontSizeId,
+  type DocsInlineCodeAccentId,
+  type DocsLineHeightId,
   type ResolvedPolarity,
   type ThemePresetId,
   type UiFontId,
@@ -41,6 +51,11 @@ export type AppearanceState = {
   contrast: ContrastMode;
   font: UiFontId;
   fontSize: UiFontSizeId;
+  docsFont: DocsFontId;
+  docsFontSize: DocsFontSizeId;
+  docsLineHeight: DocsLineHeightId;
+  docsCodeAccent: DocsCodeAccentId;
+  docsInlineCodeAccent: DocsInlineCodeAccentId;
   isReady: boolean;
 };
 
@@ -52,6 +67,11 @@ export type AppearanceContextValue = AppearanceState & {
   setContrast: (contrast: ContrastMode) => void;
   setFont: (font: UiFontId) => void;
   setFontSize: (fontSize: UiFontSizeId) => void;
+  setDocsFont: (docsFont: DocsFontId) => void;
+  setDocsFontSize: (docsFontSize: DocsFontSizeId) => void;
+  setDocsLineHeight: (docsLineHeight: DocsLineHeightId) => void;
+  setDocsCodeAccent: (docsCodeAccent: DocsCodeAccentId) => void;
+  setDocsInlineCodeAccent: (docsInlineCodeAccent: DocsInlineCodeAccentId) => void;
   toggleSmartTheme: () => void;
 };
 
@@ -64,6 +84,11 @@ type StoredAppearance = {
   contrast: ContrastMode;
   font: UiFontId;
   fontSize: UiFontSizeId;
+  docsFont: DocsFontId;
+  docsFontSize: DocsFontSizeId;
+  docsLineHeight: DocsLineHeightId;
+  docsCodeAccent: DocsCodeAccentId;
+  docsInlineCodeAccent: DocsInlineCodeAccentId;
 };
 
 const DEFAULT_APPEARANCE: StoredAppearance = {
@@ -73,6 +98,11 @@ const DEFAULT_APPEARANCE: StoredAppearance = {
   contrast: 'default',
   font: 'system',
   fontSize: '14',
+  docsFont: 'inherit',
+  docsFontSize: 'inherit',
+  docsLineHeight: 'comfortable',
+  docsCodeAccent: 'inherit',
+  docsInlineCodeAccent: 'inherit',
 };
 
 function readStoredAppearance(): StoredAppearance {
@@ -87,6 +117,11 @@ function readStoredAppearance(): StoredAppearance {
     const storedContrast = ls.getItem(APPEARANCE_STORAGE_KEYS.contrast);
     const storedFont = ls.getItem(APPEARANCE_STORAGE_KEYS.font);
     const storedFontSize = ls.getItem(APPEARANCE_STORAGE_KEYS.fontSize);
+    const storedDocsFont = ls.getItem(APPEARANCE_STORAGE_KEYS.docsFont);
+    const storedDocsFontSize = ls.getItem(APPEARANCE_STORAGE_KEYS.docsFontSize);
+    const storedDocsLineHeight = ls.getItem(APPEARANCE_STORAGE_KEYS.docsLineHeight);
+    const storedDocsCodeAccent = ls.getItem(APPEARANCE_STORAGE_KEYS.docsCodeAccent);
+    const storedDocsInlineCodeAccent = ls.getItem(APPEARANCE_STORAGE_KEYS.docsInlineCodeAccent);
 
     return {
       preset,
@@ -95,6 +130,11 @@ function readStoredAppearance(): StoredAppearance {
       contrast: isContrastMode(storedContrast) ? storedContrast : 'default',
       font: isUiFont(storedFont) ? storedFont : 'system',
       fontSize: isUiFontSize(storedFontSize) ? storedFontSize : '14',
+      docsFont: isDocsFont(storedDocsFont) ? storedDocsFont : 'inherit',
+      docsFontSize: isDocsFontSize(storedDocsFontSize) ? storedDocsFontSize : 'inherit',
+      docsLineHeight: isDocsLineHeight(storedDocsLineHeight) ? storedDocsLineHeight : 'comfortable',
+      docsCodeAccent: isDocsCodeAccent(storedDocsCodeAccent) ? storedDocsCodeAccent : 'inherit',
+      docsInlineCodeAccent: isDocsInlineCodeAccent(storedDocsInlineCodeAccent) ? storedDocsInlineCodeAccent : 'inherit',
     };
   } catch {
     return DEFAULT_APPEARANCE;
@@ -126,6 +166,11 @@ function applyAppearanceToDom(state: StoredAppearance, systemPrefersDark: boolea
   root.setAttribute(APPEARANCE_ATTRIBUTES.contrast, state.contrast);
   root.setAttribute(APPEARANCE_ATTRIBUTES.font, state.font);
   root.setAttribute(APPEARANCE_ATTRIBUTES.fontSize, state.fontSize);
+  root.setAttribute(APPEARANCE_ATTRIBUTES.docsFont, state.docsFont);
+  root.setAttribute(APPEARANCE_ATTRIBUTES.docsFontSize, state.docsFontSize);
+  root.setAttribute(APPEARANCE_ATTRIBUTES.docsLineHeight, state.docsLineHeight);
+  root.setAttribute(APPEARANCE_ATTRIBUTES.docsCodeAccent, state.docsCodeAccent);
+  root.setAttribute(APPEARANCE_ATTRIBUTES.docsInlineCodeAccent, state.docsInlineCodeAccent);
 
   const meta = document.querySelector('meta[name="color-scheme"]');
   if (meta) {
@@ -159,6 +204,11 @@ function syncAppearanceCookies(state: StoredAppearance) {
     [APPEARANCE_COOKIES.contrast, state.contrast],
     [APPEARANCE_COOKIES.font, state.font],
     [APPEARANCE_COOKIES.fontSize, state.fontSize],
+    [APPEARANCE_COOKIES.docsFont, state.docsFont],
+    [APPEARANCE_COOKIES.docsFontSize, state.docsFontSize],
+    [APPEARANCE_COOKIES.docsLineHeight, state.docsLineHeight],
+    [APPEARANCE_COOKIES.docsCodeAccent, state.docsCodeAccent],
+    [APPEARANCE_COOKIES.docsInlineCodeAccent, state.docsInlineCodeAccent],
   ];
   for (const [cookieName, cookieValue] of entries) {
     document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}; Path=/; SameSite=Lax; Max-Age=31536000`;
@@ -187,6 +237,11 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       contrast: overrides.contrast ?? stored.contrast,
       font: overrides.font ?? stored.font,
       fontSize: overrides.fontSize ?? stored.fontSize,
+      docsFont: overrides.docsFont ?? stored.docsFont,
+      docsFontSize: overrides.docsFontSize ?? stored.docsFontSize,
+      docsLineHeight: overrides.docsLineHeight ?? stored.docsLineHeight,
+      docsCodeAccent: overrides.docsCodeAccent ?? stored.docsCodeAccent,
+      docsInlineCodeAccent: overrides.docsInlineCodeAccent ?? stored.docsInlineCodeAccent,
     }),
     [overrides, stored],
   );
@@ -259,6 +314,31 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     setOverrides((prev) => ({ ...prev, fontSize }));
   }, []);
 
+  const setDocsFont = useCallback((docsFont: DocsFontId) => {
+    persistValue(APPEARANCE_STORAGE_KEYS.docsFont, docsFont, APPEARANCE_COOKIES.docsFont);
+    setOverrides((prev) => ({ ...prev, docsFont }));
+  }, []);
+
+  const setDocsFontSize = useCallback((docsFontSize: DocsFontSizeId) => {
+    persistValue(APPEARANCE_STORAGE_KEYS.docsFontSize, docsFontSize, APPEARANCE_COOKIES.docsFontSize);
+    setOverrides((prev) => ({ ...prev, docsFontSize }));
+  }, []);
+
+  const setDocsLineHeight = useCallback((docsLineHeight: DocsLineHeightId) => {
+    persistValue(APPEARANCE_STORAGE_KEYS.docsLineHeight, docsLineHeight, APPEARANCE_COOKIES.docsLineHeight);
+    setOverrides((prev) => ({ ...prev, docsLineHeight }));
+  }, []);
+
+  const setDocsCodeAccent = useCallback((docsCodeAccent: DocsCodeAccentId) => {
+    persistValue(APPEARANCE_STORAGE_KEYS.docsCodeAccent, docsCodeAccent, APPEARANCE_COOKIES.docsCodeAccent);
+    setOverrides((prev) => ({ ...prev, docsCodeAccent }));
+  }, []);
+
+  const setDocsInlineCodeAccent = useCallback((docsInlineCodeAccent: DocsInlineCodeAccentId) => {
+    persistValue(APPEARANCE_STORAGE_KEYS.docsInlineCodeAccent, docsInlineCodeAccent, APPEARANCE_COOKIES.docsInlineCodeAccent);
+    setOverrides((prev) => ({ ...prev, docsInlineCodeAccent }));
+  }, []);
+
   const toggleSmartTheme = useCallback(() => {
     const next = getSmartToggleTarget(current.preset, current.colorScheme, systemPrefersDark);
     persistValue(APPEARANCE_STORAGE_KEYS.preset, next.preset, APPEARANCE_COOKIES.preset);
@@ -288,6 +368,11 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       setContrast,
       setFont,
       setFontSize,
+      setDocsFont,
+      setDocsFontSize,
+      setDocsLineHeight,
+      setDocsCodeAccent,
+      setDocsInlineCodeAccent,
       toggleSmartTheme,
     }),
     [
@@ -297,6 +382,11 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       setAccent,
       setColorScheme,
       setContrast,
+      setDocsCodeAccent,
+      setDocsFont,
+      setDocsFontSize,
+      setDocsInlineCodeAccent,
+      setDocsLineHeight,
       setFont,
       setFontSize,
       setPreset,

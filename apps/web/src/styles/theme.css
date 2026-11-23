@@ -174,7 +174,21 @@
   --badge-rose-bg: rgba(239, 68, 68, 0.09);
   --badge-rose-border: rgba(239, 68, 68, 0.2);
 
-  /* Feature tokens: Docs callouts */
+  /* Feature tokens: Docs callouts & blocks */
+  --docs-inline-code-accent: var(--color-accent);
+  --docs-inline-code-bg: color-mix(in oklab, var(--docs-inline-code-accent) 7%, var(--color-surface));
+  --docs-inline-code-border: color-mix(in oklab, var(--docs-inline-code-accent) 18%, var(--color-border));
+  --docs-inline-code-text: color-mix(in oklab, var(--docs-inline-code-accent) 72%, var(--color-text));
+  --docs-mark-bg: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  --docs-mark-text: var(--color-text);
+  --docs-quote-border: color-mix(in oklab, var(--color-accent) 46%, var(--color-border-strong));
+  --docs-code-accent: var(--color-accent);
+  --callout-default-accent: color-mix(in oklab, var(--color-accent) 52%, var(--color-border-strong));
+  --callout-context-accent: #5279a8;
+  --callout-tip-accent: #4c806d;
+  --callout-attention-accent: #a67a44;
+  --callout-warning-accent: #b25548;
+  --callout-meta-accent: #7a6b9e;
   --callout-context-border: rgba(76, 129, 196, 0.16);
   --callout-context-bg: rgba(76, 129, 196, 0.055);
   --callout-tip-border: rgba(34, 120, 87, 0.18);
@@ -328,6 +342,15 @@
   --badge-rose-bg: rgba(248, 113, 113, 0.12);
   --badge-rose-border: rgba(248, 113, 113, 0.18);
 
+  --docs-inline-code-bg: color-mix(in oklab, var(--docs-inline-code-accent) 12%, var(--color-surface));
+  --docs-inline-code-border: color-mix(in oklab, var(--docs-inline-code-accent) 22%, var(--color-border));
+  --docs-inline-code-text: color-mix(in oklab, var(--docs-inline-code-accent) 76%, var(--color-text));
+  --callout-default-accent: color-mix(in oklab, var(--color-accent) 56%, var(--color-border-strong));
+  --callout-context-accent: #8baed6;
+  --callout-tip-accent: #7db09c;
+  --callout-attention-accent: #d1a672;
+  --callout-warning-accent: #d88072;
+  --callout-meta-accent: #a899cc;
   --callout-context-border: rgba(96, 152, 224, 0.24);
   --callout-context-bg: rgba(96, 152, 224, 0.085);
   --callout-tip-border: rgba(52, 168, 122, 0.26);
@@ -726,6 +749,76 @@ html[data-font-size] {
   --text-lg: calc(var(--ui-font-size) * 1.08);
   --text-xl: calc(var(--ui-font-size) * 1.25);
   --text-2xl: calc(var(--ui-font-size) * 1.45);
+}
+
+/* Docs independent reading typography overrides (fallback to global UI font/size) */
+html[data-docs-font='inherit'] { --docs-font-family: var(--font-family-base); }
+html[data-docs-font='system'] { --docs-font-family: var(--font-stack-system); }
+html[data-docs-font='sans'] { --docs-font-family: var(--font-stack-sans); }
+html[data-docs-font='geometric'] { --docs-font-family: var(--font-stack-geometric); }
+html[data-docs-font='humanist'] { --docs-font-family: var(--font-stack-humanist); }
+html[data-docs-font='serif'] { --docs-font-family: var(--font-stack-serif); }
+html[data-docs-font='kai'] { --docs-font-family: var(--font-stack-kai); }
+html[data-docs-font='mono'] { --docs-font-family: var(--font-stack-mono); }
+
+html[data-docs-font-size='12'] { --docs-font-size-base: 12px; }
+html[data-docs-font-size='13'] { --docs-font-size-base: 13px; }
+html[data-docs-font-size='14'] { --docs-font-size-base: 14px; }
+html[data-docs-font-size='15'] { --docs-font-size-base: 15px; }
+html[data-docs-font-size='16'] { --docs-font-size-base: 16px; }
+html[data-docs-font-size='17'] { --docs-font-size-base: 17px; }
+html[data-docs-font-size='18'] { --docs-font-size-base: 18px; }
+
+html[data-docs-line-height='compact'] { --docs-line-height-base: 1.62; }
+html[data-docs-line-height='comfortable'] { --docs-line-height-base: 1.78; }
+html[data-docs-line-height='relaxed'] { --docs-line-height-base: 1.94; }
+
+html[data-docs-code-accent='inherit'] { --docs-code-accent: var(--color-accent); }
+html[data-docs-code-accent='none'] { --docs-code-accent: var(--docs-code-toolbar-hover-text, var(--color-text)); }
+html[data-docs-code-accent='none'] .docs-code-accent-decor { display: none; }
+html[data-docs-code-accent='neutral'] { --docs-code-accent: #3f3f46; }
+html.dark[data-docs-code-accent='neutral'] { --docs-code-accent: #d4d4d8; }
+html[data-docs-code-accent='mist-blue'] { --docs-code-accent: #5279a8; }
+html.dark[data-docs-code-accent='mist-blue'] { --docs-code-accent: #8baed6; }
+html[data-docs-code-accent='cobalt'] { --docs-code-accent: #5d63a8; }
+html.dark[data-docs-code-accent='cobalt'] { --docs-code-accent: #969bd6; }
+html[data-docs-code-accent='dusty-rose'] { --docs-code-accent: #a86575; }
+html.dark[data-docs-code-accent='dusty-rose'] { --docs-code-accent: #d499a8; }
+html[data-docs-code-accent='sage'] { --docs-code-accent: #4c806d; }
+html.dark[data-docs-code-accent='sage'] { --docs-code-accent: #7db09c; }
+html[data-docs-code-accent='amber'] { --docs-code-accent: #a67a44; }
+html.dark[data-docs-code-accent='amber'] { --docs-code-accent: #d1a672; }
+
+html[data-docs-inline-code-accent='inherit'] { --docs-inline-code-accent: var(--color-accent); }
+html[data-docs-inline-code-accent='neutral'] { --docs-inline-code-accent: #3f3f46; }
+html.dark[data-docs-inline-code-accent='neutral'] { --docs-inline-code-accent: #d4d4d8; }
+html[data-docs-inline-code-accent='mist-blue'] { --docs-inline-code-accent: #5279a8; }
+html.dark[data-docs-inline-code-accent='mist-blue'] { --docs-inline-code-accent: #8baed6; }
+html[data-docs-inline-code-accent='cobalt'] { --docs-inline-code-accent: #5d63a8; }
+html.dark[data-docs-inline-code-accent='cobalt'] { --docs-inline-code-accent: #969bd6; }
+html[data-docs-inline-code-accent='dusty-rose'] { --docs-inline-code-accent: #a86575; }
+html.dark[data-docs-inline-code-accent='dusty-rose'] { --docs-inline-code-accent: #d499a8; }
+html[data-docs-inline-code-accent='sage'] { --docs-inline-code-accent: #4c806d; }
+html.dark[data-docs-inline-code-accent='sage'] { --docs-inline-code-accent: #7db09c; }
+html[data-docs-inline-code-accent='amber'] { --docs-inline-code-accent: #a67a44; }
+html.dark[data-docs-inline-code-accent='amber'] { --docs-inline-code-accent: #d1a672; }
+
+html[data-docs-inline-code-accent]:not([data-docs-inline-code-accent='none']) {
+  --docs-inline-code-bg: color-mix(in oklab, var(--docs-inline-code-accent) 7%, var(--color-surface));
+  --docs-inline-code-border: color-mix(in oklab, var(--docs-inline-code-accent) 18%, var(--color-border));
+  --docs-inline-code-text: color-mix(in oklab, var(--docs-inline-code-accent) 72%, var(--color-text));
+}
+
+html.dark[data-docs-inline-code-accent]:not([data-docs-inline-code-accent='none']) {
+  --docs-inline-code-bg: color-mix(in oklab, var(--docs-inline-code-accent) 12%, var(--color-surface));
+  --docs-inline-code-border: color-mix(in oklab, var(--docs-inline-code-accent) 22%, var(--color-border));
+  --docs-inline-code-text: color-mix(in oklab, var(--docs-inline-code-accent) 76%, var(--color-text));
+}
+
+html[data-docs-inline-code-accent='none'] {
+  --docs-inline-code-bg: color-mix(in oklab, var(--color-text) 5%, transparent);
+  --docs-inline-code-border: color-mix(in oklab, var(--color-text) 9%, transparent);
+  --docs-inline-code-text: color-mix(in oklab, var(--color-text) 88%, transparent);
 }
 
 /* Docs home "Add doc" soft iridescent surface (adapts per preset + accent) */

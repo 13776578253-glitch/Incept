@@ -47,7 +47,10 @@ export function DocsArticleBody({
     >
       <header className="pb-7 pt-1 md:pb-9 lg:pb-10 lg:pt-2">
         {backToListHref && backToListLabel ? (
-          <div className="mb-4 flex items-center justify-between gap-4 md:mb-5">
+          <div
+            style={{ fontFamily: 'var(--font-family-base)' }}
+            className="mb-4 flex items-center justify-between gap-4 md:mb-5"
+          >
             <Link
               href={backToListHref}
               className="inline-flex items-center gap-2 rounded-[8px] px-1.5 py-1 text-[0.8125rem] font-medium text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
@@ -102,7 +105,10 @@ export function DocsArticleBody({
         ))}
       </div>
       {lastEditedDate ? (
-        <footer className="mt-10 border-t border-[var(--color-border)] pt-4 text-[0.75rem] text-[var(--color-nav-muted)] md:mt-12">
+        <footer
+          style={{ fontFamily: 'var(--font-family-base)' }}
+          className="mt-10 border-t border-[var(--color-border)] pt-4 text-[0.75rem] text-[var(--color-nav-muted)] md:mt-12"
+        >
           {t('reference.lastEdited', { date: lastEditedDate })}
         </footer>
       ) : null}

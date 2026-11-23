@@ -46,9 +46,13 @@
   --docs-prose-max-width: var(--docs-content-width);
   --docs-prose-description-max-width: var(--docs-content-width);
   --docs-font-family: var(--font-family-base);
-  --docs-font-size: clamp(14.5px, calc(var(--ui-font-size) + 1.5px), 18px);
-  --docs-line-height: 1.78;
-  --docs-line-height-relaxed: 1.9;
+  --docs-font-size-base: clamp(14.5px, calc(var(--ui-font-size) + 1.5px), 18px);
+  --docs-font-size-mobile-offset: 0px;
+  --docs-font-size: max(11.5px, calc(var(--docs-font-size-base) - var(--docs-font-size-mobile-offset)));
+  --docs-line-height-base: 1.78;
+  --docs-line-height-offset: 0;
+  --docs-line-height: calc(var(--docs-line-height-base) - var(--docs-line-height-offset));
+  --docs-line-height-relaxed: calc(var(--docs-line-height) + 0.12);
   --docs-paragraph-line-height: var(--docs-line-height);
   --docs-paragraph-line-height-relaxed: var(--docs-line-height-relaxed);
 

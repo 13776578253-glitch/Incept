@@ -187,4 +187,18 @@ describe('DocsArticleFeature', () => {
     expect(screen.queryByRole('button', { name: '合集目录' })).toBeNull();
     expect(screen.queryByRole('button', { name: '本页目录' })).toBeNull();
   });
+
+  it('applies global UI font to article chrome metadata while keeping docs font on the article body', () => {
+    const { container } = renderArticle(buildArticlePage());
+
+    const article = container.querySelector('article');
+    expect(article).toHaveStyle({ fontFamily: 'var(--docs-font-family)' });
+
+    const backLink = screen.getByRole('link', { name: /返回文章列表/ });
+    const metaRow = backLink.parentElement as HTMLElement;
+    expect(metaRow).toHaveStyle({ fontFamily: 'var(--font-family-base)' });
+
+    const footer = container.querySelector('footer');
+    expect(footer).toHaveStyle({ fontFamily: 'var(--font-family-base)' });
+  });
 });
