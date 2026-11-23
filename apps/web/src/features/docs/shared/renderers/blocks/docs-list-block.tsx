@@ -9,8 +9,8 @@ export function DocsListBlock({
 }: DocsListBlockModel) {
   const commonClassName =
     variant === 'emphasis'
-      ? 'space-y-3 pl-5 text-[1.02rem] leading-8 text-[var(--color-text)]'
-      : 'space-y-3 pl-5 text-[1rem] leading-8 text-[var(--color-text-muted)]';
+      ? 'space-y-2 md:space-y-2.5 pl-5 text-[length:calc(var(--docs-font-size)*1.02)] leading-[var(--docs-paragraph-line-height)] text-[var(--color-text)]'
+      : 'space-y-2 md:space-y-2.5 pl-5 text-[length:var(--docs-font-size)] leading-[var(--docs-paragraph-line-height)] text-[var(--color-text-muted)]';
 
   const ListTag = listStyle === 'ordered' ? 'ol' : 'ul';
   const markerClassName = listStyle === 'ordered' ? 'list-decimal' : 'list-disc';

@@ -48,7 +48,9 @@
   },
   "reference": {
     "backToList": "返回文章列表",
+    "chapters": "合集目录",
     "outline": "本页目录",
+    "closeDrawer": "关闭目录",
     "readingMeta": {
       "zh": "全文 {characters} 字 · 预计 {minutes} 分钟阅读",
       "en": "{words} 词 · 预计 {minutes} 分钟阅读"

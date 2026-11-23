@@ -60,7 +60,7 @@ export function MusicPlayerFloating({
     sendIntent({ type: 'repeatModeRequested', mode: playbackMode });
   }, [playbackMode, sendIntent]);
 
-  const viewMode = isMobile && placement.mode === 'orb' ? 'compact' : placement.mode;
+  const viewMode = placement.mode;
   const isPlaying = state.status === 'playing';
 
   const title =
@@ -158,7 +158,7 @@ export function MusicPlayerFloating({
         isPlaying={isPlaying}
         fullWidth={isMobile}
         listExpanded={false}
-        showOrbToggle={!isMobile}
+        showOrbToggle
         currentTime={state.currentTime}
         duration={state.duration}
         statusText={visibleStatusText}
@@ -182,7 +182,7 @@ export function MusicPlayerFloating({
         rateCycleLabel={copy.playbackRate}
         isPlaying={isPlaying}
         fullWidth={isMobile}
-        showOrbToggle={!isMobile}
+        showOrbToggle
         libraries={libraries}
         selectedLibrary={selectedLibraryKey}
         onSelectLibrary={setSelectedLibrary}
@@ -201,8 +201,14 @@ export function MusicPlayerFloating({
 
   if (isMobile) {
     return (
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[var(--z-feature-floating)] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        <div className="pointer-events-auto mx-auto w-full max-w-[34rem]">
+      <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1.125rem)] right-3.5 z-[var(--z-feature-floating)] flex flex-col items-end">
+        <div
+          className={
+            viewMode === 'orb'
+              ? 'pointer-events-auto'
+              : 'pointer-events-auto w-[min(22rem,calc(100vw-1.75rem))]'
+          }
+        >
           {surface}
         </div>
       </div>

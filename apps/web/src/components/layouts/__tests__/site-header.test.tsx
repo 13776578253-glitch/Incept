@@ -230,4 +230,32 @@ describe('SiteHeader', () => {
       window.matchMedia = originalMatchMedia;
     }
   });
+
+  it('toggles redesigned mobile icon menu dropdown, marks active route, and closes on link click or Escape', async () => {
+    const user = userEvent.setup();
+    mocks.pathname = '/zh/roadmap';
+    render(<SiteHeader />);
+
+    expect(screen.getByRole('link', { name: '设置' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '切换主题 (深色)' })).toBeInTheDocument();
+
+    const menuToggle = screen.getByRole('button', { name: '菜单' });
+    expect(menuToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(document.getElementById('mobile-site-navigation')).toBeNull();
+
+    await user.click(menuToggle);
+    expect(screen.getByRole('button', { name: '关闭' })).toHaveAttribute('aria-expanded', 'true');
+
+    const mobileDropdown = document.getElementById('mobile-site-navigation');
+    expect(mobileDropdown).not.toBeNull();
+    expect(within(mobileDropdown!).getByRole('link', { name: '路线图' })).toHaveAttribute('aria-current', 'page');
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(document.getElementById('mobile-site-navigation')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '菜单' }));
+    const openDropdown = document.getElementById('mobile-site-navigation');
+    await user.click(within(openDropdown!).getByRole('link', { name: /随笔/ }));
+    expect(document.getElementById('mobile-site-navigation')).toBeNull();
+  });
 });

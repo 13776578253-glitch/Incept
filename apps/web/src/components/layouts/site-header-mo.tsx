@@ -7,81 +7,112 @@ type MobileSiteHeaderProps = {
   id?: string;
   navigation: PrimaryNavItem[];
   isOpen: boolean;
-  settingsHref: string;
-  nextThemeLabel: string;
-  settingsLabel: string;
-  onThemeChange: () => void;
+  pathname: string;
+  onClose: () => void;
 };
 
+function isRouteActive(pathname: string, href?: string, matchPrefix?: string) {
+  if (!pathname) return false;
+  if (href && pathname === href) return true;
+  if (matchPrefix && matchPrefix !== '/' && pathname.startsWith(matchPrefix)) {
+    return true;
+  }
+  return Boolean(href && href !== '/' && pathname.startsWith(`${href}/`));
+}
+
+// 移动端（<768px）轻盈下拉导航列表，与桌面顶栏下拉面板视觉同源
 export function MobileSiteHeader({
   id,
   navigation,
   isOpen,
-  settingsHref,
-  nextThemeLabel,
-  settingsLabel,
-  onThemeChange,
+  pathname,
+  onClose,
 }: MobileSiteHeaderProps) {
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div
-      id={id}
-      className="max-h-[calc(100dvh-var(--navbar-height))] overflow-y-auto border-t border-[var(--color-navbar-border)] bg-[var(--color-navbar-bg)] px-5 py-4 md:hidden"
-    >
-      <div className="space-y-4">
-        <Link
-          href={settingsHref}
-          className="flex w-full items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-card)] px-4 py-2 text-sm font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)]"
-        >
-          {settingsLabel}
-        </Link>
+    <>
+      <div
+        aria-hidden="true"
+        onClick={onClose}
+        className="fixed inset-0 top-[var(--navbar-height)] z-40 bg-black/15 md:hidden"
+      />
+      <div
+        id={id}
+        className="relative z-50 max-h-[calc(100dvh-var(--navbar-height))] overflow-y-auto border-t border-[var(--color-border-faint)] bg-[var(--color-nav-dropdown-bg)] px-4 py-3 shadow-[var(--shadow-nav-dropdown)] md:hidden"
+      >
+        <ul className="space-y-1">
+          {navigation.map((item) => {
+            const primaryActive = isRouteActive(pathname, item.href, item.matchPrefix);
+            const subItems = item.groups?.flatMap((group) => group.items) ?? [];
 
-        {navigation.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-[var(--radius-lg,18px)] border border-[var(--color-nav-dropdown-border)] bg-[var(--color-nav-dropdown-bg)] p-3"
-          >
-            <Link
-              href={item.href ?? '#'}
-              className="text-sm font-medium text-[var(--color-text)]"
-            >
-              {item.label}
-            </Link>
-            {item.groups?.length ? (
-              <div className="mt-3 space-y-2 border-t border-[var(--color-navbar-border)] pt-3">
-                {item.groups.flatMap((group) =>
-                  group.items.map((navItem) => (
-                    <Link
-                      key={navItem.id}
-                      href={navItem.href}
-                      className="block rounded-[var(--radius-md,10px)] p-2 hover:bg-[var(--color-nav-item-hover)]"
-                    >
-                      <p className="text-sm text-[var(--color-text)]">
-                        {navItem.label}
-                      </p>
-                      {navItem.description ? (
-                        <p className="mt-1 text-xs leading-5 text-[var(--color-nav-dropdown-description)]">
-                          {navItem.description}
-                        </p>
-                      ) : null}
-                    </Link>
-                  )),
-                )}
-              </div>
-            ) : null}
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={onThemeChange}
-          className="w-full cursor-pointer rounded-full border border-[var(--color-border)] bg-[var(--color-surface-card)] px-3 py-2 text-xs font-medium uppercase tracking-[0.14em] text-[var(--color-nav-item)]"
-        >
-          {nextThemeLabel}
-        </button>
+            return (
+              <li key={item.id}>
+                <Link
+                  href={item.href ?? '#'}
+                  aria-current={primaryActive ? 'page' : undefined}
+                  onClick={onClose}
+                  className={`flex items-center justify-between rounded-[10px] px-3 py-2 text-[length:var(--text-sm)] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] ${
+                    primaryActive
+                      ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
+                      : 'text-[var(--color-nav-item)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
+                  }`}
+                >
+                  <span>{item.label}</span>
+                  {primaryActive ? (
+                    <span
+                      aria-hidden="true"
+                      className="size-1.5 shrink-0 rounded-full bg-[var(--color-accent)]"
+                    />
+                  ) : null}
+                </Link>
+
+                {subItems.length > 0 ? (
+                  <ul className="ml-3 mt-1 space-y-0.5 border-l border-[var(--color-border-faint)] pl-3">
+                    {subItems.map((navItem) => {
+                      const subActive = isRouteActive(pathname, navItem.href);
+
+                      return (
+                        <li key={navItem.id}>
+                          <Link
+                            href={navItem.href}
+                            aria-current={subActive ? 'page' : undefined}
+                            onClick={onClose}
+                            className={`flex items-start justify-between gap-3 rounded-[9px] px-2.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] ${
+                              subActive
+                                ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)]'
+                                : 'text-[var(--color-nav-item)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <div className="text-[length:var(--text-sm)] font-medium leading-5">
+                                {navItem.label}
+                              </div>
+                              {navItem.description ? (
+                                <p className="mt-0.5 text-[length:var(--text-xs)] leading-4 text-[var(--color-nav-dropdown-description)]">
+                                  {navItem.description}
+                                </p>
+                              ) : null}
+                            </div>
+                            {subActive ? (
+                              <span
+                                aria-hidden="true"
+                                className="mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--color-accent)]"
+                              />
+                            ) : null}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
       </div>
-    </div>
+    </>
   );
 }

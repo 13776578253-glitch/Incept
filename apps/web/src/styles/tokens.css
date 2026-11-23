@@ -38,15 +38,19 @@
 
   /* Layout dimensions */
   --navbar-height: 56px;
-  --docs-sidebar-width: 248px;
-  --docs-content-width: 760px;
-  --docs-right-rail-width: 260px;
+  --docs-sidebar-width: 224px;
+  --docs-content-width: 720px;
+  --docs-right-rail-width: 212px;
   --docs-right-rail-edge-padding: 36px;
-  --docs-shell-max-width: 1480px;
+  --docs-shell-max-width: 1360px;
   --docs-prose-max-width: var(--docs-content-width);
-  --docs-prose-description-max-width: 680px;
-  --docs-paragraph-line-height: 2rem;
-  --docs-paragraph-line-height-relaxed: 2.25rem;
+  --docs-prose-description-max-width: var(--docs-content-width);
+  --docs-font-family: var(--font-family-base);
+  --docs-font-size: clamp(14.5px, calc(var(--ui-font-size) + 1.5px), 18px);
+  --docs-line-height: 1.78;
+  --docs-line-height-relaxed: 1.9;
+  --docs-paragraph-line-height: var(--docs-line-height);
+  --docs-paragraph-line-height-relaxed: var(--docs-line-height-relaxed);
 
   /* Core neutral primitives */
   --color-white: #ffffff;

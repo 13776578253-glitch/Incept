@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ChevronDown, Moon, Settings, Sun } from 'lucide-react';
+import { ArrowRight, ChevronDown, Menu, Moon, Settings, Sun, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -98,6 +98,19 @@ export function SiteHeader() {
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [hasOpenDropdown]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
 
   const navigation = useMemo(
     () => createSiteNavigation(language, t),
@@ -343,7 +356,8 @@ export function SiteHeader() {
             title={t('actions.settings')}
             aria-label={t('actions.settings')}
             aria-current={isSettingsActive ? 'page' : undefined}
-            className={`hidden size-8.5 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] md:inline-flex ${
+            onClick={() => setMobileOpen(false)}
+            className={`inline-flex size-8.5 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] ${
               isSettingsActive
                 ? 'bg-[var(--color-nav-item-active)] text-[var(--color-text)] ring-1 ring-[var(--color-border-faint)]'
                 : 'text-[var(--color-nav-muted)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
@@ -357,7 +371,7 @@ export function SiteHeader() {
             onClick={toggleSmartTheme}
             title={themeButtonLabel}
             aria-label={themeButtonLabel}
-            className="hidden size-8.5 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] md:inline-flex"
+            className="inline-flex size-8.5 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
           >
             {isDark ? (
               <Moon aria-hidden="true" className="size-4" strokeWidth={1.75} />
@@ -370,10 +384,15 @@ export function SiteHeader() {
             type="button"
             aria-expanded={mobileOpen}
             aria-controls="mobile-site-navigation"
+            aria-label={mobileOpen ? t('actions.close') : t('actions.menu')}
             onClick={() => setMobileOpen((value) => !value)}
-            className="inline-flex min-h-9 cursor-pointer items-center rounded-full px-2.5 text-[0.875rem] font-medium text-[var(--color-nav-muted)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] md:hidden"
+            className="inline-flex size-8.5 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] md:hidden"
           >
-            {mobileOpen ? t('actions.close') : t('actions.menu')}
+            {mobileOpen ? (
+              <X aria-hidden="true" className="size-4" strokeWidth={1.75} />
+            ) : (
+              <Menu aria-hidden="true" className="size-4" strokeWidth={1.75} />
+            )}
           </button>
         </div>
       </div>
@@ -382,10 +401,8 @@ export function SiteHeader() {
         id="mobile-site-navigation"
         navigation={navigation}
         isOpen={mobileOpen}
-        settingsHref={settingsHref}
-        nextThemeLabel={mounted ? (isDark ? t('actions.light') : t('actions.dark')) : t('actions.dark')}
-        settingsLabel={t('actions.settings')}
-        onThemeChange={toggleSmartTheme}
+        pathname={pathname}
+        onClose={() => setMobileOpen(false)}
       />
     </header>
   );

@@ -1,6 +1,8 @@
+import { useTranslations } from 'next-intl';
 import { DocsReferenceShell } from '@/components/layouts/containers/docs-reference-shell';
 
 import { DocsArticleBody } from '@/features/docs/shared/components/docs-article-body';
+import { DocsArticleNavProvider } from '@/features/docs/shared/components/docs-article-responsive-nav';
 import { DocsArticleRightRail } from '@/features/docs/shared/components/docs-article-right-rail';
 import { DocsArticleSidebar } from '@/features/docs/shared/components/docs-article-sidebar';
 import type { DocsArticlePageModel } from '@/features/docs/shared/types';
@@ -23,27 +25,35 @@ export function DocsArticleFeature({
   return (
     <>
       <DocsImportSuccessToast visible={showImportSuccessToast} />
-      <DocsReferenceShell
+      <DocsArticleNavProvider
         layoutMode={page.layoutMode}
-        sidebar={
-          page.layoutMode === 'sidebar' ? (
-            <DocsArticleSidebar groups={page.sidebarGroups} />
-          ) : undefined
-        }
-        aside={
-          <DocsArticleRightRail
-            items={page.outline}
-            label={t('reference.outline')}
-          />
-        }
+        sidebarGroups={page.sidebarGroups}
+        outline={page.outline}
+        chaptersLabel={t('reference.chapters')}
+        outlineLabel={t('reference.outline')}
+        closeLabel={t('reference.closeDrawer')}
       >
-        <DocsArticleBody
-          page={page}
-          backToListHref={backToListHref}
-          backToListLabel={backToListHref ? t('reference.backToList') : undefined}
-        />
-      </DocsReferenceShell>
+        <DocsReferenceShell
+          layoutMode={page.layoutMode}
+          sidebar={
+            page.layoutMode === 'sidebar' ? (
+              <DocsArticleSidebar groups={page.sidebarGroups} />
+            ) : undefined
+          }
+          aside={
+            <DocsArticleRightRail
+              items={page.outline}
+              label={t('reference.outline')}
+            />
+          }
+        >
+          <DocsArticleBody
+            page={page}
+            backToListHref={backToListHref}
+            backToListLabel={backToListHref ? t('reference.backToList') : undefined}
+          />
+        </DocsReferenceShell>
+      </DocsArticleNavProvider>
     </>
   );
 }
-import { useTranslations } from 'next-intl';

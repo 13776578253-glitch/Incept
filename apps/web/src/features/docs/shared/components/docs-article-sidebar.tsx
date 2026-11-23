@@ -28,9 +28,15 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 type DocsArticleSidebarProps = {
   groups: DocsNavGroupModel[];
+  onNavigate?: () => void;
+  variant?: 'rail' | 'drawer';
 };
 
-export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {
+export function DocsArticleSidebar({
+  groups,
+  onNavigate,
+  variant = 'rail',
+}: DocsArticleSidebarProps) {
   const locale = useLocale() as AppLocale;
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
     Object.fromEntries(groups.map((group) => [group.id, group.defaultOpen ?? true])),
@@ -45,24 +51,33 @@ export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {
       const itemContent = item.href ? (
         <Link
           href={withLocalePath(locale, item.href)}
-          className={`block rounded-[10px] px-2.5 py-1.5 text-[0.84rem] leading-6 transition-colors ${
+          aria-current={item.active ? 'page' : undefined}
+          onClick={onNavigate}
+          className={`relative block rounded-[8px] px-2.5 py-1.5 text-[0.835rem] leading-[1.45] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] ${
             item.active
-              ? 'font-medium text-[var(--color-text)]'
-              : 'text-[var(--color-text-soft)] hover:text-[var(--color-text-muted)]'
+              ? 'bg-[color-mix(in_srgb,var(--color-accent)_9%,transparent)] font-medium text-[var(--color-text)]'
+              : 'text-[var(--color-text-soft)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
           }`}
         >
+          {item.active ? (
+            <span
+              aria-hidden="true"
+              className="absolute bottom-1.5 left-0 top-1.5 w-[2px] rounded-full bg-[var(--color-accent)]"
+            />
+          ) : null}
           {item.label}
         </Link>
       ) : (
         <button
           type="button"
+          aria-expanded={hasChildren ? isOpen : undefined}
           onClick={() =>
             setOpenItems((current) => ({
               ...current,
               [item.id]: !isOpen,
             }))
           }
-          className="flex w-full items-center justify-between gap-3 px-2.5 py-1.5 text-left text-[0.84rem] leading-6 text-[var(--color-text-soft)] transition-colors hover:text-[var(--color-text)]"
+          className="flex w-full items-center justify-between gap-3 rounded-[8px] px-2.5 py-1.5 text-left text-[0.835rem] leading-[1.45] text-[var(--color-text-soft)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
         >
           <span>{item.label}</span>
           {hasChildren ? <ChevronIcon open={isOpen} /> : null}
@@ -85,9 +100,13 @@ export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {
   return (
     <nav
       aria-label="Docs sidebar"
-      className="max-h-[calc(100vh-var(--navbar-height)-3rem)] w-full overflow-y-auto pr-2"
+      className={
+        variant === 'rail'
+          ? 'no-scrollbar max-h-[calc(100vh-var(--navbar-height)-4.5rem)] w-full overflow-y-auto pr-2'
+          : 'w-full'
+      }
     >
-      <div className="space-y-5 pr-4">
+      <div className={variant === 'rail' ? 'space-y-5 pr-2' : 'space-y-5'}>
         {groups.map((group) => {
           const isOpen = openGroups[group.id] ?? true;
 
@@ -95,13 +114,14 @@ export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {
             <section key={group.id} className="space-y-2">
               <button
                 type="button"
+                aria-expanded={isOpen}
                 onClick={() =>
                   setOpenGroups((current) => ({
                     ...current,
                     [group.id]: !isOpen,
                   }))
                 }
-                className="flex w-full items-center justify-between gap-3 text-left text-[0.84rem] font-medium text-[var(--color-text)]"
+                className="flex w-full items-center justify-between gap-3 rounded-[8px] px-1 py-0.5 text-left text-[0.8125rem] font-semibold text-[var(--color-text)] transition-colors hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
               >
                 <span>{group.label}</span>
                 <span className="text-[var(--color-text-soft)]">
@@ -110,7 +130,7 @@ export function DocsArticleSidebar({ groups }: DocsArticleSidebarProps) {
               </button>
 
               {isOpen ? (
-                <ul className="space-y-1 border-l border-[var(--color-border)] pl-3">
+                <ul className="space-y-1 border-l border-[var(--color-border)] pl-2.5">
                   {renderItems(group.items)}
                 </ul>
               ) : null}

@@ -48,7 +48,9 @@
   },
   "reference": {
     "backToList": "Back to article list",
+    "chapters": "Chapters",
     "outline": "On this page",
+    "closeDrawer": "Close navigation",
     "readingMeta": {
       "zh": "{characters} characters · {minutes} min read",
       "en": "{words} words · {minutes} min read"
