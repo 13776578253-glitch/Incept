@@ -195,9 +195,11 @@ describe('RoadmapBoard', () => {
     expect(within(dialog).getByText('Details')).toBeTruthy();
     expect(within(dialog).getByText('Activity feed')).toBeTruthy();
     expect(within(dialog).getByText('Editor')).toBeTruthy();
-    expect(within(dialog).getByText('Revert or delete')).toBeTruthy();
+    expect(within(dialog).getByText('Stage & actions')).toBeTruthy();
     expect(within(dialog).getByRole('button', { name: 'Undo' })).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: 'Advance' })).toBeNull();
     expect(within(dialog).getByRole('button', { name: 'Delete' })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toBeTruthy();
     expect(within(dialog).queryByText('Upvoters')).toBeNull();
     expect(within(dialog).queryByText('Comments')).toBeNull();
     expect(within(dialog).getByText('Author')).toBeTruthy();
@@ -221,11 +223,14 @@ describe('RoadmapBoard', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Previous entry' }));
     expect(within(dialog).getByText('Runtime isolation groundwork / 运行时隔离地基')).toBeTruthy();
 
-    fireEvent.click(dialog);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+
     const backlogCard = screen.getByText('Interest-based reply method').closest('article') as HTMLElement;
     fireEvent.click(backlogCard);
     const backlogDialog = screen.getByRole('dialog');
     expect(within(backlogDialog).getByRole('button', { name: 'Add Backlog entry' })).toBeTruthy();
+    expect(within(backlogDialog).getByRole('button', { name: 'Advance' })).toBeTruthy();
     expect(within(backlogDialog).queryByText('Undo')).toBeNull();
     expect(within(backlogDialog).getByRole('button', { name: 'Delete' })).toBeTruthy();
     expect(within(backlogDialog).queryByText('View all similar requests')).toBeNull();
@@ -243,9 +248,11 @@ describe('RoadmapBoard', () => {
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).queryByText('Editor')).toBeNull();
     expect(within(dialog).queryByRole('button', { name: 'Add Backlog entry' })).toBeNull();
-    expect(within(dialog).queryByText('Revert or delete')).toBeNull();
+    expect(within(dialog).queryByText('Stage & actions')).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: 'Advance' })).toBeNull();
     expect(within(dialog).queryByRole('button', { name: 'Undo' })).toBeNull();
     expect(within(dialog).queryByRole('button', { name: 'Delete' })).toBeNull();
+    expect(within(dialog).getByRole('button', { name: 'Select Status' }).hasAttribute('disabled')).toBe(true);
     expect(within(dialog).getByRole('button', { name: 'Select Board' }).hasAttribute('disabled')).toBe(true);
     expect(within(dialog).getByRole('button', { name: 'Select Tags' }).hasAttribute('disabled')).toBe(true);
   });
@@ -297,6 +304,32 @@ describe('RoadmapBoard', () => {
 
     expect(String(url)).toContain('/api/internal/roadmap/entries/');
     expect(body.status).toBe('active');
+  });
+
+  // Module C：Advance 推进一档（reviewing → unstarted）+ Status 下拉直达任意阶段。
+  it('advances one column forward with Advance and jumps to any column via Status selector', async () => {
+    const board = await sampleBoard('sample-roadmap');
+    const entry = board.entries.find(
+      (item) => item.title.en === 'Interest-based reply method',
+    ) as RoadmapEntry;
+    const spy = stubFetchEcho(entry);
+
+    render(<RoadmapBoard board={board} locale="en" chrome={chrome} canEdit />);
+    fireEvent.click(screen.getByText('Interest-based reply method').closest('article')!);
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Advance' }));
+
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(String(spy.mock.calls[0][1]?.body))).toEqual({ status: 'unstarted' });
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Select Status' }));
+    expect(within(dialog).getByRole('listbox', { name: 'Status options' })).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('option', { name: /Completed/i }).querySelector('button')!);
+
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(String(spy.mock.calls[1][1]?.body))).toEqual({ status: 'completed' });
+    expect(within(dialog).getByRole('button', { name: 'Select Status' }).textContent).toContain('Completed');
   });
 
   // 新建草稿：点击添加仅切换草稿视图，点击保存后触发 POST。
@@ -364,7 +397,7 @@ describe('RoadmapBoard', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByLabelText('Title').getAttribute('value')).toBe('');
     expect(within(dialog).queryByRole('button', { name: 'Delete' })).toBeNull();
-    expect(within(dialog).queryByText('Revert or delete')).toBeNull();
+    expect(within(dialog).queryByText('Stage & actions')).toBeNull();
 
     fireEvent.change(within(dialog).getByLabelText('Title'), {
       target: { value: 'First / 第一条' },

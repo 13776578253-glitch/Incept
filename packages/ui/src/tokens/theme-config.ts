@@ -27,6 +27,9 @@ export type AccentPresetId = (typeof ACCENT_PRESET_IDS)[number];
 export const CONTRAST_MODE_IDS = ['default', 'strong'] as const;
 export type ContrastMode = (typeof CONTRAST_MODE_IDS)[number];
 
+export const ACCENT_CONTRAST_MODE_IDS = ['default', 'strong'] as const;
+export type AccentContrastMode = (typeof ACCENT_CONTRAST_MODE_IDS)[number];
+
 export const UI_FONT_IDS = ['system', 'sans', 'geometric', 'humanist', 'serif', 'kai', 'mono'] as const;
 export type UiFontId = (typeof UI_FONT_IDS)[number];
 
@@ -41,6 +44,9 @@ export type DocsFontSizeId = (typeof DOCS_FONT_SIZE_IDS)[number];
 
 export const DOCS_LINE_HEIGHT_IDS = ['compact', 'comfortable', 'relaxed'] as const;
 export type DocsLineHeightId = (typeof DOCS_LINE_HEIGHT_IDS)[number];
+
+export const DOCS_IMAGE_SCALE_IDS = ['100', '90', '80', '70', '60'] as const;
+export type DocsImageScaleId = (typeof DOCS_IMAGE_SCALE_IDS)[number];
 
 export const DOCS_CODE_ACCENT_IDS = [
   'inherit',
@@ -279,16 +285,29 @@ export const DOCS_LINE_HEIGHTS: ReadonlyArray<{
   { id: 'relaxed', label: { zh: '舒展', en: 'Relaxed' } },
 ];
 
+export const DOCS_IMAGE_SCALES: ReadonlyArray<{
+  id: DocsImageScaleId;
+  label: { zh: string; en: string };
+}> = [
+  { id: '100', label: { zh: '100%（原始）', en: '100% (Full)' } },
+  { id: '90', label: { zh: '90%（默认）', en: '90% (Default)' } },
+  { id: '80', label: { zh: '80%', en: '80%' } },
+  { id: '70', label: { zh: '70%', en: '70%' } },
+  { id: '60', label: { zh: '60%', en: '60%' } },
+];
+
 export const APPEARANCE_STORAGE_KEYS = {
   preset: 'incept-theme-preset',
   colorScheme: 'incept-color-scheme',
   accent: 'incept-accent',
+  accentContrast: 'incept-accent-contrast',
   contrast: 'incept-contrast',
   font: 'incept-font',
   fontSize: 'incept-font-size',
   docsFont: 'incept-docs-font',
   docsFontSize: 'incept-docs-font-size',
   docsLineHeight: 'incept-docs-line-height',
+  docsImageScale: 'incept-docs-image-scale',
   docsCodeAccent: 'incept-docs-code-accent',
   docsInlineCodeAccent: 'incept-docs-inline-code-accent',
   legacyEyeComfort: 'incept-eye-comfort-filter',
@@ -297,12 +316,14 @@ export const APPEARANCE_STORAGE_KEYS = {
 export const APPEARANCE_ATTRIBUTES = {
   preset: 'data-theme-preset',
   accent: 'data-accent',
+  accentContrast: 'data-accent-contrast',
   contrast: 'data-contrast',
   font: 'data-font',
   fontSize: 'data-font-size',
   docsFont: 'data-docs-font',
   docsFontSize: 'data-docs-font-size',
   docsLineHeight: 'data-docs-line-height',
+  docsImageScale: 'data-docs-image-scale',
   docsCodeAccent: 'data-docs-code-accent',
   docsInlineCodeAccent: 'data-docs-inline-code-accent',
 } as const;
@@ -311,12 +332,14 @@ export const APPEARANCE_COOKIES = {
   preset: 'incept-theme-preset',
   colorScheme: 'incept-color-scheme',
   accent: 'incept-accent',
+  accentContrast: 'incept-accent-contrast',
   contrast: 'incept-contrast',
   font: 'incept-font',
   fontSize: 'incept-font-size',
   docsFont: 'incept-docs-font',
   docsFontSize: 'incept-docs-font-size',
   docsLineHeight: 'incept-docs-line-height',
+  docsImageScale: 'incept-docs-image-scale',
   docsCodeAccent: 'incept-docs-code-accent',
   docsInlineCodeAccent: 'incept-docs-inline-code-accent',
 } as const;
@@ -341,6 +364,14 @@ export function isContrastMode(value: string | null | undefined): value is Contr
   return value !== null && value !== undefined && CONTRAST_MODE_IDS.includes(value as ContrastMode);
 }
 
+export function isAccentContrastMode(value: string | null | undefined): value is AccentContrastMode {
+  return (
+    value !== null &&
+    value !== undefined &&
+    ACCENT_CONTRAST_MODE_IDS.includes(value as AccentContrastMode)
+  );
+}
+
 export function isUiFont(value: string | null | undefined): value is UiFontId {
   return value !== null && value !== undefined && UI_FONT_IDS.includes(value as UiFontId);
 }
@@ -359,6 +390,10 @@ export function isDocsFontSize(value: string | null | undefined): value is DocsF
 
 export function isDocsLineHeight(value: string | null | undefined): value is DocsLineHeightId {
   return value !== null && value !== undefined && DOCS_LINE_HEIGHT_IDS.includes(value as DocsLineHeightId);
+}
+
+export function isDocsImageScale(value: string | null | undefined): value is DocsImageScaleId {
+  return value !== null && value !== undefined && DOCS_IMAGE_SCALE_IDS.includes(value as DocsImageScaleId);
 }
 
 export function isDocsCodeAccent(value: string | null | undefined): value is DocsCodeAccentId {
@@ -443,5 +478,5 @@ export function migrateLegacyEyeComfort(
 }
 
 export function buildAppearanceInitScript(): string {
-  return `(function(){try{var d=document.documentElement,ls=window.localStorage,p=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.preset)}),leg=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.legacyEyeComfort)}),sc=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.colorScheme)}),ac=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.accent)}),ct=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.contrast)}),fn=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.font)}),fs=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.fontSize)}),df=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsFont)}),dfs=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsFontSize)}),dlh=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsLineHeight)}),dca=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsCodeAccent)}),dica=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsInlineCodeAccent)}),cp=ls.getItem('incept-code-palette');var vp=${JSON.stringify(THEME_PRESET_IDS)},va=${JSON.stringify(ACCENT_PRESET_IDS)},vc=${JSON.stringify(CONTRAST_MODE_IDS)},vf=${JSON.stringify(UI_FONT_IDS)},vs=${JSON.stringify(UI_FONT_SIZE_IDS)},vdf=${JSON.stringify(DOCS_FONT_IDS)},vdfs=${JSON.stringify(DOCS_FONT_SIZE_IDS)},vdlh=${JSON.stringify(DOCS_LINE_HEIGHT_IDS)},vdca=${JSON.stringify(DOCS_CODE_ACCENT_IDS)},vcp=['auto','vscode','github','vitesse'];if(vp.indexOf(p)===-1){p=leg==='true'?'warm-paper':'default';if(leg==='true'){ls.setItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.preset)},'warm-paper');ls.removeItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.legacyEyeComfort)});}}if(sc!=='light'&&sc!=='dark'&&sc!=='system'){sc='system';}if(va.indexOf(ac)===-1)ac='theme';if(vc.indexOf(ct)===-1)ct='default';if(vf.indexOf(fn)===-1)fn='system';if(vs.indexOf(fs)===-1)fs='14';if(vdf.indexOf(df)===-1)df='inherit';if(vdfs.indexOf(dfs)===-1)dfs='inherit';if(vdlh.indexOf(dlh)===-1)dlh='comfortable';if(vdca.indexOf(dca)===-1)dca='inherit';if(vdca.indexOf(dica)===-1)dica='inherit';if(vcp.indexOf(cp)===-1)cp='auto';var sys=window.matchMedia('(prefers-color-scheme: dark)').matches;var dark=(p==='catppuccin-mocha'||p==='rose-pine')?true:(p==='warm-paper'||p==='catppuccin-latte'||p==='rose-pine-dawn')?false:(sc==='dark'||(sc==='system'&&sys));var mc=(p==='default'&&sc==='system')?'light dark':(dark?'dark':'light');var m=document.querySelector('meta[name="color-scheme"]');if(m)m.setAttribute('content',mc);d.classList.toggle('dark',dark);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.preset)},p);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.accent)},ac);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.contrast)},ct);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.font)},fn);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.fontSize)},fs);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsFont)},df);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsFontSize)},dfs);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsLineHeight)},dlh);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsCodeAccent)},dca);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsInlineCodeAccent)},dica);d.setAttribute('data-code-palette',cp);}catch(e){}})();`;
+  return `(function(){try{var d=document.documentElement,ls=window.localStorage,p=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.preset)}),leg=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.legacyEyeComfort)}),sc=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.colorScheme)}),ac=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.accent)}),acc=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.accentContrast)}),ct=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.contrast)}),fn=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.font)}),fs=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.fontSize)}),df=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsFont)}),dfs=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsFontSize)}),dlh=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsLineHeight)}),dis=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsImageScale)}),dca=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsCodeAccent)}),dica=ls.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.docsInlineCodeAccent)}),cp=ls.getItem('incept-code-palette');var vp=${JSON.stringify(THEME_PRESET_IDS)},va=${JSON.stringify(ACCENT_PRESET_IDS)},vac=${JSON.stringify(ACCENT_CONTRAST_MODE_IDS)},vc=${JSON.stringify(CONTRAST_MODE_IDS)},vf=${JSON.stringify(UI_FONT_IDS)},vs=${JSON.stringify(UI_FONT_SIZE_IDS)},vdf=${JSON.stringify(DOCS_FONT_IDS)},vdfs=${JSON.stringify(DOCS_FONT_SIZE_IDS)},vdlh=${JSON.stringify(DOCS_LINE_HEIGHT_IDS)},vdis=${JSON.stringify(DOCS_IMAGE_SCALE_IDS)},vdca=${JSON.stringify(DOCS_CODE_ACCENT_IDS)},vcp=['auto','vscode','github','vitesse'];if(vp.indexOf(p)===-1){p=leg==='true'?'warm-paper':'default';if(leg==='true'){ls.setItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.preset)},'warm-paper');ls.removeItem(${JSON.stringify(APPEARANCE_STORAGE_KEYS.legacyEyeComfort)});}}if(sc!=='light'&&sc!=='dark'&&sc!=='system'){sc='system';}if(va.indexOf(ac)===-1)ac='theme';if(vac.indexOf(acc)===-1)acc='default';if(vc.indexOf(ct)===-1)ct='default';if(vf.indexOf(fn)===-1)fn='system';if(vs.indexOf(fs)===-1)fs='14';if(vdf.indexOf(df)===-1)df='inherit';if(vdfs.indexOf(dfs)===-1)dfs='inherit';if(vdlh.indexOf(dlh)===-1)dlh='comfortable';if(vdis.indexOf(dis)===-1)dis='90';if(vdca.indexOf(dca)===-1)dca='inherit';if(vdca.indexOf(dica)===-1)dica='inherit';if(vcp.indexOf(cp)===-1)cp='auto';var sys=window.matchMedia('(prefers-color-scheme: dark)').matches;var dark=(p==='catppuccin-mocha'||p==='rose-pine')?true:(p==='warm-paper'||p==='catppuccin-latte'||p==='rose-pine-dawn')?false:(sc==='dark'||(sc==='system'&&sys));var mc=(p==='default'&&sc==='system')?'light dark':(dark?'dark':'light');var m=document.querySelector('meta[name="color-scheme"]');if(m)m.setAttribute('content',mc);d.classList.toggle('dark',dark);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.preset)},p);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.accent)},ac);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.accentContrast)},acc);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.contrast)},ct);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.font)},fn);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.fontSize)},fs);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsFont)},df);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsFontSize)},dfs);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsLineHeight)},dlh);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsImageScale)},dis);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsCodeAccent)},dca);d.setAttribute(${JSON.stringify(APPEARANCE_ATTRIBUTES.docsInlineCodeAccent)},dica);d.setAttribute('data-code-palette',cp);}catch(e){}})();`;
 }

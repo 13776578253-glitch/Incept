@@ -12,6 +12,8 @@ describe('searchSettingsItems', () => {
     expect(searchSettingsItems('倍速', 'zh', 'guest').map((item) => item.id)).toContain('music-rate-lock');
     expect(searchSettingsItems('latte', 'en', 'guest').map((item) => item.id)).toContain('appearance-preset');
     expect(searchSettingsItems('document language', 'en', 'guest').map((item) => item.id)).toContain('language-docs');
+    expect(searchSettingsItems('强调色对比度', 'zh', 'guest').map((item) => item.id)).toContain('appearance-accent-contrast');
+    expect(searchSettingsItems('图片缩放', 'zh', 'guest').map((item) => item.id)).toContain('appearance-docs-image-scale');
   });
 
   it('hides owner-only items for guests and guest-login items for owners', () => {

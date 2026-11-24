@@ -45,6 +45,7 @@
   --docs-shell-max-width: 1360px;
   --docs-prose-max-width: var(--docs-content-width);
   --docs-prose-description-max-width: var(--docs-content-width);
+  --docs-image-max-width: 90%;
   --docs-font-family: var(--font-family-base);
   --docs-font-size-base: clamp(14.5px, calc(var(--ui-font-size) + 1.5px), 18px);
   --docs-font-size-mobile-offset: 0px;

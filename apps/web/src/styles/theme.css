@@ -28,7 +28,9 @@
   --color-text-soft: rgba(28, 29, 32, 0.42);
   --color-text-subtle: var(--color-text-soft);
 
-  --color-accent: #171717;
+  --color-accent-base: #171717;
+  --color-accent-desat: #5a5d66;
+  --color-accent: color-mix(in oklab, var(--color-accent-base) 64%, var(--color-accent-desat));
   --color-accent-fg: #ffffff;
   --color-primary-bg: var(--color-accent);
   --color-primary-fg: var(--color-accent-fg);
@@ -116,35 +118,39 @@
   --roadmap-chip-bg: var(--surface-chip-bg);
   --roadmap-chip-border: var(--surface-chip-border);
   --roadmap-card-hover-border: var(--color-accent-border);
-  --roadmap-status-reviewing: #475569;
-  --roadmap-status-unstarted: #7c3aed;
-  --roadmap-status-active: #2563eb;
-  --roadmap-status-completed: #10b981;
-  --roadmap-status-canceled: #e11d48;
-  --roadmap-type-feature-icon: #f59e0b;
-  --roadmap-type-feature-fg: #334155;
-  --roadmap-type-feature-bg: rgba(245, 158, 11, 0.08);
-  --roadmap-type-feature-border: rgba(245, 158, 11, 0.18);
-  --roadmap-type-improvement-icon: #0ea5e9;
-  --roadmap-type-improvement-fg: #334155;
-  --roadmap-type-improvement-bg: rgba(14, 165, 233, 0.08);
-  --roadmap-type-improvement-border: rgba(14, 165, 233, 0.18);
-  --roadmap-type-maintenance-icon: #6366f1;
-  --roadmap-type-maintenance-fg: #334155;
-  --roadmap-type-maintenance-bg: rgba(99, 102, 241, 0.07);
-  --roadmap-type-maintenance-border: rgba(99, 102, 241, 0.16);
-  --roadmap-priority-high-dot: #ef4444;
-  --roadmap-priority-high-fg: #b91c1c;
-  --roadmap-priority-high-bg: rgba(239, 68, 68, 0.08);
-  --roadmap-priority-high-border: rgba(239, 68, 68, 0.18);
-  --roadmap-priority-middle-dot: #6366f1;
-  --roadmap-priority-middle-fg: #4338ca;
-  --roadmap-priority-middle-bg: rgba(99, 102, 241, 0.08);
-  --roadmap-priority-middle-border: rgba(99, 102, 241, 0.18);
-  --roadmap-priority-low-dot: #3b82f6;
-  --roadmap-priority-low-fg: #1d4ed8;
-  --roadmap-priority-low-bg: rgba(59, 130, 246, 0.08);
-  --roadmap-priority-low-border: rgba(59, 130, 246, 0.16);
+  --roadmap-status-reviewing: #5b6472;
+  --roadmap-status-unstarted: #7c67b8;
+  --roadmap-status-active: #3b6ea5;
+  --roadmap-status-completed: #2f8566;
+  --roadmap-status-canceled: #b84a5a;
+  --roadmap-type-feature-icon: #b7791f;
+  --roadmap-type-feature-fg: var(--color-text);
+  --roadmap-type-feature-bg: rgba(183, 121, 31, 0.08);
+  --roadmap-type-feature-border: rgba(183, 121, 31, 0.18);
+  --roadmap-type-improvement-icon: #2b6cb0;
+  --roadmap-type-improvement-fg: var(--color-text);
+  --roadmap-type-improvement-bg: rgba(43, 108, 176, 0.075);
+  --roadmap-type-improvement-border: rgba(43, 108, 176, 0.17);
+  --roadmap-type-maintenance-icon: #5a67a8;
+  --roadmap-type-maintenance-fg: var(--color-text);
+  --roadmap-type-maintenance-bg: rgba(90, 103, 168, 0.075);
+  --roadmap-type-maintenance-border: rgba(90, 103, 168, 0.16);
+  --roadmap-priority-high-dot: #b84a48;
+  --roadmap-priority-high-fg: #993937;
+  --roadmap-priority-high-bg: rgba(184, 74, 72, 0.08);
+  --roadmap-priority-high-border: rgba(184, 74, 72, 0.18);
+  --roadmap-priority-middle-dot: #565ea8;
+  --roadmap-priority-middle-fg: #454d8f;
+  --roadmap-priority-middle-bg: rgba(86, 94, 168, 0.08);
+  --roadmap-priority-middle-border: rgba(86, 94, 168, 0.18);
+  --roadmap-priority-low-dot: #3b6ea5;
+  --roadmap-priority-low-fg: #2d588a;
+  --roadmap-priority-low-bg: rgba(59, 110, 165, 0.075);
+  --roadmap-priority-low-border: rgba(59, 110, 165, 0.16);
+  --roadmap-danger-fg: #a63838;
+  --roadmap-danger-bg: rgba(184, 74, 72, 0.08);
+  --roadmap-danger-border: rgba(184, 74, 72, 0.22);
+  --roadmap-danger-hover-bg: rgba(184, 74, 72, 0.14);
 
   /* Component tokens: Badges */
   --badge-amber-icon: #d97706;
@@ -216,7 +222,9 @@
   --color-text-muted: rgba(243, 244, 246, 0.66);
   --color-text-soft: rgba(243, 244, 246, 0.45);
 
-  --color-accent: #f3f4f6;
+  --color-accent-base: #f3f4f6;
+  --color-accent-desat: #9da1ab;
+  --color-accent: color-mix(in oklab, var(--color-accent-base) 62%, var(--color-accent-desat));
   --color-accent-fg: #09090b;
   --color-primary-bg: var(--color-accent);
   --color-primary-fg: var(--color-accent-fg);
@@ -280,40 +288,44 @@
   --surface-pill-on-bg: #141417;
 
   --roadmap-card-bg: var(--color-surface-card);
-  --roadmap-card-hover-bg: #212631;
-  --roadmap-modal-bg: #191c24;
-  --roadmap-popover-bg: #20242e;
+  --roadmap-card-hover-bg: var(--color-surface-hover, var(--color-surface-card));
+  --roadmap-modal-bg: var(--color-surface-card);
+  --roadmap-popover-bg: var(--color-surface-card);
   --roadmap-divider: rgba(238, 241, 246, 0.08);
   --roadmap-card-hover-border: var(--color-accent-border);
   --roadmap-status-reviewing: #94a3b8;
-  --roadmap-status-unstarted: #a78bfa;
-  --roadmap-status-active: #60a5fa;
-  --roadmap-status-completed: #34d399;
-  --roadmap-status-canceled: #fb7185;
-  --roadmap-type-feature-icon: #fbbf24;
-  --roadmap-type-feature-fg: #e5e7eb;
-  --roadmap-type-feature-bg: rgba(251, 191, 36, 0.1);
-  --roadmap-type-feature-border: rgba(251, 191, 36, 0.16);
-  --roadmap-type-improvement-icon: #38bdf8;
-  --roadmap-type-improvement-fg: #e5e7eb;
-  --roadmap-type-improvement-bg: rgba(56, 189, 248, 0.1);
-  --roadmap-type-improvement-border: rgba(56, 189, 248, 0.16);
-  --roadmap-type-maintenance-icon: #818cf8;
-  --roadmap-type-maintenance-fg: #e5e7eb;
-  --roadmap-type-maintenance-bg: rgba(129, 140, 248, 0.1);
-  --roadmap-type-maintenance-border: rgba(129, 140, 248, 0.16);
-  --roadmap-priority-high-dot: #f87171;
-  --roadmap-priority-high-fg: #fca5a5;
-  --roadmap-priority-high-bg: rgba(248, 113, 113, 0.11);
-  --roadmap-priority-high-border: rgba(248, 113, 113, 0.18);
-  --roadmap-priority-middle-dot: #818cf8;
-  --roadmap-priority-middle-fg: #c7d2fe;
-  --roadmap-priority-middle-bg: rgba(129, 140, 248, 0.11);
-  --roadmap-priority-middle-border: rgba(129, 140, 248, 0.18);
-  --roadmap-priority-low-dot: #60a5fa;
-  --roadmap-priority-low-fg: #bfdbfe;
-  --roadmap-priority-low-bg: rgba(96, 165, 250, 0.11);
-  --roadmap-priority-low-border: rgba(96, 165, 250, 0.18);
+  --roadmap-status-unstarted: #a799dc;
+  --roadmap-status-active: #7da8dc;
+  --roadmap-status-completed: #5db594;
+  --roadmap-status-canceled: #de7a8a;
+  --roadmap-type-feature-icon: #d8a454;
+  --roadmap-type-feature-fg: var(--color-text);
+  --roadmap-type-feature-bg: rgba(216, 164, 84, 0.11);
+  --roadmap-type-feature-border: rgba(216, 164, 84, 0.18);
+  --roadmap-type-improvement-icon: #6aa4cf;
+  --roadmap-type-improvement-fg: var(--color-text);
+  --roadmap-type-improvement-bg: rgba(106, 164, 207, 0.11);
+  --roadmap-type-improvement-border: rgba(106, 164, 207, 0.18);
+  --roadmap-type-maintenance-icon: #8f97d4;
+  --roadmap-type-maintenance-fg: var(--color-text);
+  --roadmap-type-maintenance-bg: rgba(143, 151, 212, 0.11);
+  --roadmap-type-maintenance-border: rgba(143, 151, 212, 0.18);
+  --roadmap-priority-high-dot: #dc7b78;
+  --roadmap-priority-high-fg: #eba2a0;
+  --roadmap-priority-high-bg: rgba(220, 123, 120, 0.12);
+  --roadmap-priority-high-border: rgba(220, 123, 120, 0.2);
+  --roadmap-priority-middle-dot: #9ea5e0;
+  --roadmap-priority-middle-fg: #c7ccf0;
+  --roadmap-priority-middle-bg: rgba(158, 165, 224, 0.12);
+  --roadmap-priority-middle-border: rgba(158, 165, 224, 0.2);
+  --roadmap-priority-low-dot: #7da8dc;
+  --roadmap-priority-low-fg: #b4d0ee;
+  --roadmap-priority-low-bg: rgba(125, 168, 220, 0.12);
+  --roadmap-priority-low-border: rgba(125, 168, 220, 0.2);
+  --roadmap-danger-fg: #f0a1a0;
+  --roadmap-danger-bg: rgba(220, 123, 120, 0.12);
+  --roadmap-danger-border: rgba(220, 123, 120, 0.24);
+  --roadmap-danger-hover-bg: rgba(220, 123, 120, 0.2);
 
   --badge-amber-icon: #fbbf24;
   --badge-amber-dot: #fbbf24;
@@ -375,7 +387,8 @@ html[data-theme-preset='warm-paper'] {
   --color-text: #3f3326;
   --color-text-muted: rgba(63, 51, 38, 0.72);
   --color-text-soft: rgba(63, 51, 38, 0.5);
-  --color-accent: #9e7346;
+  --color-accent-base: #9e7346;
+  --color-accent-desat: #665849;
   --color-accent-fg: #fffdf8;
   --color-primary-bg: var(--color-accent);
   --color-primary-fg: var(--color-accent-fg);
@@ -428,7 +441,8 @@ html[data-theme-preset='catppuccin-latte'] {
   --color-text: #3f4354;
   --color-text-muted: rgba(63, 67, 84, 0.66);
   --color-text-soft: rgba(63, 67, 84, 0.46);
-  --color-accent: #6782a8;
+  --color-accent-base: #6782a8;
+  --color-accent-desat: #5f6475;
   --color-accent-fg: #ffffff;
   --color-primary-bg: var(--color-accent);
   --color-primary-fg: var(--color-accent-fg);
@@ -479,7 +493,8 @@ html[data-theme-preset='catppuccin-mocha'] {
   --color-text: #cdd6f4;
   --color-text-muted: rgba(205, 214, 244, 0.74);
   --color-text-soft: rgba(205, 214, 244, 0.52);
-  --color-accent: #89a8e0;
+  --color-accent-base: #89a8e0;
+  --color-accent-desat: #9da4be;
   --color-accent-fg: #11111b;
   --color-primary-bg: var(--color-accent);
   --color-primary-fg: var(--color-accent-fg);
@@ -524,7 +539,8 @@ html[data-theme-preset='rose-pine-dawn'] {
   --color-text: #575279;
   --color-text-muted: rgba(87, 82, 121, 0.74);
   --color-text-soft: rgba(87, 82, 121, 0.54);
-  --color-accent: #a36579;
+  --color-accent-base: #a36579;
+  --color-accent-desat: #6e687e;
   --color-accent-fg: #fffaf3;
   --color-primary-bg: var(--color-accent);
   --color-primary-fg: var(--color-accent-fg);
@@ -580,7 +596,8 @@ html[data-theme-preset='rose-pine'] {
   --color-text: #e0def4;
   --color-text-muted: rgba(224, 222, 244, 0.74);
   --color-text-soft: rgba(224, 222, 244, 0.52);
-  --color-accent: #d9adb0;
+  --color-accent-base: #d9adb0;
+  --color-accent-desat: #a5a0b8;
   --color-accent-fg: #191724;
   --color-primary-bg: var(--color-accent);
   --color-primary-fg: var(--color-accent-fg);
@@ -619,82 +636,118 @@ html[data-theme-preset='rose-pine'] {
    Independent Accent Overrides (softened, mature contrast pairs)
    ========================================================================= */
 html[data-accent='neutral'] {
-  --color-accent: #3f3f46;
+  --color-accent-base: #3f3f46;
   --color-accent-fg: #ffffff;
 }
 html.dark[data-accent='neutral'] {
-  --color-accent: #d4d4d8;
+  --color-accent-base: #d4d4d8;
   --color-accent-fg: #18181b;
 }
 
 html[data-accent='mist-blue'] {
-  --color-accent: #5279a8;
+  --color-accent-base: #5279a8;
   --color-accent-fg: #ffffff;
 }
 html.dark[data-accent='mist-blue'] {
-  --color-accent: #8baed6;
+  --color-accent-base: #8baed6;
   --color-accent-fg: #0b1220;
 }
 
 html[data-accent='cobalt'] {
-  --color-accent: #5d63a8;
+  --color-accent-base: #5d63a8;
   --color-accent-fg: #ffffff;
 }
 html.dark[data-accent='cobalt'] {
-  --color-accent: #969bd6;
+  --color-accent-base: #969bd6;
   --color-accent-fg: #0f1024;
 }
 
 html[data-accent='dusty-rose'] {
-  --color-accent: #a86575;
+  --color-accent-base: #a86575;
   --color-accent-fg: #ffffff;
 }
 html.dark[data-accent='dusty-rose'] {
-  --color-accent: #d499a8;
+  --color-accent-base: #d499a8;
   --color-accent-fg: #221018;
 }
 
 html[data-accent='sage'] {
-  --color-accent: #4c806d;
+  --color-accent-base: #4c806d;
   --color-accent-fg: #ffffff;
 }
 html.dark[data-accent='sage'] {
-  --color-accent: #7db09c;
+  --color-accent-base: #7db09c;
   --color-accent-fg: #0c1f17;
 }
 
 html[data-accent='amber'] {
-  --color-accent: #a67a44;
+  --color-accent-base: #a67a44;
   --color-accent-fg: #ffffff;
 }
 html.dark[data-accent='amber'] {
-  --color-accent: #d1a672;
+  --color-accent-base: #d1a672;
   --color-accent-fg: #231708;
 }
 
-/* Re-derive accent dependent tokens whenever preset or accent changes (nav active stays neutral) */
+/* Re-derive accent dependent tokens whenever preset, accent, or accent contrast changes (nav active stays neutral) */
+:root,
 html[data-theme-preset],
 html[data-accent] {
+  --color-accent: color-mix(in oklab, var(--color-accent-base) 64%, var(--color-accent-desat));
+  --color-accent-soft: color-mix(in oklab, var(--color-accent) 6%, transparent);
+  --color-accent-border: color-mix(in oklab, var(--color-accent) 18%, transparent);
+  --color-accent-fill: color-mix(in oklab, var(--color-accent) 16%, var(--color-bg));
+  --color-accent-fill-border: color-mix(in oklab, var(--color-accent) 22%, transparent);
+  --color-border-focus: color-mix(in oklab, var(--color-accent) 34%, var(--color-border));
+  --color-ring-focus: color-mix(in oklab, var(--color-accent) 16%, transparent);
+  --docs-mark-bg: color-mix(in oklab, var(--color-accent) 10%, transparent);
+  --docs-quote-border: color-mix(in oklab, var(--color-accent) 32%, var(--color-border-strong));
+  --callout-default-accent: color-mix(in oklab, var(--color-accent) 38%, var(--color-border-strong));
+  --settings-nav-active-border: transparent;
+  --settings-nav-active-bg: var(--color-nav-item-active);
+}
+
+.dark,
+html.dark[data-theme-preset],
+html.dark[data-accent] {
+  --color-accent: color-mix(in oklab, var(--color-accent-base) 62%, var(--color-accent-desat));
+  --color-accent-soft: color-mix(in oklab, var(--color-accent) 9%, transparent);
+  --color-accent-border: color-mix(in oklab, var(--color-accent) 22%, transparent);
+  --color-accent-fill: color-mix(in oklab, var(--color-accent) 19%, var(--color-bg));
+  --color-accent-fill-border: color-mix(in oklab, var(--color-accent) 25%, transparent);
+  --color-border-focus: color-mix(in oklab, var(--color-accent) 40%, var(--color-border));
+  --color-ring-focus: color-mix(in oklab, var(--color-accent) 20%, transparent);
+  --docs-mark-bg: color-mix(in oklab, var(--color-accent) 11%, transparent);
+  --docs-quote-border: color-mix(in oklab, var(--color-accent) 36%, var(--color-border-strong));
+  --callout-default-accent: color-mix(in oklab, var(--color-accent) 42%, var(--color-border-strong));
+  --settings-nav-active-border: transparent;
+  --settings-nav-active-bg: var(--color-nav-item-active);
+}
+
+html[data-accent-contrast='strong'] {
+  --color-accent: var(--color-accent-base);
   --color-accent-soft: color-mix(in oklab, var(--color-accent) 9%, transparent);
   --color-accent-border: color-mix(in oklab, var(--color-accent) 26%, transparent);
   --color-accent-fill: color-mix(in oklab, var(--color-accent) 24%, var(--color-bg));
   --color-accent-fill-border: color-mix(in oklab, var(--color-accent) 32%, transparent);
   --color-border-focus: color-mix(in oklab, var(--color-accent) 48%, var(--color-border));
   --color-ring-focus: color-mix(in oklab, var(--color-accent) 24%, transparent);
-  --settings-nav-active-border: transparent;
-  --settings-nav-active-bg: var(--color-nav-item-active);
+  --docs-mark-bg: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  --docs-quote-border: color-mix(in oklab, var(--color-accent) 46%, var(--color-border-strong));
+  --callout-default-accent: color-mix(in oklab, var(--color-accent) 52%, var(--color-border-strong));
 }
 
-html.dark[data-theme-preset],
-html.dark[data-accent] {
+html.dark[data-accent-contrast='strong'] {
+  --color-accent: var(--color-accent-base);
   --color-accent-soft: color-mix(in oklab, var(--color-accent) 13%, transparent);
   --color-accent-border: color-mix(in oklab, var(--color-accent) 32%, transparent);
   --color-accent-fill: color-mix(in oklab, var(--color-accent) 28%, var(--color-bg));
   --color-accent-fill-border: color-mix(in oklab, var(--color-accent) 36%, transparent);
   --color-border-focus: color-mix(in oklab, var(--color-accent) 56%, var(--color-border));
   --color-ring-focus: color-mix(in oklab, var(--color-accent) 32%, transparent);
-  --settings-nav-active-border: transparent;
-  --settings-nav-active-bg: var(--color-nav-item-active);
+  --docs-mark-bg: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  --docs-quote-border: color-mix(in oklab, var(--color-accent) 46%, var(--color-border-strong));
+  --callout-default-accent: color-mix(in oklab, var(--color-accent) 56%, var(--color-border-strong));
 }
 
 /* =========================================================================
@@ -773,6 +826,12 @@ html[data-docs-line-height='compact'] { --docs-line-height-base: 1.62; }
 html[data-docs-line-height='comfortable'] { --docs-line-height-base: 1.78; }
 html[data-docs-line-height='relaxed'] { --docs-line-height-base: 1.94; }
 
+html[data-docs-image-scale='100'] { --docs-image-max-width: 100%; }
+html[data-docs-image-scale='90'] { --docs-image-max-width: 90%; }
+html[data-docs-image-scale='80'] { --docs-image-max-width: 80%; }
+html[data-docs-image-scale='70'] { --docs-image-max-width: 70%; }
+html[data-docs-image-scale='60'] { --docs-image-max-width: 60%; }
+
 html[data-docs-code-accent='inherit'] { --docs-code-accent: var(--color-accent); }
 html[data-docs-code-accent='none'] { --docs-code-accent: var(--docs-code-toolbar-hover-text, var(--color-text)); }
 html[data-docs-code-accent='none'] .docs-code-accent-decor { display: none; }
@@ -836,7 +895,10 @@ html[data-docs-inline-code-accent='none'] {
    Forced Colors Mode Accessibility Fallback
    ========================================================================= */
 @media (forced-colors: active) {
-  :root {
+  :root,
+  html[data-theme-preset],
+  html[data-accent],
+  html[data-accent-contrast] {
     --color-bg: Canvas;
     --color-surface: Canvas;
     --color-surface-card: Canvas;

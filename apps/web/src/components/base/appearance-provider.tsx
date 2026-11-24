@@ -16,24 +16,28 @@ import {
   APPEARANCE_STORAGE_KEYS,
   getColorSchemeMetaContent,
   getSmartToggleTarget,
+  isAccentContrastMode,
   isAccentPreset,
   isColorScheme,
   isContrastMode,
   isDocsCodeAccent,
   isDocsFont,
   isDocsFontSize,
+  isDocsImageScale,
   isDocsInlineCodeAccent,
   isDocsLineHeight,
   isUiFont,
   isUiFontSize,
   migrateLegacyEyeComfort,
   resolveThemePolarity,
+  type AccentContrastMode,
   type AccentPresetId,
   type ColorScheme,
   type ContrastMode,
   type DocsCodeAccentId,
   type DocsFontId,
   type DocsFontSizeId,
+  type DocsImageScaleId,
   type DocsInlineCodeAccentId,
   type DocsLineHeightId,
   type ResolvedPolarity,
@@ -48,12 +52,14 @@ export type AppearanceState = {
   colorScheme: ColorScheme;
   resolvedPolarity: ResolvedPolarity;
   accent: AccentPresetId;
+  accentContrast: AccentContrastMode;
   contrast: ContrastMode;
   font: UiFontId;
   fontSize: UiFontSizeId;
   docsFont: DocsFontId;
   docsFontSize: DocsFontSizeId;
   docsLineHeight: DocsLineHeightId;
+  docsImageScale: DocsImageScaleId;
   docsCodeAccent: DocsCodeAccentId;
   docsInlineCodeAccent: DocsInlineCodeAccentId;
   isReady: boolean;
@@ -64,12 +70,14 @@ export type AppearanceContextValue = AppearanceState & {
   setColorScheme: (colorScheme: ColorScheme) => void;
   setThemeMode: (colorScheme: ColorScheme) => void;
   setAccent: (accent: AccentPresetId) => void;
+  setAccentContrast: (accentContrast: AccentContrastMode) => void;
   setContrast: (contrast: ContrastMode) => void;
   setFont: (font: UiFontId) => void;
   setFontSize: (fontSize: UiFontSizeId) => void;
   setDocsFont: (docsFont: DocsFontId) => void;
   setDocsFontSize: (docsFontSize: DocsFontSizeId) => void;
   setDocsLineHeight: (docsLineHeight: DocsLineHeightId) => void;
+  setDocsImageScale: (docsImageScale: DocsImageScaleId) => void;
   setDocsCodeAccent: (docsCodeAccent: DocsCodeAccentId) => void;
   setDocsInlineCodeAccent: (docsInlineCodeAccent: DocsInlineCodeAccentId) => void;
   toggleSmartTheme: () => void;
@@ -81,12 +89,14 @@ type StoredAppearance = {
   preset: ThemePresetId;
   colorScheme: ColorScheme;
   accent: AccentPresetId;
+  accentContrast: AccentContrastMode;
   contrast: ContrastMode;
   font: UiFontId;
   fontSize: UiFontSizeId;
   docsFont: DocsFontId;
   docsFontSize: DocsFontSizeId;
   docsLineHeight: DocsLineHeightId;
+  docsImageScale: DocsImageScaleId;
   docsCodeAccent: DocsCodeAccentId;
   docsInlineCodeAccent: DocsInlineCodeAccentId;
 };
@@ -95,12 +105,14 @@ const DEFAULT_APPEARANCE: StoredAppearance = {
   preset: 'default',
   colorScheme: 'system',
   accent: 'theme',
+  accentContrast: 'default',
   contrast: 'default',
   font: 'system',
   fontSize: '14',
   docsFont: 'inherit',
   docsFontSize: 'inherit',
   docsLineHeight: 'comfortable',
+  docsImageScale: '90',
   docsCodeAccent: 'inherit',
   docsInlineCodeAccent: 'inherit',
 };
@@ -114,12 +126,14 @@ function readStoredAppearance(): StoredAppearance {
     );
     const storedScheme = ls.getItem(APPEARANCE_STORAGE_KEYS.colorScheme);
     const storedAccent = ls.getItem(APPEARANCE_STORAGE_KEYS.accent);
+    const storedAccentContrast = ls.getItem(APPEARANCE_STORAGE_KEYS.accentContrast);
     const storedContrast = ls.getItem(APPEARANCE_STORAGE_KEYS.contrast);
     const storedFont = ls.getItem(APPEARANCE_STORAGE_KEYS.font);
     const storedFontSize = ls.getItem(APPEARANCE_STORAGE_KEYS.fontSize);
     const storedDocsFont = ls.getItem(APPEARANCE_STORAGE_KEYS.docsFont);
     const storedDocsFontSize = ls.getItem(APPEARANCE_STORAGE_KEYS.docsFontSize);
     const storedDocsLineHeight = ls.getItem(APPEARANCE_STORAGE_KEYS.docsLineHeight);
+    const storedDocsImageScale = ls.getItem(APPEARANCE_STORAGE_KEYS.docsImageScale);
     const storedDocsCodeAccent = ls.getItem(APPEARANCE_STORAGE_KEYS.docsCodeAccent);
     const storedDocsInlineCodeAccent = ls.getItem(APPEARANCE_STORAGE_KEYS.docsInlineCodeAccent);
 
@@ -127,12 +141,14 @@ function readStoredAppearance(): StoredAppearance {
       preset,
       colorScheme: isColorScheme(storedScheme) ? storedScheme : 'system',
       accent: isAccentPreset(storedAccent) ? storedAccent : 'theme',
+      accentContrast: isAccentContrastMode(storedAccentContrast) ? storedAccentContrast : 'default',
       contrast: isContrastMode(storedContrast) ? storedContrast : 'default',
       font: isUiFont(storedFont) ? storedFont : 'system',
       fontSize: isUiFontSize(storedFontSize) ? storedFontSize : '14',
       docsFont: isDocsFont(storedDocsFont) ? storedDocsFont : 'inherit',
       docsFontSize: isDocsFontSize(storedDocsFontSize) ? storedDocsFontSize : 'inherit',
       docsLineHeight: isDocsLineHeight(storedDocsLineHeight) ? storedDocsLineHeight : 'comfortable',
+      docsImageScale: isDocsImageScale(storedDocsImageScale) ? storedDocsImageScale : '90',
       docsCodeAccent: isDocsCodeAccent(storedDocsCodeAccent) ? storedDocsCodeAccent : 'inherit',
       docsInlineCodeAccent: isDocsInlineCodeAccent(storedDocsInlineCodeAccent) ? storedDocsInlineCodeAccent : 'inherit',
     };
@@ -163,12 +179,14 @@ function applyAppearanceToDom(state: StoredAppearance, systemPrefersDark: boolea
   root.classList.toggle('dark', resolved === 'dark');
   root.setAttribute(APPEARANCE_ATTRIBUTES.preset, state.preset);
   root.setAttribute(APPEARANCE_ATTRIBUTES.accent, state.accent);
+  root.setAttribute(APPEARANCE_ATTRIBUTES.accentContrast, state.accentContrast);
   root.setAttribute(APPEARANCE_ATTRIBUTES.contrast, state.contrast);
   root.setAttribute(APPEARANCE_ATTRIBUTES.font, state.font);
   root.setAttribute(APPEARANCE_ATTRIBUTES.fontSize, state.fontSize);
   root.setAttribute(APPEARANCE_ATTRIBUTES.docsFont, state.docsFont);
   root.setAttribute(APPEARANCE_ATTRIBUTES.docsFontSize, state.docsFontSize);
   root.setAttribute(APPEARANCE_ATTRIBUTES.docsLineHeight, state.docsLineHeight);
+  root.setAttribute(APPEARANCE_ATTRIBUTES.docsImageScale, state.docsImageScale);
   root.setAttribute(APPEARANCE_ATTRIBUTES.docsCodeAccent, state.docsCodeAccent);
   root.setAttribute(APPEARANCE_ATTRIBUTES.docsInlineCodeAccent, state.docsInlineCodeAccent);
 
@@ -201,12 +219,14 @@ function syncAppearanceCookies(state: StoredAppearance) {
     [APPEARANCE_COOKIES.preset, state.preset],
     [APPEARANCE_COOKIES.colorScheme, state.colorScheme],
     [APPEARANCE_COOKIES.accent, state.accent],
+    [APPEARANCE_COOKIES.accentContrast, state.accentContrast],
     [APPEARANCE_COOKIES.contrast, state.contrast],
     [APPEARANCE_COOKIES.font, state.font],
     [APPEARANCE_COOKIES.fontSize, state.fontSize],
     [APPEARANCE_COOKIES.docsFont, state.docsFont],
     [APPEARANCE_COOKIES.docsFontSize, state.docsFontSize],
     [APPEARANCE_COOKIES.docsLineHeight, state.docsLineHeight],
+    [APPEARANCE_COOKIES.docsImageScale, state.docsImageScale],
     [APPEARANCE_COOKIES.docsCodeAccent, state.docsCodeAccent],
     [APPEARANCE_COOKIES.docsInlineCodeAccent, state.docsInlineCodeAccent],
   ];
@@ -234,12 +254,14 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       preset: overrides.preset ?? stored.preset,
       colorScheme: overrides.colorScheme ?? stored.colorScheme,
       accent: overrides.accent ?? stored.accent,
+      accentContrast: overrides.accentContrast ?? stored.accentContrast,
       contrast: overrides.contrast ?? stored.contrast,
       font: overrides.font ?? stored.font,
       fontSize: overrides.fontSize ?? stored.fontSize,
       docsFont: overrides.docsFont ?? stored.docsFont,
       docsFontSize: overrides.docsFontSize ?? stored.docsFontSize,
       docsLineHeight: overrides.docsLineHeight ?? stored.docsLineHeight,
+      docsImageScale: overrides.docsImageScale ?? stored.docsImageScale,
       docsCodeAccent: overrides.docsCodeAccent ?? stored.docsCodeAccent,
       docsInlineCodeAccent: overrides.docsInlineCodeAccent ?? stored.docsInlineCodeAccent,
     }),
@@ -299,6 +321,11 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     setOverrides((prev) => ({ ...prev, accent }));
   }, []);
 
+  const setAccentContrast = useCallback((accentContrast: AccentContrastMode) => {
+    persistValue(APPEARANCE_STORAGE_KEYS.accentContrast, accentContrast, APPEARANCE_COOKIES.accentContrast);
+    setOverrides((prev) => ({ ...prev, accentContrast }));
+  }, []);
+
   const setContrast = useCallback((contrast: ContrastMode) => {
     persistValue(APPEARANCE_STORAGE_KEYS.contrast, contrast, APPEARANCE_COOKIES.contrast);
     setOverrides((prev) => ({ ...prev, contrast }));
@@ -327,6 +354,11 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   const setDocsLineHeight = useCallback((docsLineHeight: DocsLineHeightId) => {
     persistValue(APPEARANCE_STORAGE_KEYS.docsLineHeight, docsLineHeight, APPEARANCE_COOKIES.docsLineHeight);
     setOverrides((prev) => ({ ...prev, docsLineHeight }));
+  }, []);
+
+  const setDocsImageScale = useCallback((docsImageScale: DocsImageScaleId) => {
+    persistValue(APPEARANCE_STORAGE_KEYS.docsImageScale, docsImageScale, APPEARANCE_COOKIES.docsImageScale);
+    setOverrides((prev) => ({ ...prev, docsImageScale }));
   }, []);
 
   const setDocsCodeAccent = useCallback((docsCodeAccent: DocsCodeAccentId) => {
@@ -365,12 +397,14 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       setColorScheme,
       setThemeMode,
       setAccent,
+      setAccentContrast,
       setContrast,
       setFont,
       setFontSize,
       setDocsFont,
       setDocsFontSize,
       setDocsLineHeight,
+      setDocsImageScale,
       setDocsCodeAccent,
       setDocsInlineCodeAccent,
       toggleSmartTheme,
@@ -380,11 +414,13 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       isReady,
       resolvedPolarity,
       setAccent,
+      setAccentContrast,
       setColorScheme,
       setContrast,
       setDocsCodeAccent,
       setDocsFont,
       setDocsFontSize,
+      setDocsImageScale,
       setDocsInlineCodeAccent,
       setDocsLineHeight,
       setFont,

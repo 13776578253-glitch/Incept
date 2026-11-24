@@ -26,7 +26,7 @@ export function RoadmapCard({ entry, locale, chrome, onSelect }: RoadmapCardProp
         }
       }}
       tabIndex={onSelect ? 0 : undefined}
-      className={`flex flex-col gap-2.5 rounded-xl border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-4 py-3.5 outline-none shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-card-bg))] hover:shadow-[0_4px_12px_rgba(15,23,42,0.05)] ${
+      className={`flex flex-col gap-2 rounded-xl border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-3.5 py-3 outline-none shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--roadmap-card-hover-border,var(--color-accent-border,var(--color-border-hover)))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-card-bg))] hover:shadow-[0_4px_12px_rgba(15,23,42,0.05)] focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] md:gap-2.5 md:px-4 md:py-3.5 ${
         onSelect ? 'cursor-pointer' : ''
       }`}
     >

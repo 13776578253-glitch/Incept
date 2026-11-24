@@ -10,13 +10,16 @@ import {
   UI_FONTS,
   UI_FONT_SIZES,
   DOCS_FONT_SIZES,
+  DOCS_IMAGE_SCALES,
   DOCS_LINE_HEIGHTS,
+  type AccentContrastMode,
   type AccentPresetId,
   type ColorScheme,
   type ContrastMode,
   type DocsCodeAccentId,
   type DocsFontId,
   type DocsFontSizeId,
+  type DocsImageScaleId,
   type DocsInlineCodeAccentId,
   type DocsLineHeightId,
   type ThemePresetId,
@@ -25,14 +28,76 @@ import {
 } from '@incept/ui';
 import { Check, ChevronRight, Code2, Monitor, Moon, Sun } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDocsCodePaletteContext } from '@/components/base/docs-code-palette-provider';
 import {
   docsCodePaletteIds,
   type DocsCodePalette,
 } from '@/features/docs/code-highlighting/palette';
+import {
+  SETTINGS_NAVIGATE_EVENT,
+  type SettingsNavigateDetail,
+} from '../shared/settings-search-index';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useLanguage } from '@/hooks/use-language';
+
+const DOCS_ADVANCED_ANCHOR_IDS = new Set([
+  'appearance-docs-image-scale',
+  'appearance-code-palette',
+  'appearance-docs-inline-code-accent',
+  'appearance-docs-code-accent',
+]);
+
+function useSmoothDisclosure(initialOpen = false) {
+  const [open, setOpen] = useState(initialOpen);
+  const [mounted, setMounted] = useState(initialOpen);
+  const [visualOpen, setVisualOpen] = useState(initialOpen);
+  const frameRef = useRef<number | null>(null);
+  const timerRef = useRef<number | null>(null);
+
+  const clearPending = useCallback(() => {
+    if (frameRef.current !== null) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => clearPending, [clearPending]);
+
+  const openPanel = useCallback(() => {
+    clearPending();
+    setOpen(true);
+    setMounted(true);
+    frameRef.current = window.requestAnimationFrame(() => {
+      frameRef.current = null;
+      setVisualOpen(true);
+    });
+  }, [clearPending]);
+
+  const closePanel = useCallback(() => {
+    clearPending();
+    setOpen(false);
+    setVisualOpen(false);
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      setMounted(false);
+    }, 220);
+  }, [clearPending]);
+
+  const toggle = useCallback(() => {
+    if (open) {
+      closePanel();
+    } else {
+      openPanel();
+    }
+  }, [closePanel, open, openPanel]);
+
+  return { open, mounted, visualOpen, openPanel, closePanel, toggle };
+}
 
 const CODE_PALETTE_LABELS: Record<DocsCodePalette, { zh: string; en: string }> = {
   auto: { zh: '跟随主题', en: 'Follow theme' },
@@ -174,29 +239,74 @@ export function AppearanceSettingsPanel() {
     colorScheme,
     resolvedPolarity,
     accent,
+    accentContrast,
     contrast,
     font,
     fontSize,
     docsFont,
     docsFontSize,
     docsLineHeight,
+    docsImageScale,
     docsCodeAccent,
     docsInlineCodeAccent,
     isReady,
     setPreset,
     setThemeMode,
     setAccent,
+    setAccentContrast,
     setContrast,
     setFont,
     setFontSize,
     setDocsFont,
     setDocsFontSize,
     setDocsLineHeight,
+    setDocsImageScale,
     setDocsCodeAccent,
     setDocsInlineCodeAccent,
   } = useAppearance();
   const { codePalette, setCodePalette, isCodePaletteReady } = useDocsCodePaletteContext();
-  const [codePreviewOpen, setCodePreviewOpen] = useState(false);
+  const docsAdvancedDisclosure = useSmoothDisclosure(false);
+  const codePreviewDisclosure = useSmoothDisclosure(false);
+  const openDocsAdvanced = docsAdvancedDisclosure.openPanel;
+
+  useEffect(() => {
+    const handleNavigate = (event: Event) => {
+      const detail = (event as CustomEvent<SettingsNavigateDetail>).detail;
+      if (
+        detail?.sectionId === 'appearance' &&
+        detail.anchorId &&
+        DOCS_ADVANCED_ANCHOR_IDS.has(detail.anchorId)
+      ) {
+        openDocsAdvanced();
+      }
+    };
+
+    window.addEventListener(SETTINGS_NAVIGATE_EVENT, handleNavigate);
+    return () => window.removeEventListener(SETTINGS_NAVIGATE_EVENT, handleNavigate);
+  }, [openDocsAdvanced]);
+
+  const hasCustomDocsReading =
+    docsFont !== 'inherit' ||
+    docsFontSize !== 'inherit' ||
+    docsLineHeight !== 'comfortable' ||
+    docsImageScale !== '90' ||
+    codePalette !== 'auto' ||
+    docsInlineCodeAccent !== 'inherit' ||
+    docsCodeAccent !== 'inherit';
+
+  const handleResetDocsReading = () => {
+    const codePaletteChanged = codePalette !== 'auto';
+    setDocsFont('inherit');
+    setDocsFontSize('inherit');
+    setDocsLineHeight('comfortable');
+    setDocsImageScale('90');
+    setCodePalette('auto');
+    setDocsInlineCodeAccent('inherit');
+    setDocsCodeAccent('inherit');
+    if (codePaletteChanged) {
+      router.refresh();
+    }
+  };
 
   const activePresetSpec = THEME_PRESETS.find((item) => item.id === preset) ?? THEME_PRESETS[0];
   const isFixedPreset = activePresetSpec.polarity !== 'system';
@@ -247,7 +357,7 @@ export function AppearanceSettingsPanel() {
   ];
 
   return (
-    <section id="appearance" className="max-w-[760px] space-y-7">
+    <section id="appearance" className="max-w-[760px] space-y-7 [overflow-anchor:none]">
       <header className="space-y-1">
         <h2 className="text-[length:var(--text-xl)] font-semibold tracking-[-0.025em] text-[var(--color-text)]">
           {isZh ? '外观' : 'Appearance'}
@@ -421,6 +531,28 @@ export function AppearanceSettingsPanel() {
         />
 
         <SettingsRow
+          id="appearance-accent-contrast"
+          title={isZh ? '强调色对比度' : 'Accent Contrast'}
+          description={
+            isZh
+              ? '默认采用柔和弱化的强调色调，切换增强可恢复更醒目的点缀力度'
+              : 'Uses a calmer, softened accent tone by default; switch to Strong for bolder emphasis'
+          }
+          control={
+            <SegmentedControl<AccentContrastMode>
+              ariaLabel={isZh ? '强调色对比度' : 'Accent Contrast'}
+              value={isReady ? accentContrast : 'default'}
+              disabled={!isReady}
+              onValueChange={setAccentContrast}
+              options={[
+                { id: 'default', label: isZh ? '默认' : 'Default' },
+                { id: 'strong', label: isZh ? '增强' : 'Strong' },
+              ]}
+            />
+          }
+        />
+
+        <SettingsRow
           id="appearance-contrast"
           title={isZh ? '界面对比度' : 'Contrast'}
           description={
@@ -580,117 +712,193 @@ export function AppearanceSettingsPanel() {
           }
         />
 
-        <SettingsRow
-          id="appearance-code-palette"
-          title={isZh ? '代码块配色' : 'Code Palette'}
-          description={
-            isZh
-              ? '默认跟随当前站点主题自动匹配，也可手动指定编辑器配色'
-              : 'Automatically matches your theme by default or uses a manual editor palette'
-          }
-          control={
-            <Select<DocsCodePalette>
-              ariaLabel={isZh ? '代码块配色' : 'Code Palette'}
-              value={codePalette}
-              disabled={!isCodePaletteReady}
-              onValueChange={(next) => {
-                setCodePalette(next);
-                router.refresh();
-              }}
-              options={docsCodePaletteIds.map((id) => ({
-                value: id,
-                label: isZh ? CODE_PALETTE_LABELS[id].zh : CODE_PALETTE_LABELS[id].en,
-              }))}
-            />
-          }
-        />
-
-        <SettingsRow
-          id="appearance-docs-inline-code-accent"
-          title={isZh ? '行内代码强调色' : 'Inline Code Accent'}
-          description={
-            isZh
-              ? '柔和点缀正文内的术语与行内代码胶囊，默认跟随全局强调色，也可关闭'
-              : 'Subtly tints inline code pills in docs; follows global accent or can be turned off'
-          }
-          control={
-            <Select<DocsInlineCodeAccentId>
-              ariaLabel={isZh ? '行内代码强调色' : 'Inline Code Accent'}
-              value={docsInlineCodeAccent}
-              disabled={!isReady}
-              onValueChange={setDocsInlineCodeAccent}
-              options={codeAccentOptions}
-            />
-          }
-        />
-
-        <SettingsRow
-          id="appearance-docs-code-accent"
-          title={isZh ? '代码块强调色' : 'Code Accent'}
-          description={
-            isZh
-              ? '以极细侧边条与工具栏点缀代码块，默认跟随全局强调色，也可关闭'
-              : 'Subtly accents code blocks; follows global accent by default or can be turned off'
-          }
-          control={
-            <Select<DocsCodeAccentId>
-              ariaLabel={isZh ? '代码块强调色' : 'Code Accent'}
-              value={docsCodeAccent}
-              disabled={!isReady}
-              onValueChange={setDocsCodeAccent}
-              options={codeAccentOptions}
-            />
-          }
-        />
-
-        {/* Quiet expandable Code Preview disclosure row */}
-        <div className="py-3.5">
-          <button
-            type="button"
-            aria-expanded={codePreviewOpen}
-            onClick={() => setCodePreviewOpen((prev) => !prev)}
-            className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-[8px] py-0.5 text-[length:var(--text-sm)] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
-          >
-            <span className="inline-flex items-center gap-2">
-              <Code2 aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
-              <span>{isZh ? '代码预览' : 'Code Preview'}</span>
-            </span>
-            <ChevronRight
-              aria-hidden="true"
-              className={`size-4 text-[var(--color-text-soft)] transition-transform duration-150 ${codePreviewOpen ? 'rotate-90' : ''}`}
-            />
-          </button>
-
-          {codePreviewOpen ? (
-            <div className="relative mt-3 overflow-hidden rounded-[10px]">
-              <span
+        {/* Advanced sub-disclosure for image scaling & code customization */}
+        <div className="[overflow-anchor:none]">
+          <div className="flex items-center justify-between gap-3 py-3.5">
+            <button
+              id="appearance-docs-advanced-toggle"
+              type="button"
+              aria-expanded={docsAdvancedDisclosure.open}
+              onClick={docsAdvancedDisclosure.toggle}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[8px] py-0.5 text-[length:var(--text-sm)] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
+            >
+              <span>{isZh ? '高级' : 'Advanced'}</span>
+              <ChevronRight
                 aria-hidden="true"
-                className="docs-code-accent-decor pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-[2px] opacity-65"
-                style={{ backgroundColor: 'var(--docs-code-accent)' }}
+                className={`size-4 text-[var(--color-text-soft)] transition-transform duration-150 ${docsAdvancedDisclosure.open ? 'rotate-90' : ''}`}
               />
-              <pre
-                data-preview-palette={previewPaletteId}
-                className="overflow-x-auto rounded-[10px] border p-3.5 pl-4 font-mono text-[length:var(--text-xs)] leading-6"
-                style={{
-                  forcedColorAdjust: 'none',
-                  backgroundColor: codeColors.bg,
-                  borderColor: codeColors.border,
-                  color: codeColors.text,
-                }}
-              >
-                <code>
-                  <span style={{ color: codeColors.comment }}>
-                    {isZh ? `// 代码块配色：${activeCodePaletteLabel}` : `// Code palette: ${activeCodePaletteLabel}`}
-                  </span>
-                  {'\n'}
-                  <span style={{ color: codeColors.keyword }}>const</span>{' '}
-                  <span>theme</span> ={' '}
-                  <span style={{ color: codeColors.fn }}>useAppearance</span>();{'\n'}
-                  <span style={{ color: codeColors.keyword }}>export const</span>{' '}
-                  <span>preset</span> ={' '}
-                  <span style={{ color: codeColors.string }}>&apos;{preset}&apos;</span>;
-                </code>
-              </pre>
+            </button>
+
+            <button
+              type="button"
+              disabled={!isReady || !isCodePaletteReady || !hasCustomDocsReading}
+              onClick={handleResetDocsReading}
+              className="cursor-pointer rounded-[6px] px-1.5 py-0.5 text-[length:var(--text-xs)] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {isZh ? '重置为默认设置' : 'Reset to defaults'}
+            </button>
+          </div>
+
+          {docsAdvancedDisclosure.mounted ? (
+            <div
+              inert={!docsAdvancedDisclosure.open || undefined}
+              className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none [overflow-anchor:none] ${
+                docsAdvancedDisclosure.visualOpen
+                  ? 'grid-rows-[1fr] opacity-100'
+                  : 'grid-rows-[0fr] opacity-0'
+              }`}
+            >
+              <div className="-mx-1 overflow-hidden px-1">
+                <div className="border-t border-[var(--color-border-faint)] [&>*:not(:last-child)]:border-b [&>*:not(:last-child)]:border-[var(--color-border-faint)]">
+                  <SettingsRow
+                    id="appearance-docs-image-scale"
+                    title={isZh ? '文档图片缩放' : 'Docs Image Scale'}
+                    description={
+                      isZh
+                        ? '控制文档插图与流程图的默认显示宽度，仅缩放排版尺寸而不降低清晰度'
+                        : 'Scale image and diagram display width in docs without reducing sharpness'
+                    }
+                    control={
+                      <Select<DocsImageScaleId>
+                        ariaLabel={isZh ? '文档图片缩放' : 'Docs Image Scale'}
+                        value={docsImageScale}
+                        disabled={!isReady}
+                        onValueChange={setDocsImageScale}
+                        options={DOCS_IMAGE_SCALES.map((item) => ({
+                          value: item.id,
+                          label: isZh ? item.label.zh : item.label.en,
+                        }))}
+                      />
+                    }
+                  />
+
+                  <SettingsRow
+                    id="appearance-code-palette"
+                    title={isZh ? '代码块配色' : 'Code Palette'}
+                    description={
+                      isZh
+                        ? '默认跟随当前站点主题自动匹配，也可手动指定编辑器配色'
+                        : 'Automatically matches your theme by default or uses a manual editor palette'
+                    }
+                    control={
+                      <Select<DocsCodePalette>
+                        ariaLabel={isZh ? '代码块配色' : 'Code Palette'}
+                        value={codePalette}
+                        disabled={!isCodePaletteReady}
+                        onValueChange={(next) => {
+                          setCodePalette(next);
+                          router.refresh();
+                        }}
+                        options={docsCodePaletteIds.map((id) => ({
+                          value: id,
+                          label: isZh ? CODE_PALETTE_LABELS[id].zh : CODE_PALETTE_LABELS[id].en,
+                        }))}
+                      />
+                    }
+                  />
+
+                  <SettingsRow
+                    id="appearance-docs-inline-code-accent"
+                    title={isZh ? '行内代码强调色' : 'Inline Code Accent'}
+                    description={
+                      isZh
+                        ? '柔和点缀正文内的术语与行内代码胶囊，默认跟随全局强调色，也可关闭'
+                        : 'Subtly tints inline code pills in docs; follows global accent or can be turned off'
+                    }
+                    control={
+                      <Select<DocsInlineCodeAccentId>
+                        ariaLabel={isZh ? '行内代码强调色' : 'Inline Code Accent'}
+                        value={docsInlineCodeAccent}
+                        disabled={!isReady}
+                        onValueChange={setDocsInlineCodeAccent}
+                        options={codeAccentOptions}
+                      />
+                    }
+                  />
+
+                  <SettingsRow
+                    id="appearance-docs-code-accent"
+                    title={isZh ? '代码块强调色' : 'Code Accent'}
+                    description={
+                      isZh
+                        ? '以极细侧边条与工具栏点缀代码块，默认跟随全局强调色，也可关闭'
+                        : 'Subtly accents code blocks; follows global accent by default or can be turned off'
+                    }
+                    control={
+                      <Select<DocsCodeAccentId>
+                        ariaLabel={isZh ? '代码块强调色' : 'Code Accent'}
+                        value={docsCodeAccent}
+                        disabled={!isReady}
+                        onValueChange={setDocsCodeAccent}
+                        options={codeAccentOptions}
+                      />
+                    }
+                  />
+
+                  {/* Quiet expandable Code Preview disclosure row */}
+                  <div className="py-3.5 [overflow-anchor:none]">
+                    <button
+                      type="button"
+                      aria-expanded={codePreviewDisclosure.open}
+                      onClick={codePreviewDisclosure.toggle}
+                      className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-[8px] py-0.5 text-[length:var(--text-sm)] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <Code2 aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
+                        <span>{isZh ? '代码预览' : 'Code Preview'}</span>
+                      </span>
+                      <ChevronRight
+                        aria-hidden="true"
+                        className={`size-4 text-[var(--color-text-soft)] transition-transform duration-150 ${codePreviewDisclosure.open ? 'rotate-90' : ''}`}
+                      />
+                    </button>
+
+                    {codePreviewDisclosure.mounted ? (
+                      <div
+                        inert={!codePreviewDisclosure.open || undefined}
+                        className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none [overflow-anchor:none] ${
+                          codePreviewDisclosure.visualOpen
+                            ? 'grid-rows-[1fr] opacity-100'
+                            : 'grid-rows-[0fr] opacity-0'
+                        }`}
+                      >
+                        <div className="overflow-hidden">
+                          <div className="relative mt-3 overflow-hidden rounded-[10px]">
+                            <span
+                              aria-hidden="true"
+                              className="docs-code-accent-decor pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-[2px] opacity-65"
+                              style={{ backgroundColor: 'var(--docs-code-accent)' }}
+                            />
+                            <pre
+                              data-preview-palette={previewPaletteId}
+                              className="overflow-x-auto rounded-[10px] border p-3.5 pl-4 font-mono text-[length:var(--text-xs)] leading-6"
+                              style={{
+                                forcedColorAdjust: 'none',
+                                backgroundColor: codeColors.bg,
+                                borderColor: codeColors.border,
+                                color: codeColors.text,
+                              }}
+                            >
+                              <code>
+                                <span style={{ color: codeColors.comment }}>
+                                  {isZh ? `// 代码块配色：${activeCodePaletteLabel}` : `// Code palette: ${activeCodePaletteLabel}`}
+                                </span>
+                                {'\n'}
+                                <span style={{ color: codeColors.keyword }}>const</span>{' '}
+                                <span>theme</span> ={' '}
+                                <span style={{ color: codeColors.fn }}>useAppearance</span>();{'\n'}
+                                <span style={{ color: codeColors.keyword }}>export const</span>{' '}
+                                <span>preset</span> ={' '}
+                                <span style={{ color: codeColors.string }}>&apos;{preset}&apos;</span>;
+                              </code>
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : null}
         </div>

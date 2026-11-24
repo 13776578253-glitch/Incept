@@ -46,7 +46,7 @@ export function RoadmapSurface({
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 shrink-0 md:mb-5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 shrink-0 md:mb-5 md:gap-3">
         <SurfaceNavigation
           projects={projects}
           currentProject={currentProject}

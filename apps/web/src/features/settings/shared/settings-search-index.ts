@@ -45,6 +45,14 @@ export const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     keywords: ['highlight', 'accent', 'neutral', 'mist blue', 'cobalt', 'dusty rose', 'sage', 'amber', '雾蓝', '靛蓝', '尘玫', '鼠尾草', '琥珀'],
   },
   {
+    id: 'appearance-accent-contrast',
+    sectionId: 'appearance',
+    anchorId: 'appearance-accent-contrast',
+    title: { zh: '强调色对比度', en: 'Accent contrast' },
+    sectionLabel: { zh: '外观', en: 'Appearance' },
+    keywords: ['accent', 'contrast', 'soft', 'muted', 'strong', '强调色对比度', '弱化', '强调色', '增强'],
+  },
+  {
     id: 'appearance-contrast',
     sectionId: 'appearance',
     anchorId: 'appearance-contrast',
@@ -91,6 +99,14 @@ export const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     title: { zh: '文档行距', en: 'Docs line height' },
     sectionLabel: { zh: '外观', en: 'Appearance' },
     keywords: ['line height', 'spacing', 'compact', 'comfortable', 'relaxed', '行距', '紧凑', '适中', '舒展'],
+  },
+  {
+    id: 'appearance-docs-image-scale',
+    sectionId: 'appearance',
+    anchorId: 'appearance-docs-image-scale',
+    title: { zh: '文档图片缩放', en: 'Docs image scale' },
+    sectionLabel: { zh: '外观', en: 'Appearance' },
+    keywords: ['image', 'scale', 'zoom', 'diagram', 'width', '图片缩放', '图片', '流程图', '缩放', '90%', '80%'],
   },
   {
     id: 'appearance-code-palette',

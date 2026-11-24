@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ACCENT_CONTRAST_MODE_IDS,
   DOCS_CODE_ACCENT_IDS,
   DOCS_FONT_IDS,
   DOCS_FONT_SIZE_IDS,
+  DOCS_IMAGE_SCALE_IDS,
   DOCS_INLINE_CODE_ACCENT_IDS,
   DOCS_LINE_HEIGHT_IDS,
   UI_FONTS,
@@ -11,9 +13,11 @@ import {
   buildAppearanceInitScript,
   getColorSchemeMetaContent,
   getSmartToggleTarget,
+  isAccentContrastMode,
   isDocsCodeAccent,
   isDocsFont,
   isDocsFontSize,
+  isDocsImageScale,
   isDocsInlineCodeAccent,
   isDocsLineHeight,
   isUiFont,
@@ -111,6 +115,13 @@ describe('theme-config', () => {
     expect(DOCS_CODE_ACCENT_IDS).toContain('none');
     expect(DOCS_CODE_ACCENT_IDS).toContain('mist-blue');
     expect(DOCS_INLINE_CODE_ACCENT_IDS).toEqual(DOCS_CODE_ACCENT_IDS);
+    expect(ACCENT_CONTRAST_MODE_IDS).toEqual(['default', 'strong']);
+    expect(DOCS_IMAGE_SCALE_IDS).toEqual(['100', '90', '80', '70', '60']);
+    expect(isAccentContrastMode('default')).toBe(true);
+    expect(isAccentContrastMode('strong')).toBe(true);
+    expect(isAccentContrastMode('soft')).toBe(false);
+    expect(isDocsImageScale('90')).toBe(true);
+    expect(isDocsImageScale('50')).toBe(false);
     expect(isDocsFont('inherit')).toBe(true);
     expect(isDocsFont('kai')).toBe(true);
     expect(isDocsFont('unknown')).toBe(false);
@@ -138,5 +149,7 @@ describe('theme-config', () => {
     expect(script).toContain('data-docs-line-height');
     expect(script).toContain('data-docs-code-accent');
     expect(script).toContain('data-docs-inline-code-accent');
+    expect(script).toContain('data-accent-contrast');
+    expect(script).toContain('data-docs-image-scale');
   });
 });

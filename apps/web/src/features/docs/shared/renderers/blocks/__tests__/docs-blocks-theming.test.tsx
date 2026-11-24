@@ -5,6 +5,7 @@ import { DocsInlineContent } from '../../docs-inline-content';
 import { DocsCalloutBlock } from '../docs-callout-block';
 import { DocsChecklistBlock } from '../docs-checklist-block';
 import { DocsCodeBlock } from '../docs-code-block';
+import { DocsImageBlock } from '../docs-image-block';
 import { DocsQuoteBlock } from '../docs-quote-block';
 import { DocsTableBlock } from '../docs-table-block';
 
@@ -117,5 +118,24 @@ describe('Docs blocks semantic theming integration', () => {
     await user.click(copyBtn);
     expect(writeText).toHaveBeenCalledWith('const a = 1;');
     expect(screen.getByRole('button', { name: 'Copied code' })).toBeInTheDocument();
+  });
+
+  it('renders ImageBlock scaled cleanly via --docs-image-max-width without transform distortion', () => {
+    const { container } = render(
+      <DocsImageBlock
+        id="img-1"
+        type="image"
+        src="/demo/workflow.png"
+        alt="Workflow diagram"
+        caption="模型训练与推理流程"
+      />,
+    );
+
+    const innerWrapper = container.querySelector('figure > div');
+    const image = screen.getByRole('img', { name: 'Workflow diagram' });
+    expect(innerWrapper?.className).toContain('max-w-[var(--docs-image-max-width,90%)]');
+    expect(image.className).toContain('h-auto');
+    expect(image.className).toContain('w-full');
+    expect(screen.getByText('模型训练与推理流程')).toBeInTheDocument();
   });
 });

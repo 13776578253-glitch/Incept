@@ -21,7 +21,7 @@ type RoadmapBoardProps = {
   createRequest?: number;
 };
 
-// Module C：Undo 目标 = 板列序上一档；状态不在板列时按 completed→active→unstarted→reviewing 回退一级。
+// Module C：Undo / Advance 目标 = 板列序上一档 / 下一档；状态不在板列时按既有顺序兜底。
 function undoTargetFor(
   columns: readonly { status: RoadmapStatus }[],
   entry: RoadmapEntry,
@@ -38,7 +38,25 @@ function undoTargetFor(
   return fallbackIndex > 0 ? fallback[fallbackIndex - 1] : undefined;
 }
 
-// Compare + Monitor：稳定扫描通道为主。桌面 = 多列横向通道；<768px = 分段控件切换单列（改变结构，不是压缩）。
+function advanceTargetFor(
+  columns: readonly { status: RoadmapStatus }[],
+  entry: RoadmapEntry,
+): RoadmapStatus | undefined {
+  const index = columns.findIndex((column) => column.status === entry.status);
+
+  if (index >= 0) {
+    return index < columns.length - 1 ? columns[index + 1].status : undefined;
+  }
+
+  const fallback: readonly RoadmapStatus[] = ['reviewing', 'unstarted', 'active', 'completed'];
+  const fallbackIndex = fallback.indexOf(entry.status);
+
+  return fallbackIndex >= 0 && fallbackIndex < fallback.length - 1
+    ? fallback[fallbackIndex + 1]
+    : undefined;
+}
+
+// Compare + Monitor：三档自适应（≥1180px 四列横排；768–1179px 双列网格；<768px 吸顶阶段切换单列）。
 export function RoadmapBoard({
   board,
   locale,
@@ -63,6 +81,12 @@ export function RoadmapBoard({
         ? settled.map((item) => (item.key === saved.key ? saved : item))
         : [...settled, saved];
     });
+    if (
+      saved.status !== activeEntry?.status &&
+      columns.some((column) => column.status === saved.status)
+    ) {
+      setSelected(saved.status);
+    }
     setActiveEntry(saved);
     onChanged?.();
   }
@@ -110,44 +134,47 @@ export function RoadmapBoard({
   }
 
   return (
-    <section aria-label={chrome.boardLabel} className="flex flex-col gap-3 md:min-h-0 md:flex-1">
-      <div
-        role="group"
-        aria-label={chrome.lanePickerLabel}
-        className="flex gap-2 overflow-x-auto pb-1 md:hidden no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {columns.map((column) => {
-          const StatusIcon = statusIcons[column.status];
-          const displayLabel = column.label.en || column.label[locale];
+    <section aria-label={chrome.boardLabel} className="flex flex-col gap-3 min-[1180px]:min-h-0 min-[1180px]:flex-1">
+      <div className="sticky top-[var(--navbar-height,64px)] z-20 -mx-4 bg-[color-mix(in_oklab,var(--color-bg)_92%,transparent)] px-4 py-1.5 backdrop-blur-sm sm:-mx-6 sm:px-6 md:hidden">
+        <div
+          role="group"
+          aria-label={chrome.lanePickerLabel}
+          className="flex items-center gap-1 overflow-x-auto rounded-[12px] border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-lane-bg)] p-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {columns.map((column) => {
+            const StatusIcon = statusIcons[column.status];
+            const displayLabel = column.label.en || column.label[locale];
+            const active = selected === column.status;
 
-          return (
-            <button
-              key={column.status}
-              type="button"
-              aria-pressed={selected === column.status}
-              onClick={() => setSelected(column.status)}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[0.8rem] font-medium transition-colors ${
-                selected === column.status
-                  ? 'border-[var(--roadmap-border-hover,var(--color-text-soft))] bg-[var(--roadmap-chip-bg)] text-[var(--color-text)] shadow-xs'
-                  : 'border-[var(--roadmap-border,var(--color-border))] text-[var(--color-text-muted)]'
-              }`}
-            >
-              <span
-                aria-hidden="true"
-                className="inline-flex shrink-0"
-                style={{ color: statusColors[column.status] }}
+            return (
+              <button
+                key={column.status}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setSelected(column.status)}
+                className={`inline-flex shrink-0 flex-1 items-center justify-center gap-1 rounded-[9px] px-2 py-1.5 text-[0.74rem] font-medium whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] ${
+                  active
+                    ? 'border border-[var(--color-accent-border,var(--roadmap-border-hover,var(--color-border)))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text)] shadow-xs'
+                    : 'border border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                }`}
               >
-                <StatusIcon />
-              </span>
-              {displayLabel}
-              <span className="tabular-nums text-[var(--color-text-soft)]">
-                {countByStatus.get(column.status) ?? 0}
-              </span>
-            </button>
-          );
-        })}
+                <span
+                  aria-hidden="true"
+                  className="inline-flex shrink-0"
+                  style={{ color: statusColors[column.status] }}
+                >
+                  <StatusIcon />
+                </span>
+                <span>{displayLabel}</span>
+                <span className="tabular-nums text-[var(--color-text-soft)]">
+                  {countByStatus.get(column.status) ?? 0}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-      <div className="flex flex-col gap-3.5 md:grid md:min-h-0 md:flex-1 md:grid-rows-[minmax(0,1fr)] md:auto-cols-[minmax(288px,1fr)] md:grid-flow-col md:items-start md:gap-4 md:snap-x md:overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:items-start md:gap-4 min-[1180px]:min-h-0 min-[1180px]:flex-1 min-[1180px]:grid-flow-col min-[1180px]:auto-cols-[minmax(0,1fr)] min-[1180px]:grid-cols-none min-[1180px]:grid-rows-[minmax(0,1fr)] min-[1180px]:overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {columns.map((column) => {
           const displayLabel = column.label.en || column.label[locale];
 
@@ -170,11 +197,13 @@ export function RoadmapBoard({
           entry={activeEntry}
           allEntries={entries}
           columnLabels={columnLabels}
+          statusOptions={columns.map((column) => column.status)}
           locale={locale}
           chrome={chrome}
           canEdit={canEdit}
           createStatus={createStatus}
           undoStatus={undoTargetFor(columns, activeEntry)}
+          advanceStatus={advanceTargetFor(columns, activeEntry)}
           onClose={() => setActiveEntry(null)}
           onSelectEntry={(entry) => setActiveEntry(entry)}
           onEntrySaved={handleEntrySaved}
