@@ -171,6 +171,7 @@ Supported blocks:
 | `- [ ] item` / `- [x] item` | Single-level checklist. |
 | `> quote` | Quote block; consecutive quote lines merge. |
 | `:::callout ...` | Callout block. |
+| `:::html ...` | Sandboxed interactive HTML / Three.js visualization embed. |
 | Fenced code | Code block with an optional language and attributes. |
 | `---` / `--- {variant=spacious}` | Divider. |
 | `![alt](src "caption")` | Image block. |
@@ -197,6 +198,43 @@ export const answer = 42;
 
 Code fences preserve source text. Rendering, syntax highlighting, light/dark palettes, and eye-comfort colors are handled by the Docs code renderer.
 
+### HTML Visualization Embed
+
+Use `:::html` to embed a standalone HTML / Canvas / Three.js visualization inside a frameless sandboxed container:
+
+````md
+:::html title="Orbiting Cube" height="420" caption="Interactive Three.js demo"
+<!doctype html>
+<html>
+  <body>
+    <canvas id="scene"></canvas>
+    <script type="module">
+      import * as THREE from 'https://esm.sh/three@0.170.0';
+      // Optional theme sync from the host document
+      window.addEventListener('message', (event) => {
+        if (event.data?.type === 'incept:theme') {
+          document.documentElement.dataset.theme = event.data.theme;
+        }
+      });
+    </script>
+  </body>
+</html>
+:::
+````
+
+You can also reference a co-located `.html` or `.htm` file (relative to the `.docs.md` file or its sibling `assets/` directory, inside `DOCS_CONTENT_ROOT`, max `512 KB`):
+
+```md
+:::html src="./scene.html" height="380" caption="Local visualization file" :::
+```
+
+Rules and runtime contract:
+
+- Supported attributes: `title`, `height` (integer `120`–`1200`, default `380`, optional `px` suffix), `caption`, and `src`.
+- Inline body HTML and `src` are mutually exclusive; one of them must be non-empty (`max 512 KB` UTF-8).
+- Renders inside `<iframe sandbox="allow-scripts" loading="lazy" referrerPolicy="no-referrer">` without `allow-same-origin` and without toolbar/fullscreen buttons; CDN / `importmap` ESM modules are supported inside the frame.
+- On load and whenever `data-theme` / `data-accent` changes, the host sends `window.postMessage({ type: 'incept:theme', theme, accent }, '*')`.
+
 ### Equations and tables
 
 Use `$…$` for inline math in paragraphs, list items, quotes, body headings, and table cells.
@@ -215,7 +253,7 @@ Use `\|` for a literal pipe in plain text. Pipes inside math or inline code stay
 
 The parser reports source lines for unsupported syntax rather than guessing a conversion.
 
-- Raw HTML, scripts, iframes, video, and embed blocks.
+- Raw HTML tags written directly in the document body outside `:::html` containers, plus video and third-party video embeds.
 - Bold and italic Markdown syntax.
 - Nested or multiline checklist items.
 - Heading attributes, list/checklist emphasis containers, and quote attribution syntax.
@@ -407,6 +445,7 @@ pnpm docs:import --dir account-access --dry-run
 | `- [ ] item` / `- [x] item` | 单层 checklist。 |
 | `> quote` | Quote block；连续引用行会合并。 |
 | `:::callout ...` | Callout block。 |
+| `:::html ...` | 沙箱隔离的 HTML / Three.js 交互可视化块。 |
 | fenced code | 含可选语言与属性的代码块。 |
 | `$$` 独立围栏 | 块级 LaTeX，支持显式编号。 |
 | 管道分隔表格 | 保留列对齐、行内公式和链接的表格。 |
@@ -435,6 +474,43 @@ export const answer = 42;
 
 代码围栏保留原始文本；语法高亮、亮暗主题与护眼配色由 Docs 代码渲染器处理。
 
+### HTML / 可视化嵌入块
+
+使用 `:::html` 在极简无控件的沙箱容器中嵌入独立 HTML / Canvas / Three.js 可视化：
+
+````md
+:::html title="旋转立方体" height="420" caption="交互式 Three.js 演示"
+<!doctype html>
+<html>
+  <body>
+    <canvas id="scene"></canvas>
+    <script type="module">
+      import * as THREE from 'https://esm.sh/three@0.170.0';
+      // 按需监听宿主文档的主题与强调色同步
+      window.addEventListener('message', (event) => {
+        if (event.data?.type === 'incept:theme') {
+          document.documentElement.dataset.theme = event.data.theme;
+        }
+      });
+    </script>
+  </body>
+</html>
+:::
+````
+
+也可以通过 `src` 引用同目录或同级 `assets/` 目录下的 `.html` / `.htm` 文件（须位于 `DOCS_CONTENT_ROOT` 内，最大 `512 KB`）：
+
+```md
+:::html src="./scene.html" height="380" caption="本地可视化文件" :::
+```
+
+规则与运行时契约：
+
+- 支持参数：`title`、`height`（`120`–`1200` 整数，默认 `380`，可选 `px` 后缀）、`caption`、`src`。
+- 内联正文与 `src` 互斥，且两者必须二选一非空；UTF-8 内容上限 `512 KB`。
+- 渲染使用极简无工具栏 `<iframe sandbox="allow-scripts" loading="lazy" referrerPolicy="no-referrer">`（不启用 `allow-same-origin`），允许在容器内部通过 CDN / `importmap` 引入 Three.js 等 ESM 模块。
+- 加载完成及全站切换 `data-theme` / `data-accent` 时，宿主会向容器发送 `postMessage({ type: 'incept:theme', theme, accent }, '*')`。
+
 ### 公式和表格
 
 行内公式用 `$…$`，适用于段落、列表项、引用、正文小标题和表格单元格。
@@ -462,7 +538,7 @@ $$
 
 Parser 会报告不支持语法所在行，而不是猜测转换结果。
 
-- 原始 HTML、script、iframe、video、embed。
+- 直接书写在正文顶层、`:::html` 容器之外的原始 HTML 标签，以及 video 和第三方视频 embed。
 - Markdown bold 与 italic。
 - 嵌套或多行 checklist。
 - heading attributes、list/checklist emphasis 容器、quote attribution。

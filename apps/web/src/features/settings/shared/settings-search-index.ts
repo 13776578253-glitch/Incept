@@ -304,6 +304,15 @@ export const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     ownerOnly: true,
   },
   {
+    id: 'docs-curation',
+    sectionId: 'docs',
+    anchorId: 'docs-curation',
+    title: { zh: '首页精选白名单', en: 'Docs Home curated whitelist' },
+    sectionLabel: { zh: '文档', en: 'Docs' },
+    keywords: ['curated', 'whitelist', 'featured', 'docs home', '精选', '白名单', '首页展示', '筛选'],
+    ownerOnly: true,
+  },
+  {
     id: 'docs-table',
     sectionId: 'docs',
     anchorId: 'docs-table',

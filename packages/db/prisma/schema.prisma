@@ -284,6 +284,7 @@ model DocsDocument {
   layoutMode     DocLayoutMode        @default(contentOnly)
   accessRole     DocAccessRole        @default(guest)
   isListed       Boolean              @default(true)
+  isCurated      Boolean              @default(false)
   createdById    Int?
   createdBy      User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
   locales        DocsDocumentLocale[]
@@ -296,6 +297,7 @@ model DocsDocument {
   @@index([layoutMode])
   @@index([accessRole])
   @@index([isListed])
+  @@index([isCurated])
   @@map("docs_documents")
 }
 
@@ -351,6 +353,7 @@ model DocsCollection {
   id            Int                    @id @default(autoincrement())
   collectionKey String?                @unique
   accessRole    DocAccessRole          @default(guest)
+  isCurated     Boolean                @default(false)
   createdById   Int?
   createdBy     User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)
   locales       DocsCollectionLocale[]
@@ -359,6 +362,7 @@ model DocsCollection {
   updatedAt     DateTime               @updatedAt
 
   @@index([accessRole])
+  @@index([isCurated])
   @@map("docs_collections")
 }
 

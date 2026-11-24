@@ -356,6 +356,8 @@ account-access\
 
 外部 URL 不会被复制到本地媒体目录。
 
+对于使用 `:::html src="./scene.html"` 引用的本地 `.html` / `.htm` 可视化文件，导入器同样按相对当前文章路径和同级 `assets/` 顺序查找，校验其位于 `DOCS_CONTENT_ROOT` 内且不超过 `512 KB`；区别在于 `.html` 文件会在导入时直接内嵌进对应 `html` block，不会复制到 `apps/web/public/_docs-media/`。
+
 ## 7. 多语言合集
 
 当前 `--dir` 批次只处理一个 locale。中文和英文应分别导入，但使用相同的 `collectionKey` 与文章 `documentKey`：
@@ -458,7 +460,8 @@ git diff --check
 5. 在浏览器中检查最终页面。
 6. 确认无误后点击 `Confirm import`。
 7. 发布后打开正式文章和合集首页，确认路由、权限、图片和导航。
-8. 修改合集目录后，重点核对 `renamed`、`removed` 和 `unchanged` 项。
+8. 新发布的独立文章或专题合集默认 `isCurated = false`；如需在文档首页默认的「只看精选」模式下直接露出，可在 `设置 -> 文档管理`（Owner 权限）的「首页精选白名单」中开启对应开关。
+9. 修改合集目录后，重点核对 `renamed`、`removed` 和 `unchanged` 项。
 
 长文章的右侧 `On this page` 会保留固定标题，并将目录列表限制在视口约 40% 高度内；列表仍可使用滚轮或触控板滚动，底部渐变表示还有后续条目。阅读位置进入列表外的 section 时，目录会平滑滚动并使当前活动条目回到可见区域。
 

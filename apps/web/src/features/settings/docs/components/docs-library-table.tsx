@@ -4,7 +4,10 @@ import { useDeferredValue, useState } from 'react';
 import { NavigationLink as Link } from '@/components/layouts/navigation-link';
 import { useLocale, useTranslations } from 'next-intl';
 import type { DocsLibraryEntryModel } from '../types';
+import { DocsPaginationFooter } from './docs-pagination-footer';
 import { DocsSelect, type DocsSelectOption } from './docs-select';
+
+const LIBRARY_PAGE_SIZE = 8;
 
 type DocsLibraryTableProps = {
   entries: DocsLibraryEntryModel[];
@@ -43,6 +46,7 @@ export function DocsLibraryTable({
   const [searchValue, setSearchValue] = useState('');
   const [routeTypeFilter, setRouteTypeFilter] = useState<RouteTypeFilter>('all');
   const [accessRoleFilter, setAccessRoleFilter] = useState<AccessRoleFilter>('all');
+  const [page, setPage] = useState(1);
   const deferredSearchValue = useDeferredValue(searchValue);
 
   const normalizedSearchValue = deferredSearchValue.trim().toLowerCase();
@@ -61,6 +65,13 @@ export function DocsLibraryTable({
 
     return getEntrySearchText(entry).includes(normalizedSearchValue);
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / LIBRARY_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedEntries = filteredEntries.slice(
+    (safePage - 1) * LIBRARY_PAGE_SIZE,
+    safePage * LIBRARY_PAGE_SIZE,
+  );
 
   const routeTypeOptions: DocsSelectOption[] = [
     { value: 'all', label: `${t('filters.routeType')}: ${t('filters.all')}` },
@@ -95,7 +106,10 @@ export function DocsLibraryTable({
               value={searchValue}
               aria-label={t('filters.searchPlaceholder')}
               placeholder={t('filters.searchPlaceholder')}
-              onChange={(event) => setSearchValue(event.target.value)}
+              onChange={(event) => {
+                setSearchValue(event.target.value);
+                setPage(1);
+              }}
               className="h-9 w-full rounded-[10px] border border-[var(--color-border-input,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] pl-8 pr-2.5 text-[length:var(--text-xs)] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-text-soft)] focus:border-[var(--color-border-focus,var(--color-border-strong))] focus:outline-none [&::-webkit-search-cancel-button]:hidden"
             />
             <svg
@@ -115,7 +129,10 @@ export function DocsLibraryTable({
             value={routeTypeFilter}
             options={routeTypeOptions}
             ariaLabel={t('filters.routeType')}
-            onChange={(value) => setRouteTypeFilter(value as RouteTypeFilter)}
+            onChange={(value) => {
+              setRouteTypeFilter(value as RouteTypeFilter);
+              setPage(1);
+            }}
             className="w-full sm:w-[152px] shrink-0"
           />
 
@@ -123,7 +140,10 @@ export function DocsLibraryTable({
             value={accessRoleFilter}
             options={accessRoleOptions}
             ariaLabel={t('filters.accessRole')}
-            onChange={(value) => setAccessRoleFilter(value as AccessRoleFilter)}
+            onChange={(value) => {
+              setAccessRoleFilter(value as AccessRoleFilter);
+              setPage(1);
+            }}
             className="w-full sm:w-[144px] shrink-0"
           />
         </div>
@@ -163,7 +183,7 @@ export function DocsLibraryTable({
                 </td>
               </tr>
             ) : (
-              filteredEntries.map((entry) => (
+              paginatedEntries.map((entry) => (
                 <tr
                   key={`${entry.documentId}-${entry.locale}-${entry.slug}`}
                   className="transition-colors hover:bg-[color:var(--color-surface-hover)] group"
@@ -234,6 +254,13 @@ export function DocsLibraryTable({
           </tbody>
         </table>
       </div>
+      <DocsPaginationFooter
+        page={safePage}
+        totalPages={totalPages}
+        pageSize={LIBRARY_PAGE_SIZE}
+        totalItems={filteredEntries.length}
+        onPageChange={setPage}
+      />
     </section>
   );
 }

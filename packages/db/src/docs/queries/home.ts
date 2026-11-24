@@ -15,6 +15,7 @@ function toHomeCollectionRecord({
   row: {
     id: number;
     accessRole: DbDocsHomeCollectionRecord['accessRole'];
+    isCurated: boolean;
     locales: Array<{
       locale: string;
       slug: string;
@@ -65,6 +66,7 @@ function toHomeCollectionRecord({
     accessRole: row.accessRole,
     firstArticleSlug,
     firstArticleAccessRole: firstArticleDocument.accessRole,
+    isCurated: row.isCurated,
   };
 }
 
@@ -94,6 +96,7 @@ export async function listPublishedDocsHomeEntries({
       select: {
         id: true,
         accessRole: true,
+        isCurated: true,
         locales: {
           where: {
             locale,
@@ -123,6 +126,7 @@ export async function listPublishedDocsHomeEntries({
       select: {
         id: true,
         accessRole: true,
+        isCurated: true,
         locales: {
           where: {
             locale,
@@ -186,6 +190,7 @@ export async function listPublishedDocsHomeEntries({
         requiredRole: row.accessRole,
         eyebrow: localeRow.eyebrow,
         accessRole: row.accessRole,
+        isCurated: row.isCurated,
       },
     ];
   });

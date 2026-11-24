@@ -8,7 +8,7 @@ const prismaCache = globalThis as unknown as {
 };
 
 // schema 每次变化都要改：Next dev 的 HMR 会留住旧的运行时模型
-const prismaSchemaRevision = '2026-10-17-sync-agent-jobs';
+const prismaSchemaRevision = '2026-11-23-docs-home-curation';
 const hasCurrentPrismaClient =
   prismaCache.__inceptPrisma__ &&
   prismaCache.__inceptPrismaSchemaRevision__ === prismaSchemaRevision;

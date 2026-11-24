@@ -231,9 +231,9 @@ describe('SiteHeader', () => {
     }
   });
 
-  it('toggles redesigned mobile icon menu dropdown, marks active route, and closes on link click or Escape', async () => {
+  it('toggles redesigned mobile icon menu dropdown, collapses nested groups, avoids double active dots, and closes on link click or Escape', async () => {
     const user = userEvent.setup();
-    mocks.pathname = '/zh/roadmap';
+    mocks.pathname = '/zh/docs';
     render(<SiteHeader />);
 
     expect(screen.getByRole('link', { name: '设置' })).toBeInTheDocument();
@@ -246,16 +246,34 @@ describe('SiteHeader', () => {
     await user.click(menuToggle);
     expect(screen.getByRole('button', { name: '关闭' })).toHaveAttribute('aria-expanded', 'true');
 
-    const mobileDropdown = document.getElementById('mobile-site-navigation');
+    const mobileDropdown = document.getElementById('mobile-site-navigation')!;
     expect(mobileDropdown).not.toBeNull();
-    expect(within(mobileDropdown!).getByRole('link', { name: '路线图' })).toHaveAttribute('aria-current', 'page');
 
-    fireEvent.keyDown(window, { key: 'Escape' });
+    // Defaults to collapsed: child routes are hidden and parent row holds the active indicator dot
+    const docsGroupButton = within(mobileDropdown).getByRole('button', { name: '文档' });
+    expect(docsGroupButton).toHaveAttribute('aria-expanded', 'false');
+    expect(within(mobileDropdown).queryByRole('link', { name: /随笔/ })).toBeNull();
+    expect(mobileDropdown.querySelectorAll('[data-mobile-nav-active-dot]')).toHaveLength(1);
+    expect(within(docsGroupButton.parentElement!).getByRole('button')).toContainElement(
+      mobileDropdown.querySelector('[data-mobile-nav-active-dot="parent"]') as HTMLElement,
+    );
+
+    // Expanding moves the active dot exclusively to the active child route (no duplicate dots)
+    await user.click(docsGroupButton);
+    expect(docsGroupButton).toHaveAttribute('aria-expanded', 'true');
+    expect(mobileDropdown.querySelector('[data-mobile-nav-active-dot="parent"]')).toBeNull();
+    expect(mobileDropdown.querySelectorAll('[data-mobile-nav-active-dot]')).toHaveLength(1);
+    expect(within(mobileDropdown).getByRole('link', { name: /文档/ })).toHaveAttribute('aria-current', 'page');
+
+    await user.click(within(mobileDropdown).getByRole('link', { name: /随笔/ }));
     expect(document.getElementById('mobile-site-navigation')).toBeNull();
 
+    // Reopening resets the accordion group back to collapsed
     await user.click(screen.getByRole('button', { name: '菜单' }));
-    const openDropdown = document.getElementById('mobile-site-navigation');
-    await user.click(within(openDropdown!).getByRole('link', { name: /随笔/ }));
+    const reopenedDropdown = document.getElementById('mobile-site-navigation')!;
+    expect(within(reopenedDropdown).getByRole('button', { name: '文档' })).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.keyDown(window, { key: 'Escape' });
     expect(document.getElementById('mobile-site-navigation')).toBeNull();
   });
 });

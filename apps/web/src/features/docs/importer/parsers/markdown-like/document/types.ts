@@ -8,6 +8,7 @@ import type {
   DocsDividerVariant,
   DocsEquationBlockModel,
   DocsHeadingBlockModel,
+  DocsHtmlBlockModel,
   DocsImageBlockModel,
   DocsListBlockModel,
   DocsListStyle,
@@ -87,6 +88,8 @@ export type MarkdownLikeCodeBlock = WithParserLine<
 
 export type MarkdownLikeImageBlock = WithParserLine<DocsImageBlockModel>;
 
+export type MarkdownLikeHtmlBlock = WithParserLine<DocsHtmlBlockModel>;
+
 export type MarkdownLikeDividerBlock = WithParserLine<
   DocsDividerBlockModel,
   {
@@ -103,6 +106,7 @@ export type MarkdownLikeBlock =
   | MarkdownLikeCalloutBlock
   | MarkdownLikeCodeBlock
   | MarkdownLikeImageBlock
+  | MarkdownLikeHtmlBlock
   | MarkdownLikeDividerBlock
   | WithParserLine<DocsEquationBlockModel>
   | WithParserLine<DocsTableBlockModel>;

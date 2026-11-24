@@ -31,9 +31,9 @@ export function DocsHomeToolbar({
   }, []);
 
   return (
-    <div className="flex w-full justify-center">
+    <div className="flex min-w-0 flex-1 justify-center lg:w-full">
       {/* Centered real-time search box matching top button height (38px) */}
-      <div className="relative w-full max-w-[420px] sm:max-w-[460px]">
+      <div className="relative w-full lg:max-w-[420px]">
         <svg
           aria-hidden="true"
           viewBox="0 0 16 16"

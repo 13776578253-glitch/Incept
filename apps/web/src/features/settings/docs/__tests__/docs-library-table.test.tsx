@@ -1,5 +1,5 @@
 import type {ReactNode} from 'react';
-import {cleanup,render} from '@testing-library/react';
+import {cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
 import {afterEach,expect,it,vi} from 'vitest';
 import zh from '../../../../messages/zh/docs.json';
@@ -48,4 +48,20 @@ it('renders the open route link without the copy route button',()=>{
   const openLink=document.querySelector('a[href="/zh/docs/design-patterns/design-patterns-overview"]');
   expect(openLink?.textContent).toContain('打开路由');
   expect(document.body.textContent).not.toContain('复制路由');
+});
+
+it('paginates long entry lists across pages',()=>{
+  const entries:DocsLibraryEntryModel[]=Array.from({length:10},(_,index)=>({
+    ...entry,
+    documentId:index+1,
+    title:`Doc ${index+1}`,
+    slug:`doc-${index+1}`,
+    finalRoute:`/zh/docs/doc-${index+1}`,
+  }));
+  renderTable(entries);
+  expect(document.querySelectorAll('tbody tr')).toHaveLength(8);
+  expect(screen.getByText('1 / 2')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'下一页'}));
+  expect(document.querySelectorAll('tbody tr')).toHaveLength(2);
+  expect(screen.getByText('2 / 2')).toBeTruthy();
 });

@@ -118,6 +118,15 @@ export type DbDocsSectionBlock =
       align: ('left' | 'center' | 'right' | null)[];
       header: DbDocsInlineContent[][];
       rows: DbDocsInlineContent[][][];
+    }
+  | {
+      id: string;
+      type: 'html';
+      html: string;
+      title?: string;
+      height?: number;
+      caption?: string;
+      sourceFile?: string;
     };
 
 export type DbDocsSection = {
@@ -243,6 +252,7 @@ export type DbDocsHomeArticleRecord = {
   // Tags placeholder: unused contract field reserved for interface compatibility.
   tags?: string[];
   accessRole: DocAccessRole;
+  isCurated?: boolean;
 };
 
 export type DbDocsHomeCollectionRecord = {
@@ -257,6 +267,18 @@ export type DbDocsHomeCollectionRecord = {
   accessRole: DocAccessRole;
   firstArticleSlug: string;
   firstArticleAccessRole: DocAccessRole;
+  isCurated?: boolean;
+};
+
+export type DbDocsHomeCurationEntryRecord = {
+  entryType: 'singleArticle' | 'collection';
+  targetId: number;
+  title: string;
+  slug: string;
+  locales: DbDocsLocale[];
+  accessRole: DocAccessRole;
+  isCurated: boolean;
+  publishedAt: Date;
 };
 
 export type DbDocsHomeEntryRecord =

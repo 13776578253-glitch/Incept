@@ -8,6 +8,7 @@ import { isMarkdownLikeTableRow } from './table';
 export { parseMarkdownLikeCode } from './code';
 export { parseMarkdownLikeCallout, parseMarkdownLikeDivider, parseMarkdownLikeQuote } from './editorial';
 export { parseMarkdownLikeEquation } from './equation';
+export { parseMarkdownLikeHtml } from './html';
 export { parseMarkdownLikeImage } from './image';
 export { parseMarkdownLikeChecklist, parseMarkdownLikeList } from './lists';
 export { parseMarkdownLikeParagraph } from './paragraph';

@@ -10,6 +10,9 @@ import type {
 const allowedMetaKeys = markdownLikeAllowedFrontmatterKeys;
 
 const allowedBodyKeys = new Set(['sections'] as const);
+const maxHtmlBlockBytes = 512 * 1024;
+const minHtmlBlockHeight = 120;
+const maxHtmlBlockHeight = 1200;
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -37,8 +40,8 @@ function addUnknownKeyWarnings(
   }
 }
 
-// 收集正文中重复的 section id 和 block id，确保每个 section 和 block 都有唯一的标识符，以避免在渲染和数据处理过程中出现混淆和错误
-function collectDuplicateIds(
+// 收集正文中重复的 section id 和 block id，以及需要校验内容约束的块，确保结构与内容均合法
+function validateSections(
   sections: DbDocsSection[],
   issues: DocsImportValidationIssue[],
 ) {
@@ -58,16 +61,50 @@ function collectDuplicateIds(
     sectionIds.add(section.id);
 
     section.blocks.forEach((block, blockIndex) => {
+      const blockPath = `body.sections[${sectionIndex}].blocks[${blockIndex}]`;
       if (blockIds.has(block.id)) {
         issues.push({
           level: 'error',
           code: 'duplicate_block_id',
           message: `Duplicate block id "${block.id}" was found.`,
-          path: `body.sections[${sectionIndex}].blocks[${blockIndex}].id`,
+          path: `${blockPath}.id`,
         });
       }
 
       blockIds.add(block.id);
+
+      if (block.type === 'html') {
+        if (!isNonEmptyString(block.html)) {
+          issues.push({
+            level: 'error',
+            code: 'invalid_html_block',
+            message: 'HTML block must contain non-empty HTML content.',
+            path: `${blockPath}.html`,
+          });
+        } else if (Buffer.byteLength(block.html, 'utf8') > maxHtmlBlockBytes) {
+          issues.push({
+            level: 'error',
+            code: 'html_block_too_large',
+            message: `HTML block content must not exceed ${maxHtmlBlockBytes / 1024} KB.`,
+            path: `${blockPath}.html`,
+          });
+        }
+
+        if (
+          block.height !== undefined &&
+          (typeof block.height !== 'number' ||
+            !Number.isFinite(block.height) ||
+            block.height < minHtmlBlockHeight ||
+            block.height > maxHtmlBlockHeight)
+        ) {
+          issues.push({
+            level: 'error',
+            code: 'invalid_html_block_height',
+            message: `HTML block height must be between ${minHtmlBlockHeight} and ${maxHtmlBlockHeight}.`,
+            path: `${blockPath}.height`,
+          });
+        }
+      }
     });
   });
 }
@@ -283,7 +320,7 @@ export function normalizeDocsImportSource(
   }
 
   if (source.body.sections?.length) {
-    collectDuplicateIds(source.body.sections, issues);
+    validateSections(source.body.sections, issues);
   }
 
   const normalizedSource: DocsImportNormalizedSource = {

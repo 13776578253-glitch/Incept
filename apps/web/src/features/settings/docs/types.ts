@@ -26,7 +26,19 @@ export type DocsLibraryStatsModel = {
   recentlyUpdatedCount: number;
 };
 
+export type DocsHomeCurationEntryModel = {
+  entryType: 'singleArticle' | 'collection';
+  targetId: number;
+  title: string;
+  slug: string;
+  locales: Array<'en' | 'zh'>;
+  accessRole: 'guest' | 'pro' | 'private';
+  isCurated: boolean;
+  publishedAt: string;
+};
+
 export type DocsLibraryPageModel = {
   stats: DocsLibraryStatsModel;
   entries: DocsLibraryEntryModel[];
+  curationEntries?: DocsHomeCurationEntryModel[];
 };

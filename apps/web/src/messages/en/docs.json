@@ -29,7 +29,16 @@
       "viewSeriesAction": "View series"
     },
     "addDoc": "Add doc",
-    "addDocDesc": "Create or manage documents"
+    "addDocDesc": "Create or manage documents",
+    "curation": {
+      "curatedLabel": "Curated",
+      "allLabel": "All posts",
+      "curatedHint": "tap to see rough notes too",
+      "allHint": "tap to hide casual posts",
+      "toggleAriaCurated": "Showing curated posts only, click to show all",
+      "toggleAriaAll": "Showing all posts, click to show curated only",
+      "showAllAction": "Show all posts"
+    }
   },
   "access": {
     "requiresRole": "Requires {role} access"
@@ -126,6 +135,26 @@
       "openRoute": "Open route",
       "copyRoute": "Copy route",
       "copied": "Copied"
+    },
+    "curation": {
+      "eyebrow": "Docs Home",
+      "title": "Curated Whitelist",
+      "description": "Choose standalone articles and collections kept in curated Docs Home view · When empty, all items remain visible",
+      "selectedCount": "{selected} / {total} selected",
+      "searchPlaceholder": "Search title or slug",
+      "filterAll": "All",
+      "filterSelected": "Whitelisted",
+      "filterUnselected": "Not listed",
+      "entryTypeCollection": "Collection",
+      "entryTypeSingle": "Standalone",
+      "empty": "No Docs Home entries available to curate",
+      "saveError": "Failed to update whitelist, please try again"
+    },
+    "pagination": {
+      "summary": "Showing {start}–{end} of {total}",
+      "pageIndicator": "{page} / {totalPages}",
+      "prev": "Previous",
+      "next": "Next"
     }
   }
 }

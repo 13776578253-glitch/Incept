@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from 'next-intl';
+import { DocsHomeCurationPanel } from './components/docs-home-curation-panel';
 import { DocsLibraryStats } from './components/docs-library-stats';
 import { DocsLibraryTable } from './components/docs-library-table';
 import type { DocsLibraryPageModel } from './types';
@@ -22,6 +23,7 @@ export function DocsSettingsPanel({ page }: { page: DocsLibraryPageModel }) {
         </p>
       </header>
       <DocsLibraryStats stats={page.stats} />
+      <DocsHomeCurationPanel initialEntries={page.curationEntries ?? []} />
       <DocsLibraryTable entries={page.entries} />
     </section>
   );
