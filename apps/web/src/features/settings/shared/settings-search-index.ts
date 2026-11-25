@@ -151,6 +151,32 @@ export const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     keywords: ['reading language', 'docs', '文档', '阅读语言'],
   },
 
+  // Dashboard
+  {
+    id: 'dashboard-palette',
+    sectionId: 'dashboard',
+    anchorId: 'dashboard-palette',
+    title: { zh: '图表色彩风格', en: 'Chart palette style' },
+    sectionLabel: { zh: '仪表盘', en: 'Dashboard' },
+    keywords: ['dashboard', 'chart', 'palette', 'vivid', 'pastel', '仪表盘', '图表', '配色', '清透活力', '柔和粉彩'],
+  },
+  {
+    id: 'dashboard-family-colors',
+    sectionId: 'dashboard',
+    anchorId: 'dashboard-family-colors',
+    title: { zh: '模型家族色系', en: 'Model family hues' },
+    sectionLabel: { zh: '仪表盘', en: 'Dashboard' },
+    keywords: ['deepseek', 'gemini', 'gpt', 'claude', 'family', 'color', '模型家族', '配色'],
+  },
+  {
+    id: 'dashboard-pinned-models',
+    sectionId: 'dashboard',
+    anchorId: 'dashboard-pinned-models',
+    title: { zh: '固化展示模型与单模型配色', en: 'Pinned & recolored models' },
+    sectionLabel: { zh: '仪表盘', en: 'Dashboard' },
+    keywords: ['pin', 'pinned', 'model', 'hero', '固化模型', '固定模型', '单模型配色'],
+  },
+
   // Music
   {
     id: 'music-player-enabled',

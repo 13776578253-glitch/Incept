@@ -163,6 +163,10 @@ export type TokenDashboardData = {
   collectionIssues?: string[];
   updatedAt: string;
   checkedAt?: string;
+  /** Owner-only internals; the public summary allowlist never copies these. */
+  importsCheckedAt?: string;
+  importSignature?: string;
+  revalidating?: boolean;
   range?: import('./window').UsageRange;
   dateRange: {
     from: string;

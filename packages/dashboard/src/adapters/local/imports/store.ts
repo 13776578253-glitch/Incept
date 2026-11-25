@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import type { ImportMappings, ImportPreview, ImportReceipt, TransferBundle } from '../../../domain';
@@ -13,6 +13,14 @@ export type StoredBatch = { receipt: ImportReceipt; bundle: TransferBundle; mapp
 export type StoredPreview = { bundle: TransferBundle; mappings: ImportMappings; reviewHash: string; summary: ImportPreview };
 export function importStorePath(home = homedir()) {
   return process.env.INCEPT_DASHBOARD_IMPORTS_FILE || join(home, '.incept', 'dashboard-imports.db');
+}
+// Cheap identity of the committed import state. Captured before imports are read, so a commit
+// or rollback that lands mid-collection can never be masked by a later completion timestamp.
+export function readImportSignature(home = homedir()): string {
+  const path = importStorePath(home);
+  return [path, path + '-wal', path + '-shm'].map(file => {
+    try { const stats = statSync(file, { bigint: true }); return `${stats.size}:${stats.mtimeNs}:${stats.ctimeNs}`; } catch { return 'missing'; }
+  }).join('|');
 }
 export class ImportStore {
   private db: Database;

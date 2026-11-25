@@ -226,4 +226,49 @@ describe('package local usage adapter', () => {
     expect(data.projects).toEqual([]);
     expect(data.sources.every((source) => source.status === 'pending')).toBe(true);
   });
+
+  it('measures raw snapshot TTL from scan completion and skips import identity indexing when zero active batches exist', async () => {
+    let clock = Date.parse('2026-10-12T04:00:00Z');
+    vi.spyOn(Date, 'now').mockImplementation(() => clock);
+    const dir = join(localHome.path, '.commandcode', 'projects', 'project');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'slow.jsonl'), JSON.stringify({
+      id: 'slow-1',
+      model: 'slow-model',
+      timestamp: '2026-10-12T00:00:00Z',
+      usage: { inputTokens: 100, outputTokens: 20, costUsd: 0.1 },
+    }) + '\n');
+
+    const commandCode = await import('../adapters/local/collectors/commandcode');
+    const matching = await import('../adapters/local/imports/matching');
+    const identitySpy = vi.spyOn(matching, 'identityIndex');
+    const collectSpy = vi.spyOn(commandCode, 'collectCommandCodeEvents').mockImplementation(() => {
+      clock += 20_000; // Simulate a 20s cold scan (>15s TTL from start).
+      return { events: [{
+        sourceId: 'commandcode', sourceLabel: 'CommandCode', sessionId: 's1', modelName: 'slow-model',
+        projectKey: 'project', projectName: 'project', timestampMs: Date.parse('2026-10-12T00:00:00Z'),
+        inputTokens: 100, outputTokens: 20, cacheReadTokens: 0, cacheCreationTokens: 0, reasoningTokens: 0,
+        cost: 0.1, costSource: 'recorded', missingPricing: false, dateKey: '2026-10-12', monthKey: '2026-10',
+      }], latestMtimeMs: Date.parse('2026-10-12T00:00:00Z'), errors: [] };
+    });
+    const { loadTokenDashboardData } = await import('@incept/dashboard/adapters');
+
+    const first = await loadTokenDashboardData({ range: '30d' });
+    expect(first.totals.totalTokens).toBe(120);
+    expect(collectSpy).toHaveBeenCalledTimes(1);
+    expect(identitySpy).not.toHaveBeenCalled();
+
+    // 10s after scan completion (30s after scan start): raw cache must STILL be valid.
+    clock += 10_000;
+    const second = await loadTokenDashboardData({ range: '7d' });
+    expect(second.totals.totalTokens).toBe(120);
+    expect(collectSpy).toHaveBeenCalledTimes(1);
+    expect(identitySpy).not.toHaveBeenCalled();
+
+    // 6s later (16s after scan completion): raw cache expires.
+    clock += 6_000;
+    await loadTokenDashboardData({ range: 'all' });
+    expect(collectSpy).toHaveBeenCalledTimes(2);
+    expect(identitySpy).not.toHaveBeenCalled();
+  });
 });

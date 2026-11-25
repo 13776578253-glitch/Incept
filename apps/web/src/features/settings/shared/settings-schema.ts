@@ -3,6 +3,7 @@ import { collectSettingsSectionContributions, mountManifest } from '@/mount/regi
 import type { SettingsPageData } from './settings-types';
 import { getAccountSettingsSection } from '../account/account-schema';
 import { getAppearanceSettingsSection } from '../appearance/appearance-schema';
+import { getDashboardSettingsSection } from '../dashboard/dashboard-schema';
 import { getLanguageSettingsSection } from '../language/language-schema';
 
 export function getSettingsPageData(locale: AppLocale, includeProjects = false): SettingsPageData {
@@ -14,6 +15,7 @@ export function getSettingsPageData(locale: AppLocale, includeProjects = false):
     sections: [
       getAppearanceSettingsSection(locale),
       getLanguageSettingsSection(locale),
+      getDashboardSettingsSection(locale),
       getAccountSettingsSection(locale),
       ...(includeProjects ? [{
         id: 'docs',

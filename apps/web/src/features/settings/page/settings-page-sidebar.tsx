@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  BarChart3,
   FileText,
   Globe,
   LayoutGrid,
@@ -33,7 +34,7 @@ const SIDEBAR_GROUPS: readonly SidebarGroup[] = [
   {
     id: 'preferences',
     label: { zh: '偏好设置', en: 'Preferences' },
-    sectionIds: ['appearance', 'language', 'music'],
+    sectionIds: ['appearance', 'language', 'dashboard', 'music'],
   },
   {
     id: 'account',
@@ -59,6 +60,8 @@ function SectionIcon({ id, active }: { id: string; active: boolean }) {
       return <Palette aria-hidden="true" className={className} strokeWidth={1.75} />;
     case 'language':
       return <Globe aria-hidden="true" className={className} strokeWidth={1.75} />;
+    case 'dashboard':
+      return <BarChart3 aria-hidden="true" className={className} strokeWidth={1.75} />;
     case 'account':
       return <UserRound aria-hidden="true" className={className} strokeWidth={1.75} />;
     case 'docs':

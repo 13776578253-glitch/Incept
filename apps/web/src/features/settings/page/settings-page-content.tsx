@@ -8,6 +8,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { findSettingsSectionContribution, mountManifest } from '@/mount/registry';
 import { AccountSettingsPanel } from '../account/account-settings-panel';
 import { AppearanceSettingsPanel } from '../appearance/appearance-settings-panel';
+import { DashboardSettingsPanel } from '../dashboard/dashboard-settings-panel';
 import { DocsSettingsPanel } from '../docs/docs-settings-panel';
 import type { DocsLibraryPageModel } from '../docs/types';
 import { LanguageSettingsPanel } from '../language/language-settings-panel';
@@ -114,6 +115,8 @@ export function SettingsPageContent({
       <div>
         {selectedSection.id === 'appearance' ? (
           <AppearanceSettingsPanel />
+        ) : selectedSection.id === 'dashboard' ? (
+          <DashboardSettingsPanel />
         ) : selectedSection.id === 'docs' && viewerRole === 'owner' && docs ? (
           <DocsSettingsPanel page={docs} />
         ) : selectedSection.id === 'projects' && viewerRole === 'owner' ? (

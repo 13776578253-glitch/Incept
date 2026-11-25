@@ -9,22 +9,28 @@ import { collectCommandCodeEvents } from './collectors/commandcode';
 import { collectAiusageAndRawAgentEvents } from './collectors/agents';
 import { summarizeUsageEvents } from './aggregation/summarize';
 import { canonicalModelName, readLocalOverrides } from './overrides';
-import { collectCcusageFallback } from './collectors/ccusage';
+import { clearCcusageFallbackCache, collectCcusageFallback } from './collectors/ccusage';
 import type { SourceDescriptionKey } from '../../domain';
 import { normalizeFile } from './collectors/common';
 import { loadImportedEvents } from './imports/layer';
-import { importStorePath } from './imports/store';
+import { importStorePath, readImportSignature } from './imports/store';
 import { applyCommandCodeQuota } from './pricing-schedule';
 
 type Snapshot = { home: string; expiresAt: number; events: RawUsageEvent[]; pricing: Map<string, UnitPricing>; updatedAt: number;
   fallbackEvents: Set<RawUsageEvent>; fallbackSources: SourceDescriptionKey[]; coveredSessions: Set<string>; errors: string[];
   aliases: Record<string, string>; fallbackDateHints: Partial<Record<SourceDescriptionKey, string[]>>; coveredFiles: Set<string> };
 let cachedSnapshot: Snapshot | null = null;
+let snapshotEpoch = 0;
 
 export async function loadTokenDashboardData(options: { range?: UsageRange; force?: boolean; home?: string } = {}): Promise<TokenDashboardData> {
   const now = Date.now();
   const home = options.home ?? homedir();
+  if (options.force) {
+    snapshotEpoch += 1;
+    clearCcusageFallbackCache();
+  }
   if (!cachedSnapshot || cachedSnapshot.home !== home || options.force || cachedSnapshot.expiresAt <= now) {
+    const scanEpoch = ++snapshotEpoch;
     const overrides = readLocalOverrides();
     const pricing = loadLocalPricingMap(home, overrides);
     const commandcode = collectCommandCodeEvents(home, pricing);
@@ -49,18 +55,24 @@ export async function loadTokenDashboardData(options: { range?: UsageRange; forc
     }
     const indexedKeys = new Set(agents.fallbackEvents.map(event => JSON.stringify([event.sourceId, event.sessionId, event.timestampMs, canonicalModelName(event.modelName, overrides.aliases)])));
     const fallbackEvents = new Set(events.filter(event => indexedKeys.has(JSON.stringify([event.sourceId, event.sessionId, event.timestampMs, event.modelName]))));
-    cachedSnapshot = { home, events, pricing, updatedAt, expiresAt: now + 15_000, aliases: overrides.aliases,
+    const scannedAt = Date.now();
+    const builtSnapshot: Snapshot = { home, events, pricing, updatedAt, expiresAt: scannedAt + 15_000, aliases: overrides.aliases,
       fallbackEvents, fallbackSources: agents.fallbackSources, coveredSessions: agents.coveredSessions,
       fallbackDateHints: agents.fallbackDateHints,
       coveredFiles: new Set([...agents.parsedFiles, ...commandFiles]),
       errors: [...agents.errors, ...agents.harnessDiagnostics.map(item => 'deepseekHarness:' + item.reason + ':' + (item.sessionId ?? 'unidentified')), ...commandcode.errors, ...(overrides.error ? [overrides.error] : [])] };
+    if (scanEpoch === snapshotEpoch || !cachedSnapshot) cachedSnapshot = builtSnapshot;
   }
   const snapshot = cachedSnapshot;
+  if (!snapshot) throw new Error('Snapshot unavailable');
   const range = options.range ?? 'all';
+  // Captured before the import store is read: a commit landing during collection must invalidate this snapshot.
+  const importsCheckedAt = new Date(Date.now()).toISOString(), importSignature = readImportSignature(home);
   const imported = loadImportedEvents(snapshot.events, snapshot.pricing, snapshot.aliases, importStorePath(home));
-  const eligible = [...snapshot.events.filter(event => !imported.replacedIndexed.has(event)), ...imported.events].filter(event => event.timestampMs <= now);
+  const readAt = Date.now();
+  const eligible = [...snapshot.events.filter(event => !imported.replacedIndexed.has(event)), ...imported.events].filter(event => event.timestampMs <= readAt);
   const firstDate = eligible.reduce<string | undefined>((first, event) => !first || event.dateKey < first ? event.dateKey : first, undefined);
-  const window = dateWindow(range, now, firstDate);
+  const window = dateWindow(range, readAt, firstDate);
   const fallback = await collectCcusageFallback(snapshot.fallbackSources, window, snapshot.pricing, snapshot.coveredSessions, undefined, snapshot.fallbackDateHints, snapshot.coveredFiles);
   const selected = eligible.filter(event => event.dateKey >= window.from && event.dateKey <= window.to
     && !(snapshot.fallbackEvents.has(event) && fallback.coveredSessions.has(event.sourceId + ':' + event.sessionId)));
@@ -72,6 +84,6 @@ export async function loadTokenDashboardData(options: { range?: UsageRange; forc
     source.collectionMode = modes.size > 1 ? 'mixed' : [...modes][0];
   }
   const indexedRemaining = selected.some(event => snapshot.fallbackEvents.has(event));
-  return { ...data, range, checkedAt: new Date(now).toISOString(), collectionIssues: [...new Set([...snapshot.errors, ...fallback.errors, ...imported.issues,
+  return { ...data, range, checkedAt: new Date(Date.now()).toISOString(), importsCheckedAt, importSignature, collectionIssues: [...new Set([...snapshot.errors, ...fallback.errors, ...imported.issues,
     ...(indexedRemaining ? ['Historical indexed usage retained where original files or reports are unavailable.'] : [])])] };
 }
