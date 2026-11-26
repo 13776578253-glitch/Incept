@@ -1,0 +1,394 @@
+{
+  "rates": [
+    {
+      "model": "claude-opus-4-6",
+      "provider": "Anthropic",
+      "currency": "USD",
+      "evidence": "Anthropic Standard API USD reference; cache writes require retention evidence; https://platform.claude.com/docs/en/about-claude/pricing",
+      "effectiveFrom": 1770336000000,
+      "perMillion": {"input": "5", "output": "25", "cacheRead": "0.5", "reasoning": "25"}
+    },
+    {
+      "model": "claude-opus-5-5",
+      "provider": "Anthropic",
+      "currency": "USD",
+      "evidence": "Standard API token reference in USD with 5m ($5/1M) and 1h ($8/1M) cache write TTL tiers; historical records without TTL metadata default to 5m estimate per 2026-11-26 Owner policy; https://platform.claude.com/docs/en/about-claude/pricing ; https://platform.claude.com/docs/en/models/opus-5-5/whats-new-opus-5-5",
+      "effectiveFrom": 1790121600000,
+      "perMillion": {"input": "4", "output": "20", "cacheRead": "0.2", "cacheWrite": "5", "reasoning": "20"},
+      "cacheWriteTtl": {"5m": "5", "1h": "8"}
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "provider": "Anthropic",
+      "currency": "USD",
+      "evidence": "Historical Anthropic Claude Sonnet 5.5 USD reference from 2026-09-28 through 2026-10-06 UTC with 5m ($2.50/1M) and 1h ($4/1M) cache write TTL tiers; https://lmprices.com/anthropic/claude-sonnet-5-5",
+      "effectiveFrom": 1790553600000,
+      "effectiveTo": 1791331200000,
+      "perMillion": {"input": "2", "output": "10", "cacheRead": "0.2", "cacheWrite": "2.5", "reasoning": "10"},
+      "cacheWriteTtl": {"5m": "2.5", "1h": "4"}
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "provider": "Anthropic",
+      "currency": "USD",
+      "evidence": "Anthropic Claude Sonnet 5.5 standard 1M-context USD reference effective 2026-10-07 UTC with 5m ($2.50/1M) and 1h ($4/1M) cache write TTL tiers; https://platform.claude.com/docs/en/about-claude/pricing",
+      "effectiveFrom": 1791331200000,
+      "perMillion": {"input": "2", "output": "10", "cacheRead": "0.1", "cacheWrite": "2.5", "reasoning": "10"},
+      "cacheWriteTtl": {"5m": "2.5", "1h": "4"}
+    },
+    {
+      "model": "deepseek-flash",
+      "provider": "DeepSeek",
+      "currency": "USD",
+      "evidence": "Direct DeepSeek V4 Flash USD reference, including Vision Exp at V4 Flash pricing. Peak windows apply every day in this version; https://api-docs.deepseek.com/news/news260813/ ; https://api-docs.deepseek.com/img/v4_260813_price_en.png ; https://api-docs.deepseek.com/news/news260821/",
+      "effectiveFrom": 1786896000000,
+      "effectiveTo": 1789012800000,
+      "perMillion": {"input": "0.22", "output": "0.66", "cacheRead": "0.007", "reasoning": "0.66"},
+      "schedule": {
+        "version": "deepseek-v4-flash-peak-2026-08",
+        "utcOffsetMinutes": 0,
+        "weekdays": [0, 1, 2, 3, 4, 5, 6],
+        "peakHours": [{"from":"01:00","to":"04:00"}, {"from":"06:00","to":"10:00"}],
+        "peakMultiplier": "2",
+        "holidays": []
+      }
+    },
+    {
+      "model": "deepseek-flash",
+      "provider": "DeepSeek",
+      "currency": "USD",
+      "evidence": "Direct DeepSeek API USD reference. Off-peak base; https://api-docs.deepseek.com/quick_start/pricing/ ; https://api-docs.deepseek.com/news/news260910/ ; https://www.beijing.gov.cn/zhengce/zhengcefagui/202511/t20251104_4258873.html",
+      "effectiveFrom": 1789012800000,
+      "effectiveTo": 1798732800000,
+      "perMillion": {"input": "0.15", "output": "0.6", "cacheRead": "0.003", "reasoning": "0.6"},
+      "schedule": {
+        "version": "deepseek-flash-peak-cn-2026",
+        "utcOffsetMinutes": 480,
+        "weekdays": [1, 2, 3, 4, 5],
+        "peakHours": [{"from":"09:00","to":"12:00"}, {"from":"14:00","to":"18:00"}],
+        "peakMultiplier": "2",
+        "holidays": [
+          {"from":"2026-09-25","to":"2026-09-27"},
+          {"from":"2026-10-01","to":"2026-10-07"}
+        ]
+      }
+    },
+    {
+      "model": "deepseek-flash",
+      "provider": "DeepSeek",
+      "currency": "USD",
+      "evidence": "Official DeepSeek USD reference, current published base rates carried into the 2027 holiday calendar; https://api-docs.deepseek.com/quick_start/pricing/ ; https://english.www.gov.cn/policies/latestreleases/202611/06/content_WS6aed74dcc6d00ca5f9a0e22e.html",
+      "effectiveFrom": 1798732800000,
+      "effectiveTo": 1830268800000,
+      "perMillion": {"input": "0.15", "output": "0.6", "cacheRead": "0.003", "reasoning": "0.6"},
+      "schedule": {
+        "version": "deepseek-flash-peak-cn-2027",
+        "utcOffsetMinutes": 480,
+        "weekdays": [1, 2, 3, 4, 5],
+        "peakHours": [{"from":"09:00","to":"12:00"}, {"from":"14:00","to":"18:00"}],
+        "peakMultiplier": "2",
+        "holidays": [
+          {"from":"2027-01-01","to":"2027-01-03"},
+          {"from":"2027-02-05","to":"2027-02-13"},
+          {"from":"2027-04-03","to":"2027-04-05"},
+          {"from":"2027-05-01","to":"2027-05-05"},
+          {"from":"2027-06-09","to":"2027-06-09"},
+          {"from":"2027-09-15","to":"2027-09-15"},
+          {"from":"2027-10-01","to":"2027-10-07"}
+        ]
+      }
+    },
+    {
+      "model": "gemini-3-flash-preview",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Standard text/image/video token reference in USD; https://aistudio.google.com/docs/pricing#gemini-3-flash-preview ; https://blog.google/innovation-and-ai/technology/developers-tools/gemini-3-flash/",
+      "effectiveFrom": 1766016000000,
+      "perMillion": {"input": "0.5", "output": "3", "cacheRead": "0.05", "reasoning": "3"}
+    },
+    {
+      "model": "gemini-3.1-pro-preview",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Google Gemini API Standard paid-tier USD reference, long-prompt tier applies above 200K input tokens; https://aistudio.google.com/docs/pricing#gemini-3.1-pro-preview ; https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/",
+      "effectiveFrom": 1771545600000,
+      "perMillion": {"input": "2", "output": "12", "cacheRead": "0.2", "reasoning": "12"},
+      "longPrompt": {
+        "aboveInputTokens": 200000,
+        "perMillion": {"input": "4", "output": "18", "cacheRead": "0.4", "reasoning": "18"}
+      }
+    },
+    {
+      "model": "gemini-3.8-flash",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Standard Google token reference in USD; https://aistudio.google.com/docs/pricing#gemini-3.8-flash ; https://antigravity.google/blog/gemini-3-8-flash-in-google-antigravity/",
+      "effectiveFrom": 1788307200000,
+      "effectiveTo": 1798761600000,
+      "perMillion": {"input": "0.75", "output": "3.75", "cacheRead": "0.075", "reasoning": "3.75"}
+    },
+    {
+      "model": "gemini-3.8-flash",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Standard Google token reference in USD; https://aistudio.google.com/docs/pricing#gemini-3.8-flash ; https://antigravity.google/blog/gemini-3-8-flash-in-google-antigravity/",
+      "effectiveFrom": 1798761600000,
+      "perMillion": {"input": "1.5", "output": "7.5", "cacheRead": "0.15", "reasoning": "7.5"}
+    },
+    {
+      "model": "gemini-4-argon",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Gemini Standard API introductory USD reference from the public launch date through November 30 using UTC day boundaries; https://cloud.google.com/blog/products/ai-machine-learning/gemini-4-argon-available-on-google-cloud ; https://aistudio.google.com/docs/pricing#gemini-4-argon",
+      "effectiveFrom": 1791849600000,
+      "effectiveTo": 1796083200000,
+      "perMillion": {"input": "2", "output": "10", "cacheRead": "0.1", "reasoning": "10"}
+    },
+    {
+      "model": "gemini-4-argon",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Gemini Standard API USD reference from December 1 using the UTC day boundary; https://aistudio.google.com/docs/pricing#gemini-4-argon",
+      "effectiveFrom": 1796083200000,
+      "perMillion": {"input": "4", "output": "20", "cacheRead": "0.2", "reasoning": "20"}
+    },
+    {
+      "model": "gemini-4-carbon",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Google Gemini 4 Carbon Standard API introductory USD reference from 2026-11-10 through 2026-11-30 UTC (non-Priority tier); https://ai.google.dev/gemini-api/docs/pricing",
+      "effectiveFrom": 1794268800000,
+      "effectiveTo": 1796083200000,
+      "perMillion": {"input": "2", "output": "10", "cacheRead": "0.1", "reasoning": "10"}
+    },
+    {
+      "model": "gemini-4-carbon",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Google Gemini 4 Carbon Standard API USD reference from 2026-12-01 UTC (non-Priority tier); https://ai.google.dev/gemini-api/docs/pricing",
+      "effectiveFrom": 1796083200000,
+      "perMillion": {"input": "4", "output": "20", "cacheRead": "0.2", "reasoning": "20"}
+    },
+    {
+      "model": "gemini-4-hydrogen",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Standard Google token reference in USD with implicit cache reads; https://aistudio.google.com/docs/pricing#gemini-4-hydrogen ; https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-hydrogen/",
+      "effectiveFrom": 1794528000000,
+      "perMillion": {"input": "1.5", "output": "7.5", "cacheRead": "0.075", "reasoning": "7.5"}
+    },
+    {
+      "model": "gemini-4-neon",
+      "provider": "Google",
+      "currency": "USD",
+      "evidence": "Standard Google token reference in USD with implicit cache reads; https://aistudio.google.com/docs/pricing#gemini-4-neon ; https://blog.google/technology/developers/gemini-4-neon/",
+      "effectiveFrom": 1795046400000,
+      "perMillion": {"input": "3", "output": "15", "cacheRead": "0.15", "reasoning": "15"}
+    },
+    {
+      "model": "glm-5.3",
+      "provider": "Zhipu BigModel",
+      "currency": "USD",
+      "evidence": "Reference estimate from BigModel's CNY 8 input, 2 cache hit and 28 output per 1M, divided by the fixed CFETS midpoint CNY 6.7152 per USD on 2026-11-13 and rounded to 12 decimals. The rate applies to this reference replay from 2026-09-01, without assuming ZCode subscription spend or historical FX. https://docs.bigmodel.cn/cn/guide/start/pricing ; https://help.aliyun.com/zh/model-studio/glm-5-3-by-zhipu ; https://www.chinamoney.com.cn/chinese/bkccpr/index.html?tab=2",
+      "effectiveFrom": 1788220800000,
+      "perMillion": {"input": "1.191327138432", "output": "4.169644984513", "cacheRead": "0.297831784608", "reasoning": "4.169644984513"}
+    },
+    {
+      "model": "gpt-5.2-codex",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference, dated to the API release and retirement days in UTC; https://developers.openai.com/api/docs/models/gpt-5.2-codex ; https://developers.openai.com/api/docs/changelog ; https://developers.openai.com/api/docs/deprecations",
+      "effectiveFrom": 1768348800000,
+      "effectiveTo": 1784764800000,
+      "perMillion": {"input": "1.75", "output": "14", "cacheRead": "0.175", "reasoning": "14"}
+    },
+    {
+      "model": "gpt-5.3-codex",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference, dated to the API release and retirement days in UTC; https://developers.openai.com/api/docs/models/gpt-5.3-codex ; https://developers.openai.com/api/docs/changelog ; https://developers.openai.com/api/docs/deprecations",
+      "effectiveFrom": 1771891200000,
+      "effectiveTo": 1806537600000,
+      "perMillion": {"input": "1.75", "output": "14", "cacheRead": "0.175", "reasoning": "14"}
+    },
+    {
+      "model": "gpt-5.4",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-5.4",
+      "effectiveFrom": 1772755200000,
+      "perMillion": {"input": "2.5", "output": "15", "cacheRead": "0.25", "reasoning": "15"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "5", "output": "22.5", "cacheRead": "0.5", "reasoning": "22.5"}
+      }
+    },
+    {
+      "model": "gpt-5.5",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-5.5",
+      "effectiveFrom": 1776988800000,
+      "perMillion": {"input": "5", "output": "30", "cacheRead": "0.5", "reasoning": "30"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "10", "output": "45", "cacheRead": "1", "reasoning": "45"}
+      }
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-5.6-luna ; https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/",
+      "effectiveFrom": 1785456000000,
+      "perMillion": {"input": "0.2", "output": "1.2", "cacheRead": "0.02", "reasoning": "1.2"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "0.4", "output": "1.8", "cacheRead": "0.04", "reasoning": "1.8"}
+      }
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-5.6-sol ; https://openai.com/index/gpt-5-6/",
+      "effectiveFrom": 1783641600000,
+      "effectiveTo": 1787270400000,
+      "perMillion": {"input": "5", "output": "30", "cacheRead": "0.5", "reasoning": "30"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "10", "output": "45", "cacheRead": "1", "reasoning": "45"}
+      }
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API promotion announced August 21 through November 30, 2026; catalog uses UTC dates; https://developers.openai.com/api/docs/changelog?mw_entry=2026-08-20-974ac0734e053853 ; https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "effectiveFrom": 1787270400000,
+      "effectiveTo": 1796083200000,
+      "perMillion": {"input": "4", "output": "20", "cacheRead": "0.4", "reasoning": "20"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "8", "output": "30", "cacheRead": "0.8", "reasoning": "30"}
+      }
+    },
+    {
+      "model": "gpt-5.6-terra",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-5.6-terra ; https://openai.com/index/gpt-5-6/",
+      "effectiveFrom": 1783641600000,
+      "effectiveTo": 1785369600000,
+      "perMillion": {"input": "2.5", "output": "15", "cacheRead": "0.25", "reasoning": "15"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "5", "output": "22.5", "cacheRead": "0.5", "reasoning": "22.5"}
+      }
+    },
+    {
+      "model": "gpt-5.6-terra",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API price effective July 30, 2026; catalog uses UTC dates; https://developers.openai.com/api/docs/models/gpt-5.6-terra ; https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/",
+      "effectiveFrom": 1785369600000,
+      "perMillion": {"input": "2", "output": "12", "cacheRead": "0.2", "reasoning": "12"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "4", "output": "18", "cacheRead": "0.4", "reasoning": "18"}
+      }
+    },
+    {
+      "model": "gpt-6-astra",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "effectiveFrom": 1788480000000,
+      "perMillion": {"input": "10", "output": "50", "cacheRead": "1", "reasoning": "50"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "20", "output": "75", "cacheRead": "2", "reasoning": "75"}
+      }
+    },
+    {
+      "model": "gpt-6-luna",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-6-luna ; https://openai.com/index/introducing-gpt-6-sol-and-luna/",
+      "effectiveFrom": 1790121600000,
+      "perMillion": {"input": "0.1", "output": "0.5", "cacheRead": "0.01", "reasoning": "0.5"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "0.2", "output": "0.75", "cacheRead": "0.02", "reasoning": "0.75"}
+      }
+    },
+    {
+      "model": "gpt-6-sol",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-6-sol ; https://openai.com/index/introducing-gpt-6-sol-and-luna/",
+      "effectiveFrom": 1790121600000,
+      "perMillion": {"input": "2", "output": "10", "cacheRead": "0.2", "reasoning": "10"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "4", "output": "15", "cacheRead": "0.4", "reasoning": "15"}
+      }
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-6.1-sol ; https://openai.com/index/introducing-gpt-6-1-sol/",
+      "effectiveFrom": 1790726400000,
+      "perMillion": {"input": "2", "output": "10", "cacheRead": "0.1", "reasoning": "10"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "4", "output": "15", "cacheRead": "0.2", "reasoning": "15"}
+      }
+    },
+    {
+      "model": "gpt-6.1-terra",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference; https://developers.openai.com/api/docs/models/gpt-6.1-terra ; https://openai.com/index/introducing-gpt-6-1-terra/",
+      "effectiveFrom": 1793059200000,
+      "perMillion": {"input": "1", "output": "5", "cacheRead": "0.05", "reasoning": "5"},
+      "longPrompt": {
+        "aboveInputTokens": 272000,
+        "perMillion": {"input": "2", "output": "7.5", "cacheRead": "0.1", "reasoning": "7.5"}
+      }
+    },
+    {
+      "model": "gpt-6.2-sol",
+      "provider": "OpenAI",
+      "currency": "USD",
+      "evidence": "OpenAI Standard API USD reference carried forward from GPT-6.1 Sol; https://developers.openai.com/api/docs/models/gpt-6.2-sol",
+      "effectiveFrom": 1793577600000,
+      "perMillion": {"input": "2", "output": "10", "cacheRead": "0.1", "reasoning": "10"}
+    },
+    {
+      "model": "gpt-oss-120b",
+      "provider": "OpenAI / OSS",
+      "currency": "USD",
+      "evidence": "Owner-approved Groq reference USD rate for GPT-OSS 120B (effective boundary 2026-11-23 UTC covers existing ledger history per project replay policy); https://console.groq.com/docs/model/openai/gpt-oss-120b ; https://console.groq.com/docs/prompt-caching",
+      "effectiveFrom": 1795392000000,
+      "perMillion": {"input": "0.15", "output": "0.6", "cacheRead": "0.075", "reasoning": "0.6"}
+    },
+    {
+      "model": "kimi-k3",
+      "provider": "Moonshot AI",
+      "currency": "USD",
+      "evidence": "Kimi K3 official USD real-time reference selected by Incept policy; https://www.kimi.com/resources/kimi-k3-pricing ; https://forum.moonshot.ai/t/kimi-k3-is-here-our-most-capable-model/480",
+      "effectiveFrom": 1784764800000,
+      "perMillion": {"input": "3", "output": "15", "cacheRead": "0.3", "reasoning": "15"}
+    },
+    {
+      "model": "mimo-v2.6-pro",
+      "provider": "Xiaomi",
+      "currency": "USD",
+      "evidence": "Xiaomi official overseas real-time API USD reference; https://mimo.mi.com/models/en-US/mimo-v2.6-pro ; https://mimo.mi.com/docs/en-US/updates/model",
+      "effectiveFrom": 1790006400000,
+      "perMillion": {"input": "0.435", "output": "0.87", "cacheRead": "0.0036", "reasoning": "0.87"}
+    }
+  ]
+}

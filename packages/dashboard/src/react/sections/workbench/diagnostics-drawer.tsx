@@ -1,12 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { TokenDashboardData } from '../../../domain';
 import { useScrollReveal } from '../../charts/use-scroll-reveal';
 import { formatCompactTokens, formatDateTimeShort } from '../../formatters';
 import type { RemoteStatus } from '../../hooks/remote-refresh';
 import type { BillingPreview } from '../../hooks/use-billing-preview';
+import { isExcludedBillingModelName } from '../../reconcile-billing-models';
 import { IconClose } from './workbench-icons';
 
 type DiagnosticsDrawerProps = {
@@ -19,6 +20,16 @@ type DiagnosticsDrawerProps = {
   remoteState?: string;
 };
 
+type UnpricedDiagnosticItem = {
+  key: string;
+  model: string;
+  reasonKey: 'diagnosticsReasonRateMissing' | 'diagnosticsReasonComponentMissing' | 'diagnosticsReasonOther';
+  tokens: number;
+  observations?: number;
+};
+
+const COMPACT_UNPRICED_LIMIT = 6;
+
 export function DiagnosticsDrawer({
   open,
   onClose,
@@ -30,6 +41,7 @@ export function DiagnosticsDrawer({
 }: DiagnosticsDrawerProps) {
   const t = useTranslations('dashboard');
   const handleScrollReveal = useScrollReveal();
+  const [showAllUnpriced, setShowAllUnpriced] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -47,24 +59,65 @@ export function DiagnosticsDrawer({
   }
 
   const collectionIssues = data.collectionIssues ?? [];
-  const unpricedModels: string[] =
-    billingPreview?.status === 'ready'
-      ? Array.from(
-          new Set(
-            (billingPreview.data.breakdown?.unpriced ?? [])
-              .map((item) => item.model)
-              .filter(Boolean),
-          ),
-        )
-      : Array.from(
-          new Set(
-            data.costs.unpricedModels
-              .map((item) => item.modelName)
-              .filter(Boolean),
-          ),
-        );
+  const isManagedReady = billingPreview?.status === 'ready';
+  const pricingBasisKey = isManagedReady
+    ? 'workbench.diagnosticsBasisManaged'
+    : billingPreview?.status === 'loading'
+      ? 'workbench.diagnosticsBasisFallbackLoading'
+      : billingPreview?.status === 'unavailable'
+        ? 'workbench.diagnosticsBasisFallbackUnavailable'
+        : 'workbench.diagnosticsBasisUsage';
 
-  const issueCount = collectionIssues.length + unpricedModels.length;
+  const unpricedItems: UnpricedDiagnosticItem[] = (() => {
+    if (isManagedReady) {
+      const tokenLookup = new Map<string, number>();
+      for (const modelRow of billingPreview.data.breakdown?.models ?? []) {
+        for (const ch of modelRow.channels) {
+          if (ch.unpricedTokens > 0) {
+            const k = `${ch.channel}:${modelRow.model}`;
+            tokenLookup.set(k, (tokenLookup.get(k) ?? 0) + ch.unpricedTokens);
+          }
+        }
+      }
+      return (billingPreview.data.breakdown?.unpriced ?? [])
+        .filter((item) => Boolean(item.model))
+        .map((item): UnpricedDiagnosticItem => ({
+          key: `${item.channel}:${item.model}:${item.reason}`,
+          model: item.model,
+          reasonKey:
+            item.reason === 'RATE_COMPONENT_MISSING'
+              ? 'diagnosticsReasonComponentMissing'
+              : item.reason === 'RATE_NOT_FOUND'
+                ? 'diagnosticsReasonRateMissing'
+                : 'diagnosticsReasonOther',
+          tokens: tokenLookup.get(`${item.channel}:${item.model}`) ?? 0,
+          observations: item.observations,
+        }))
+        .sort((a, b) => b.tokens - a.tokens || (b.observations ?? 0) - (a.observations ?? 0) || a.model.localeCompare(b.model));
+    }
+
+    const byModel = new Map<string, number>();
+    for (const item of data.costs.unpricedModels) {
+      if (!item.modelName || isExcludedBillingModelName(item.modelName)) continue;
+      byModel.set(item.modelName, (byModel.get(item.modelName) ?? 0) + item.totalTokens);
+    }
+    return [...byModel.entries()]
+      .map(([model, tokens]): UnpricedDiagnosticItem => ({
+        key: model,
+        model,
+        reasonKey: 'diagnosticsReasonRateMissing',
+        tokens,
+      }))
+      .sort((a, b) => b.tokens - a.tokens || a.model.localeCompare(b.model));
+  })();
+
+  const excludedTokens = isManagedReady
+    ? billingPreview.data.excludedTokens
+    : data.models
+        .filter((model) => model.slotStatus !== 'configured' && isExcludedBillingModelName(model.modelName))
+        .reduce((sum, model) => sum + model.totalTokens, 0);
+  const visibleUnpriced = showAllUnpriced ? unpricedItems : unpricedItems.slice(0, COMPACT_UNPRICED_LIMIT);
+  const issueCount = collectionIssues.length + unpricedItems.length;
   const selectedDevice = remoteInfo?.devices.find((d) => d.id === remoteDevice);
   const phaseLabel = (state?: string) =>
     t(state === 'offline' ? 'remote.unreachable' : 'remote.' + (state || 'idle'));
@@ -153,27 +206,64 @@ export function DiagnosticsDrawer({
 
           {/* 2. Unpriced Models */}
           <section className="space-y-1.5">
-            <div className="flex items-center justify-between text-[0.7rem] font-medium text-[var(--color-text-soft)]">
-              <span>{t('workbench.diagnosticsSectionUnpriced')}</span>
-              <span className="font-mono tabular-nums">{unpricedModels.length}</span>
+            <div className="flex items-center justify-between gap-2 text-[0.7rem] font-medium text-[var(--color-text-soft)]">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span>{t('workbench.diagnosticsSectionUnpriced')}</span>
+                <span className="truncate rounded-full border border-[var(--color-border-faint)] bg-[var(--surface-chip-bg,var(--color-row-bg))] px-1.5 py-0.5 text-[0.62rem] font-normal text-[var(--color-text-muted)]">
+                  {t(pricingBasisKey)}
+                </span>
+              </span>
+              <span className="shrink-0 font-mono tabular-nums">{unpricedItems.length}</span>
             </div>
-            {unpricedModels.length === 0 ? (
+            {unpricedItems.length === 0 ? (
               <div className="flex items-center gap-2 rounded-[9px] border border-[var(--color-border-faint)] px-3 py-2 text-[0.72rem] text-[var(--color-text-muted)]">
                 <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[var(--badge-emerald-dot)]" />
                 <span>{t('workbench.diagnosticsAllPriced')}</span>
               </div>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {unpricedModels.map((modelName) => (
-                  <span
-                    key={modelName}
-                    className="rounded-full border border-[var(--color-border-subtle)] bg-[var(--surface-chip-bg,var(--color-row-bg))] px-2 py-0.5 font-mono text-[0.68rem] text-[var(--color-text)]"
+              <div className="space-y-1.5">
+                <ul className="divide-y divide-[var(--color-border-faint)] rounded-[10px] border border-[var(--color-border-faint)]">
+                  {visibleUnpriced.map((item) => (
+                    <li
+                      key={item.key}
+                      className="flex items-center justify-between gap-2 px-3 py-1.5 text-[0.72rem]"
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate font-mono text-[0.68rem] text-[var(--color-text)]">
+                          {item.model}
+                        </span>
+                        <span className="shrink-0 rounded-full bg-[var(--surface-chip-bg,var(--color-row-bg))] px-1.5 py-0.5 text-[0.6rem] text-[var(--color-text-muted)]">
+                          {t(`workbench.${item.reasonKey}`)}
+                        </span>
+                      </span>
+                      <span className="shrink-0 font-mono text-[0.68rem] tabular-nums text-[var(--color-text-muted)]">
+                        {item.tokens > 0
+                          ? formatCompactTokens(item.tokens)
+                          : item.observations !== undefined
+                            ? `${item.observations}`
+                            : '—'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {unpricedItems.length > COMPACT_UNPRICED_LIMIT ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllUnpriced((prev) => !prev)}
+                    className="cursor-pointer text-[0.68rem] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
                   >
-                    {modelName}
-                  </span>
-                ))}
+                    {showAllUnpriced
+                      ? t('workbench.diagnosticsUnpricedCollapse', { count: COMPACT_UNPRICED_LIMIT })
+                      : t('workbench.diagnosticsUnpricedShowAll', { count: unpricedItems.length })}
+                  </button>
+                ) : null}
               </div>
             )}
+            {excludedTokens > 0 ? (
+              <div className="px-1 font-mono text-[0.66rem] tabular-nums text-[var(--color-text-soft)]">
+                {t('workbench.diagnosticsExcludedSummary', { tokens: formatCompactTokens(excludedTokens) })}
+              </div>
+            ) : null}
           </section>
 
           {/* 3. Source Online Status */}

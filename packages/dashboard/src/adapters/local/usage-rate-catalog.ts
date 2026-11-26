@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
-import { billingComponents, billingInterval, clockMinutes, decimalUnits, formatDecimal,
-  type BillingRate, type BillingSchedule, type BillingUsage } from '../../domain/usage-billing';
+import { billingComponents, billingInterval, cacheWriteTtls, clockMinutes, decimalUnits, formatDecimal,
+  type BillingRate, type BillingSchedule, type BillingUsage, type CacheWriteTtl } from '../../domain/usage-billing';
 import { hash } from './imports/identity';
 
 function normalizeComponents(perMillion: BillingRate['perMillion']) {
@@ -9,6 +9,18 @@ function normalizeComponents(perMillion: BillingRate['perMillion']) {
     throw Error('INVALID_USAGE_RATE_COMPONENTS');
   }
   return Object.fromEntries(entries.map(([key, value]) => [key, formatDecimal(decimalUnits(value, 12), 12)]));
+}
+
+function normalizeCacheWriteTtl(ttl: BillingRate['cacheWriteTtl']): Record<CacheWriteTtl, string> {
+  if (!ttl || typeof ttl !== 'object' || Array.isArray(ttl)) throw Error('INVALID_USAGE_RATE_CACHE_WRITE_TTL');
+  const keys = Object.keys(ttl);
+  if (keys.length !== cacheWriteTtls.length || keys.some(key => !cacheWriteTtls.some(allowed => allowed === key))) {
+    throw Error('INVALID_USAGE_RATE_CACHE_WRITE_TTL');
+  }
+  return {
+    '5m': formatDecimal(decimalUnits(ttl['5m'], 12), 12),
+    '1h': formatDecimal(decimalUnits(ttl['1h'], 12), 12),
+  };
 }
 
 function scheduleMultiplier(value: string | number) {
@@ -98,6 +110,7 @@ export function publishUsageRates(db: DatabaseSync, rates: readonly BillingRate[
       throw Error('INVALID_USAGE_RATE');
     }
     const schedule = rate.schedule === undefined ? undefined : normalizeSchedule(rate.schedule, rate);
+    const cacheWriteTtl = rate.cacheWriteTtl === undefined ? undefined : normalizeCacheWriteTtl(rate.cacheWriteTtl);
     const longPrompt = rate.longPrompt;
     if (longPrompt !== undefined && (!Number.isSafeInteger(longPrompt?.aboveInputTokens) || longPrompt.aboveInputTokens <= 0)) {
       throw Error('INVALID_USAGE_RATE_LONG_PROMPT');
@@ -105,6 +118,7 @@ export function publishUsageRates(db: DatabaseSync, rates: readonly BillingRate[
     const { model, provider, currency, evidence, effectiveFrom, effectiveTo } = rate;
     const normalized: BillingRate = { model, provider, currency, evidence, effectiveFrom, effectiveTo,
       perMillion: normalizeComponents(rate.perMillion),
+      ...(cacheWriteTtl ? { cacheWriteTtl } : {}),
       ...(longPrompt ? { longPrompt: { aboveInputTokens: longPrompt.aboveInputTokens,
         perMillion: normalizeComponents(longPrompt.perMillion) } } : {}),
       ...(schedule ? { schedule } : {}) };

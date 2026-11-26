@@ -1,10 +1,13 @@
 import type { ModelProviderFamily } from './types';
 
+export type ReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'extra-high';
+
 export type ResolvedModelIdentity = {
   canonicalModelId: string;
   displayName: string;
   provider: string;
   providerFamily: ModelProviderFamily;
+  reasoningEffort?: ReasoningEffort;
 };
 
 // Known canonical models and their aliases
@@ -13,6 +16,7 @@ const CANONICAL_ALIASES: Readonly<Record<string, {
   displayName: string;
   defaultProvider?: string;
   providerFamily: ModelProviderFamily;
+  reasoningEffort?: ReasoningEffort;
 }>> = {
   // DeepSeek V4.1 Flash
   'deepseek/deepseek-v4.1-flash': { canonicalModelId: 'deepseek-v4.1-flash', displayName: 'DeepSeek V4.1 Flash', defaultProvider: 'DeepSeek Official', providerFamily: 'deepseek' },
@@ -40,9 +44,56 @@ const CANONICAL_ALIASES: Readonly<Record<string, {
   // Gemini 4 Neon
   'gemini-4-neon': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
   'google/gemini-4-neon': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
-  'gemini-4-neon-medium': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
-  'gemini-4-neon-low': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
-  'gemini-4-neon-high': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini' },
+  'gemini-4-neon-low': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'low' },
+  'gemini-4-neon-medium': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'medium' },
+  'gemini-4-neon-high': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'high' },
+  'gemini-4-neon-xhigh': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'xhigh' },
+  'gemini-4-neon-extra-high': { canonicalModelId: 'gemini-4-neon', displayName: 'Gemini 4 Neon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'extra-high' },
+
+  // Gemini 4 Hydrogen
+  'gemini-4-hydrogen': { canonicalModelId: 'gemini-4-hydrogen', displayName: 'Gemini 4 Hydrogen', defaultProvider: 'Google', providerFamily: 'gemini' },
+  'google/gemini-4-hydrogen': { canonicalModelId: 'gemini-4-hydrogen', displayName: 'Gemini 4 Hydrogen', defaultProvider: 'Google', providerFamily: 'gemini' },
+  'gemini-4-hydrogen-low': { canonicalModelId: 'gemini-4-hydrogen', displayName: 'Gemini 4 Hydrogen', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'low' },
+  'gemini-4-hydrogen-medium': { canonicalModelId: 'gemini-4-hydrogen', displayName: 'Gemini 4 Hydrogen', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'medium' },
+  'gemini-4-hydrogen-high': { canonicalModelId: 'gemini-4-hydrogen', displayName: 'Gemini 4 Hydrogen', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'high' },
+  'gemini-4-hydrogen-xhigh': { canonicalModelId: 'gemini-4-hydrogen', displayName: 'Gemini 4 Hydrogen', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'xhigh' },
+  'gemini-4-hydrogen-extra-high': { canonicalModelId: 'gemini-4-hydrogen', displayName: 'Gemini 4 Hydrogen', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'extra-high' },
+
+  // Gemini 4 Carbon
+  'gemini-4-carbon': { canonicalModelId: 'gemini-4-carbon', displayName: 'Gemini 4 Carbon', defaultProvider: 'Google', providerFamily: 'gemini' },
+  'google/gemini-4-carbon': { canonicalModelId: 'gemini-4-carbon', displayName: 'Gemini 4 Carbon', defaultProvider: 'Google', providerFamily: 'gemini' },
+  'gemini-4-carbon-low': { canonicalModelId: 'gemini-4-carbon', displayName: 'Gemini 4 Carbon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'low' },
+  'gemini-4-carbon-medium': { canonicalModelId: 'gemini-4-carbon', displayName: 'Gemini 4 Carbon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'medium' },
+  'gemini-4-carbon-high': { canonicalModelId: 'gemini-4-carbon', displayName: 'Gemini 4 Carbon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'high' },
+  'gemini-4-carbon-xhigh': { canonicalModelId: 'gemini-4-carbon', displayName: 'Gemini 4 Carbon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'xhigh' },
+  'gemini-4-carbon-extra-high': { canonicalModelId: 'gemini-4-carbon', displayName: 'Gemini 4 Carbon', defaultProvider: 'Google', providerFamily: 'gemini', reasoningEffort: 'extra-high' },
+
+  // Claude Opus 5.5
+  'claude-opus-5-5': { canonicalModelId: 'claude-opus-5-5', displayName: 'Claude Opus 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude' },
+  'anthropic/claude-opus-5-5': { canonicalModelId: 'claude-opus-5-5', displayName: 'Claude Opus 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude' },
+  'claude-opus-5-5-low': { canonicalModelId: 'claude-opus-5-5', displayName: 'Claude Opus 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'low' },
+  'claude-opus-5-5-medium': { canonicalModelId: 'claude-opus-5-5', displayName: 'Claude Opus 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'medium' },
+  'claude-opus-5-5-high': { canonicalModelId: 'claude-opus-5-5', displayName: 'Claude Opus 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'high' },
+  'claude-opus-5-5-xhigh': { canonicalModelId: 'claude-opus-5-5', displayName: 'Claude Opus 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'xhigh' },
+  'claude-opus-5-5-extra-high': { canonicalModelId: 'claude-opus-5-5', displayName: 'Claude Opus 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'extra-high' },
+
+  // Claude Sonnet 5.5
+  'claude-sonnet-5-5': { canonicalModelId: 'claude-sonnet-5-5', displayName: 'Claude Sonnet 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude' },
+  'anthropic/claude-sonnet-5-5': { canonicalModelId: 'claude-sonnet-5-5', displayName: 'Claude Sonnet 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude' },
+  'claude-sonnet-5-5-low': { canonicalModelId: 'claude-sonnet-5-5', displayName: 'Claude Sonnet 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'low' },
+  'claude-sonnet-5-5-medium': { canonicalModelId: 'claude-sonnet-5-5', displayName: 'Claude Sonnet 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'medium' },
+  'claude-sonnet-5-5-high': { canonicalModelId: 'claude-sonnet-5-5', displayName: 'Claude Sonnet 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'high' },
+  'claude-sonnet-5-5-xhigh': { canonicalModelId: 'claude-sonnet-5-5', displayName: 'Claude Sonnet 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'xhigh' },
+  'claude-sonnet-5-5-extra-high': { canonicalModelId: 'claude-sonnet-5-5', displayName: 'Claude Sonnet 5.5', defaultProvider: 'Anthropic', providerFamily: 'claude', reasoningEffort: 'extra-high' },
+
+  // GPT-OSS 120B
+  'gpt-oss-120b': { canonicalModelId: 'gpt-oss-120b', displayName: 'GPT-OSS 120B', defaultProvider: 'OpenAI', providerFamily: 'openai' },
+  'openai/gpt-oss-120b': { canonicalModelId: 'gpt-oss-120b', displayName: 'GPT-OSS 120B', defaultProvider: 'OpenAI', providerFamily: 'openai' },
+  'gpt-oss-120b-low': { canonicalModelId: 'gpt-oss-120b', displayName: 'GPT-OSS 120B', defaultProvider: 'OpenAI', providerFamily: 'openai', reasoningEffort: 'low' },
+  'gpt-oss-120b-medium': { canonicalModelId: 'gpt-oss-120b', displayName: 'GPT-OSS 120B', defaultProvider: 'OpenAI', providerFamily: 'openai', reasoningEffort: 'medium' },
+  'gpt-oss-120b-high': { canonicalModelId: 'gpt-oss-120b', displayName: 'GPT-OSS 120B', defaultProvider: 'OpenAI', providerFamily: 'openai', reasoningEffort: 'high' },
+  'gpt-oss-120b-xhigh': { canonicalModelId: 'gpt-oss-120b', displayName: 'GPT-OSS 120B', defaultProvider: 'OpenAI', providerFamily: 'openai', reasoningEffort: 'xhigh' },
+  'gpt-oss-120b-extra-high': { canonicalModelId: 'gpt-oss-120b', displayName: 'GPT-OSS 120B', defaultProvider: 'OpenAI', providerFamily: 'openai', reasoningEffort: 'extra-high' },
 
   // GPT-6.2 Sol
   'gpt-6.2-sol': { canonicalModelId: 'gpt-6.2-sol', displayName: 'GPT-6.2 Sol', defaultProvider: 'OpenAI', providerFamily: 'openai' },
@@ -97,6 +148,7 @@ export function resolveModelIdentity(
       displayName: direct.displayName,
       provider,
       providerFamily,
+      ...(direct.reasoningEffort ? { reasoningEffort: direct.reasoningEffort } : {}),
     };
   }
 
@@ -136,6 +188,7 @@ export function resolveModelIdentity(
             displayName: inner.displayName,
             provider,
             providerFamily: family,
+            ...(inner.reasoningEffort ? { reasoningEffort: inner.reasoningEffort } : {}),
           };
         }
         return {

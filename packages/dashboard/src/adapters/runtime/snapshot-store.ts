@@ -7,6 +7,12 @@ import { dashboardDate, usageRanges, type TokenDashboardData, type UsageRange } 
 import { overridesPath } from '../local/overrides';
 import { readSyncDatabaseVersion } from '../../sync/database-version';
 import type { SyncExecutor } from '../../sync/executor';
+import referenceCatalog from '../../sync/usage-billing-reference-catalog.json';
+import channelMappings from '../../sync/usage-billing-channel-mappings.json';
+
+const PRICING_POLICY_SCOPE = createHash('sha256')
+  .update(JSON.stringify(['pricing-policy-v2', 'model-registry-v2', referenceCatalog, channelMappings]))
+  .digest('hex');
 
 type Snapshots = Partial<Record<UsageRange, TokenDashboardData>>;
 type Generation = { identity: string; revision: number; day: string };
@@ -41,7 +47,7 @@ export function snapshotContext() {
   const home = resolve(process.env.INCEPT_DASHBOARD_HOME ?? homedir());
   const path = resolve(process.env.INCEPT_DASHBOARD_CACHE_FILE ?? join(home, '.incept', 'dashboard-snapshots.json'));
   const database = trustedDashboardEnabled() && process.env.INCEPT_SYNC_DATABASE_FILE ? resolve(process.env.INCEPT_SYNC_DATABASE_FILE) : undefined;
-  const scope = createHash('sha256').update(JSON.stringify(['commandcode-peak-v1', 'hourly-v1', home, process.env.INCEPT_DASHBOARD_IMPORTS_FILE,
+  const scope = createHash('sha256').update(JSON.stringify(['commandcode-peak-v1', 'hourly-v1', PRICING_POLICY_SCOPE, home, process.env.INCEPT_DASHBOARD_IMPORTS_FILE,
     overridesPath(), process.env.INCEPT_COMMANDCODE_CATALOG_FILE, ...(database ? ['trusted-v2', database] : [])])).digest('hex');
   return { home, path, scope, key: path + ':' + scope, database };
 }

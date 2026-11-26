@@ -2,7 +2,7 @@ import 'server-only';
 import type { DailyUsagePoint, ModelUsageSummary, MonthlyUsagePoint, ProjectUsageSummary, SessionUsageItem, SourceUsageSummary, TokenDashboardData, UnpricedModelSummary } from '../../../domain/index';
 import { type UnitPricing, type RawUsageEvent } from '../types';
 import { SOURCE_META } from '../source-metadata';
-import { lookupPricing } from '../pricing';
+import { isPolicyExcludedPricingModel, lookupPricing } from '../pricing';
 import { classifyProvider, toLocalDateAndMonth } from '../normalization';
 import { accumulateUsageEvents } from './accumulate';
 import { appendConfiguredModels } from './configured-models';
@@ -212,17 +212,27 @@ export function summarizeUsageEvents(allEvents: RawUsageEvent[], home: string, p
 
   const measuredModels = models.filter((m) => m.slotStatus === 'measured');
 
-  const unknown = accumulateUsageEvents(allEvents.filter(event => event.missingPricing));
+  const unknown = accumulateUsageEvents(
+    allEvents.filter(event => event.missingPricing && !isPolicyExcludedPricingModel(event.modelName)),
+  );
   const unpricedModels: UnpricedModelSummary[] = Array.from(unknown.modelAggMap.values()).map(model => ({
     modelName: model.modelName, source: Array.from(model.sourcesUsed).join(' / '),
     inputTokens: model.inputTokens, outputTokens: model.outputTokens,
     cacheReadTokens: model.cacheReadTokens, totalTokens: model.totalTokens, sessionCount: model.sessions.size,
   }));
   const unpricedTokens = unknown.totalTokens;
+  const excludedTokens = allEvents
+    .filter(event => event.missingPricing && isPolicyExcludedPricingModel(event.modelName))
+    .reduce(
+      (sum, ev) => sum + ev.inputTokens + ev.outputTokens + ev.cacheCreationTokens + ev.cacheReadTokens + ev.reasoningTokens,
+      0,
+    );
 
-  const pricedTokens = Math.max(0, totalTokens - unpricedTokens);
+  const pricedTokens = Math.max(0, totalTokens - unpricedTokens - excludedTokens);
+  const billableTokens = Math.max(0, totalTokens - excludedTokens);
 
-  const pricedModelCount = measuredModels.length - unpricedModels.length;
+  const billableMeasuredModels = measuredModels.filter(m => !isPolicyExcludedPricingModel(m.modelName));
+  const pricedModelCount = Math.max(0, billableMeasuredModels.length - unpricedModels.length);
 
   let estimatedCacheSavings = 0;
 
@@ -284,12 +294,12 @@ export function summarizeUsageEvents(allEvents: RawUsageEvent[], home: string, p
       estimatedCacheSavings: estimatedCacheSavings,
       pricedTokens,
       unpricedTokens,
-      tokenCoverageRate: totalTokens > 0 ? (pricedTokens / totalTokens) : 0,
+      tokenCoverageRate: billableTokens > 0 ? (pricedTokens / billableTokens) : 0,
       pricedModelCount,
-      totalModelCount: measuredModels.length,
+      totalModelCount: billableMeasuredModels.length,
       modelCoverageRate:
-        measuredModels.length > 0
-          ? (pricedModelCount / measuredModels.length)
+        billableMeasuredModels.length > 0
+          ? (pricedModelCount / billableMeasuredModels.length)
           : 0,
       unpricedModels,
     },

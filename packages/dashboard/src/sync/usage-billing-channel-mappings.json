@@ -10,6 +10,69 @@
     },
     {
       "channel": "antigravity",
+      "model": "claude-opus-5-5-medium",
+      "action": "map",
+      "canonicalModel": "claude-opus-5-5",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Claude Opus 5.5 API rate; https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "claude-opus-5-5-high",
+      "action": "map",
+      "canonicalModel": "claude-opus-5-5",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Claude Opus 5.5 API rate; https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "claude-opus-5-5-xhigh",
+      "action": "map",
+      "canonicalModel": "claude-opus-5-5",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Claude Opus 5.5 API rate; https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "claude-opus-5-5-extra-high",
+      "action": "map",
+      "canonicalModel": "claude-opus-5-5",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Claude Opus 5.5 API rate; https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "claude-sonnet-5-5-low",
+      "action": "map",
+      "canonicalModel": "claude-sonnet-5-5",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Claude Sonnet 5.5 API rate; https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "claude-sonnet-5-5-medium",
+      "action": "map",
+      "canonicalModel": "claude-sonnet-5-5",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Claude Sonnet 5.5 API rate; https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "claude-sonnet-5-5-high",
+      "action": "map",
+      "canonicalModel": "claude-sonnet-5-5",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Claude Sonnet 5.5 API rate; https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "claude-sonnet-5-5-xhigh",
+      "action": "map",
+      "canonicalModel": "claude-sonnet-5-5",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Claude Sonnet 5.5 API rate; https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "claude-sonnet-5-5-extra-high",
+      "action": "map",
+      "canonicalModel": "claude-sonnet-5-5",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Claude Sonnet 5.5 API rate; https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    {
+      "channel": "antigravity",
       "model": "gemini-4-argon-trial",
       "action": "map",
       "canonicalModel": "gemini-4-argon",
@@ -17,10 +80,80 @@
     },
     {
       "channel": "antigravity",
+      "model": "gemini-4-carbon-low",
+      "action": "map",
+      "canonicalModel": "gemini-4-carbon",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Carbon API rate; https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-carbon-medium",
+      "action": "map",
+      "canonicalModel": "gemini-4-carbon",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Carbon API rate; https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-carbon-high",
+      "action": "map",
+      "canonicalModel": "gemini-4-carbon",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Carbon API rate; https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-carbon-xhigh",
+      "action": "map",
+      "canonicalModel": "gemini-4-carbon",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Carbon API rate; https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-carbon-extra-high",
+      "action": "map",
+      "canonicalModel": "gemini-4-carbon",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Carbon API rate; https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "channel": "antigravity",
       "model": "gemini-4-hydrogen-tiered-high",
       "action": "map",
       "canonicalModel": "gemini-4-hydrogen",
       "evidence": "Antigravity tiered effort label mapped to standard Gemini 4 Hydrogen API rate; https://aistudio.google.com/docs/pricing#gemini-4-hydrogen"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-hydrogen-low",
+      "action": "map",
+      "canonicalModel": "gemini-4-hydrogen",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Hydrogen API rate; https://aistudio.google.com/docs/pricing#gemini-4-hydrogen"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-hydrogen-medium",
+      "action": "map",
+      "canonicalModel": "gemini-4-hydrogen",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Hydrogen API rate; https://aistudio.google.com/docs/pricing#gemini-4-hydrogen"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-hydrogen-high",
+      "action": "map",
+      "canonicalModel": "gemini-4-hydrogen",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Hydrogen API rate; https://aistudio.google.com/docs/pricing#gemini-4-hydrogen"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-hydrogen-xhigh",
+      "action": "map",
+      "canonicalModel": "gemini-4-hydrogen",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Hydrogen API rate; https://aistudio.google.com/docs/pricing#gemini-4-hydrogen"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-hydrogen-extra-high",
+      "action": "map",
+      "canonicalModel": "gemini-4-hydrogen",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Hydrogen API rate; https://aistudio.google.com/docs/pricing#gemini-4-hydrogen"
     },
     {
       "channel": "antigravity",
@@ -45,16 +178,80 @@
     },
     {
       "channel": "antigravity",
+      "model": "gemini-4-neon-xhigh",
+      "action": "map",
+      "canonicalModel": "gemini-4-neon",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Neon API rate; https://aistudio.google.com/docs/pricing#gemini-4-neon"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-4-neon-extra-high",
+      "action": "map",
+      "canonicalModel": "gemini-4-neon",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to standard Gemini 4 Neon API rate; https://aistudio.google.com/docs/pricing#gemini-4-neon"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-flash-worker-agy",
+      "action": "map",
+      "canonicalModel": "gemini-4-hydrogen",
+      "evidence": "Owner-approved Antigravity internal Worker alias mapped to standard Gemini 4 Hydrogen API rate; verified independent step timestamps (zero overlap with other scope models); 2026-11-26 worksheet decision #1"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-pro-orchestrator-g1-pro",
+      "action": "map",
+      "canonicalModel": "gemini-4-argon",
+      "evidence": "Owner-approved Antigravity internal Orchestrator Argon alias mapped to standard Gemini 4 Argon API rate; verified independent step timestamps (zero overlap with other scope models); 2026-11-26 worksheet decision #2"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gemini-pro-orchestrator-neon",
+      "action": "map",
+      "canonicalModel": "gemini-4-neon",
+      "evidence": "Owner-approved Antigravity internal Orchestrator Neon alias mapped to standard Gemini 4 Neon API rate; verified independent step timestamps (zero overlap with other scope models); 2026-11-26 worksheet decision #3"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gpt-oss-120b-low",
+      "action": "map",
+      "canonicalModel": "gpt-oss-120b",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to GPT-OSS 120B Groq reference rate; https://console.groq.com/docs/model/openai/gpt-oss-120b"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gpt-oss-120b-medium",
+      "action": "map",
+      "canonicalModel": "gpt-oss-120b",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to GPT-OSS 120B Groq reference rate; https://console.groq.com/docs/model/openai/gpt-oss-120b"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gpt-oss-120b-high",
+      "action": "map",
+      "canonicalModel": "gpt-oss-120b",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to GPT-OSS 120B Groq reference rate; https://console.groq.com/docs/model/openai/gpt-oss-120b"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gpt-oss-120b-xhigh",
+      "action": "map",
+      "canonicalModel": "gpt-oss-120b",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to GPT-OSS 120B Groq reference rate; https://console.groq.com/docs/model/openai/gpt-oss-120b"
+    },
+    {
+      "channel": "antigravity",
+      "model": "gpt-oss-120b-extra-high",
+      "action": "map",
+      "canonicalModel": "gpt-oss-120b",
+      "evidence": "Owner-approved Antigravity reasoning effort label mapped to GPT-OSS 120B Groq reference rate; https://console.groq.com/docs/model/openai/gpt-oss-120b"
+    },
+    {
+      "channel": "antigravity",
       "model": "claude-opus-4-6-thinking",
       "action": "map",
       "evidence": "Approved Antigravity reference mapping; https://antigravity.google/docs/models ; https://cloud.google.com/model-garden/partner-models/pricing",
       "canonicalModel": "claude-opus-4-6"
-    },
-    {
-      "channel": "claudeCode",
-      "model": "claude-opus-5-5",
-      "action": "silence-missing-cache-write",
-      "evidence": "Legacy cache-write counters lack a 5-minute and 1-hour split; https://platform.claude.com/docs/en/models/opus-5-5/whats-new-opus-5-5"
     },
     {
       "channel": "codex",

@@ -1,16 +1,49 @@
 import 'server-only';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import channelMappings from '../../sync/usage-billing-channel-mappings.json';
 import type { UnitPricing } from './types';
 
 export type LocalOverrides = { aliases: Record<string, string>; prices: Record<string, UnitPricing>; updatedAt: number; error?: string };
 
-// Pricing aliases share rates without merging usage identities in summaries or imports.
-export const DEFAULT_PRICING_ALIASES: Readonly<Record<string, string>> = {
-  'gemini-3.8-flash-exp-a': 'gemini-3.8-flash',
-  'gemini-3.8-flash-n': 'gemini-3.8-flash',
-  'gemini-3.8-flash-tiered': 'gemini-3.8-flash',
+type ChannelMappingRule = {
+  channel: string;
+  model: string;
+  action: string;
+  canonicalModel?: string;
 };
+
+function buildChannelPricingPolicy() {
+  const aliases: Record<string, string> = {};
+  const excluded = new Set<string>();
+  for (const rule of channelMappings.rules as ChannelMappingRule[]) {
+    const raw = rule.model.trim().toLowerCase();
+    if (!raw) continue;
+    if (rule.action === 'exclude') {
+      excluded.add(raw);
+      const short = raw.includes('/') ? raw.slice(raw.lastIndexOf('/') + 1) : raw;
+      if (short) excluded.add(short);
+    } else if (rule.action === 'map' && rule.canonicalModel) {
+      const target = rule.canonicalModel.trim().toLowerCase();
+      if (target && raw !== target && !(raw in aliases)) {
+        aliases[raw] = target;
+      }
+      if (raw.includes('/')) {
+        const short = raw.slice(raw.lastIndexOf('/') + 1);
+        if (short && target && short !== target && !(short in aliases)) {
+          aliases[short] = target;
+        }
+      }
+    }
+  }
+  return { aliases, excluded };
+}
+
+const CHANNEL_PRICING_POLICY = buildChannelPricingPolicy();
+
+// Pricing aliases share rates without merging usage identities in summaries or imports.
+export const DEFAULT_PRICING_ALIASES: Readonly<Record<string, string>> = CHANNEL_PRICING_POLICY.aliases;
+export const DEFAULT_EXCLUDED_PRICING_MODELS: ReadonlySet<string> = CHANNEL_PRICING_POLICY.excluded;
 
 export function overridesPath() {
   if (process.env.INCEPT_DASHBOARD_OVERRIDES_FILE) return resolve(process.env.INCEPT_DASHBOARD_OVERRIDES_FILE);

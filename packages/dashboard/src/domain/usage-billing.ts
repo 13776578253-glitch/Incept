@@ -3,6 +3,8 @@ import { dashboardDate } from './window';
 
 export const billingComponents = ['input', 'output', 'cacheRead', 'cacheWrite', 'reasoning'] as const;
 export type BillingComponent = typeof billingComponents[number];
+export const cacheWriteTtls = ['5m', '1h'] as const;
+export type CacheWriteTtl = typeof cacheWriteTtls[number];
 type ScheduleMultiplier = string | number;
 type RatePeriod = { from: number; to: number; multiplier: ScheduleMultiplier };
 export type BillingSchedule = { version: string } & (
@@ -18,11 +20,15 @@ export type BillingRate = {
   effectiveFrom: number;
   effectiveTo?: number;
   perMillion: Partial<Record<BillingComponent, string>>;
+  cacheWriteTtl?: Record<CacheWriteTtl, string>;
   longPrompt?: { aboveInputTokens: number; perMillion: Partial<Record<BillingComponent, string>> };
   schedule?: BillingSchedule;
 };
 
-export type BillingUsage = TransferEvent & { timestampPrecision?: 'event' | 'day' };
+export type BillingUsage = TransferEvent & {
+  timestampPrecision?: 'event' | 'day';
+  cacheWriteTtl?: CacheWriteTtl;
+};
 
 export function usageComponentRates(event: BillingUsage, rate: BillingRate) {
   const input = event.inputTokens + event.cacheReadTokens + event.cacheCreationTokens;
@@ -117,7 +123,10 @@ export function estimateUsage(event: BillingUsage, selected?: { version: string;
   const counts = [event.inputTokens, event.outputTokens, event.cacheReadTokens, event.cacheCreationTokens, event.reasoningTokens];
   let total = BigInt(0);
   for (const [index, component] of billingComponents.entries()) {
-    const count = counts[index], rate = perMillion[component];
+    const count = counts[index];
+    const rate = component === 'cacheWrite' && selected.rate.cacheWriteTtl
+      ? selected.rate.cacheWriteTtl[event.cacheWriteTtl === '1h' ? '1h' : '5m']
+      : perMillion[component];
     if (!Number.isSafeInteger(count) || count < 0) throw Error('INVALID_BILLING_COUNTER');
     if (!count) continue;
     if (rate === undefined) return { status: 'unpriced', reason: 'RATE_COMPONENT_MISSING' };

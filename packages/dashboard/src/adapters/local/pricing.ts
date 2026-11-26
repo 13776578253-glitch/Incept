@@ -4,12 +4,82 @@ import { join } from 'node:path';
 import { type UnitPricing } from './types';
 import { openSqliteReadOnly } from './sqlite';
 import { loadCommandCodePricing } from './pricing-commandcode';
-import { TEMPORARY_MODEL_PRICES } from './pricing-temporary';
-import { canonicalModelName, DEFAULT_PRICING_ALIASES, readLocalOverrides, type LocalOverrides } from './overrides';
+import {
+  canonicalModelName,
+  DEFAULT_EXCLUDED_PRICING_MODELS,
+  DEFAULT_PRICING_ALIASES,
+  readLocalOverrides,
+  type LocalOverrides,
+} from './overrides';
 import { resolveModelIdentity } from '../../domain/index';
+import referenceCatalog from '../../sync/usage-billing-reference-catalog.json';
 
-export function loadLocalPricingMap(home: string, overrides: LocalOverrides = readLocalOverrides()): Map<string, UnitPricing> {
-  const pricingMap = new Map<string, UnitPricing>(Object.entries(TEMPORARY_MODEL_PRICES).map(([model, rates]) => [model, { ...rates }]));
+type ReferenceCatalogRate = {
+  model: string;
+  effectiveFrom: number;
+  effectiveTo?: number;
+  perMillion: {
+    input: string;
+    output: string;
+    cacheRead?: string;
+    cacheWrite?: string;
+  };
+  cacheWriteTtl?: {
+    '5m': string;
+    '1h': string;
+  };
+};
+
+export function loadReferenceCatalogPrices(now = Date.now()): Map<string, UnitPricing> {
+  const byModel = new Map<string, ReferenceCatalogRate[]>();
+  for (const rate of (referenceCatalog as { rates: ReferenceCatalogRate[] }).rates) {
+    const model = rate.model.trim().toLowerCase();
+    if (!model) continue;
+    const list = byModel.get(model) ?? [];
+    list.push(rate);
+    byModel.set(model, list);
+  }
+  const prices = new Map<string, UnitPricing>();
+  for (const [model, versions] of byModel) {
+    const sorted = [...versions].sort((a, b) => a.effectiveFrom - b.effectiveFrom);
+    const active = sorted.find(
+      version => version.effectiveFrom <= now && (version.effectiveTo === undefined || now < version.effectiveTo),
+    );
+    const selected = active
+      ?? [...sorted].reverse().find(version => version.effectiveFrom <= now)
+      ?? sorted[0];
+    if (!selected) continue;
+    const unit: UnitPricing = {
+      inputPerMillion: Number(selected.perMillion.input),
+      outputPerMillion: Number(selected.perMillion.output),
+    };
+    if (selected.perMillion.cacheRead !== undefined) {
+      unit.cacheReadPerMillion = Number(selected.perMillion.cacheRead);
+    }
+    const cacheWrite = selected.perMillion.cacheWrite ?? selected.cacheWriteTtl?.['5m'];
+    if (cacheWrite !== undefined) {
+      unit.cacheWritePerMillion = Number(cacheWrite);
+    }
+    prices.set(model, unit);
+  }
+  return prices;
+}
+
+export function isPolicyExcludedPricingModel(modelName: string): boolean {
+  const lower = modelName.trim().toLowerCase();
+  if (!lower) return false;
+  const shortName = lower.includes('/') ? lower.slice(lower.lastIndexOf('/') + 1) : lower;
+  return DEFAULT_EXCLUDED_PRICING_MODELS.has(lower)
+    || DEFAULT_EXCLUDED_PRICING_MODELS.has(shortName)
+    || DEFAULT_EXCLUDED_PRICING_MODELS.has(resolveModelIdentity(lower).canonicalModelId.toLowerCase());
+}
+
+export function loadLocalPricingMap(
+  home: string,
+  overrides: LocalOverrides = readLocalOverrides(),
+  now = Date.now(),
+): Map<string, UnitPricing> {
+  const pricingMap = loadReferenceCatalogPrices(now);
 
 
   // 1. Load model_prices from ~/.aiusage/cache.db

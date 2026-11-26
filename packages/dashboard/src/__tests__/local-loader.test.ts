@@ -119,9 +119,11 @@ describe('package local usage adapter', () => {
       'provider/from-data': { output: 3 },
       invalid: { input: -1, output: 2, cacheRead: 0, cacheWrite: 0 },
     } }));
-    const { loadLocalPricingMap } = await import('../adapters/local/pricing');
+    const { loadLocalPricingMap, loadReferenceCatalogPrices } = await import('../adapters/local/pricing');
     const pricing = loadLocalPricingMap(localHome.path);
-    expect([...pricing.keys()]).toEqual(['gpt-5.3-codex', 'gpt-5.2-codex', 'gpt-6.2-sol', 'gemini-4-hydrogen', 'gemini-4-neon', 'provider/from-data']);
+    const catalogKeys = [...loadReferenceCatalogPrices().keys()];
+    expect([...pricing.keys()]).toEqual([...catalogKeys, 'provider/from-data']);
+    expect(pricing.has('invalid')).toBe(false);
     expect(pricing.get('provider/from-data')?.outputPerMillion).toBe(3);
     const codex = join(localHome.path, '.codex', 'sessions');
     mkdirSync(codex, { recursive: true });

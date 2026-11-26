@@ -5,4 +5,4 @@ export { TRANSFER_SOURCES } from './imports';
 export * from './window';
 export { emptyDashboard } from './empty-dashboard';
 export { publicDashboardSummary } from './public-summary';
-export { resolveModelIdentity, type ResolvedModelIdentity } from './model-registry';
+export { resolveModelIdentity, type ResolvedModelIdentity, type ReasoningEffort } from './model-registry';
