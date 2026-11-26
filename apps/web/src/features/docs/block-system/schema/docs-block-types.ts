@@ -23,6 +23,7 @@ export type DocsQuoteBlockModel = Extract<DbDocsSectionBlock, { type: 'quote' }>
 export type DocsCodeBlockModel = Extract<DbDocsSectionBlock, { type: 'code' }>;
 export type DocsDividerBlockModel = Extract<DbDocsSectionBlock, { type: 'divider' }>;
 export type DocsImageBlockModel = Extract<DbDocsSectionBlock, { type: 'image' }>;
+export type DocsHtmlBlockModel = Extract<DbDocsSectionBlock, { type: 'html' }>;
 
 // 标题块的变体
 export type DocsHeadingVariant = NonNullable<DocsHeadingBlockModel['variant']>;

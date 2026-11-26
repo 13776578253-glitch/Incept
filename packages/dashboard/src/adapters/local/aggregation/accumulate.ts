@@ -1,6 +1,6 @@
 import 'server-only';
 import type { BillingBreakdown, CcusageModelBreakdown, SourceDescriptionKey, ModelProviderFamily } from '../../../domain/index';
-import { resolveModelIdentity } from '../../../domain/index';
+import { dashboardHour, resolveModelIdentity } from '../../../domain/index';
 import { type RawUsageEvent } from '../types';
 import { SOURCE_META } from '../source-metadata';
 
@@ -28,6 +28,8 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
       missingPricing?: boolean;
       modelsUsed: Set<string>;
       modelMap: Map<string, CcusageModelBreakdown>;
+      hourlyTokens: number[];
+      hourlyMeasuredTokens: number;
     }
   >();
 
@@ -197,6 +199,8 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
         cost: 0,
         modelsUsed: new Set(),
         modelMap: new Map(),
+        hourlyTokens: Array<number>(24).fill(0),
+        hourlyMeasuredTokens: 0,
       };
       dailyMap.set(ev.dateKey, dayEntry);
     }
@@ -208,6 +212,13 @@ export function accumulateUsageEvents(allEvents: RawUsageEvent[]) {
     dayEntry.totalTokens += evTotal;
     dayEntry.cost += ev.cost;
     dayEntry.modelsUsed.add(canonicalModelId);
+    if (ev.timestampPrecision !== 'day' && Number.isFinite(ev.timestampMs) && ev.timestampMs > 0) {
+      const hour = dashboardHour(ev.timestampMs);
+      if (hour >= 0 && hour < 24) {
+        dayEntry.hourlyTokens[hour] += evTotal;
+        dayEntry.hourlyMeasuredTokens += evTotal;
+      }
+    }
     const dayModel = dayEntry.modelMap.get(canonicalModelId) ?? {
       modelName: canonicalModelId,
       inputTokens: 0,

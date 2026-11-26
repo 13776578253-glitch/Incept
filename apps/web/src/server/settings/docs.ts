@@ -2,13 +2,16 @@ import 'server-only';
 import { getCurrentViewer } from '@/server/auth';
 import {
   getDocsLibraryStats,
+  listDocsHomeCurationEntries,
   listDocsLibraryEntries,
 } from '@incept/db/docs';
 import type {
+  DbDocsHomeCurationEntryRecord,
   DbDocsLibraryEntryRecord,
   DbDocsLibraryStatsRecord,
 } from '@incept/db/docs';
 import type {
+  DocsHomeCurationEntryModel,
   DocsLibraryEntryModel,
   DocsLibraryPageModel,
   DocsLibraryStatsModel,
@@ -48,16 +51,33 @@ function mapDocsLibraryStatsRecord(
   };
 }
 
+function mapDocsHomeCurationEntryRecord(
+  record: DbDocsHomeCurationEntryRecord,
+): DocsHomeCurationEntryModel {
+  return {
+    entryType: record.entryType,
+    targetId: record.targetId,
+    title: record.title,
+    slug: record.slug,
+    locales: record.locales,
+    accessRole: record.accessRole,
+    isCurated: record.isCurated,
+    publishedAt: record.publishedAt.toISOString(),
+  };
+}
+
 // 设置页的 Owner 发布总览，不向 Guest/Pro 查询或传递条目数据。
 export async function loadDocsSettings(): Promise<DocsLibraryPageModel | null> {
   if ((await getCurrentViewer()).role !== 'owner') return null;
-  const [stats, entries] = await Promise.all([
+  const [stats, entries, curationEntries] = await Promise.all([
     getDocsLibraryStats(),
     listDocsLibraryEntries(),
+    listDocsHomeCurationEntries(),
   ]);
 
   return {
     stats: mapDocsLibraryStatsRecord(stats),
     entries: entries.map(mapDocsLibraryEntryRecord),
+    curationEntries: curationEntries.map(mapDocsHomeCurationEntryRecord),
   };
 }

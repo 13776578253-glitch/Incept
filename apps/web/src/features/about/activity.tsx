@@ -1,6 +1,7 @@
 'use client';
 
 import { NavigationLink as Link } from '@/components/layouts/navigation-link';
+import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type {
@@ -11,19 +12,24 @@ import type {
   WritingActivityData,
 } from './activity-data';
 
-const gitActivityClassNames = [
-  'bg-[#ebedf0] dark:bg-[#161b22]',
-  'bg-[#9be9a8] dark:bg-[#0e4429]',
-  'bg-[#40c463] dark:bg-[#006d32]',
-  'bg-[#216e39] dark:bg-[#39d353]',
+const EMPTY_CELL_BACKGROUND =
+  'color-mix(in oklab, var(--color-text) 6%, var(--color-surface-card, var(--color-bg)))';
+
+const gitActivityBackgrounds = [
+  EMPTY_CELL_BACKGROUND,
+  'color-mix(in oklab, #349f74 32%, var(--color-surface-card, var(--color-bg)))',
+  'color-mix(in oklab, #349f74 60%, var(--color-surface-card, var(--color-bg)))',
+  'color-mix(in oklab, #349f74 88%, var(--color-surface-card, var(--color-bg)))',
 ];
 
-const writingActivityClassNames = [
-  'bg-[#ebedf0] dark:bg-[#161b22]',
-  'bg-[#e8cda9] dark:bg-[#3d2616]',
-  'bg-[#c99158] dark:bg-[#7f5539]',
-  'bg-[#9b5c2e] dark:bg-[#d58a4a]',
+const writingActivityBackgrounds = [
+  EMPTY_CELL_BACKGROUND,
+  'color-mix(in oklab, #c78548 30%, var(--color-surface-card, var(--color-bg)))',
+  'color-mix(in oklab, #c78548 58%, var(--color-surface-card, var(--color-bg)))',
+  'color-mix(in oklab, #c78548 86%, var(--color-surface-card, var(--color-bg)))',
 ];
+
+type ActivityKind = 'git' | 'writing';
 
 const dayFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'UTC',
@@ -46,6 +52,18 @@ function getContributionLevel(count: number, maximumCount: number) {
   return Math.min(3, Math.max(1, Math.ceil((count / maximumCount) * 3)));
 }
 
+function formatDayReadout(day: ActivityDay, kind: ActivityKind) {
+  if (kind === 'writing') {
+    const articleCount =
+      'articleCount' in day && typeof day.articleCount === 'number'
+        ? day.articleCount
+        : day.count;
+    return `${day.date} · ${articleCount} ${articleCount === 1 ? 'post' : 'posts'}`;
+  }
+
+  return `${day.date} · ${day.count} ${day.count === 1 ? 'contribution' : 'contributions'}`;
+}
+
 function createCalendarWeeks(days: ActivityDay[]) {
   if (!days.length) return [] as Array<Array<ActivityDay | null>>;
 
@@ -64,34 +82,62 @@ function createCalendarWeeks(days: ActivityDay[]) {
   );
 }
 
+function getCalendarMonthLabels(weeks: Array<Array<ActivityDay | null>>) {
+  const boundaryMonths = weeks.map((week) => {
+    const boundary = week.find((day) => day && day.date.slice(8) === '01');
+    return boundary ? monthFormatter.format(new Date(`${boundary.date}T00:00:00.000Z`)) : '';
+  });
+
+  if (weeks.length > 0 && !boundaryMonths[0]) {
+    const firstBoundaryIndex = boundaryMonths.findIndex((label, index) => index > 0 && label);
+    const firstDay = weeks[0].find(Boolean);
+    if (firstDay && (firstBoundaryIndex === -1 || firstBoundaryIndex >= 3)) {
+      boundaryMonths[0] = monthFormatter.format(new Date(`${firstDay.date}T00:00:00.000Z`));
+    }
+  }
+
+  return boundaryMonths;
+}
+
 function ActivityCalendar({
   days,
-  colorClassNames,
+  colorBackgrounds,
+  kind,
+  selectedDate,
+  onHoverDay,
+  onTogglePinDay,
   useFixedLevels = false,
 }: {
   days: ActivityDay[];
-  colorClassNames: string[];
+  colorBackgrounds: string[];
+  kind: ActivityKind;
+  selectedDate: string | null;
+  onHoverDay: (day: ActivityDay | null) => void;
+  onTogglePinDay: (day: ActivityDay) => void;
   useFixedLevels?: boolean;
 }) {
   const weeks = createCalendarWeeks(days);
+  const monthLabels = getCalendarMonthLabels(weeks);
   const maximumCount = Math.max(0, ...days.map((day) => day.count));
 
   return (
-    <div className="min-w-[36rem]" aria-hidden="true">
+    <div className="min-w-[36rem]" onMouseLeave={() => onHoverDay(null)}>
       <div
+        aria-hidden="true"
         className="ml-10 grid text-[0.68rem] text-[var(--color-nav-muted)]"
         style={{ gridTemplateColumns: `repeat(${weeks.length}, minmax(0, 1fr))` }}
       >
-        {weeks.map((week, index) => {
-          const monthStart = week.find(
-            (day) => day && (index === 0 || day.date.slice(8) === '01'),
-          );
-
-          return <span key={index}>{monthStart ? monthFormatter.format(new Date(`${monthStart.date}T00:00:00.000Z`)) : ''}</span>;
-        })}
+        {monthLabels.map((label, index) => (
+          <span key={index} className="whitespace-nowrap">
+            {label}
+          </span>
+        ))}
       </div>
       <div className="mt-1.5 grid grid-cols-[2.5rem_minmax(0,1fr)] gap-1.5">
-        <div className="grid grid-rows-7 text-right text-[0.68rem] leading-none text-[var(--color-nav-muted)]">
+        <div
+          aria-hidden="true"
+          className="grid grid-rows-7 text-right text-[0.68rem] leading-none text-[var(--color-nav-muted)]"
+        >
           <span className="self-center">Mon</span>
           <span />
           <span className="self-center">Wed</span>
@@ -104,17 +150,42 @@ function ActivityCalendar({
           className="grid grid-flow-col grid-rows-7 auto-cols-fr gap-1"
           style={{ gridTemplateColumns: `repeat(${weeks.length}, minmax(0, 1fr))` }}
         >
-          {weeks.flatMap((week) =>
-            week.map((day, index) => (
-              <span
-                key={day?.date ?? `empty-${index}`}
-                className={`aspect-square rounded-[2px] ${
-                  day
-                    ? colorClassNames[useFixedLevels ? day.count : getContributionLevel(day.count, maximumCount)]
-                    : 'bg-transparent'
-                }`}
-              />
-            )),
+          {weeks.flatMap((week, weekIndex) =>
+            week.map((day, dayIndex) => {
+              if (!day) {
+                return (
+                  <span
+                    key={`empty-${weekIndex}-${dayIndex}`}
+                    aria-hidden="true"
+                    className="aspect-square rounded-[2px] bg-transparent"
+                  />
+                );
+              }
+
+              const level = useFixedLevels
+                ? Math.min(3, Math.max(0, day.count))
+                : getContributionLevel(day.count, maximumCount);
+              const isPinned = selectedDate === day.date;
+              const readout = formatDayReadout(day, kind);
+
+              return (
+                <button
+                  key={day.date}
+                  type="button"
+                  aria-label={readout}
+                  aria-pressed={isPinned}
+                  title={readout}
+                  onMouseEnter={() => onHoverDay(day)}
+                  onFocus={() => onHoverDay(day)}
+                  onBlur={() => onHoverDay(null)}
+                  onClick={() => onTogglePinDay(day)}
+                  style={{ backgroundColor: colorBackgrounds[level] }}
+                  className={`aspect-square w-full cursor-pointer rounded-[2px] border-0 p-0 transition-transform duration-100 hover:scale-[1.15] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-text)] ${
+                    isPinned ? 'ring-1 ring-[var(--color-text)]' : ''
+                  }`}
+                />
+              );
+            }),
           )}
         </div>
       </div>
@@ -126,12 +197,14 @@ function ActivityPeriodPicker({
   years,
   selectedPeriod,
   onSelect,
-  accentDotColor = 'var(--badge-emerald-dot)',
+  label,
+  accentDotColor,
 }: {
   years: readonly number[];
   selectedPeriod: GitHubActivityPeriod;
   onSelect: (period: GitHubActivityPeriod) => void;
-  accentDotColor?: string;
+  label: string;
+  accentDotColor: string;
 }) {
   const periods: Array<{ label: string; value: GitHubActivityPeriod }> = [
     { label: 'All', value: 'all' },
@@ -139,23 +212,26 @@ function ActivityPeriodPicker({
   ];
 
   return (
-    <aside className="flex gap-2 border-b border-[var(--color-border)] pb-4 xl:flex-col xl:gap-1.5 xl:border-b-0 xl:pb-0">
-      {periods.map(({ label, value }) => {
+    <aside
+      aria-label={label}
+      className="flex flex-wrap items-center gap-1.5 lg:flex-col lg:items-stretch lg:gap-1"
+    >
+      {periods.map(({ label: itemLabel, value }) => {
         const isSelected = value === selectedPeriod;
 
         return (
           <button
-            key={label}
+            key={itemLabel}
             type="button"
             aria-pressed={isSelected}
             onClick={() => onSelect(value)}
-            className={`flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-2.5 text-left text-[0.82rem] tabular-nums transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] ${
+            className={`flex items-center justify-between gap-2 rounded-[10px] border px-3 py-1.5 text-left text-[0.8rem] tabular-nums transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] lg:w-full lg:px-3.5 lg:py-2 ${
               isSelected
-                ? 'bg-[color:var(--color-row-hover-bg)] font-medium text-[var(--color-text)]'
-                : 'text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
+                ? 'border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
+                : 'border-transparent text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
             }`}
           >
-            <span>{label}</span>
+            <span>{itemLabel}</span>
             {isSelected ? (
               <span
                 aria-hidden="true"
@@ -180,7 +256,11 @@ function ActivityScopePicker({
   t: ReturnType<typeof useTranslations<'about'>>;
 }) {
   return (
-    <div className="mt-3 inline-flex items-center gap-1 rounded-[10px] bg-[color:var(--color-row-bg)] p-1">
+    <div
+      role="group"
+      aria-label={t('activity.git.eyebrow')}
+      className="inline-flex items-center gap-0.5 rounded-[8px] border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--surface-recessed-bg,var(--color-row-bg))] p-0.5"
+    >
       {(['account', 'repository', '1002bot'] as const).map((scope) => {
         const isSelected = scope === selectedScope;
 
@@ -190,7 +270,7 @@ function ActivityScopePicker({
             type="button"
             onClick={() => onSelect(scope)}
             aria-pressed={isSelected}
-            className={`rounded-[7px] px-2.5 py-1 text-[0.72rem] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] ${
+            className={`inline-flex h-[22px] items-center rounded-[6px] px-2 text-[0.68rem] leading-none transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
               isSelected
                 ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
                 : 'text-[var(--color-nav-dropdown-description)] hover:text-[var(--color-text)]'
@@ -204,12 +284,16 @@ function ActivityScopePicker({
   );
 }
 
-function ActivityLegend({ colorClassNames }: { colorClassNames: string[] }) {
+function ActivityLegend({ colorBackgrounds }: { colorBackgrounds: string[] }) {
   return (
-    <span className="flex items-center gap-1.5" aria-label="Contribution intensity">
+    <span className="flex shrink-0 items-center gap-1.5" aria-label="Contribution intensity">
       <span>Less</span>
-      {colorClassNames.map((className, index) => (
-        <i key={index} className={`size-2 rounded-[2px] ${className}`} />
+      {colorBackgrounds.map((backgroundColor, index) => (
+        <i
+          key={index}
+          className="size-2 rounded-[2px]"
+          style={{ backgroundColor }}
+        />
       ))}
       <span>More</span>
     </span>
@@ -232,13 +316,20 @@ export function AboutActivityFeature({
   const [selectedGitPeriod, setSelectedGitPeriod] = useState<GitHubActivityPeriod>('all');
   const [gitActivity, setGitActivity] = useState(initialGitActivity);
   const [isGitLoading, setIsGitLoading] = useState(false);
+  const [hoveredGitDay, setHoveredGitDay] = useState<ActivityDay | null>(null);
+  const [pinnedGitDay, setPinnedGitDay] = useState<ActivityDay | null>(null);
+
   const [selectedWritingPeriod, setSelectedWritingPeriod] = useState<GitHubActivityPeriod>('all');
   const [writingActivity, setWritingActivity] = useState(initialWritingActivity);
   const [isWritingLoading, setIsWritingLoading] = useState(false);
+  const [hoveredWritingDay, setHoveredWritingDay] = useState<ActivityDay | null>(null);
+  const [pinnedWritingDay, setPinnedWritingDay] = useState<ActivityDay | null>(null);
 
   async function loadGitActivity(scope: GitHubActivityScope, period: GitHubActivityPeriod) {
     setSelectedGitScope(scope);
     setSelectedGitPeriod(period);
+    setHoveredGitDay(null);
+    setPinnedGitDay(null);
     setIsGitLoading(true);
 
     try {
@@ -256,6 +347,8 @@ export function AboutActivityFeature({
 
   async function loadWritingActivity(period: GitHubActivityPeriod) {
     setSelectedWritingPeriod(period);
+    setHoveredWritingDay(null);
+    setPinnedWritingDay(null);
     setIsWritingLoading(true);
 
     try {
@@ -290,47 +383,44 @@ export function AboutActivityFeature({
     ? t('activity.blog.rollingRange', { end: writingActivity.range.to })
     : t('activity.blog.calendarRange', { year: writingActivity.range.year });
 
+  const activeGitDay = hoveredGitDay ?? pinnedGitDay;
+  const activeWritingDay = hoveredWritingDay ?? pinnedWritingDay;
+
   return (
-    <main className="mx-auto w-full max-w-[1060px] px-6 pb-24 pt-10 md:px-8 md:pb-32 md:pt-12 xl:px-10">
+    <div className="mx-auto w-full max-w-[1060px] px-5 pb-20 pt-8 md:px-8 md:pb-28 md:pt-10 xl:px-10">
       <section className="max-w-[1060px]">
         <Link
           href={backHref}
-          className="mb-5 inline-flex items-center gap-2 rounded-[8px] px-1.5 py-1 text-[0.8125rem] font-medium text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+          className="mb-4 inline-flex items-center gap-2 rounded-[8px] px-1.5 py-1 text-[0.8125rem] font-medium text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
         >
-          <span aria-hidden="true" className="text-[1.125rem] leading-none">
-            &larr;
-          </span>
-          {t('backToAbout')}
+          <ArrowLeft aria-hidden="true" className="size-3.5 shrink-0" />
+          <span>{t('backToAbout')}</span>
         </Link>
-        <div className="mb-7 flex items-end justify-between gap-5">
+
+        <div className="mb-6 flex items-end justify-between gap-5">
           <div>
-            <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
+            <p className="text-[0.68rem] font-medium uppercase tracking-[0.16em] text-[var(--color-nav-muted)]">
               {t('activity.eyebrow')}
             </p>
-            <h1 className="mt-2 text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] md:text-[1.28rem]">
+            <h1 className="mt-1.5 text-[1.24rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] md:text-[1.36rem]">
               {t('activity.title')}
             </h1>
           </div>
-          {/* <span className="rounded-full border border-[var(--color-border)] px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.12em] text-[var(--color-nav-muted)]">
-            {t('activity.preview')}
-          </span> */}
         </div>
 
-        <div className="grid gap-10 md:gap-12">
-          <section className="grid gap-5 border-t border-[var(--color-border)] pt-5 xl:grid-cols-[minmax(0,1fr)_9rem] xl:gap-6">
-            <div>
-              <div>
-                <p className="inline-flex items-center gap-2 text-[0.74rem] font-medium uppercase tracking-[0.14em] text-[var(--color-nav-muted)]">
-                  <span
-                    aria-hidden="true"
-                    className="size-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: 'var(--badge-emerald-dot)' }}
-                  />
-                  <span>{t('activity.git.eyebrow')}</span>
-                </p>
-                <h2 className="mt-2 text-[1.05rem] font-medium text-[var(--color-text)]">
-                  {gitHeading}
-                </h2>
+        <div className="grid gap-7 md:gap-8">
+          <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_8.5rem] lg:items-start lg:gap-5">
+            <div className="min-w-0 rounded-[14px] border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] p-4 shadow-[var(--shadow-surface-card,0_1px_2px_rgba(0,0,0,0.03))] sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[var(--color-nav-muted)]">
+                    {t('activity.git.eyebrow')}
+                  </p>
+                  <h2 className="mt-1 text-[0.98rem] font-semibold tracking-[-0.02em] text-[var(--color-text)] md:text-[1.04rem]">
+                    {gitHeading}
+                  </h2>
+                </div>
+
                 <ActivityScopePicker
                   selectedScope={selectedGitScope}
                   onSelect={(scope) => void loadGitActivity(scope, selectedGitPeriod)}
@@ -338,76 +428,103 @@ export function AboutActivityFeature({
                 />
               </div>
 
-              <div className="mt-6 overflow-x-auto rounded-[14px] bg-[color:var(--color-row-bg)] p-4 md:p-5">
-                {gitData ? (
-                  <ActivityCalendar days={gitData.days} colorClassNames={gitActivityClassNames} />
-                ) : (
-                  <div className="grid min-h-40 place-items-center text-[0.82rem] text-[var(--color-nav-muted)]">
-                    {t('activity.git.unavailable')}
+              {gitData ? (
+                <div
+                  className={`mt-4 transition-opacity duration-150 ${isGitLoading ? 'opacity-60' : 'opacity-100'}`}
+                >
+                  <div className="overflow-x-auto pb-1">
+                    <ActivityCalendar
+                      days={gitData.days}
+                      colorBackgrounds={gitActivityBackgrounds}
+                      kind="git"
+                      selectedDate={pinnedGitDay?.date ?? null}
+                      onHoverDay={setHoveredGitDay}
+                      onTogglePinDay={(day) =>
+                        setPinnedGitDay((current) => (current?.date === day.date ? null : day))
+                      }
+                    />
                   </div>
-                )}
-              </div>
-
-              <div className="mt-4 flex items-center justify-between gap-4 text-[0.76rem] text-[var(--color-nav-muted)]">
-                <span>
-                  {gitData?.totalCount === 0 ? t('activity.git.empty') : gitRangeLabel}
-                  {isGitLoading ? ` ${t('activity.git.loading')}` : ''}
-                </span>
-                <ActivityLegend colorClassNames={gitActivityClassNames} />
-              </div>
+                  <div className="mt-3 flex h-5 items-center justify-between gap-4 text-[0.72rem] text-[var(--color-text-muted)]">
+                    <span className="min-w-0 truncate tabular-nums">
+                      {activeGitDay ? formatDayReadout(activeGitDay, 'git') : gitRangeLabel}
+                    </span>
+                    <ActivityLegend colorBackgrounds={gitActivityBackgrounds} />
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 rounded-[10px] border border-[var(--color-border-faint,var(--color-border))] bg-[var(--surface-recessed-bg,var(--color-row-bg))] px-4 py-6 text-[0.82rem] leading-6 text-[var(--color-text-muted)]">
+                  {t('activity.git.unavailableNote')}
+                </div>
+              )}
             </div>
+
             <ActivityPeriodPicker
               years={gitYears}
               selectedPeriod={selectedGitPeriod}
-              accentDotColor="var(--badge-emerald-dot)"
               onSelect={(period) => void loadGitActivity(selectedGitScope, period)}
+              label={`${t('activity.git.eyebrow')} period`}
+              accentDotColor="#349f74"
             />
           </section>
 
-          <section className="grid gap-5 border-t border-[var(--color-border)] pt-5 xl:grid-cols-[minmax(0,1fr)_9rem] xl:gap-6">
-            <div>
-              <div>
-                <p className="inline-flex items-center gap-2 text-[0.74rem] font-medium uppercase tracking-[0.14em] text-[var(--color-nav-muted)]">
-                  <span
-                    aria-hidden="true"
-                    className="size-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: 'var(--badge-amber-dot)' }}
+          <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_8.5rem] lg:items-start lg:gap-5">
+            <div className="min-w-0 rounded-[14px] border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] p-4 shadow-[var(--shadow-surface-card,0_1px_2px_rgba(0,0,0,0.03))] sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[var(--color-nav-muted)]">
+                    {t('activity.blog.eyebrow')}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                    <h2 className="text-[0.98rem] font-semibold tracking-[-0.02em] text-[var(--color-text)] md:text-[1.04rem]">
+                      {t('activity.blog.title')}
+                    </h2>
+                    <span className="text-[0.76rem] tabular-nums text-[var(--color-text-muted)]">
+                      {t('activity.blog.summary', {
+                        articles: writingActivity.articleCount,
+                        units: writingActivity.writingUnits,
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`mt-4 transition-opacity duration-150 ${isWritingLoading ? 'opacity-60' : 'opacity-100'}`}
+              >
+                <div className="overflow-x-auto pb-1">
+                  <ActivityCalendar
+                    days={writingActivity.days}
+                    colorBackgrounds={writingActivityBackgrounds}
+                    kind="writing"
+                    selectedDate={pinnedWritingDay?.date ?? null}
+                    onHoverDay={setHoveredWritingDay}
+                    onTogglePinDay={(day) =>
+                      setPinnedWritingDay((current) => (current?.date === day.date ? null : day))
+                    }
+                    useFixedLevels
                   />
-                  <span>{t('activity.blog.eyebrow')}</span>
-                </p>
-                <h2 className="mt-2 text-[1.05rem] font-medium text-[var(--color-text)]">
-                  {t('activity.blog.title')}
-                </h2>
-              </div>
-
-              <div className="mt-6 overflow-x-auto rounded-[14px] bg-[color:var(--color-row-bg)] p-4 md:p-5">
-                <ActivityCalendar
-                  days={writingActivity.days}
-                  colorClassNames={writingActivityClassNames}
-                  useFixedLevels
-                />
-              </div>
-
-              <div className="mt-4 flex items-center justify-between gap-4 text-[0.76rem] text-[var(--color-nav-muted)]">
-                <span>
-                  {writingRangeLabel} · {t('activity.blog.summary', {
-                    articles: writingActivity.articleCount,
-                    units: writingActivity.writingUnits,
-                  })}
-                  {isWritingLoading ? ` ${t('activity.blog.loading')}` : ''}
-                </span>
-                <ActivityLegend colorClassNames={writingActivityClassNames} />
+                </div>
+                <div className="mt-3 flex h-5 items-center justify-between gap-4 text-[0.72rem] text-[var(--color-text-muted)]">
+                  <span className="min-w-0 truncate tabular-nums">
+                    {activeWritingDay
+                      ? formatDayReadout(activeWritingDay, 'writing')
+                      : writingRangeLabel}
+                  </span>
+                  <ActivityLegend colorBackgrounds={writingActivityBackgrounds} />
+                </div>
               </div>
             </div>
+
             <ActivityPeriodPicker
               years={gitYears}
               selectedPeriod={selectedWritingPeriod}
-              accentDotColor="var(--badge-amber-dot)"
               onSelect={(period) => void loadWritingActivity(period)}
+              label={`${t('activity.blog.eyebrow')} period`}
+              accentDotColor="#c78548"
             />
           </section>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

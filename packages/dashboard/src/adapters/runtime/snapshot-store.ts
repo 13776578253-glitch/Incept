@@ -41,7 +41,7 @@ export function snapshotContext() {
   const home = resolve(process.env.INCEPT_DASHBOARD_HOME ?? homedir());
   const path = resolve(process.env.INCEPT_DASHBOARD_CACHE_FILE ?? join(home, '.incept', 'dashboard-snapshots.json'));
   const database = trustedDashboardEnabled() && process.env.INCEPT_SYNC_DATABASE_FILE ? resolve(process.env.INCEPT_SYNC_DATABASE_FILE) : undefined;
-  const scope = createHash('sha256').update(JSON.stringify(['commandcode-peak-v1', home, process.env.INCEPT_DASHBOARD_IMPORTS_FILE,
+  const scope = createHash('sha256').update(JSON.stringify(['commandcode-peak-v1', 'hourly-v1', home, process.env.INCEPT_DASHBOARD_IMPORTS_FILE,
     overridesPath(), process.env.INCEPT_COMMANDCODE_CATALOG_FILE, ...(database ? ['trusted-v2', database] : [])])).digest('hex');
   return { home, path, scope, key: path + ':' + scope, database };
 }

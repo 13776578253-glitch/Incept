@@ -18,7 +18,11 @@ export function formatFullNumber(value: number): string {
 }
 
 export function formatUsd(value: number, digits = 2): string {
-  return `$${value.toFixed(digits)}`;
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+  return `$${formatted}`;
 }
 
 export function formatReferenceUsd(estimatedCostUsd: string, estimatedTokens: number, withCurrency = false): string {

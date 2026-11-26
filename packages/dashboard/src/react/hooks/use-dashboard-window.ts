@@ -23,6 +23,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
   const remoteEnabled=!!options.owner&&!!initialData.sync?.remote;
   const scope = (options.owner ? 'owner' : options.canViewDetails ? 'pro' : 'public')+(remoteEnabled?':remote:'+initialData.sync?.readMode:'');
   const [remoteInfo,setRemoteInfo]=useState<RemoteStatus|null>(null),[remoteDevice,setRemoteDevice]=useState(''),[remoteState,setRemoteState]=useState('idle');
+  const remoteInfoRef = useRef<RemoteStatus | null>(null);
   const deviceRef=useRef(remoteDevice);useEffect(()=>{deviceRef.current=remoteDevice;},[remoteDevice]);
   const interval=remoteEnabled?Math.max(300000,Math.min(600000,initialData.sync?.intervalMs??300000)):DASHBOARD_REFRESH_INTERVAL;
   const [data, setData] = useState(() => {
@@ -39,7 +40,12 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState(false);
   const [refreshCycle, setRefreshCycle] = useState(0);
+  const [revalidationCycle, setRevalidationCycle] = useState(0);
   const [isPollingPaused, setIsPollingPaused] = useState(false);
+  // Server-confirmed access reduction withdraws Owner-only affordances (e.g. Billing) immediately.
+  const initialRole: 'owner' | 'pro' | 'guest' = options.owner ? 'owner' : options.canViewDetails ? 'pro' : 'guest';
+  const [downgrade, setDowngrade] = useState<{ base: string; role: 'owner' | 'pro' | 'guest' } | null>(null);
+  const viewerRole = downgrade && downgrade.base === initialRole ? downgrade.role : initialRole;
   const refreshRef = useRef<() => void>(() => {});
   const activeRange = useRef(rangePreset);
   useEffect(() => {
@@ -47,6 +53,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
     const controller = new AbortController();
     void remoteStatus(controller.signal).then(info => {
       if (controller.signal.aborted) return;
+      remoteInfoRef.current = info;
       setRemoteInfo(info);
       const nextDevice = info.devices.find(device => device.id === deviceRef.current) ?? info.devices[0];
       if (!deviceRef.current && nextDevice) {
@@ -77,32 +84,73 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
       setIsPollingPaused(hidden);
       if (disposed || hidden) return;
       setRefreshCycle(cycle => cycle + 1);
-      timer = window.setTimeout(() => { void request(); }, interval);
+      timer = window.setTimeout(() => { void request(false, 'poll'); }, interval);
     }
 
-    async function request(force = false) {
+    // A stale-while-revalidate answer is followed by a short bounded re-check rather than the 60s poll.
+    function scheduleRecheck() {
+      clearTimer();
+      if (disposed || document.visibilityState === 'hidden') return;
+      recheckAttempt += 1;
+      const delay = Math.min(15_000, 1_500 * 2 ** (recheckAttempt - 1));
+      timer = window.setTimeout(() => { void request(false, 'recheck'); }, delay);
+    }
+
+    function applyRemoteInfo(info: RemoteStatus, force: boolean) {
+      remoteInfoRef.current = info;
+      setRemoteInfo(info);
+      if (!deviceRef.current && info.devices.length) {
+        deviceRef.current = info.devices[0].id;
+        setRemoteDevice(deviceRef.current);
+      }
+      const selected = info.devices.find(device => device.id === deviceRef.current);
+      if (!force && selected?.lastJob?.phase) setRemoteState(selected.lastJob.phase);
+    }
+
+    async function request(force = false, reason: 'mount' | 'range' | 'poll' | 'visible' | 'manual' | 'recheck' = force ? 'manual' : 'poll') {
       if(force&&remoteEnabled&&isRemoteBusy)return;
       clearTimer();
       if (document.visibilityState === 'hidden' && !force) {
         setIsPollingPaused(true);
         return;
       }
+      if (reason !== 'recheck') recheckAttempt = 0;
+      let isStaleSwr = false;
+      let shouldFastRecheck = false;
       controller?.abort();
       const current = new AbortController();
       controller = current;
-      setIsRefreshing(true);
+      inFlightForce = force;
+      if (reason !== 'recheck') setIsRefreshing(true);
       if(force&&remoteEnabled)isRemoteBusy=true;
       try {
         const query = new URLSearchParams({ range: rangePreset });
         let completedStatus='',completedPhase='';
-        if(remoteEnabled){const info=await remoteStatus(current.signal);if(disposed||current.signal.aborted)return;setRemoteInfo(info);if(!deviceRef.current&&info.devices.length){deviceRef.current=info.devices[0].id;setRemoteDevice(deviceRef.current);}
-          const selected=info.devices.find(device=>device.id===deviceRef.current);
-          if(!force&&selected?.lastJob?.phase)setRemoteState(selected.lastJob.phase);
-          if(force){if(!deviceRef.current)throw Error('NO_REMOTE_DEVICE');const job=await remoteRefresh(deviceRef.current,j=>{const phase=j.phase??(['completed','completed_no_change'].includes(j.status)?'reading':j.status);if(!disposed&&!current.signal.aborted)setRemoteState(['committed','no_change'].includes(phase)?'committing':phase);},current.signal);if(disposed||current.signal.aborted)return;completedStatus=job.status;completedPhase=job.phase??job.status;
-            if(job.status==='completed'||job.status==='completed_no_change'){if(job.dataRevision!==null)query.set('minRevision',String(job.dataRevision));}
-            else if(!['partial','review_required','offline','expired','cancelled'].includes(job.status))throw Error('REMOTE_JOB_'+job.status);
+        if (remoteEnabled) {
+          if (force) {
+            const info = await remoteStatus(current.signal);
+            if (disposed || current.signal.aborted) return;
+            applyRemoteInfo(info, true);
+            if (!deviceRef.current) throw Error('NO_REMOTE_DEVICE');
+            const job = await remoteRefresh(deviceRef.current, j => {
+              const phase = j.phase ?? (['completed', 'completed_no_change'].includes(j.status) ? 'reading' : j.status);
+              if (!disposed && !current.signal.aborted) setRemoteState(['committed', 'no_change'].includes(phase) ? 'committing' : phase);
+            }, current.signal);
+            if (disposed || current.signal.aborted) return;
+            completedStatus = job.status;
+            completedPhase = job.phase ?? job.status;
+            if (job.status === 'completed' || job.status === 'completed_no_change') {
+              if (job.dataRevision !== null) query.set('minRevision', String(job.dataRevision));
+            } else if (!['partial', 'review_required', 'offline', 'expired', 'cancelled'].includes(job.status)) {
+              throw Error('REMOTE_JOB_' + job.status);
+            }
+          } else if (reason === 'poll' || reason === 'visible' || !remoteInfoRef.current) {
+            void remoteStatus(current.signal).then(info => {
+              if (disposed || current.signal.aborted) return;
+              applyRemoteInfo(info, false);
+            }).catch(() => {});
           }
-        }else if (force && options.owner) query.set('refresh', '1');
+        } else if (force && options.owner) query.set('refresh', '1');
         const initial = initialSnapshot.current;
         const validator = !force && !options.owner && initial.data.range === rangePreset && dataRef.current === initial.data
           ? initial.validator
@@ -120,6 +168,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
           : undefined;
         const accessReduced = validRole !== undefined && roleRank[validRole] < roleRank[currentRole];
         if (accessReduced && !disposed && !current.signal.aborted) {
+          setDowngrade({ base: initialRole, role: validRole as 'owner' | 'pro' | 'guest' });
           clearSnapshots(scope);
           const empty = emptyDashboard(rangePreset);
           dataRef.current = empty;
@@ -146,48 +195,75 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
         if(remoteEnabled&&query.has('minRevision')&&next.sync?.readMode==='v2'&&(next.sync.dataRevision??-1)<Number(query.get('minRevision')))throw Error('REVISION_NOT_VISIBLE');
         if (!disposed && !current.signal.aborted) {
           if (olderSnapshot(next, dataRef.current)) throw new Error('STALE_USAGE_SNAPSHOT');
+          const checkedAtMs = Date.parse(next.checkedAt ?? '');
+          isStaleSwr = !accessReduced && !force && (next.revalidating === true
+            || (!!options.owner && !remoteEnabled && next.sync?.readMode !== 'v2' && Number.isFinite(checkedAtMs) && Date.now() - checkedAtMs >= 15_000));
+          shouldFastRecheck = isStaleSwr && recheckAttempt < 8;
+          const clean = { ...next }; delete clean.revalidating;
+          next = clean;
           dataRef.current = next;
           setData(next);
           rememberSnapshot(next, accessReduced ? (validRole === 'pro' ? 'pro' : 'public') : scope);
           setLastPageUpdatedAt(new Date().toISOString());
           setHasSnapshot(true);
-          setShowingHistory(false);
+          setShowingHistory(isStaleSwr);
           setRefreshError(false);
-          if(completedStatus){setRemoteState(next.sync?.readMode==='v2'?completedPhase:completedStatus==='completed'?'stored_v2':completedPhase);void remoteStatus(current.signal).then(info=>{if(!disposed&&!current.signal.aborted)setRemoteInfo(info);}).catch(()=>{});}
+          if(completedStatus){setRemoteState(next.sync?.readMode==='v2'?completedPhase:completedStatus==='completed'?'stored_v2':completedPhase);void remoteStatus(current.signal).then(info=>{if(!disposed&&!current.signal.aborted){remoteInfoRef.current=info;setRemoteInfo(info);}}).catch(()=>{});}
         }
       } catch {
         if (!disposed && !current.signal.aborted) {setRefreshError(true);if(force&&remoteEnabled)setRemoteState(previous=>['offline','expired','cancelled','review_required','partial'].includes(previous)?previous:'failed');}
       } finally {
+        if (controller === current) {
+          inFlightForce = false;
+        }
         if(force&&remoteEnabled)isRemoteBusy=false;
         if (!disposed && !current.signal.aborted) {
           setIsRefreshing(false);
-          scheduleNext();
+          if (shouldFastRecheck) {
+            scheduleRecheck();
+          } else if (isStaleSwr) {
+            scheduleNext();
+          } else {
+            if (reason === 'poll' || reason === 'visible' || reason === 'manual' || reason === 'recheck') {
+              setRevalidationCycle(cycle => cycle + 1);
+            }
+            recheckAttempt = 0;
+            scheduleNext();
+          }
         }
       }
     }
     let isRemoteBusy=false;
+    let recheckAttempt = 0;
+    let inFlightForce = false;
 
-    refreshRef.current = () => { void request(true); };
+    refreshRef.current = () => { void request(true, 'manual'); };
     // Preserve the existing synchronous range/history hydration contract.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsRefreshing(false);
     if (activeRange.current !== rangePreset) {
       activeRange.current = rangePreset;
       const previous = clientSnapshot(rangePreset, scope);
-      if (previous) { setData(previous); setHasSnapshot(true); setShowingHistory(true); }
-      else { setData(emptyDashboard(rangePreset)); setHasSnapshot(false); setShowingHistory(false); }
-      void request();
+      if (previous) { dataRef.current = previous; setData(previous); setHasSnapshot(true); setShowingHistory(true); }
+      else { const empty = emptyDashboard(rangePreset); dataRef.current = empty; setData(empty); setHasSnapshot(false); setShowingHistory(false); }
+      void request(false, 'range');
     } else if (refreshOnMount.current) {
       refreshOnMount.current = false;
-      void request();
+      void request(false, 'mount');
     } else {
       scheduleNext();
     }
     const onVisible = () => {
       const hidden = document.visibilityState === 'hidden';
       setIsPollingPaused(hidden);
-      if (hidden) clearTimer();
-      else if(!isRemoteBusy)void request();
+      if (hidden) {
+        clearTimer();
+        if (!inFlightForce && controller) {
+          controller.abort();
+          controller = undefined;
+          setIsRefreshing(false);
+        }
+      } else if(!isRemoteBusy) void request(false, 'visible');
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -200,7 +276,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
 
   const refresh = useCallback(() => refreshRef.current(), []);
   return { data, rangePreset, setRangePreset, selectedTrendIndex, setSelectedTrendIndex,
-    filteredDaily: data.daily, hasSnapshot, showingHistory, isRefreshing, refreshError, refresh, refreshCycle, isPollingPaused,remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval:interval,lastPageUpdatedAt };
+    filteredDaily: data.daily, hasSnapshot, showingHistory, isRefreshing, refreshError, refresh, refreshCycle, revalidationCycle, viewerRole, isPollingPaused,remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval:interval,lastPageUpdatedAt };
 }
 
 export type DashboardWindow = ReturnType<typeof useDashboardWindow>;

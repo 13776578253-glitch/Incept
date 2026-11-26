@@ -1,27 +1,22 @@
 'use client';
 
-import type { DocsLibraryPageModel } from '../docs/types';
-import { DocsSettingsPanel } from '../docs/docs-settings-panel';
-
-import { useMounted } from '@/hooks/use-mounted';
+import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { findSettingsSectionContribution, mountManifest } from '@/mount/registry';
-import { useEyeComfortFilter } from '@/hooks/use-eye-comfort-filter';
-import { useDocsCodePaletteContext } from '@/components/base/docs-code-palette-provider';
-import { useLanguage } from '@/hooks/use-language';
-
 import { localeConfig, type AppLocale } from '@/i18n/config/locales';
 import { withLocalePath } from '@/i18n/utils/locale-path';
-
+import { useLanguage } from '@/hooks/use-language';
+import { findSettingsSectionContribution, mountManifest } from '@/mount/registry';
 import { AccountSettingsPanel } from '../account/account-settings-panel';
-import { SettingsSectionPanel } from '../shared/settings-renderer';
-import { getSettingsPageData } from '../shared/settings-schema';
-import { ProjectSurfacesPanel } from '../projects/project-surfaces-panel';
+import { AppearanceSettingsPanel } from '../appearance/appearance-settings-panel';
+import { DashboardSettingsPanel } from '../dashboard/dashboard-settings-panel';
+import { DocsSettingsPanel } from '../docs/docs-settings-panel';
+import type { DocsLibraryPageModel } from '../docs/types';
 import { LanguageSettingsPanel } from '../language/language-settings-panel';
-
+import { ProjectSurfacesPanel } from '../projects/project-surfaces-panel';
+import { getSettingsPageData } from '../shared/settings-schema';
 import type { SettingsSection } from '../shared/settings-types';
+import { useSettingsAnchorHighlight } from '../shared/use-settings-anchor-highlight';
+import { SettingsMobileTabs } from './settings-page-sidebar';
 
 function getLocalizedReturnPath(returnTo: string | null, locale: AppLocale) {
   if (!returnTo?.startsWith('/') || returnTo.startsWith('//')) {
@@ -81,40 +76,18 @@ export function SettingsPageContent({
   settingsContributionData: Record<string, unknown>;
   projects: Array<{ key: string; name: { en: string; zh: string }; roadmapEnabled: boolean; atlasEnabled: boolean }>;
 }) {
-  const mounted = useMounted();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { language, setLanguage } = useLanguage();
-  const { colorScheme, setColorScheme } = useColorScheme();
-  const {
-    eyeComfortFilterEnabled,
-    setEyeComfortFilter,
-    isEyeComfortFilterReady,
-  } = useEyeComfortFilter();
-  const {
-    codePalette,
-    setCodePalette,
-    isCodePaletteReady,
-  } = useDocsCodePaletteContext();
+  const { language } = useLanguage();
   const page = getSettingsPageData(language, viewerRole === 'owner');
   const requestedSection = searchParams.get('section');
   const returnTo = searchParams.get('returnTo');
   const selectedSection =
     page.sections.find((section) => section.id === requestedSection) ??
     page.sections[0];
-  const interactions = {
-    theme: colorScheme,
-    setTheme: setColorScheme,
-    isThemeReady: mounted,
-    eyeComfortFilterEnabled,
-    setEyeComfortFilter,
-    isEyeComfortFilterReady,
-    codePalette,
-    setCodePalette,
-    isCodePaletteReady,
-    language,
-    setLanguage,
-  };
+
+  useSettingsAnchorHighlight(selectedSection.id);
+
   const handleBack = () => {
     const returnPath = getLocalizedReturnPath(returnTo, language);
 
@@ -127,28 +100,24 @@ export function SettingsPageContent({
   };
 
   return (
-    <div className="min-h-[calc(100vh-var(--navbar-height))] max-w-[820px] pb-10">
+    <div className="min-h-[calc(100vh-var(--navbar-height))] max-w-[760px] pb-14">
       <button
         type="button"
         onClick={handleBack}
-        className="mb-6 inline-flex items-center gap-2 rounded-[8px] px-1.5 py-1 text-[0.8125rem] font-medium text-[var(--color-nav-dropdown-description)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] active:bg-[var(--color-nav-item-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-soft)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
+        className="-ml-2 mb-4 inline-flex cursor-pointer items-center gap-1.5 rounded-[var(--radius-md,10px)] px-2 py-1 text-[length:var(--text-sm)] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
       >
-        <span aria-hidden="true" className="text-[0.9375rem] leading-none">
-          &larr;
-        </span>
-        {language === 'zh' ? '返回' : 'Back'}
+        <ArrowLeft aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+        <span>{language === 'zh' ? '返回' : 'Back'}</span>
       </button>
-      <header className="mb-10 space-y-1.5">
-        <h1 className="text-[1.45rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
-          {page.title}
-        </h1>
-        <p className="max-w-3xl text-[0.8125rem] leading-6 text-[var(--color-nav-dropdown-description)]">
-          {page.description}
-        </p>
-      </header>
 
-      <div className="hidden lg:block">
-        {selectedSection.id === 'docs' && viewerRole === 'owner' && docs ? (
+      <SettingsMobileTabs sections={page.sections} activeSectionId={selectedSection.id} />
+
+      <div>
+        {selectedSection.id === 'appearance' ? (
+          <AppearanceSettingsPanel />
+        ) : selectedSection.id === 'dashboard' ? (
+          <DashboardSettingsPanel isOwner={viewerRole === 'owner'} />
+        ) : selectedSection.id === 'docs' && viewerRole === 'owner' && docs ? (
           <DocsSettingsPanel page={docs} />
         ) : selectedSection.id === 'projects' && viewerRole === 'owner' ? (
           <ProjectSurfacesPanel initialProjects={projects} language={language} />
@@ -158,31 +127,7 @@ export function SettingsPageContent({
           <AccountSettingsPanel language={language} viewerRole={viewerRole} />
         ) : findSettingsSectionContribution(mountManifest, selectedSection.id) ? (
           <ContributionSectionPanel section={selectedSection} data={settingsContributionData} />
-        ) : (
-          <div className="space-y-8">
-            <SettingsSectionPanel section={selectedSection} showDescription={!['appearance', 'language'].includes(selectedSection.id)} {...interactions} />
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-12 lg:hidden">
-        {page.sections.map((section) => (
-          section.id === 'docs' && viewerRole === 'owner' && docs ? (
-            <DocsSettingsPanel key={section.id} page={docs} />
-          ) : section.id === 'projects' && viewerRole === 'owner' ? (
-            <ProjectSurfacesPanel key={section.id} initialProjects={projects} language={language} />
-          ) : section.id === 'language' ? (
-            <LanguageSettingsPanel key={section.id} documentLanguage={documentLanguage} />
-          ) : section.id === 'account' ? (
-            <AccountSettingsPanel key={section.id} language={language} viewerRole={viewerRole} />
-          ) : findSettingsSectionContribution(mountManifest, section.id) ? (
-            <ContributionSectionPanel key={section.id} section={section} data={settingsContributionData} />
-          ) : (
-            <div key={section.id} className="space-y-8">
-              <SettingsSectionPanel section={section} showDescription={!['appearance', 'language'].includes(section.id)} {...interactions} />
-            </div>
-          )
-        ))}
+        ) : null}
       </div>
     </div>
   );

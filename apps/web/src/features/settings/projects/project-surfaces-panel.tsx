@@ -333,23 +333,25 @@ export function ProjectSurfacesPanel({
   }
 
   return (
-    <section id="projects" className="max-w-[760px] space-y-7">
-      <header className="space-y-1.5">
+    <section id="projects" className="max-w-[760px] space-y-6">
+      <header className="space-y-1">
         <div className="flex flex-wrap items-center gap-2.5">
-          <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
+          <h2 className="text-[length:var(--text-xl)] font-semibold tracking-[-0.025em] text-[var(--color-text)]">
             {isZh ? '项目与功能' : 'Projects & surfaces'}
           </h2>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--surface-chip-border)] bg-[var(--surface-chip-bg)] px-2.5 py-0.5 text-[0.72rem] font-medium tabular-nums text-[var(--color-nav-muted)]">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--badge-sky-dot)]" />
+          <span className="text-[length:var(--text-2xs)] font-medium tabular-nums text-[var(--color-text-soft)]">
             {projects.length} {isZh ? '个项目' : projects.length === 1 ? 'project' : 'projects'}
           </span>
         </div>
+        <p className="text-[length:var(--text-sm)] leading-relaxed text-[var(--color-text-muted)]">
+          {isZh ? '创建项目、调整展示名称并切换路线图或规划图功能状态' : 'Create projects, rename titles, and toggle Roadmap or Planning Board visibility'}
+        </p>
       </header>
 
       {message && (
         <div
           role="status"
-          className={`flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-[0.8125rem] transition-all animate-in fade-in duration-150 ${
+          className={`flex items-center justify-between gap-3 rounded-[10px] border px-3.5 py-2.5 text-[length:var(--text-sm)] transition-all animate-in fade-in duration-150 ${
             message.includes('失败') || message.includes('failed') || message.includes('至少保留') || message.includes('at least one')
               ? 'border-[var(--badge-amber-border)] bg-[var(--badge-amber-bg)] text-[var(--badge-amber-fg)]'
               : 'border-[var(--badge-emerald-border)] bg-[var(--badge-emerald-bg)] text-[var(--badge-emerald-fg)]'
@@ -371,7 +373,7 @@ export function ProjectSurfacesPanel({
           <button
             type="button"
             onClick={() => setMessage('')}
-            className="text-[0.75rem] opacity-70 hover:opacity-100 transition-opacity"
+            className="text-[length:var(--text-xs)] opacity-70 transition-opacity hover:opacity-100 cursor-pointer"
             aria-label={isZh ? '关闭提示' : 'Dismiss'}
           >
             ✕
@@ -379,136 +381,66 @@ export function ProjectSurfacesPanel({
         </div>
       )}
 
-      {/* 创建新项目 */}
+      {/* 创建新项目：扁平单行创建条 */}
       <form
+        id="projects-create"
         onSubmit={(event) => void createProject(event)}
-        className="rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-3.5"
+        className="space-y-2 border-b border-[var(--color-border-faint)] pb-5"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="flex size-6 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-sky-icon)] shadow-[var(--shadow-card-sm)]">
-              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 3.5v9M3.5 8h9" />
-              </svg>
-            </span>
-            <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-              {isZh ? '新建项目' : 'Create Project'}
-            </h3>
-          </div>
-          <span className="text-[0.72rem] text-[var(--color-nav-muted)]">
-            {isZh ? '默认启用路线图与规划图' : 'Starts with both surfaces enabled'}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 pt-0.5">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-[200px] flex-1">
             <input
               required
               value={newProjectName}
               onChange={(event) => setNewProjectName(event.target.value)}
               placeholder={isZh ? '例如：新项目' : 'e.g. New Project'}
               aria-label={isZh ? '项目名称' : 'Project Name'}
-              className="min-h-9 w-full rounded-[10px] bg-[var(--color-bg)] px-3 text-[0.8125rem] text-[var(--color-text)] outline-none shadow-[var(--shadow-card-sm)] transition-all placeholder:text-[var(--color-nav-muted)] focus:outline-none"
+              className="h-9 w-full rounded-[9px] border border-[var(--color-border-input)] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[length:var(--text-sm)] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-text-soft)] focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-ring-focus)]"
             />
           </div>
           <button
             type="submit"
             disabled={pending === 'new'}
-            className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full bg-[var(--color-bg)] px-3.5 text-[0.78rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
+            className="inline-flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[9px] bg-[var(--color-primary-bg)] px-3.5 text-[length:var(--text-xs)] font-medium text-[color:var(--color-primary-fg)] transition-all hover:brightness-[1.06] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M8 3.5v9M3.5 8h9" />
             </svg>
             <span>{pending === 'new' ? (isZh ? '创建中…' : 'Creating…') : (isZh ? '创建项目' : 'Create project')}</span>
           </button>
         </div>
+        <p className="text-[length:var(--text-xs)] text-[var(--color-text-soft)]">
+          {isZh ? '新项目默认同时启用路线图与规划图，支持在下方列表中修改展示名称' : 'New projects start with both surfaces enabled'}
+        </p>
       </form>
 
-      {/* 已有项目列表 */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[0.9375rem] font-semibold tracking-[-0.01em] text-[var(--color-text)]">
+      {/* 已有项目列表：无外框扁平分割线列表 */}
+      <div id="projects-list" className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-[length:var(--text-sm)] font-medium text-[var(--color-text)]">
             {isZh ? '已有项目' : 'Configured Projects'}
           </h3>
-          <span className="text-[0.75rem] text-[var(--color-nav-muted)]">
-            {isZh ? '可在此调整项目名称与功能开关' : 'Manage project names and surface toggles'}
+          <span className="text-[length:var(--text-xs)] text-[var(--color-text-soft)]">
+            {isZh ? '编辑名称后点击保存即可更新' : 'Rename inline and save changes'}
           </span>
         </div>
 
         {projects.length === 0 ? (
-          <div className="rounded-2xl bg-[color:var(--color-row-bg)] p-8 text-center">
-            <p className="text-[0.8125rem] text-[var(--color-nav-muted)]">
-              {isZh ? '暂无项目，可在上方表单中创建新项目。' : 'No projects configured. Create your first project above.'}
+          <div className="rounded-[10px] border border-dashed border-[var(--color-border)] p-8 text-center">
+            <p className="text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
+              {isZh ? '暂无项目，可在上方输入名称直接创建' : 'No projects configured. Create your first project above'}
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="divide-y divide-[var(--color-border-faint)] border-t border-[var(--color-border-faint)]">
             {projects.map((project) => (
               <article
                 key={project.key}
-                className="rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5 space-y-3.5"
+                className="-mx-2 rounded-[10px] px-2 py-3.5 transition-colors hover:bg-[var(--color-surface-subtle)]"
               >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-bg)] text-[var(--color-text-muted)] shadow-[var(--shadow-card-sm)]">
-                      <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.4">
-                        <rect x="2.5" y="3" width="11" height="10" rx="2" />
-                        <path d="M2.5 6.5h11M6.5 6.5v6.5" />
-                      </svg>
-                    </span>
-                    <span className="font-semibold text-[0.9375rem] text-[var(--color-text)] truncate">
-                      {(isZh ? project.name.zh || project.name.en : project.name.en || project.name.zh) || project.key}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-bg)] px-2.5 py-0.5 font-mono text-[0.7rem] text-[var(--color-text-muted)] shadow-[var(--shadow-card-sm)]">
-                      <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--badge-sky-dot)]" />
-                      {project.key}
-                    </span>
-                  </div>
-
-                  {/* 功能状态：移动到右上角 */}
-                  <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                    <span className="text-[0.7rem] font-medium text-[var(--color-nav-muted)] mr-0.5">
-                      {isZh ? '功能状态：' : 'Surfaces:'}
-                    </span>
-                    {(['roadmapEnabled', 'atlasEnabled'] as const).map((field) => {
-                      const enabled = project[field];
-                      const wouldDisableLast = enabled && (field === 'roadmapEnabled' ? !project.atlasEnabled : !project.roadmapEnabled);
-                      const label = field === 'roadmapEnabled' ? (isZh ? '路线图' : 'Roadmap') : (isZh ? '规划图' : 'Planning Board');
-                      return (
-                        <button
-                          key={field}
-                          type="button"
-                          role="switch"
-                          aria-checked={enabled}
-                          disabled={wouldDisableLast}
-                          title={wouldDisableLast ? (isZh ? '至少保留路线图或规划图中的一项' : 'Keep at least one surface enabled') : undefined}
-                          onClick={() => update(project.key, { [field]: !enabled })}
-                          className={`inline-flex h-6 items-center gap-1.5 rounded-full border px-2.5 text-[0.7rem] font-medium transition-all duration-150 ${
-                            enabled
-                              ? 'border-[var(--badge-emerald-border)] bg-[var(--badge-emerald-bg)] text-[var(--badge-emerald-fg)]'
-                              : 'border-[var(--color-border)] bg-transparent text-[var(--color-nav-muted)] hover:border-[var(--color-border-subtle)] hover:text-[var(--color-text)]'
-                          } ${wouldDisableLast ? 'cursor-not-allowed opacity-60' : 'cursor-pointer active:scale-95'}`}
-                        >
-                          <span
-                            aria-hidden="true"
-                            className="size-1.5 shrink-0 rounded-full transition-colors"
-                            style={{
-                              backgroundColor: enabled ? 'var(--badge-emerald-dot)' : 'var(--color-nav-muted)',
-                            }}
-                          />
-                          <span>{label}</span>
-                          <span className="font-normal opacity-90">
-                            {enabled ? (isZh ? '启用' : 'Enabled') : (isZh ? '停用' : 'Disabled')}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 项目名称栏：输入框 + 保存 + 删除项目并排在同一栏 */}
-                <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                  <div className="relative min-w-[180px] flex-1">
+                <div className="flex flex-wrap items-center justify-between gap-2.5">
+                  {/* 左栏：静默内联可编辑项目名 + 项目标识 */}
+                  <div className="flex min-w-[160px] flex-1 items-center gap-2">
                     <input
                       value={isZh ? (project.name.zh || project.name.en) : (project.name.en || project.name.zh)}
                       onChange={(event) => {
@@ -521,42 +453,87 @@ export function ProjectSurfacesPanel({
                         });
                       }}
                       placeholder={isZh ? '例如：项目一' : 'e.g. Project One'}
-                      className="min-h-9 w-full rounded-[10px] bg-[var(--color-bg)] px-3 text-[0.8125rem] text-[var(--color-text)] outline-none shadow-[var(--shadow-card-sm)] transition-all placeholder:text-[var(--color-nav-muted)] focus:outline-none"
+                      className="h-8 min-w-[120px] flex-1 -ml-1.5 rounded-[7px] border border-transparent bg-transparent px-1.5 text-[length:var(--text-sm)] font-medium text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-text-soft)] hover:bg-[var(--color-surface-hover)] focus:border-[var(--color-border-focus)] focus:bg-[var(--color-surface-card,var(--color-bg))]"
                     />
+                    <span className="shrink-0 font-mono text-[length:var(--text-2xs)] text-[var(--color-text-soft)]">
+                      {project.key}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      disabled={pending === project.key}
-                      onClick={() => void save(project)}
-                      className="inline-flex min-h-8 items-center justify-center rounded-full bg-[var(--color-bg)] px-3.5 text-[0.78rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {pending === project.key ? (isZh ? '保存中…' : 'Saving…') : (isZh ? '保存' : 'Save')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={pending === `delete:${project.key}`}
-                      onClick={() => {
-                        if (confirmingDelete === project.key) {
-                          void remove(project);
-                          setConfirmingDelete(null);
-                        } else {
-                          setConfirmingDelete(project.key);
-                        }
-                      }}
-                      className={`inline-flex min-h-8 items-center justify-center rounded-full px-2.5 text-[0.78rem] font-medium transition-colors ${
-                        confirmingDelete === project.key
-                          ? 'bg-[var(--badge-rose-bg)] text-[var(--badge-rose-fg)]'
-                          : 'text-[var(--color-nav-muted)] hover:bg-[var(--badge-rose-bg)] hover:text-[var(--badge-rose-fg)]'
-                      } disabled:cursor-not-allowed disabled:opacity-50`}
-                    >
-                      {pending === `delete:${project.key}`
-                        ? (isZh ? '删除中…' : 'Deleting…')
-                        : confirmingDelete === project.key
-                          ? (isZh ? '确认删除？' : 'Confirm?')
-                          : (isZh ? '删除项目' : 'Delete')}
-                    </button>
+                  {/* 右栏：强调色联动开关 + 保存与删除 */}
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {(['roadmapEnabled', 'atlasEnabled'] as const).map((field) => {
+                        const enabled = project[field];
+                        const wouldDisableLast = enabled && (field === 'roadmapEnabled' ? !project.atlasEnabled : !project.roadmapEnabled);
+                        const label = field === 'roadmapEnabled' ? (isZh ? '路线图' : 'Roadmap') : (isZh ? '规划图' : 'Planning Board');
+                        return (
+                          <button
+                            key={field}
+                            type="button"
+                            role="switch"
+                            aria-checked={enabled}
+                            disabled={wouldDisableLast}
+                            title={wouldDisableLast ? (isZh ? '至少保留路线图或规划图中的一项' : 'Keep at least one surface enabled') : undefined}
+                            onClick={() => update(project.key, { [field]: !enabled })}
+                            className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[length:var(--text-2xs)] font-medium transition-all duration-150 ${
+                              enabled
+                                ? 'border-[var(--color-border-strong)] bg-[var(--surface-pill-on-bg,var(--color-surface-card))] text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
+                                : 'border-dashed border-[var(--color-border-strong)] bg-transparent text-[var(--color-text-muted)] hover:not-disabled:border-[var(--color-text-muted)] hover:not-disabled:text-[var(--color-text)]'
+                            } ${wouldDisableLast ? 'cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`size-1.5 shrink-0 rounded-full transition-colors ${
+                                enabled
+                                  ? 'bg-[var(--color-accent)] shadow-[0_0_0_2.5px_var(--color-accent-soft)]'
+                                  : 'bg-[var(--color-text-soft)]'
+                              }`}
+                            />
+                            <span>{label}</span>
+                            <span className="font-normal opacity-80">
+                              {enabled ? (isZh ? '启用' : 'Enabled') : (isZh ? '停用' : 'Disabled')}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <span aria-hidden="true" className="hidden h-4 w-px bg-[var(--color-border-faint)] sm:inline-block" />
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={pending === project.key}
+                        onClick={() => void save(project)}
+                        className="inline-flex h-7 cursor-pointer items-center justify-center rounded-[6px] border border-[var(--color-border-subtle)] bg-[var(--color-surface-card,var(--color-bg))] px-2.5 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {pending === project.key ? (isZh ? '保存中…' : 'Saving…') : (isZh ? '保存' : 'Save')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending === `delete:${project.key}`}
+                        onClick={() => {
+                          if (confirmingDelete === project.key) {
+                            void remove(project);
+                            setConfirmingDelete(null);
+                          } else {
+                            setConfirmingDelete(project.key);
+                          }
+                        }}
+                        className={`inline-flex h-7 cursor-pointer items-center justify-center rounded-[6px] px-2.5 text-[length:var(--text-xs)] font-medium transition-colors ${
+                          confirmingDelete === project.key
+                            ? 'bg-[var(--badge-rose-bg)] text-[var(--badge-rose-fg)]'
+                            : 'text-[var(--color-text-muted)] hover:bg-[var(--badge-rose-bg)] hover:text-[var(--badge-rose-fg)]'
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                      >
+                        {pending === `delete:${project.key}`
+                          ? (isZh ? '删除中…' : 'Deleting…')
+                          : confirmingDelete === project.key
+                            ? (isZh ? '确认删除？' : 'Confirm?')
+                            : (isZh ? '删除项目' : 'Delete')}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </article>

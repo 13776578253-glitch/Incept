@@ -36,7 +36,7 @@ export function DocsHomeEmpty({ onClear }: DocsHomeEmptyProps) {
         <button
           type="button"
           onClick={onClear}
-          className="mt-3.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-card)] px-3.5 py-1.5 text-[0.76rem] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-colors hover:bg-[var(--color-nav-item-hover)]"
+          className="mt-3.5 inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-card)] px-3.5 py-1.5 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)] transition-colors hover:bg-[var(--color-nav-item-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
         >
           <span>{t('clearSearch')}</span>
         </button>

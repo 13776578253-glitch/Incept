@@ -204,6 +204,7 @@ export function mapDocsHomeEntriesToPageGroups(
           publishedAt: entry.publishedAt.toISOString(),
           requiredRole: entry.requiredRole,
           eyebrow: entry.eyebrow ?? undefined,
+          isCurated: Boolean(entry.isCurated),
           isAccessible: true,
           href: `${routeBase}/series/${entry.collectionSlug}/${entry.firstArticleSlug}`,
         };
@@ -218,6 +219,7 @@ export function mapDocsHomeEntriesToPageGroups(
         publishedAt: entry.publishedAt.toISOString(),
         requiredRole: entry.requiredRole,
         eyebrow: entry.eyebrow ?? undefined,
+        isCurated: Boolean(entry.isCurated),
         isAccessible: true,
         href: `${routeBase}/${entry.slug}`,
       };

@@ -10,10 +10,10 @@ export function DocsParagraphBlock({
 }: DocsParagraphBlockModel) {
   const variantClassName =
     variant === 'lead'
-      ? 'text-[1.06rem] text-[var(--color-text)]'
+      ? 'text-[length:calc(var(--docs-font-size)*1.05)] text-[var(--color-text)]'
       : variant === 'muted'
-        ? 'text-[0.97rem] text-[var(--color-text-soft)]'
-        : 'text-[1rem] text-[var(--color-text-muted)]';
+        ? 'text-[length:calc(var(--docs-font-size)*0.94)] text-[var(--color-text-soft)]'
+        : 'text-[length:var(--docs-font-size)] text-[var(--color-text-muted)]';
 
   const spacingClassName =
     spacing === 'relaxed'

@@ -5,6 +5,7 @@ import { DocsHighlightedCodeBlock } from './blocks/docs-highlighted-code-block';
 import { DocsDividerBlock } from './blocks/docs-divider-block';
 import { DocsEquationBlock } from './blocks/docs-equation-block';
 import { DocsHeadingBlock } from './blocks/docs-heading-block';
+import { DocsHtmlBlock } from './blocks/docs-html-block';
 import { DocsImageBlock } from './blocks/docs-image-block';
 import { DocsListBlock } from './blocks/docs-list-block';
 import { DocsParagraphBlock } from './blocks/docs-paragraph-block';
@@ -33,6 +34,8 @@ export function DocsBlockRenderer({ block, locale = 'en' }: { block: DocsContent
       return <DocsDividerBlock {...block} />;
     case 'image':
       return <DocsImageBlock {...block} />;
+    case 'html':
+      return <DocsHtmlBlock {...block} />;
     case 'equation':
       return <DocsEquationBlock {...block} locale={locale} />;
     case 'table':

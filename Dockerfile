@@ -14,6 +14,7 @@ COPY packages/db/package.json packages/db/package.json
 COPY packages/music/package.json packages/music/package.json
 COPY packages/roadmap/package.json packages/roadmap/package.json
 COPY packages/dashboard/package.json packages/dashboard/package.json
+COPY packages/ui/package.json packages/ui/package.json
 RUN NODE_USE_ENV_PROXY=1 pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
 RUN if test -d deployment/.prisma-engine-cache; then \
@@ -35,7 +36,7 @@ FROM build AS production-dependencies
 # Next's generated module aliases inside .next remain part of the compiled application.
 RUN cp -a node_modules/.pnpm/@prisma+engines@*/node_modules/@prisma/engines /tmp/incept-prisma-engines \
     && rm -rf /app/node_modules /app/apps/web/node_modules /app/packages/db/node_modules \
-       /app/packages/music/node_modules /app/packages/roadmap/node_modules /app/packages/dashboard/node_modules \
+       /app/packages/music/node_modules /app/packages/roadmap/node_modules /app/packages/dashboard/node_modules /app/packages/ui/node_modules \
        /app/apps/sync-agent/node_modules /app/apps/sync-gateway/node_modules \
     && CI=true pnpm install --prod --offline --frozen-lockfile --ignore-scripts \
     && cp -a /tmp/incept-prisma-engines/. node_modules/.pnpm/@prisma+engines@*/node_modules/@prisma/engines/ \

@@ -5,24 +5,24 @@ import { DocsInlineContent } from '../docs-inline-content';
 export function DocsHeadingBlock({ id, level, text, content, variant = 'default' }: DocsHeadingBlockModel) {
   const className =
     variant === 'display'
-      ? 'text-[1.52rem] font-semibold tracking-[-0.05em] text-[var(--color-text)] md:text-[1.7rem]'
+      ? 'text-[length:calc(var(--docs-font-size)*1.28)] leading-[1.32] font-semibold tracking-[-0.025em] text-[var(--color-text)] [text-wrap:balance] md:text-[length:calc(var(--docs-font-size)*1.4)]'
       : variant === 'compact'
-        ? 'text-[1rem] font-semibold tracking-[-0.02em] text-[var(--color-text)] md:text-[1.08rem]'
+        ? 'text-[length:var(--docs-font-size)] leading-[1.45] font-semibold tracking-[-0.01em] text-[var(--color-text)] md:text-[length:calc(var(--docs-font-size)*1.04)]'
         : variant === 'subtle'
-          ? 'text-[0.9rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-nav-muted)]'
+          ? 'text-[0.85rem] leading-[1.45] font-semibold uppercase tracking-[0.12em] text-[var(--color-nav-muted)]'
           : level === 1
-            ? 'text-[1.45rem] font-semibold tracking-[-0.04em] text-[var(--color-text)] md:text-[1.6rem]'
+            ? 'text-[length:calc(var(--docs-font-size)*1.24)] leading-[1.34] font-semibold tracking-[-0.02em] text-[var(--color-text)] [text-wrap:balance] md:text-[length:calc(var(--docs-font-size)*1.34)]'
             : level === 2
-              ? 'text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] md:text-[1.28rem]'
+              ? 'text-[length:calc(var(--docs-font-size)*1.1)] leading-[1.4] font-semibold tracking-[-0.015em] text-[var(--color-text)] md:text-[length:calc(var(--docs-font-size)*1.16)]'
               : level === 3
-                ? 'text-[1rem] font-semibold tracking-[-0.02em] text-[var(--color-text)] md:text-[1.08rem]'
-                : 'text-[0.9rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-nav-muted)]';
+                ? 'text-[length:var(--docs-font-size)] leading-[1.45] font-semibold tracking-[-0.01em] text-[var(--color-text)] md:text-[length:calc(var(--docs-font-size)*1.04)]'
+                : 'text-[0.85rem] leading-[1.45] font-semibold uppercase tracking-[0.12em] text-[var(--color-nav-muted)]';
 
   const HeadingTag =
     level === 1 ? 'h2' : level === 2 ? 'h3' : level === 3 ? 'h4' : 'h5';
 
   return (
-    <HeadingTag id={id} className={`${className} scroll-mt-28`}>
+    <HeadingTag id={id} className={`${className} scroll-mt-24`}>
       {content ? <DocsInlineContent content={content} /> : text}
     </HeadingTag>
   );

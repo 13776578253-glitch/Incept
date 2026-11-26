@@ -487,6 +487,43 @@ docs-image/2026-06-27/article-a/cover.png
 
 当前 parser 尚未实现这个相对路径解析和复制发布流程。
 
+## HTML Visualization Block（`:::html`）
+
+自 Batch 2 起，Markdown-like 支持通过 `:::html` 围栏嵌入极简无控件的 HTML / Canvas / Three.js 交互可视化块：
+
+````md
+:::html title="Rotating Cube" height="420" caption="Three.js wireframe cube"
+<!doctype html>
+<html>
+  <body>
+    <canvas id="scene"></canvas>
+    <script type="module">
+      import * as THREE from 'https://esm.sh/three@0.170.0';
+      // 宿主会通过 postMessage 同步亮暗主题与强调色
+      window.addEventListener('message', (event) => {
+        if (event.data?.type === 'incept:theme') {
+          document.documentElement.dataset.theme = event.data.theme;
+        }
+      });
+    </script>
+  </body>
+</html>
+:::
+````
+
+也支持引用同目录或同级 `assets/` 下的 `.html` / `.htm` 文件：
+
+```md
+:::html src="./scene.html" height="380" :::
+```
+
+| 约束项 | 说明 |
+| --- | --- |
+| 参数 | `title`（可选）、`height`（`120`–`1200` 整数，默认 `380`，支持 `px` 后缀）、`caption`（可选）、`src`（可选本地 `.html`/`.htm` 路径）。 |
+| 内容来源 | 内联正文与 `src` 互斥，必须二选一非空；UTF-8 大小上限 `512 KB`，`src` 不得离开 `DOCS_CONTENT_ROOT`。 |
+| 沙箱安全 | 前端渲染为极简无工具栏 `<iframe sandbox="allow-scripts" loading="lazy" referrerPolicy="no-referrer">`，严禁启用 `allow-same-origin`。 |
+| 主题通知 | 加载完成及全站 `data-theme` / `data-accent` 变化时，向容器发送 `{ type: 'incept:theme', theme, accent }`。 |
+
 ## GIF / Video / Embed
 
 当前状态：
@@ -494,9 +531,10 @@ docs-image/2026-06-27/article-a/cover.png
 | 类型 | 当前建议 |
 | --- | --- |
 | GIF | 可以先作为 image block 使用，只要 URL 可访问。 |
+| 交互式 HTML / Three.js | 使用 `:::html ... :::` 沙箱块承载。 |
 | MP4 / WebM | 不建议塞进 image block，后续新增 video block。 |
 | YouTube / Bilibili / iframe | 当前不支持，后续做 embed block，并加白名单。 |
-| 原始 HTML iframe | 当前禁止。 |
+| 正文顶层原始 HTML / iframe | 当前禁止（未包裹在 `:::html` 中的原始 `<tag>` 会报错 `unsupported_html`）。 |
 
 建议后续语法：
 

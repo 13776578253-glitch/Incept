@@ -6,6 +6,8 @@ import type { DocsOutlineItemModel } from '@/features/docs/shared/types';
 type DocsArticleRightRailProps = {
   items: DocsOutlineItemModel[];
   label: string;
+  onSelect?: () => void;
+  variant?: 'rail' | 'drawer';
 };
 
 function flattenOutline(items: DocsOutlineItemModel[]): DocsOutlineItemModel[] {
@@ -15,6 +17,8 @@ function flattenOutline(items: DocsOutlineItemModel[]): DocsOutlineItemModel[] {
 export function DocsArticleRightRail({
   items,
   label,
+  onSelect,
+  variant = 'rail',
 }: DocsArticleRightRailProps) {
   const flatItems = useMemo(() => flattenOutline(items), [items]);
   const itemIds = useMemo(() => flatItems.map((item) => item.id), [flatItems]);
@@ -130,29 +134,35 @@ export function DocsArticleRightRail({
   }
 
   return (
-    <nav aria-label={label} className="block pr-2">
-      <p className="mb-4 pl-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
-        {label}
-      </p>
+    <nav aria-label={label} className={variant === 'rail' ? 'block pr-2' : 'block'}>
+      {variant === 'rail' ? (
+        <p className="mb-3.5 pl-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
+          {label}
+        </p>
+      ) : null}
       <div className="relative">
         <div
           ref={outlineScrollRef}
-          className="docs-right-rail-scroll max-h-[calc(40vh-2rem)] overflow-y-auto pr-4"
+          className={
+            variant === 'rail'
+              ? 'docs-right-rail-scroll max-h-[min(68vh,calc(100vh-var(--navbar-height)-9rem))] overflow-y-auto pr-2'
+              : 'block'
+          }
         >
           <div className="relative">
             <div
               className="pointer-events-none absolute bottom-0 left-0 top-0 w-px"
               style={{ background: 'color-mix(in srgb, var(--color-border) 94%, transparent)' }}
             />
-            <ul className="space-y-1 pl-6">
-              {renderOutlineItems(items, activeId)}
+            <ul className="space-y-1 pl-5">
+              {renderOutlineItems(items, activeId, 0, onSelect)}
             </ul>
           </div>
         </div>
-        {hasHiddenOutlineItems ? (
+        {variant === 'rail' && hasHiddenOutlineItems ? (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-[var(--color-bg)]"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-[var(--color-bg)]"
           />
         ) : null}
       </div>
@@ -160,7 +170,12 @@ export function DocsArticleRightRail({
   );
 }
 
-function renderOutlineItems(items: DocsOutlineItemModel[], activeId: string, depth = 0) {
+function renderOutlineItems(
+  items: DocsOutlineItemModel[],
+  activeId: string,
+  depth = 0,
+  onSelect?: () => void,
+) {
   return items.map((item) => {
     const active = item.id === activeId;
 
@@ -168,15 +183,17 @@ function renderOutlineItems(items: DocsOutlineItemModel[], activeId: string, dep
       <li key={item.id} className="relative" style={depth ? { marginLeft: `${depth * 0.75}rem` } : undefined}>
         <span
           aria-hidden="true"
-          className={`absolute top-1 h-4 w-[2px] rounded-full bg-[var(--badge-indigo-dot)] transition-opacity duration-200 ${
+          className={`absolute top-1.5 h-3.5 w-[2px] rounded-full bg-[var(--color-accent)] transition-opacity duration-200 ${
             active ? 'opacity-100' : 'opacity-0'
           }`}
-          style={{ left: depth ? '-0.75rem' : '-1.5rem' }}
+          style={{ left: depth ? '-0.75rem' : '-1.25rem' }}
         />
         <a
           href={`#${item.id}`}
           data-outline-id={item.id}
-          className={`block text-[13px] leading-6 transition-colors ${
+          aria-current={active ? 'location' : undefined}
+          onClick={onSelect}
+          className={`block rounded-[6px] px-1.5 py-0.5 text-[13px] leading-[1.45] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] ${
             depth === 0 ? '' : 'text-[12px]'
           } ${
             active
@@ -187,7 +204,7 @@ function renderOutlineItems(items: DocsOutlineItemModel[], activeId: string, dep
           {item.label}
         </a>
         {item.children?.length ? (
-          <ul className="space-y-1">{renderOutlineItems(item.children, activeId, depth + 1)}</ul>
+          <ul className="space-y-1">{renderOutlineItems(item.children, activeId, depth + 1, onSelect)}</ul>
         ) : null}
       </li>
     );

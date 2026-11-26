@@ -356,6 +356,8 @@ External images can be used directly:
 
 An external URL is never copied into the local media directory.
 
+Co-located `.html` / `.htm` visualization files referenced by `:::html src="./scene.html"` follow the same relative-path and sibling `assets/` lookup inside `DOCS_CONTENT_ROOT` (max `512 KB`), except their source text is inlined directly into the `html` block during import instead of being copied to `apps/web/public/_docs-media/`.
+
 ## 7. Multilingual Collections
 
 A `--dir` batch handles one locale at a time. Import Chinese and English separately, but use the same `collectionKey` and the same per-article `documentKey`:
@@ -458,7 +460,8 @@ For day-to-day additions or edits, work in this order:
 5. Check the rendered page in the browser.
 6. Click `Confirm import` once it is right.
 7. After publishing, open the live article and the collection home to confirm route, access, images and navigation.
-8. After changing a collection directory, check `renamed`, `removed` and `unchanged` items specifically.
+8. Newly published standalone articles and collections default to `isCurated = false`; to surface them in the default curated Docs Home view, enable their entry under Settings → Docs Management → Curated Whitelist (Owner only).
+9. After changing a collection directory, check `renamed`, `removed` and `unchanged` items specifically.
 
 For long articles, the right-hand `On this page` rail keeps its title fixed and limits the outline list to about 40% of the viewport height; the list still scrolls with a wheel or trackpad, and a fade at the bottom indicates further entries. When reading enters a section outside the visible list, the outline scrolls smoothly to bring the active item back into view.
 

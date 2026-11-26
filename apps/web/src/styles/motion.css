@@ -12,9 +12,9 @@
   position: absolute;
   inset-inline: 0.5rem;
   bottom: 0;
-  height: 2px;
+  height: 1.5px;
   border-radius: 9999px;
-  background: var(--badge-sky-dot);
+  background: color-mix(in oklab, var(--color-text) 28%, transparent);
   pointer-events: none;
 }
 
@@ -51,4 +51,29 @@
   .animate-music-bar-3 {
     animation: none;
   }
+
+  [data-settings-highlight='true'] {
+    animation: none;
+    background-color: var(--color-accent-soft);
+  }
+}
+
+@keyframes settings-anchor-flash {
+  0% {
+    background-color: var(--color-accent-soft);
+    box-shadow: 0 0 0 6px var(--color-accent-soft);
+  }
+  65% {
+    background-color: var(--color-accent-soft);
+    box-shadow: 0 0 0 6px var(--color-accent-soft);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+[data-settings-highlight='true'] {
+  border-radius: 10px;
+  animation: settings-anchor-flash 1.6s cubic-bezier(0.16, 1, 0.3, 1);
 }

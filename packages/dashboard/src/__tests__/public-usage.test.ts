@@ -17,14 +17,35 @@ describe('dashboard publishing boundary', () => {
     data.totals.totalTokens = 42;
     data.costs.unpricedModels = [{ modelName: 'public-unpriced-model', source: 'Codex CLI', totalTokens: 12,
       internalPath: 'private-cost-path' }] as unknown as typeof data.costs.unpricedModels;
-    data.daily = [{ ...data.totals, date: '2026-10-14', modelsUsed: ['public-model'], modelBreakdowns: [{ modelName: 'public-model',
-      inputTokens: 1, outputTokens: 2, cacheReadTokens: 3, cacheCreationTokens: 4, cost: 5, internalPath: 'private-daily-path' } as never] }];
+    const validHourly = Array.from({ length: 24 }, (_, hour) => (hour === 14 ? 42 : 0));
+    data.daily = [
+      {
+        ...data.totals,
+        date: '2026-10-14',
+        modelsUsed: ['public-model'],
+        modelBreakdowns: [{ modelName: 'public-model', inputTokens: 1, outputTokens: 2, cacheReadTokens: 3, cacheCreationTokens: 4, cost: 5, internalPath: 'private-daily-path' } as never],
+        hourlyTokens: validHourly,
+        hourlyMeasuredTokens: 42,
+      },
+      {
+        ...data.totals,
+        date: '2026-10-15',
+        modelsUsed: ['public-model'],
+        modelBreakdowns: [],
+        hourlyTokens: [-5, Number.NaN, 10] as unknown as number[],
+        hourlyMeasuredTokens: -1,
+      },
+    ];
     const result = publicDashboardSummary(data);
     expect(result.totals.totalTokens).toBe(42);
     expect(result.models[0].displayName).toBe('Public Model');
     expect(result.sources[0].label).toBe('Codex CLI');
     expect(result.costs.unpricedModels[0].totalTokens).toBe(12);
     expect(result.daily[0].modelBreakdowns[0].cost).toBe(5);
+    expect(result.daily[0].hourlyTokens).toEqual(validHourly);
+    expect(result.daily[0].hourlyMeasuredTokens).toBe(42);
+    expect(result.daily[1].hourlyTokens).toBeUndefined();
+    expect(result.daily[1].hourlyMeasuredTokens).toBeUndefined();
     expect(result.projects).toEqual([]); expect(result.sessions).toEqual([]);
     expect(JSON.stringify(result)).not.toContain('private-');
   });

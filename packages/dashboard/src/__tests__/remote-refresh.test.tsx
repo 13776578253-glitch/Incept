@@ -44,7 +44,7 @@ it('cloud polling keeps its own five-minute clock and pauses while the page is h
   vi.spyOn(document,'visibilityState','get').mockReturnValue('hidden');await act(async()=>{document.dispatchEvent(new Event('visibilitychange'));vi.advanceTimersByTime(600000);});expect(fetch).toHaveBeenCalledTimes(0);
   vi.spyOn(document,'visibilityState','get').mockReturnValue('visible');await act(async()=>{document.dispatchEvent(new Event('visibilitychange'));});expect(fetch).toHaveBeenCalledTimes(2);
 });
-it('ignores a delayed device response from an aborted refresh', async () => {
+it('ignores a delayed device response from an aborted refresh and never blocks usage on device status', async () => {
   let resolveOld!: (value: ReturnType<typeof reply>) => void;
   const fetch = vi.fn((url: string) => {
     if (url.endsWith('/devices/status')) {
@@ -57,10 +57,30 @@ it('ignores a delayed device response from an aborted refresh', async () => {
   vi.stubGlobal('fetch', fetch);
   const { result } = renderHook(() => useDashboardWindow(initial(), { owner: true }));
   await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
+  expect(fetch.mock.calls.filter(([url]) => url.includes('/usage'))).toHaveLength(1);
   await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
   expect(result.current.remoteInfo?.devices[0].id).toBe('new-device');
-  expect(fetch.mock.calls.filter(([url]) => url.includes('/usage'))).toHaveLength(1);
+  expect(fetch.mock.calls.filter(([url]) => url.includes('/usage'))).toHaveLength(2);
   await act(async () => { resolveOld(reply({ devices: [{ id: 'old-device', name: 'Old', online: true }] })); });
   expect(result.current.remoteInfo?.devices[0].id).toBe('new-device');
-  expect(fetch.mock.calls.filter(([url]) => url.includes('/usage'))).toHaveLength(1);
+  expect(fetch.mock.calls.filter(([url]) => url.includes('/usage'))).toHaveLength(2);
+});
+it('skips redundant device status calls during range switches once remote status is populated', async () => {
+  const calls: string[] = [];
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    calls.push(String(url));
+    if (url.endsWith('/devices/status')) {
+      return reply({ remoteEnabled: true, readMode: 'v2', intervalMs: 300000, devices: [{ id: 'dev-1', name: 'Win', online: true }] });
+    }
+    const range = new URL(url, 'http://localhost').searchParams.get('range') as '7d' | '30d' | 'all';
+    return reply({ ...emptyDashboard(range), sync: { remote: true, readMode: 'v2', dataRevision: 10 }, checkedAt: '2026-10-02T00:00:00Z' });
+  }));
+  const { result } = renderHook(() => useDashboardWindow(initial(), { owner: true, loadRemoteOnMount: true }));
+  await act(async () => {});
+  expect(calls.filter(c => c.endsWith('/devices/status'))).toHaveLength(1);
+  await act(async () => { result.current.setRangePreset('30d'); });
+  await act(async () => { result.current.setRangePreset('all'); });
+  expect(calls.filter(c => c.endsWith('/devices/status'))).toHaveLength(1);
+  expect(calls.filter(c => c.includes('/usage'))).toHaveLength(2);
+  expect(result.current.data.range).toBe('all');
 });

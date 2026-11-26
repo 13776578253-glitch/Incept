@@ -297,3 +297,15 @@ it('deletes an empty library permanently after the right-click confirmation', as
   );
   await waitFor(() => expect(screen.queryByLabelText('曲库 精选')).not.toBeInTheDocument());
 });
+
+it('keeps track title in default system font and reserves right padding on action cell', () => {
+  render(<MusicAdminPanel locale="zh" data={adminData()} />);
+
+  const title = screen.getByText('演示曲目 01');
+  expect(title.style.fontFamily).toBe('var(--font-stack-system, system-ui, sans-serif)');
+
+  const row = title.closest('tr');
+  if (!row) throw new Error('the track row is missing');
+  const actionCell = within(row).getByRole('button', { name: '停用' }).closest('td');
+  expect(actionCell).toHaveClass('pr-2');
+});

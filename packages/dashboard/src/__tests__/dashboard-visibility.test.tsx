@@ -22,15 +22,20 @@ function withMessages(children: React.ReactNode) {
   return <NextIntlClientProvider locale="zh" timeZone="Asia/Singapore" messages={{ dashboard: zh }}>{children}</NextIntlClientProvider>;
 }
 
-it('Guest sees all navigation and statistical sections plus three permission placeholders in section 04', async () => {
+it('Guest sees the workbench overview and the minimalist Diagnostics checklist without private records', async () => {
   render(withMessages(<TokenDashboardFeature data={emptyDashboard()} />));
   expect(screen.getByRole('button', { name: zh.page.range30d })).toBeDefined();
-  expect(await screen.findByRole('heading', { name: zh.models.title })).toBeDefined();
-  expect(await screen.findByRole('heading', { name: zh.costs.title })).toBeDefined();
-  expect(await screen.findByRole('heading', { name: zh.projects.title })).toBeDefined();
-  expect(await screen.findAllByText('无权限查看')).toHaveLength(3);
+  expect(screen.getByRole('heading', { name: zh.workbench.trendTitle })).toBeDefined();
+  expect(screen.getByRole('heading', { name: zh.workbench.modelsTitle })).toBeDefined();
   expect(screen.queryByRole('button', { name: '导入' })).toBeNull();
   expect(screen.queryByRole('heading', { name: zh.costs.reference.diagnostics })).toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: zh.workbench.diagnosticsOpen }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByText(zh.workbench.diagnosticsTitle)).toBeDefined();
+  expect(within(dialog).getByText(zh.workbench.diagnosticsNoAlerts)).toBeDefined();
+  expect(within(dialog).getByText(zh.workbench.diagnosticsSectionSources)).toBeDefined();
+  expect(within(dialog).queryByText('无权限查看')).toBeNull();
 });
 
 it('restricted project panels never render private records or interactive data controls', () => {
@@ -44,12 +49,17 @@ it('restricted project panels never render private records or interactive data c
   expect(screen.queryByRole('table')).toBeNull();
 });
 
-it('Pro sees section 04 records while import remains Owner-only', async () => {
+it('Pro sees project records when permitted while import remains Owner-only', async () => {
   const data = emptyDashboard();
   data.projects = [{ ...data.totals, projectKey: 'readable-key', projectName: 'Readable project',
     modelsUsed: [], shareOfTokens: 1, shareOfCost: 1, lastActivity: '2026-10-14' }];
-  render(withMessages(<TokenDashboardFeature data={data} canViewDetails />));
-  expect(await screen.findByText('Readable project')).toBeDefined();
+  render(withMessages(
+    <>
+      <TokenDashboardFeature data={data} canViewDetails />
+      <ProjectsSection data={data} canViewDetails />
+    </>,
+  ));
+  expect(screen.getByText('Readable project')).toBeDefined();
   expect(screen.queryByText('无权限查看')).toBeNull();
   expect(screen.queryByRole('button', { name: '导入' })).toBeNull();
 });
@@ -76,25 +86,26 @@ it('shows the reviewed USD total and coverage to an Owner, then clears them when
   });
   vi.stubGlobal('fetch', fetchDashboard);
   render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));
-  await waitFor(() => expect(screen.getAllByText('$1.25 USD')).toHaveLength(2));
-  expect(screen.getAllByText('估算覆盖率 75%')).toHaveLength(2);
-  expect(screen.getAllByText(zh.costs.reference.unpricedTokens).length).toBeGreaterThan(0);
-  expect(screen.getByText(zh.costs.reference.liveRevision)).toBeDefined();
-  expect(screen.getByText('3288')).toBeDefined();
-  expect(screen.getAllByText('计费正在从版本 3287 更新至 3288')).toHaveLength(2);
-  expect(screen.getByText(zh.costs.reference.unpricedGroups)).toBeDefined();
-  expect(screen.getByText(zh.costs.reference.conflicted)).toBeDefined();
-  const modelTable = screen.getByRole('table', { name: zh.costs.reference.modelCosts });
-  expect(within(modelTable).getByText('$1.25')).toBeDefined();
-  fireEvent.change(screen.getByRole('combobox', { name: zh.costs.reference.channel }), { target: { value: 'claudeCode' } });
-  expect(within(modelTable).getByText('$0.25')).toBeDefined();
-  fireEvent.click(screen.getByRole('button', { name: zh.overview.trend.metricCost }));
-  expect(screen.getByRole('button', { name: '2026-10-28 · $1.25 USD · 20 未估算 Token' })).toBeDefined();
+  await waitFor(() => expect(screen.getByText('$1.25 USD')).toBeDefined());
+  expect(screen.getByText(/估算覆盖率 75%/)).toBeDefined();
+  expect(screen.getByText(/计费正在从版本 3287 更新至 3288/)).toBeDefined();
   expect(screen.queryByText('$999.00')).toBeNull();
+
+  // Open diagnostics checklist to inspect unpriced models & source status
+  fireEvent.click(screen.getByRole('button', { name: zh.workbench.diagnosticsOpen }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByText(zh.workbench.diagnosticsSectionUnpriced)).toBeDefined();
+  expect(within(dialog).getByText('provider/unknown')).toBeDefined();
+  expect(within(dialog).getByText(zh.workbench.diagnosticsSectionSources)).toBeDefined();
+  fireEvent.click(within(dialog).getByRole('button', { name: zh.workbench.diagnosticsClose }));
+
+  // Switch to cost trend tab in main workbench
+  fireEvent.click(screen.getByRole('tab', { name: zh.workbench.tabCost }));
+  expect(screen.getByRole('button', { name: '2026-10-28: $1.25 USD' })).toBeDefined();
+
   fireEvent.click(screen.getByRole('button', { name: zh.page.range7d }));
-  await waitFor(() => expect(screen.getAllByText(zh.costs.reference.unavailable).length).toBeGreaterThanOrEqual(2));
+  await waitFor(() => expect(screen.getByText(zh.costs.reference.unavailable)).toBeDefined());
   expect(screen.queryByText('$1.25 USD')).toBeNull();
-  expect(screen.queryByRole('table', { name: zh.costs.reference.modelCosts })).toBeNull();
 });
 
 it('keeps the current billing state during refresh and loads anew when the range changes', async () => {
@@ -131,11 +142,64 @@ it('keeps the current billing state during refresh and loads anew when the range
 
   rerender({ range: '7d', cycle: 3 });
   expect(result.current).toEqual({ status: 'loading' });
+  // Switching back reuses the still-running 30d request instead of aborting and re-issuing it.
   rerender({ range: '30d', cycle: 3 });
-  await respond(3, Response.json(first));
   expect(result.current).toEqual({ status: 'loading' });
-  await respond(5, Response.json(second));
+  expect(fetchBilling).toHaveBeenCalledTimes(5);
+  await respond(3, Response.json(second));
   expect(result.current).toEqual({ status: 'ready', data: second });
+
+  // A newer cycle supersedes the older request for the same range while keeping the last ready value visible.
+  rerender({ range: '30d', cycle: 4 });
+  expect(result.current).toEqual({ status: 'ready', data: second });
+  rerender({ range: '30d', cycle: 5 });
+  expect(fetchBilling).toHaveBeenCalledTimes(7);
+  await respond(5, Response.json(first));
+  expect(result.current).toEqual({ status: 'ready', data: second });
+  await respond(6, Response.json({ ...first, run: 'latest' }));
+  expect(result.current).toEqual({ status: 'ready', data: { ...first, run: 'latest' } });
+});
+
+it('reuses cached ready billing snapshots across range switches without double-fetching and clears cache when disabled', async () => {
+  const billingFor = (range: UsageRange, cost: string): BillingReadResponse => ({
+    range, estimatedCostUsd: cost, estimatedTokens: 60, unpricedTokens: 0, excludedTokens: 0,
+    members: 2, tokens: 60, recordedUnknownCurrency: 0, asOf: '2026-10-28T01:00:00Z',
+    run: 'reuse', revision: 10, liveRevision: 10, catalog: 'test',
+  });
+  const fetchMock = vi.fn(async (url: string) => {
+    const range = new URL(url, 'http://localhost').searchParams.get('range') as UsageRange;
+    if (url.startsWith('/api/dashboard/billing')) return Response.json(billingFor(range, range === '7d' ? '2.00' : '1.00'));
+    return Response.json({ ...emptyDashboard(range), sync: { readMode: 'v2', dataRevision: 10 } });
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  const initial = { ...emptyDashboard('30d'), sync: { readMode: 'v2' as const, dataRevision: 10 } };
+  render(withMessages(<TokenDashboardFeature data={initial} canImport billingPreviewEnabled />));
+  await waitFor(() => expect(screen.getByText('$1.00 USD')).toBeDefined());
+  const billingCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).startsWith('/api/dashboard/billing')).length;
+  expect(billingCalls()).toBe(1);
+
+  fireEvent.click(screen.getByRole('button', { name: zh.page.range7d }));
+  await waitFor(() => expect(screen.getByText('$2.00 USD')).toBeDefined());
+  expect(billingCalls()).toBe(2);
+
+  // Returning to 30d at the same revision/cycle reuses cached billing without another request.
+  fireEvent.click(screen.getByRole('button', { name: zh.page.range30d }));
+  await waitFor(() => expect(screen.getByText('$1.00 USD')).toBeDefined());
+  expect(billingCalls()).toBe(2);
+
+  // Disabling billing preview clears cached state cleanly.
+  const { result, rerender } = renderHook(
+    ({ enabled, range, cycle }: { enabled: boolean; range: UsageRange; cycle: number }) => useBillingPreview(enabled, range, cycle),
+    { initialProps: { enabled: true, range: '30d', cycle: 0 } },
+  );
+  await waitFor(() => expect(result.current?.status).toBe('ready'));
+  rerender({ enabled: false, range: '30d', cycle: 0 });
+  expect(result.current).toBeUndefined();
+  rerender({ enabled: true, range: '30d', cycle: 0 });
+  expect(result.current).toEqual({ status: 'loading' });
+  await waitFor(() => expect(result.current?.status).toBe('ready'));
+  expect(billingCalls()).toBe(4);
 });
 
 it('preserves channel selection across range switches, formats sub-cent totals without rounding to zero, and toggles billing disclosures', async () => {
@@ -180,37 +244,20 @@ it('preserves channel selection across range switches, formats sub-cent totals w
   }));
 
   render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));
-  await waitFor(() => expect(screen.getAllByText('<$0.01 USD')).toHaveLength(2));
+  await waitFor(() => expect(screen.getByText('<$0.01 USD')).toBeDefined());
   expect(screen.queryByText('$0.00 USD')).toBeNull();
 
-  const channelSelect = screen.getByRole('combobox', { name: zh.costs.reference.channel }) as HTMLSelectElement;
-  fireEvent.change(channelSelect, { target: { value: 'claudeCode' } });
-  const modelTable = screen.getByRole('table', { name: zh.costs.reference.modelCosts });
-  expect(within(modelTable).getByText('<$0.01')).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: zh.workbench.diagnosticsOpen }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByText('provider/new-model')).toBeDefined();
 
   fireEvent.click(screen.getByRole('button', { name: zh.page.rangeAll }));
-  await waitFor(() => expect(screen.getAllByText('$4.00 USD')).toHaveLength(2));
-  expect((screen.getByRole('combobox', { name: zh.costs.reference.channel }) as HTMLSelectElement).value).toBe('claudeCode');
-  expect(within(screen.getByRole('table', { name: zh.costs.reference.modelCosts })).getByText('$1.50')).toBeDefined();
+  await waitFor(() => expect(screen.getByText('$4.00 USD')).toBeDefined());
+  expect(within(dialog).getByText('provider/new-model')).toBeDefined();
 
-  const unpricedSummary = screen.getByText(zh.costs.reference.unpricedDetails).closest('summary')!;
-  const unpricedDetails = unpricedSummary.closest('details')!;
-  unpricedDetails.open = true;
-  fireEvent(unpricedDetails, new Event('toggle'));
-  const unpricedTable = screen.getByRole('table', { name: zh.costs.reference.unpricedDetails });
-  expect(unpricedTable.className).toContain('dashboard-data-table');
-  expect(within(unpricedTable).getByText('provider/new-model')).toBeDefined();
-
-  const dailySummary = screen.getByText(zh.costs.reference.dailyCosts).closest('summary')!;
-  const dailyDetails = dailySummary.closest('details')!;
-  dailyDetails.open = true;
-  fireEvent(dailyDetails, new Event('toggle'));
-  const dailyTable = screen.getByRole('table', { name: zh.costs.reference.dailyCosts });
-  expect(dailyTable.className).toContain('dashboard-data-table');
-  expect(within(dailyTable).getByText('2026-10-27')).toBeDefined();
-
-  fireEvent.click(screen.getByRole('button', { name: zh.overview.trend.metricCost }));
-  expect(screen.getByRole('button', { name: '2026-10-28 · $4.00 USD · 0 未估算 Token' })).toBeDefined();
+  fireEvent.click(within(dialog).getByRole('button', { name: zh.workbench.diagnosticsClose }));
+  fireEvent.click(screen.getByRole('tab', { name: zh.workbench.tabCost }));
+  expect(screen.getByRole('button', { name: '2026-10-28: $4.00 USD' })).toBeDefined();
 });
 
 it('keeps en and zh costs.reference localization keys aligned without Chinese full stops', () => {
@@ -289,8 +336,9 @@ it('fills continuous calendar dates for all-range reference cost trend and prese
   }));
 
   render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));
-  await waitFor(() => expect(screen.getAllByText('$3.00 USD')).toHaveLength(2));
+  await waitFor(() => expect(screen.getByText('$3.00 USD')).toBeDefined());
   expect(screen.queryByText('$999.00')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: zh.workbench.curatedFilterOn }));
   expect(screen.getAllByText('$12.34').length).toBeGreaterThan(0);
 });
 

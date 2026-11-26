@@ -8,6 +8,7 @@ import {
   parseMarkdownLikeDivider,
   parseMarkdownLikeEquation,
   parseMarkdownLikeHeading,
+  parseMarkdownLikeHtml,
   parseMarkdownLikeImage,
   parseMarkdownLikeList,
   parseMarkdownLikeParagraph,
@@ -105,13 +106,19 @@ function parseMarkdownLikeBody(
       continue;
     }
 
+    // 嵌入式 HTML 可视化块 / 以 :::html 开始
+    if (line === ':::html' || /^:::html\s/.test(line)) {
+      index = parseMarkdownLikeHtml(state, index, lineNumber);
+      continue;
+    }
+
     // 不支持的标注块 / 以 ::: 开始
     if (line.startsWith(':::')) {
       addMarkdownLikeIssue(
         state.issues,
         lineNumber,
         'unsupported_syntax',
-        'Only :::callout containers are supported in markdown-like v1.',
+        'Only :::callout and :::html containers are supported in markdown-like.',
       );
       index += 1;
       continue;

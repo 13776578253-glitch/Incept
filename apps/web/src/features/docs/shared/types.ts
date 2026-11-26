@@ -20,6 +20,7 @@ export type {
   DocsCodeBlockModel,
   DocsDividerBlockModel,
   DocsImageBlockModel,
+  DocsHtmlBlockModel,
 } from '@/features/docs/block-system/schema';
 
 export type DocsAccessRole = 'guest' | 'pro' | 'private';
@@ -106,6 +107,7 @@ export type DocsHomeArticleItemModel = {
   eyebrow?: string;
   // Tags placeholder: reserved field for interface compatibility.
   tags?: string[];
+  isCurated?: boolean;
   isAccessible: boolean;
   href?: string;
 };

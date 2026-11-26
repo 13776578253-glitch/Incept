@@ -23,7 +23,7 @@ export async function syncUsageGet(request:Request,sessionId:string,executor:Syn
   };
   try{if(mode==='v2'){const data=await v2();return Response.json({...data,sync:{...metadata,...data.sync}},{headers:{'Cache-Control':'no-store',Vary:'Cookie'}});}
     const legacy=await dashboardUsageGet(request,sessionId,true);if(!legacy.ok)return legacy;const data=await legacy.json() as TokenDashboardData;
-    let equal:boolean|undefined;if(mode==='shadow'){const next=await v2();const content=(v:TokenDashboardData)=>({...v,checkedAt:undefined,sync:undefined});equal=hash(content(data))===hash(content(next));}
+    let equal:boolean|undefined;if(mode==='shadow'){const next=await v2();const content=(v:TokenDashboardData)=>({...v,checkedAt:undefined,sync:undefined,importsCheckedAt:undefined,importSignature:undefined,revalidating:undefined});equal=hash(content(data))===hash(content(next));}
     return Response.json({...data,sync:{...metadata,readMode:mode,shadowEqual:equal}},{headers:{'Cache-Control':'no-store',Vary:'Cookie'}});
   }catch{return Response.json({error:'SYNC_PROJECTION_UNAVAILABLE'},{status:503,headers:{'Cache-Control':'no-store','Retry-After':'2'}});}
 }

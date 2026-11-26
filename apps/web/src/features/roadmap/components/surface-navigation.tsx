@@ -29,7 +29,7 @@ export function SurfaceNavigation({
   const projectQuery = `project=${encodeURIComponent(currentProject.key)}`;
   const roadmapHref = customRoadmapHref ?? `${withLocalePath(locale, '/roadmap')}?${projectQuery}&surface=roadmap`;
   const atlasHref = customAtlasHref ?? `${withLocalePath(locale, '/roadmap')}?${projectQuery}&surface=atlas`;
-  const tabClass = 'inline-flex items-center rounded-full px-3.5 py-1 text-[0.8rem] font-medium transition-all';
+  const tabClass = 'inline-flex items-center rounded-full px-2.5 py-1 text-[0.76rem] font-medium transition-all sm:px-3.5 sm:text-[0.8rem]';
 
   return (
     <div className={showProjectSelector ? 'mx-auto flex w-full max-w-[1480px] flex-wrap items-center justify-between gap-4 px-6 pt-7 lg:px-10' : 'inline-flex items-center'}>
@@ -124,7 +124,7 @@ function ProjectSelector({
         onClick={() => setOpen((value) => !value)}
         className="inline-flex items-center gap-1.5 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--roadmap-lane-bg))] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))]"
       >
-        <span aria-hidden="true" className="inline-flex shrink-0 text-[var(--roadmap-status-active,#2563eb)]"><IconProjectTag /></span>
+        <span aria-hidden="true" className="inline-flex shrink-0 text-[var(--color-accent)]"><IconProjectTag /></span>
         <span>{currentName}</span>
         <span aria-hidden="true" className={`inline-flex shrink-0 text-[var(--color-text-soft)] transition-transform duration-150 ${open ? 'rotate-180' : ''}`}><IconChevronDown /></span>
       </button>
@@ -138,7 +138,7 @@ function ProjectSelector({
               <li key={project.key} role="option" aria-selected={selected} className="list-none">
                 <Link href={href} onClick={() => setOpen(false)} className={`flex w-full items-center justify-between rounded-[6px] px-3 py-1.5 text-left text-[0.8rem] transition-colors ${selected ? 'bg-[var(--roadmap-chip-bg)] font-medium text-[var(--color-text)]' : 'text-[var(--color-text-muted)] hover:bg-[var(--roadmap-chip-bg)] hover:text-[var(--color-text)]'}`}>
                   <span>{project.name[locale]}</span>
-                  {selected ? <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--roadmap-status-active,#2563eb)]" /> : null}
+                  {selected ? <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--color-accent)]" /> : null}
                 </Link>
               </li>
             );

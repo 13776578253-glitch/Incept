@@ -51,3 +51,54 @@ it('counts characters consistently with the server for non-BMP passwords', async
   expect(screen.getByRole('alert')).toHaveTextContent('Use at least 8 characters');
   expect(action).not.toHaveBeenCalled();
 });
+
+it('shows empty state and progressive truncation for security activity audits', async () => {
+  const user = userEvent.setup();
+  const { rerender } = render(
+    <OwnerSecurityPanel
+      state={state}
+      language="zh"
+      busy={false}
+      action={vi.fn()}
+      onEnrollment={vi.fn()}
+      onRecoveryCodes={vi.fn()}
+    />,
+  );
+
+  const manageButtons = screen.getAllByRole('button', { name: '管理' });
+  await user.click(manageButtons[4]);
+  expect(screen.getByText('暂无安全操作记录')).toBeInTheDocument();
+
+  const audits = Array.from({ length: 12 }, (_, index) => ({
+    id: `audit-${index + 1}`,
+    action: `owner.action.${index + 1}`,
+    result: 'success',
+    targetId: null,
+    createdAt: '2026-11-22T10:00:00.000Z',
+  }));
+
+  rerender(
+    <OwnerSecurityPanel
+      state={{ ...state, audits }}
+      language="zh"
+      busy={false}
+      action={vi.fn()}
+      onEnrollment={vi.fn()}
+      onRecoveryCodes={vi.fn()}
+    />,
+  );
+
+  expect(screen.getByText('显示 8 / 12 条（最近 50 条）')).toBeInTheDocument();
+  expect(screen.getByText('owner.action.1')).toBeInTheDocument();
+  expect(screen.queryByText('owner.action.12')).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: '展开更多（剩余 4 条）' }));
+  expect(screen.getByText('显示 12 / 12 条（最近 50 条）')).toBeInTheDocument();
+  expect(screen.getByText('owner.action.12')).toBeInTheDocument();
+
+  const collapseButtons = screen.getAllByRole('button', { name: '收起' });
+  expect(collapseButtons).toHaveLength(2);
+  await user.click(collapseButtons[1]);
+  expect(screen.getByText('显示 8 / 12 条（最近 50 条）')).toBeInTheDocument();
+  expect(screen.queryByText('owner.action.12')).not.toBeInTheDocument();
+});

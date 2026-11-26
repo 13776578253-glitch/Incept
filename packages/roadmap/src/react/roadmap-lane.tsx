@@ -38,9 +38,9 @@ export function RoadmapLane({
   return (
     <section
       aria-label={label}
-      className={`${mobileVisible ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 rounded-xl border border-[var(--roadmap-lane-border,transparent)] bg-[var(--roadmap-lane-bg)] p-3 md:flex md:max-h-full md:min-h-0 md:self-start md:snap-start md:overflow-hidden`}
+      className={`${mobileVisible ? 'flex' : 'hidden'} min-w-0 flex-col gap-2.5 border-0 bg-transparent p-0 md:flex md:gap-3 md:rounded-xl md:border md:border-[var(--roadmap-lane-border,transparent)] md:bg-[var(--roadmap-lane-bg)] md:p-3 min-[1180px]:max-h-full min-[1180px]:min-h-0 min-[1180px]:self-start min-[1180px]:snap-start min-[1180px]:overflow-hidden`}
     >
-      <header className="flex shrink-0 items-center gap-2 px-1 py-0.5">
+      <header className="hidden shrink-0 items-center gap-2 px-1 py-0.5 md:flex">
         <span aria-hidden="true" className="inline-flex shrink-0" style={{ color: iconColor }}>
           <StatusIcon />
         </span>
@@ -56,7 +56,7 @@ export function RoadmapLane({
           {chrome.emptyLane[status]}
         </p>
       ) : (
-        <ul className="flex flex-col gap-2.5 pt-0.5 pb-2 md:min-h-0 md:flex-1 md:overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex flex-col gap-2.5 pt-0.5 pb-1 min-[1180px]:min-h-0 min-[1180px]:flex-1 min-[1180px]:overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {shown.map((entry) => (
             <li key={entry.key} className="list-none">
               <RoadmapCard

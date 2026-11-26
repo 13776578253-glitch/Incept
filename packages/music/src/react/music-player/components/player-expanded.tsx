@@ -1,8 +1,9 @@
 'use client';
 
+import { X } from 'lucide-react';
+
 import type { PlayerCopy } from '../adapter/player-copy';
 import type { MusicLibraryCatalogEntry } from '../adapter/music-source';
-import { PlayerCloseIcon } from './player-icons';
 import { PlayerCompact, playerSurfaceWidthClass } from './player-compact';
 import { PlayerLibrarySwitcher } from './player-library-switcher';
 import { PlayerPlaylist, type PlayerPlaylistItem } from './player-playlist';
@@ -30,7 +31,15 @@ type PlayerExpandedProps = {
   onCollapse: () => void;
   onCollapseList: () => void;
   onCycleRate: () => void;
+  statusText?: string | null;
+  canRetryCatalog?: boolean;
+  onRetryCatalog?: () => void;
+  onDismissStatus?: () => void;
+  playbackRateLocked?: boolean;
 };
+
+const noticeButtonClass =
+  'shrink-0 cursor-pointer rounded-full px-2 py-0.5 text-[length:var(--text-2xs)] font-medium text-[var(--color-text)] transition-colors duration-150 hover:bg-[var(--color-nav-item-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]';
 
 function PlayerSeekBar({
   currentTime,
@@ -52,43 +61,48 @@ function PlayerSeekBar({
   const percent = isReady ? (clampedTime / duration) * 100 : 0;
 
   return (
-    <div
-      data-player-interactive
-      className="group relative flex h-3 w-full cursor-pointer items-center select-none"
-    >
-      {/* 极简克制细线轨道：常规 1.5px，悬停平滑微增至 2.5px */}
-      <div className="relative h-[1.5px] w-full rounded-full bg-[var(--color-border)]/80 transition-all duration-150 group-hover:h-[2.5px]">
-        {/* 已播放进度条 */}
-        <div
-          className="absolute inset-y-0 left-0 rounded-full bg-[var(--badge-sky-icon)] transition-[width] duration-75"
-          style={{ width: `${percent}%` }}
-        />
-        {/* 悬停微现的小巧精致小圆点指示器（更小更克制） */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 scale-75 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:scale-100"
-          style={{ left: `${percent}%` }}
-        >
-          <span className="block size-2 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] ring-1 ring-black/10 dark:ring-white/20" />
-        </div>
-      </div>
-
-      {/* 透明原生 range 覆盖层：提供完整的可访问性、键盘导航与拖拽计算 */}
-      <input
-        type="range"
+    <div className="flex items-center gap-2 px-3.5 pb-0.5 pt-2.5">
+      <span className="w-8 shrink-0 text-[length:var(--text-2xs)] tabular-nums text-[var(--color-text-soft)]">
+        {clock}
+      </span>
+      <div
         data-player-interactive
-        aria-label={copy.seek}
-        aria-valuetext={`${clock} / ${totalClock}`}
-        min={0}
-        step={0.1}
-        max={isReady ? duration : 1}
-        value={clampedTime}
-        disabled={!isReady}
-        onChange={(event) => onSeek(Number(event.currentTarget.value))}
-        onInput={(event) => onSeek(Number(event.currentTarget.value))}
-        style={{ outline: 'none' }}
-        className="absolute inset-0 m-0 h-full w-full cursor-pointer opacity-0 p-0 disabled:cursor-default outline-none focus:outline-none focus-visible:outline-none"
-      />
+        className="group relative flex h-3 min-w-0 flex-1 cursor-pointer select-none items-center"
+      >
+        {/* 细线轨道：常规 2px，悬停 3px */}
+        <div className="relative h-[2px] w-full rounded-full bg-[var(--color-border)] transition-all duration-150 group-hover:h-[3px]">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-[var(--color-accent)] transition-[width] duration-75"
+            style={{ width: `${percent}%` }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 scale-75 opacity-0 transition-all duration-150 group-focus-within:scale-100 group-focus-within:opacity-100 group-hover:scale-100 group-hover:opacity-100"
+            style={{ left: `${percent}%` }}
+          >
+            <span className="block size-2.5 rounded-full bg-[var(--color-accent)] ring-2 ring-[var(--color-nav-dropdown-bg)]" />
+          </div>
+        </div>
+
+        {/* 透明原生 range 覆盖层：提供完整的可访问性、键盘导航与拖拽计算 */}
+        <input
+          type="range"
+          data-player-interactive
+          aria-label={copy.seek}
+          aria-valuetext={`${clock} / ${totalClock}`}
+          min={0}
+          step={0.1}
+          max={isReady ? duration : 1}
+          value={clampedTime}
+          disabled={!isReady}
+          onChange={(event) => onSeek(Number(event.currentTarget.value))}
+          onInput={(event) => onSeek(Number(event.currentTarget.value))}
+          className="absolute inset-0 m-0 h-full w-full cursor-pointer p-0 opacity-0 disabled:cursor-default focus-visible:outline-none"
+        />
+      </div>
+      <span className="w-8 shrink-0 text-right text-[length:var(--text-2xs)] tabular-nums text-[var(--color-text-soft)]">
+        {totalClock}
+      </span>
     </div>
   );
 }
@@ -116,33 +130,32 @@ export function PlayerExpanded({
   onCollapse,
   onCollapseList,
   onCycleRate,
+  statusText = null,
+  canRetryCatalog = false,
+  onRetryCatalog,
+  onDismissStatus,
+  playbackRateLocked = false,
 }: PlayerExpandedProps) {
   return (
     // 底栏复用 compact 的 bare 变体
     <section
       aria-label={copy.expandList}
-      className={`overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] shadow-[var(--shadow-nav-dropdown)] backdrop-blur-md ${
+      className={`overflow-hidden rounded-[var(--radius-card,14px)] border border-[var(--color-nav-dropdown-border,var(--color-border))] bg-[var(--color-nav-dropdown-bg)] shadow-[var(--shadow-nav-dropdown)] ${
         fullWidth ? 'w-full' : playerSurfaceWidthClass
       }`}
     >
-      <header className="flex items-center gap-3 px-4 pb-2 pt-3">
-        <h3 className="inline-flex min-w-0 flex-1 items-center gap-2 truncate text-[0.86rem] font-medium text-[var(--color-text)]">
-          <span
-            aria-hidden="true"
-            className="size-1.5 shrink-0 rounded-full"
-            style={{ backgroundColor: 'var(--badge-sky-dot)' }}
-          />
-          <span className="truncate">{heading}</span>
+      <header className="flex items-center gap-3 px-3.5 pb-2 pt-3">
+        <h3 className="min-w-0 flex-1 truncate text-[length:var(--text-xs)] font-medium text-[var(--color-text-muted)]">
+          {heading}
         </h3>
         <button
           type="button"
           data-player-interactive
           onClick={onCollapseList}
           aria-label={copy.closePlaylist}
-          style={{ outline: 'none' }}
-          className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)] outline-none focus:outline-none focus-visible:outline-none"
+          className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors duration-150 hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
         >
-          <PlayerCloseIcon className="h-3.5 w-3.5" />
+          <X aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
         </button>
       </header>
 
@@ -158,17 +171,42 @@ export function PlayerExpanded({
 
       <PlayerPlaylist items={items} emptyLabel={copy.emptyQueue} playLabel={copy.play} onSelect={onSelect} />
 
-      <div className="border-t border-[var(--color-border)]">
-        <div className="px-9 pt-2 pb-0.5">
-          <PlayerSeekBar
-            currentTime={currentTime}
-            duration={duration}
-            clock={clock}
-            totalClock={totalClock}
-            copy={copy}
-            onSeek={onSeek}
-          />
+      {statusText ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mx-2.5 mb-2 flex items-center gap-2 rounded-[8px] border border-[var(--color-border-faint)] bg-[var(--color-surface-subtle)] px-2.5 py-1.5 text-[length:var(--text-2xs)] leading-4 text-[var(--color-text-muted)]"
+        >
+          <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[var(--badge-amber-dot)]" />
+          <span className="min-w-0 flex-1 truncate">{statusText}</span>
+          {canRetryCatalog && onRetryCatalog ? (
+            <button type="button" data-player-interactive onClick={onRetryCatalog} className={noticeButtonClass}>
+              {copy.catalogRetry}
+            </button>
+          ) : null}
+          {onDismissStatus ? (
+            <button
+              type="button"
+              data-player-interactive
+              aria-label={copy.dismissNotice}
+              onClick={onDismissStatus}
+              className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--color-nav-muted)] transition-colors duration-150 hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)]"
+            >
+              <X aria-hidden="true" className="size-3" strokeWidth={1.75} />
+            </button>
+          ) : null}
         </div>
+      ) : null}
+
+      <div className="border-t border-[var(--color-border-faint)]">
+        <PlayerSeekBar
+          currentTime={currentTime}
+          duration={duration}
+          clock={clock}
+          totalClock={totalClock}
+          copy={copy}
+          onSeek={onSeek}
+        />
 
         <PlayerCompact
           title={title}
@@ -185,6 +223,9 @@ export function PlayerExpanded({
           fullWidth
           listExpanded
           showOrbToggle={showOrbToggle}
+          currentTime={currentTime}
+          duration={duration}
+          playbackRateLocked={playbackRateLocked}
           variant="bare"
           onTogglePlay={onTogglePlay}
           onCollapse={onCollapse}

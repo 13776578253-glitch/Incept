@@ -25,11 +25,11 @@ export type ElementSize = {
 // 保存悬浮块的 UI 位置
 export const MUSIC_PLAYER_PLACEMENT_STORAGE_KEY = 'incept-music-player:v1:floating-ui';
 
-// 比例映射到底边锚定区间：1 贴底边，与左右留同样的 20px
+// 比例映射到底边锚定区间：1 贴底边，与左右留同样的 20px；默认以 40px 圆形浮球停靠角落
 export const DEFAULT_FLOATING_PLACEMENT: FloatingPlacement = {
   edge: 'right',
   offsetRatio: 1,
-  mode: 'compact',
+  mode: 'orb',
 };
 
 const edgeMargin = 20;

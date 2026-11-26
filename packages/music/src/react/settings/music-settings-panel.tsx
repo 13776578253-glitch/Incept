@@ -1,6 +1,9 @@
 'use client';
 
 import type { MusicAdminData } from '@incept/music/application';
+import { SegmentedControl, SettingsGroup, SettingsRow, Switch, UnderlineTabs } from '@incept/ui';
+import { SlidersHorizontal } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import type { MusicLocale } from '../locale';
 import type { MusicPlaybackMode } from '../preferences/music-player-preferences-provider';
@@ -89,111 +92,8 @@ const SECTION_COPY: Record<
   },
 };
 
-// 控件与行布局沿用原 settings-renderer 的标记（随组件迁移，视觉零差）
 function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ');
-}
-
-function SettingsSegmentedControl({
-  options,
-  selected,
-  onSelect,
-  isInteractive = true,
-}: {
-  options: Array<{ id: string; label: string }>;
-  selected: string;
-  onSelect: (id: string) => void;
-  isInteractive?: boolean;
-}) {
-  return (
-    <div className="inline-flex flex-wrap items-center gap-1 rounded-full p-0.5">
-      {options.map((option) => {
-        const active = option.id === selected;
-
-        return (
-          <button
-            key={option.id}
-            type="button"
-            disabled={!isInteractive}
-            onClick={() => onSelect(option.id)}
-            className={cx(
-              'rounded-full px-3 py-1.5 text-[0.78rem] transition-all duration-150 outline-none focus:outline-none',
-              active
-                ? 'bg-[var(--color-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)]'
-                : 'text-[var(--color-nav-dropdown-description)] hover:text-[var(--color-text)]',
-              isInteractive && !active && 'hover:bg-[var(--color-bg)]/60',
-              !isInteractive && 'cursor-default opacity-50',
-            )}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function SettingsBooleanToggle({
-  enabled,
-  onToggle,
-  isInteractive,
-  labels,
-  ariaLabel,
-}: {
-  enabled: boolean;
-  onToggle: () => void;
-  isInteractive: boolean;
-  labels: { enabled: string; disabled: string };
-  ariaLabel?: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-label={ariaLabel}
-      aria-checked={enabled}
-      disabled={!isInteractive}
-      onClick={onToggle}
-      className={cx(
-        'inline-flex min-h-7.5 items-center justify-center gap-1.5 rounded-full bg-[var(--color-bg)] px-3.5 text-[0.75rem] font-medium shadow-[var(--shadow-card-sm)] transition-all hover:bg-[color:var(--color-row-hover-bg)] active:scale-[0.98] focus:outline-none disabled:cursor-default disabled:opacity-50',
-        enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-nav-dropdown-description)]',
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className="size-1.5 rounded-full transition-colors"
-        style={{
-          backgroundColor: enabled ? 'var(--badge-emerald-dot)' : 'var(--color-nav-muted)',
-        }}
-      />
-      <span>{enabled ? labels.enabled : labels.disabled}</span>
-    </button>
-  );
-}
-
-function PreferenceRow({
-  label,
-  description,
-  control,
-}: {
-  label: string;
-  description: string;
-  control: React.ReactNode;
-}) {
-  return (
-    <div className="grid gap-3 py-3.5 sm:py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-[0.875rem] font-medium tracking-[-0.01em] text-[var(--color-text)]">{label}</h3>
-        </div>
-        <p className="max-w-2xl text-[0.8125rem] leading-relaxed text-[var(--color-nav-dropdown-description)]">
-          {description}
-        </p>
-      </div>
-
-      <div className="md:justify-self-end">{control}</div>
-    </div>
-  );
 }
 
 // 浏览器播放器开关与偏好；Owner 曲库管理不受播放器开关影响。
@@ -217,72 +117,149 @@ export function MusicSettingsPanel({
     isReady: isMusicPreferencesReady,
   } = useMusicPlayerPreferences();
 
+  const [activeTab, setActiveTab] = useState<'preferences' | 'library'>('preferences');
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      if (tab === 'library' || tab === 'preferences') {
+        setActiveTab(tab);
+      }
+    };
+    syncFromUrl();
+
+    const handleNavigate = (event: Event) => {
+      const detail = (event as CustomEvent<{ sectionId?: string; tabId?: string }>).detail;
+      if (detail?.sectionId === 'music' && (detail.tabId === 'library' || detail.tabId === 'preferences')) {
+        setActiveTab(detail.tabId);
+      }
+    };
+    window.addEventListener('incept:settings-navigate', handleNavigate);
+    return () => window.removeEventListener('incept:settings-navigate', handleNavigate);
+  }, []);
+
+  const selectTab = (next: 'preferences' | 'library') => {
+    setActiveTab(next);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (next === 'preferences') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', next);
+      }
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
+  const trackCount = data?.status === 'ready' ? data.tracks.length : undefined;
+
+  const preferencesGroup = (
+    <SettingsGroup
+      title={
+        <span className="inline-flex items-center gap-2">
+          <SlidersHorizontal aria-hidden="true" className="size-4 text-[var(--color-text-muted)]" strokeWidth={1.75} />
+          <span>{copy.group}</span>
+        </span>
+      }
+    >
+      <SettingsRow
+        id="music-player-enabled"
+        title={copy.player.label}
+        description={copy.player.description}
+        control={
+          <Switch
+            checked={playerEnabled}
+            onCheckedChange={setPlayerEnabled}
+            disabled={!isMusicPreferencesReady}
+            ariaLabel={copy.player.label}
+            stateLabel={playerEnabled ? copy.player.enabled : copy.player.disabled}
+          />
+        }
+      />
+      <fieldset
+        disabled={!playerEnabled}
+        className={cx(
+          'min-w-0 divide-y divide-[var(--color-border-faint)] border-0 p-0 m-0',
+          !playerEnabled && 'opacity-50',
+        )}
+      >
+        <SettingsRow
+          id="music-rate-lock"
+          title={copy.rateLock.label}
+          description={copy.rateLock.description}
+          control={
+            <Switch
+              checked={playbackRateLocked}
+              onCheckedChange={setPlaybackRateLocked}
+              disabled={!isMusicPreferencesReady || !playerEnabled}
+              ariaLabel={playbackRateLocked ? copy.rateLock.enabled : copy.rateLock.disabled}
+              stateLabel={playbackRateLocked ? copy.rateLock.enabled : copy.rateLock.disabled}
+            />
+          }
+        />
+        <SettingsRow
+          id="music-placement"
+          title={copy.placement.label}
+          description={copy.placement.description}
+          control={
+            <Switch
+              checked={rememberPlacement}
+              onCheckedChange={setRememberPlacement}
+              disabled={!isMusicPreferencesReady || !playerEnabled}
+              ariaLabel={rememberPlacement ? copy.placement.enabled : copy.placement.disabled}
+              stateLabel={rememberPlacement ? copy.placement.enabled : copy.placement.disabled}
+            />
+          }
+        />
+        <SettingsRow
+          id="music-playback-mode"
+          title={copy.playbackMode.label}
+          description={copy.playbackMode.description}
+          control={
+            <SegmentedControl<MusicPlaybackMode>
+              ariaLabel={copy.playbackMode.label}
+              options={copy.playbackMode.options}
+              value={isMusicPreferencesReady ? playbackMode : ''}
+              onValueChange={setPlaybackMode}
+              disabled={!isMusicPreferencesReady || !playerEnabled}
+            />
+          }
+        />
+      </fieldset>
+    </SettingsGroup>
+  );
+
   return (
-    <div className="max-w-[760px] space-y-8">
-      <section id="music" className="max-w-[760px] space-y-4">
-        <header className="space-y-1.5">
-          <h2 className="text-[1.18rem] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
+    <div className="max-w-[760px] space-y-6">
+      <section id="music" className="max-w-[760px] space-y-5">
+        <header className="space-y-1">
+          <h2 className="text-[length:var(--text-xl)] font-semibold tracking-[-0.025em] text-[var(--color-text)]">
             {getMusicSettingsSectionLabel(locale)}
           </h2>
+          <p className="text-[length:var(--text-sm)] leading-relaxed text-[var(--color-text-muted)]">
+            {getMusicSettingsSectionDescription(locale)}
+          </p>
         </header>
-        <div className="space-y-4 rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5">
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-violet-icon)] shadow-[var(--shadow-card-sm)]">
-              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2.5 4h11M2.5 8h11M2.5 12h11M5 2.5v3M11 6.5v3M7 10.5v3" />
-              </svg>
-            </span>
-            <h4 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-              {copy.group}
-            </h4>
-          </div>
 
-          <div className="divide-y divide-[var(--color-nav-dropdown-border)] pt-1">
-            <PreferenceRow label={copy.player.label} description={copy.player.description}
-              control={<SettingsBooleanToggle enabled={playerEnabled} onToggle={() => setPlayerEnabled(!playerEnabled)}
-                isInteractive={isMusicPreferencesReady} labels={copy.player} ariaLabel={copy.player.label} />} />
-            <fieldset disabled={!playerEnabled} className={cx('min-w-0 divide-y divide-[var(--color-nav-dropdown-border)]', !playerEnabled && 'opacity-50')}>
-              <PreferenceRow
-                label={copy.rateLock.label}
-                description={copy.rateLock.description}
-                control={
-                  <SettingsBooleanToggle
-                    enabled={playbackRateLocked}
-                    onToggle={() => setPlaybackRateLocked(!playbackRateLocked)}
-                    isInteractive={isMusicPreferencesReady && playerEnabled}
-                    labels={{ enabled: copy.rateLock.enabled, disabled: copy.rateLock.disabled }}
-                  />
-                }
-              />
-              <PreferenceRow
-                label={copy.placement.label}
-                description={copy.placement.description}
-                control={
-                  <SettingsBooleanToggle
-                    enabled={rememberPlacement}
-                    onToggle={() => setRememberPlacement(!rememberPlacement)}
-                    isInteractive={isMusicPreferencesReady && playerEnabled}
-                    labels={{ enabled: copy.placement.enabled, disabled: copy.placement.disabled }}
-                  />
-                }
-              />
-              <PreferenceRow
-                label={copy.playbackMode.label}
-                description={copy.playbackMode.description}
-                control={
-                  <SettingsSegmentedControl
-                    options={copy.playbackMode.options}
-                    selected={isMusicPreferencesReady ? playbackMode : ''}
-                    onSelect={(id) => setPlaybackMode(id as MusicPlaybackMode)}
-                    isInteractive={isMusicPreferencesReady && playerEnabled}
-                  />
-                }
-              />
-            </fieldset>
-          </div>
-        </div>
+        {data !== null ? (
+          <UnderlineTabs<'preferences' | 'library'>
+            ariaLabel={locale === 'zh' ? '音乐设置分组' : 'Music sections'}
+            value={activeTab}
+            onValueChange={selectTab}
+            items={[
+              { id: 'preferences', label: locale === 'zh' ? '播放器偏好' : 'Player' },
+              {
+                id: 'library',
+                label: locale === 'zh' ? '曲库与曲目' : 'Library & Tracks',
+                count: trackCount,
+              },
+            ]}
+          />
+        ) : null}
+
+        {data === null || activeTab === 'preferences' ? preferencesGroup : null}
       </section>
-      {data === null ? null : <MusicAdminPanel locale={locale} data={data} />}
+      {data !== null && activeTab === 'library' ? <MusicAdminPanel locale={locale} data={data} /> : null}
     </div>
   );
 }

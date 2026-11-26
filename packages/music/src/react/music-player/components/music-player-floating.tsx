@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   formatClock,
@@ -46,6 +46,7 @@ export function MusicPlayerFloating({
 
   const isMobile = viewport === 'mobile';
   const isHiddenRoute = matchesHiddenRoute(pathname);
+  const [dismissedStatusKey, setDismissedStatusKey] = useState<string | null>(null);
 
   const { elementRef, placement, geometry, isDragging, setMode, dragHandlers } = useFloatingPosition({
     draggable: !isMobile,
@@ -59,7 +60,7 @@ export function MusicPlayerFloating({
     sendIntent({ type: 'repeatModeRequested', mode: playbackMode });
   }, [playbackMode, sendIntent]);
 
-  const viewMode = isMobile && placement.mode === 'orb' ? 'compact' : placement.mode;
+  const viewMode = placement.mode;
   const isPlaying = state.status === 'playing';
 
   const title =
@@ -126,38 +127,22 @@ export function MusicPlayerFloating({
   // 加载中不单独提示
   const catalogText = catalogStatus === 'error' ? copy.catalogError : null;
   const statusText = errorText ?? catalogText;
-
-  const errorNotice = statusText ? (
-    <div
-      role="status"
-      aria-live="polite"
-      className="mt-2 flex max-w-[22rem] items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-nav-dropdown-bg)] px-3 py-2 text-[0.72rem] leading-5 text-[var(--color-text-muted)] shadow-[var(--shadow-nav-dropdown)]"
-    >
-      <span className="min-w-0 flex-1">{statusText}</span>
-      {/* 只有目录错误提供重试：音频错误重试没有意义，同一份音源仍会失败 */}
-      {catalogStatus === 'error' ? (
-        <button
-          type="button"
-          data-player-interactive
-          onClick={reloadCatalog}
-          className="shrink-0 cursor-pointer rounded-full px-2 py-1 text-[0.68rem] text-[var(--color-text)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-nav-item-hover)]"
-        >
-          {copy.catalogRetry}
-        </button>
-      ) : null}
-    </div>
-  ) : null;
+  // 提示可被临时关闭；曲目、错误类型或目录状态变化后会重新出现
+  const statusKey = statusText ? `${state.currentTrackId ?? ''}::${errorKind ?? ''}::${catalogStatus}` : null;
+  const visibleStatusText = statusKey && dismissedStatusKey !== statusKey ? statusText : null;
 
   const surface =
     viewMode === 'orb' ? (
       <PlayerOrb
         label={copy.expand}
+        title={title}
         clock={clock}
         totalClock={totalClock}
         onClick={() => setMode('compact')}
         isPlaying={isPlaying}
         currentTime={state.currentTime}
         duration={state.duration}
+        statusText={visibleStatusText}
       />
     ) : viewMode === 'compact' ? (
       <PlayerCompact
@@ -173,7 +158,11 @@ export function MusicPlayerFloating({
         isPlaying={isPlaying}
         fullWidth={isMobile}
         listExpanded={false}
-        showOrbToggle={!isMobile}
+        showOrbToggle
+        currentTime={state.currentTime}
+        duration={state.duration}
+        statusText={visibleStatusText}
+        playbackRateLocked={playbackRateLocked}
         onTogglePlay={handleTogglePlay}
         onCollapse={() => setMode('orb')}
         onToggleList={() => setMode('expanded')}
@@ -193,7 +182,7 @@ export function MusicPlayerFloating({
         rateCycleLabel={copy.playbackRate}
         isPlaying={isPlaying}
         fullWidth={isMobile}
-        showOrbToggle={!isMobile}
+        showOrbToggle
         libraries={libraries}
         selectedLibrary={selectedLibraryKey}
         onSelectLibrary={setSelectedLibrary}
@@ -202,15 +191,25 @@ export function MusicPlayerFloating({
         onCollapse={() => setMode('orb')}
         onCollapseList={() => setMode('compact')}
         onCycleRate={handleCycleRate}
+        statusText={visibleStatusText}
+        canRetryCatalog={catalogStatus === 'error'}
+        onRetryCatalog={reloadCatalog}
+        onDismissStatus={statusKey ? () => setDismissedStatusKey(statusKey) : undefined}
+        playbackRateLocked={playbackRateLocked}
       />
     );
 
   if (isMobile) {
     return (
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[var(--z-feature-floating)] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        <div className="pointer-events-auto mx-auto w-full max-w-[34rem]">
+      <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1.125rem)] right-3.5 z-[var(--z-feature-floating)] flex flex-col items-end">
+        <div
+          className={
+            viewMode === 'orb'
+              ? 'pointer-events-auto'
+              : 'pointer-events-auto w-[min(22rem,calc(100vw-1.75rem))]'
+          }
+        >
           {surface}
-          {errorNotice}
         </div>
       </div>
     );
@@ -228,7 +227,6 @@ export function MusicPlayerFloating({
       {...dragHandlers}
     >
       {surface}
-      {errorNotice}
     </div>
   );
 }

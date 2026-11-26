@@ -19,6 +19,11 @@ export {
 } from './library';
 
 export {
+  listDocsHomeCurationEntries,
+  setDocsHomeEntryCurated,
+} from './curation';
+
+export {
   importDocsArticleDraft,
   upsertDocsSingleArticle,
   upsertDocsCollectionArticle,
@@ -62,6 +67,7 @@ export type {
   DbDocsSidebar,
   DbDocsHomeArticleRecord,
   DbDocsHomeCollectionRecord,
+  DbDocsHomeCurationEntryRecord,
   DbDocsHomeEntryRecord,
   DbDocsLibraryEntryRecord,
   DbDocsLibraryRouteType,

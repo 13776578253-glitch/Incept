@@ -139,7 +139,7 @@ export function RoadmapToolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2.5">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
       {canEdit && (
         <>
           <input
@@ -155,7 +155,7 @@ export function RoadmapToolbar({
               onClick={onCreateEntry}
               aria-label={createEntryLabel ?? 'New entry'}
               title={createEntryLabel ?? 'New entry'}
-              className="inline-flex size-[30px] shrink-0 items-center justify-center rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))] hover:text-[var(--color-text)]"
+              className="inline-flex size-[28px] shrink-0 items-center justify-center rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] text-[var(--color-text-muted)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--color-accent-border,var(--roadmap-border-hover))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))] hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] sm:size-[30px]"
             >
               <svg
                 width="13"
@@ -174,7 +174,7 @@ export function RoadmapToolbar({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--color-bg))] px-2.5 py-1 text-[0.76rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] sm:px-3.5 sm:py-1.5 sm:text-[0.8rem]"
           >
             <span aria-hidden="true" className="inline-flex shrink-0 text-[var(--color-text-muted)]">
               <IconImport />
@@ -227,11 +227,11 @@ export function RoadmapToolbar({
           aria-haspopup="listbox"
           aria-expanded={open}
           onClick={() => setOpen((prev) => !prev)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--roadmap-lane-bg))] px-3.5 py-1.5 text-[0.8rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))]"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--roadmap-border,var(--color-border))] bg-[var(--roadmap-card-bg,var(--roadmap-lane-bg))] px-2.5 py-1 text-[0.76rem] font-medium text-[var(--color-text)] shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-[var(--roadmap-border-hover,var(--color-text-soft))] hover:bg-[var(--roadmap-card-hover-bg,var(--roadmap-lane-bg))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] sm:px-3.5 sm:py-1.5 sm:text-[0.8rem]"
         >
           <span
             aria-hidden="true"
-            className="inline-flex shrink-0 text-[var(--roadmap-status-active,#2563eb)]"
+            className="inline-flex shrink-0 text-[var(--color-accent)]"
           >
             <IconProjectTag />
           </span>
@@ -270,7 +270,7 @@ export function RoadmapToolbar({
                     {selected && (
                       <span
                         aria-hidden="true"
-                        className="size-1.5 rounded-full bg-[var(--roadmap-status-active,#2563eb)]"
+                        className="size-1.5 rounded-full bg-[var(--color-accent)]"
                       />
                     )}
                   </a>

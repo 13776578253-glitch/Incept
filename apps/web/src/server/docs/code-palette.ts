@@ -8,5 +8,5 @@ import {
 
 export async function getDocsCodePalette(): Promise<DocsCodePalette> {
   const storedPalette = (await cookies()).get(DOCS_CODE_PALETTE_COOKIE)?.value;
-  return isDocsCodePalette(storedPalette) ? storedPalette : 'vscode';
+  return isDocsCodePalette(storedPalette) ? storedPalette : 'auto';
 }

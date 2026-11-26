@@ -8,8 +8,8 @@ export function DocsDividerBlock({
     <hr
       className={
         variant === 'spacious'
-          ? 'my-10 border-0 border-t border-[color:var(--color-border-strong)]'
-          : 'my-6 border-0 border-t border-[color:var(--color-border-strong)]'
+          ? 'my-10 border-0 border-t border-[color:var(--color-border)]'
+          : 'my-6 border-0 border-t border-[color:var(--color-border)]'
       }
     />
   );

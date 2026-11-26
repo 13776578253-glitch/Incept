@@ -7,7 +7,7 @@ import { collectAntigravityEvents } from '../adapters/local/collectors/antigravi
 import { collectClaudeEvents } from '../adapters/local/collectors/claude';
 import { collectOpenCodeEvents } from '../adapters/local/collectors/opencode-usage';
 import { collectZCodeEvents } from '../adapters/local/collectors/zcode';
-import { collectCcusageFallback } from '../adapters/local/collectors/ccusage';
+import { clearCcusageFallbackCache, collectCcusageFallback } from '../adapters/local/collectors/ccusage';
 import { collectGeminiEvents } from '../adapters/local/collectors/gemini';
 import { collectAiusageAndRawAgentEvents } from '../adapters/local/collectors/agents';
 import { canonicalModelName, readLocalOverrides } from '../adapters/local/overrides';
@@ -202,5 +202,79 @@ describe('repeatable native collection', () => {
       : JSON.stringify({ sessions: [{ sessionId: 'session', models: { model: { inputTokens: 10, outputTokens: 5, reasoningOutputTokens: 2, cacheReadTokens: 4 } } }] });
     const result = await collectCcusageFallback(['codex'], { from: '2026-10-12', to: '2026-10-12' }, price, new Set(), run);
     expect(result.events[0]).toMatchObject({ inputTokens: 10, outputTokens: 3, reasoningTokens: 2, cacheReadTokens: 4, timestampPrecision: 'day' });
+  });
+  it('caches validated ccusage slices across narrower range switches, skips caching partial failures, and clears on force', async () => {
+    clearCcusageFallbackCache();
+    const logPath = join(home, 'ccusage-calls.log');
+    const binPath = join(home, 'fake-ccusage.mjs');
+    writeFileSync(binPath, `
+      import { appendFileSync, existsSync } from 'node:fs';
+      const args = process.argv.slice(2);
+      appendFileSync(${JSON.stringify(logPath)}, JSON.stringify(args) + '\\n');
+      if (args[1] === 'daily') {
+        console.log(JSON.stringify({ daily: [{ date: '2026-10-10' }, { date: '2026-10-12' }] }));
+      } else if (args.includes('20261010') && existsSync(${JSON.stringify(join(home, 'fail-10'))})) {
+        console.log(JSON.stringify({ sessions: [{ sessionId: 'bad', modelBreakdowns: null }] }));
+      } else {
+        console.log(JSON.stringify({ sessions: [{ sessionId: 's-' + args[6], modelBreakdowns: [{ modelName: 'model', inputTokens: 10, outputTokens: 2, cost: 1 }] }] }));
+      }
+    `);
+    vi.stubEnv('INCEPT_DASHBOARD_CCUSAGE_BIN', binPath);
+    const { readFileSync } = await import('node:fs');
+    const clock = Date.parse('2026-10-12T04:00:00Z');
+    vi.spyOn(Date, 'now').mockReturnValue(clock);
+
+    // Partial failure on 2026-10-10 must not cache 2026-10-12 slice from the failed query.
+    writeFileSync(join(home, 'fail-10'), '1');
+    const failed = await collectCcusageFallback(['claudeCode'], { from: '2026-10-10', to: '2026-10-12' }, price, new Set());
+    expect(failed.events).toEqual([]);
+    expect(failed.errors).toHaveLength(1);
+    rmSync(join(home, 'fail-10'));
+
+    const allResult = await collectCcusageFallback(['claudeCode'], { from: '2026-10-10', to: '2026-10-12' }, price, new Set());
+    expect(allResult.events).toHaveLength(2);
+    const callsAfterAll = readFileSync(logPath, 'utf8').trim().split('\n').length;
+
+    // Narrower sub-window reuses both daily discovery and day slices without spawning ccusage.
+    const subResult = await collectCcusageFallback(['claudeCode'], { from: '2026-10-11', to: '2026-10-12' }, price, new Set());
+    expect(subResult.events).toHaveLength(1);
+    expect(readFileSync(logPath, 'utf8').trim().split('\n')).toHaveLength(callsAfterAll);
+
+    // Clearing cache (as force refresh does) triggers fresh invocation.
+    clearCcusageFallbackCache();
+    await collectCcusageFallback(['claudeCode'], { from: '2026-10-11', to: '2026-10-12' }, price, new Set());
+    expect(readFileSync(logPath, 'utf8').trim().split('\n').length).toBeGreaterThan(callsAfterAll);
+    clearCcusageFallbackCache();
+  });
+  it('prevents an in-flight pre-clear ccusage query from polluting cache after clearCcusageFallbackCache', async () => {
+    clearCcusageFallbackCache();
+    const marker = join(home, 'old-started');
+    const useNew = join(home, 'use-new');
+    const release = join(home, 'release-old');
+    const binPath = join(home, 'race-ccusage.mjs');
+    writeFileSync(binPath, `
+      import { existsSync, writeFileSync } from 'node:fs';
+      const newer = existsSync(${JSON.stringify(useNew)});
+      if (!newer) {
+        writeFileSync(${JSON.stringify(marker)}, '');
+        while (!existsSync(${JSON.stringify(release)})) await new Promise(r => setTimeout(r, 15));
+      }
+      console.log(JSON.stringify({ sessions: [{ sessionId: 's', modelBreakdowns: [{ modelName: 'model', inputTokens: newer ? 200 : 100, outputTokens: 0, cost: 1 }] }] }));
+    `);
+    vi.stubEnv('INCEPT_DASHBOARD_CCUSAGE_BIN', binPath);
+    const { existsSync } = await import('node:fs');
+    const hints = { claudeCode: ['2026-10-10'] };
+    const oldJob = collectCcusageFallback(['claudeCode'], { from: '2026-10-10', to: '2026-10-10' }, price, new Set(), undefined, hints);
+    await vi.waitFor(() => expect(existsSync(marker)).toBe(true));
+    writeFileSync(useNew, '');
+    clearCcusageFallbackCache();
+    const forced = await collectCcusageFallback(['claudeCode'], { from: '2026-10-10', to: '2026-10-10' }, price, new Set(), undefined, hints);
+    expect(forced.events[0].inputTokens).toBe(200);
+    writeFileSync(release, '');
+    expect((await oldJob).events[0].inputTokens).toBe(100);
+    // Subsequent cached read must still return 200, not the superseded 100.
+    const next = await collectCcusageFallback(['claudeCode'], { from: '2026-10-10', to: '2026-10-10' }, price, new Set(), undefined, hints);
+    expect(next.events[0].inputTokens).toBe(200);
+    clearCcusageFallbackCache();
   });
 });

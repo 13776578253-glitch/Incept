@@ -8,25 +8,45 @@ import { readActiveBatches, importStorePath } from './store';
 import { externalProject } from './planner';
 import { capturedPricing, inheritedPricing } from './pricing';
 
+type NativeIndexCache = {
+  aliasesKey: string;
+  local: ReturnType<typeof identityIndex<{ raw: RawUsageEvent; event: TransferEvent }>>;
+  targets: Map<string, RawUsageEvent>;
+};
+
+const nativeIndexCache = new WeakMap<RawUsageEvent[], NativeIndexCache>();
+
+function getNativeIndex(native: RawUsageEvent[], aliases: Record<string, string>, resolve: (name: string) => string) {
+  const aliasesKey = JSON.stringify(Object.entries(aliases).sort(([a], [b]) => a.localeCompare(b)));
+  const cached = nativeIndexCache.get(native);
+  if (cached && cached.aliasesKey === aliasesKey) return cached;
+  const local = identityIndex(native.map(raw => ({ raw, event: { ...raw, eventId: nativeEventId(raw), source: raw.sourceId } as TransferEvent })), resolve);
+  const targets = new Map(native.map(event => [event.projectKey, event]));
+  const entry = { aliasesKey, local, targets };
+  nativeIndexCache.set(native, entry);
+  return entry;
+}
+
 export function loadImportedEvents(native: RawUsageEvent[], pricing: Map<string, UnitPricing>, aliases: Record<string, string>, path = importStorePath()) {
   const events: RawUsageEvent[] = [], issues: string[] = [];
   const replacedIndexed = new Set<RawUsageEvent>();
-  const resolve = (name: string) => canonicalModelName(name, aliases);
-  const local = identityIndex(native.map(raw => ({ raw, event: { ...raw, eventId: nativeEventId(raw), source: raw.sourceId } as TransferEvent })), resolve);
-  const seen = new Set<string>();
-  const targets = new Map(native.map(event => [event.projectKey, event]));
   let combinedPricing = new Map(pricing);
   let updatedAt = 0;
   let batches;
   try { batches = readActiveBatches(path).reverse(); }
   catch { return { events, pricing: combinedPricing, updatedAt, replacedIndexed, issues: ['Import storage could not be read; imported usage is unavailable.'] }; }
+  if (!batches.length) return { events, pricing: combinedPricing, updatedAt, replacedIndexed, issues };
+  for (const batch of batches) updatedAt = Math.max(updatedAt, Date.parse(batch.receipt.importedAt));
+  combinedPricing = inheritedPricing(pricing, aliases, [...batches].reverse());
   const records = batches.flatMap(batch => batch.bundle.events.map(event => ({ event, batch,
     project: batch.mappings[event.projectKey] || externalProject(batch.bundle.device.id, event.projectKey) })));
+  if (!records.length) return { events, pricing: combinedPricing, updatedAt, replacedIndexed, issues };
+  const resolve = (name: string) => canonicalModelName(name, aliases);
+  const { local, targets } = getNativeIndex(native, aliases, resolve);
+  const seen = new Set<string>();
   const transferred = identityIndex(records, resolve);
-  combinedPricing = inheritedPricing(pricing, aliases, [...batches].reverse());
   for (const batch of batches) {
     const captured = capturedPricing(batch.bundle, aliases);
-    updatedAt = Math.max(updatedAt, Date.parse(batch.receipt.importedAt));
     for (const event of batch.bundle.events) {
       const identity = canonicalTransferId(event);
       if (seen.has(identity)) continue;

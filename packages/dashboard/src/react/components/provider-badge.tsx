@@ -2,92 +2,50 @@
 
 import type { ModelProviderFamily } from '../../domain/index';
 
+type ProviderToneConfig = {
+  label: string;
+  tone?: string;
+};
+
+const PROVIDER_META: Record<ModelProviderFamily, ProviderToneConfig> = {
+  gemini: { label: 'Google', tone: '#5c8fb8' },
+  claude: { label: 'Anthropic', tone: '#b8825a' },
+  openai: { label: 'OpenAI', tone: '#52997e' },
+  deepseek: { label: 'DeepSeek', tone: '#6f77b8' },
+  workbuddy: { label: 'WorkBuddy', tone: '#8478b5' },
+  xiaomi: { label: 'Xiaomi', tone: '#b38c52' },
+  zhipu: { label: 'Zhipu', tone: '#5a96a8' },
+  xai: { label: 'Grok', tone: '#b57282' },
+  other: { label: 'Other' },
+};
+
 export function ProviderBadge({
   provider,
 }: { provider: ModelProviderFamily }) {
-  const map: Record<
-    ModelProviderFamily,
-    { label: string; bg: string; border: string; fg: string; dot: string }
-  > = {
-    gemini: {
-      label: 'Google',
-      bg: 'var(--badge-sky-bg)',
-      border: 'var(--badge-sky-border)',
-      fg: 'var(--badge-sky-fg)',
-      dot: 'var(--badge-sky-dot)',
-    },
-    claude: {
-      label: 'Anthropic',
-      bg: 'var(--badge-amber-bg)',
-      border: 'var(--badge-amber-border)',
-      fg: 'var(--badge-amber-fg)',
-      dot: 'var(--badge-amber-dot)',
-    },
-    openai: {
-      label: 'OpenAI',
-      bg: 'var(--badge-emerald-bg)',
-      border: 'var(--badge-emerald-border)',
-      fg: 'var(--badge-emerald-fg)',
-      dot: 'var(--badge-emerald-dot)',
-    },
-    deepseek: {
-      label: 'DeepSeek',
-      bg: 'var(--badge-indigo-bg)',
-      border: 'var(--badge-indigo-border)',
-      fg: 'var(--badge-indigo-fg)',
-      dot: 'var(--badge-indigo-dot)',
-    },
-    workbuddy: {
-      label: 'WorkBuddy',
-      bg: 'var(--badge-indigo-bg)',
-      border: 'var(--badge-indigo-border)',
-      fg: 'var(--badge-indigo-fg)',
-      dot: 'var(--badge-indigo-dot)',
-    },
-    xiaomi: {
-      label: 'Xiaomi',
-      bg: 'var(--badge-amber-bg)',
-      border: 'var(--badge-amber-border)',
-      fg: 'var(--badge-amber-fg)',
-      dot: 'var(--badge-amber-dot)',
-    },
-    zhipu: {
-      label: 'Zhipu',
-      bg: 'var(--badge-sky-bg)',
-      border: 'var(--badge-sky-border)',
-      fg: 'var(--badge-sky-fg)',
-      dot: 'var(--badge-sky-dot)',
-    },
-    xai: {
-      label: 'Grok',
-      bg: 'var(--badge-rose-bg)',
-      border: 'var(--badge-rose-border)',
-      fg: 'var(--badge-rose-fg)',
-      dot: 'var(--badge-rose-dot)',
-    },
-    other: {
-      label: 'Other',
-      bg: 'var(--surface-chip-bg)',
-      border: 'var(--surface-chip-border)',
-      fg: 'var(--color-text-muted)',
-      dot: 'var(--color-nav-muted)',
-    },
-  };
-
-  const cfg = map[provider] ?? map.other;
+  const cfg = PROVIDER_META[provider] ?? PROVIDER_META.other;
+  const style = cfg.tone
+    ? {
+        backgroundColor: `color-mix(in oklab, ${cfg.tone} 9%, var(--color-surface-card))`,
+        borderColor: `color-mix(in oklab, ${cfg.tone} 20%, var(--color-border-subtle))`,
+        color: `color-mix(in oklab, ${cfg.tone} 52%, var(--color-text-muted))`,
+      }
+    : {
+        backgroundColor: 'var(--surface-chip-bg)',
+        borderColor: 'var(--surface-chip-border)',
+        color: 'var(--color-text-muted)',
+      };
+  const dotStyle = cfg.tone
+    ? { backgroundColor: `color-mix(in oklab, ${cfg.tone} 72%, var(--color-text-muted))` }
+    : { backgroundColor: 'var(--color-nav-muted)' };
 
   return (
     <span
       className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[0.64rem] font-medium"
-      style={{
-        backgroundColor: cfg.bg,
-        borderColor: cfg.border,
-        color: cfg.fg,
-      }}
+      style={style}
     >
       <span
         className="size-1.5 rounded-full"
-        style={{ backgroundColor: cfg.dot }}
+        style={dotStyle}
       />
       {cfg.label}
     </span>

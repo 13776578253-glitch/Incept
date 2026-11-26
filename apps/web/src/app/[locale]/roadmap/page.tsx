@@ -154,7 +154,7 @@ export default async function RoadmapMapPage({
 
   return (
     <WorkspaceShell>
-      <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-16 md:flex md:h-[calc(100dvh-var(--navbar-height,64px))] md:min-h-[560px] md:flex-col md:overflow-hidden md:pt-8 md:pb-16 lg:px-10 lg:pt-9 lg:pb-20">
+      <div className="mx-auto w-full max-w-[1480px] px-4 pt-4 pb-24 sm:px-6 md:pt-7 md:pb-16 min-[1180px]:flex min-[1180px]:h-[calc(100dvh-var(--navbar-height,64px))] min-[1180px]:min-h-[560px] min-[1180px]:flex-col min-[1180px]:overflow-hidden min-[1180px]:px-8 min-[1180px]:pt-8 min-[1180px]:pb-16 xl:px-10 xl:pt-9 xl:pb-20">
         <h1 className="sr-only">
           {activeSurface === 'atlas' ? (current?.name[locale] ?? (locale === 'zh' ? '规划图' : 'Planning Board')) : t('page.title')}
         </h1>

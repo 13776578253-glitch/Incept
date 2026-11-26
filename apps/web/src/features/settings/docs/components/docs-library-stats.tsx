@@ -1,3 +1,4 @@
+import { ProgressMeter } from '@incept/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import type { DocsLibraryStatsModel } from '../types';
 
@@ -5,33 +6,26 @@ type DocsLibraryStatsProps = {
   stats: DocsLibraryStatsModel;
 };
 
-type StatCardProps = {
+type StatItemProps = {
   label: string;
   value: number;
   description: string;
-  dotColor: string;
 };
 
-function StatCard({
+function StatItem({
   label,
   value,
   description,
-  dotColor,
-}: StatCardProps) {
+}: StatItemProps) {
   return (
-    <article className="group min-w-0 rounded-[14px] bg-[var(--color-bg)] p-3.5 shadow-[var(--shadow-card-sm)] transition-all hover:shadow-[var(--shadow-card-hover)]">
-      <p className="flex min-w-0 items-center gap-1.5 text-[0.7rem] font-medium uppercase tracking-[0.06em] text-[var(--color-text-soft)]">
-        <span
-          aria-hidden="true"
-          className="size-1.5 shrink-0 rounded-full"
-          style={{ backgroundColor: dotColor }}
-        />
-        <span className="truncate">{label}</span>
+    <article className="min-w-0 sm:px-3.5 sm:first:pl-0 sm:last:pr-0">
+      <p className="truncate text-[length:var(--text-2xs)] font-medium text-[var(--color-text-muted)]">
+        {label}
       </p>
-      <p className="mt-2 text-[1.45rem] font-semibold leading-none text-[var(--color-text)] tabular-nums tracking-tight">
+      <p className="mt-1 text-[length:var(--text-xl)] font-semibold leading-none tracking-tight text-[var(--color-text)] tabular-nums">
         {value}
       </p>
-      <p className="mt-2 text-[0.7rem] leading-relaxed text-[var(--color-nav-muted)] line-clamp-2">
+      <p title={description} className="mt-1 line-clamp-2 text-[length:var(--text-2xs)] leading-4 text-[var(--color-text-soft)]">
         {description}
       </p>
     </article>
@@ -44,57 +38,83 @@ export function DocsLibraryStats({
   const t = useTranslations('docs.library.stats');
   const locale = useLocale();
   const isZh = locale === 'zh';
+  const total = Math.max(stats.totalArticles, 0);
+  const meterMax = Math.max(total, 1);
+  const toPercent = (count: number) => (total > 0 ? Math.round((count / total) * 100) : 0);
 
   return (
-    <section className="space-y-3.5 rounded-2xl bg-[color:var(--color-row-bg)] p-4 sm:p-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--badge-indigo-icon)] shadow-[var(--shadow-card-sm)]">
-            <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2.5 3.5h11v9h-11zM2.5 6.5h11M6 6.5v6" />
-            </svg>
-          </span>
-          <h3 className="text-[0.9375rem] font-medium text-[var(--color-text)]">
-            {isZh ? '全库概览' : 'Overview'}
-          </h3>
-        </div>
-        <span className="text-[0.72rem] text-[var(--color-nav-muted)]">
+    <section id="docs-overview" className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-[length:var(--text-sm)] font-medium text-[var(--color-text)]">
+          {isZh ? '全库概览' : 'Overview'}
+        </h3>
+        <span className="text-[length:var(--text-xs)] text-[var(--color-text-soft)]">
           {isZh ? '文档与合集分布统计' : 'Published content & collection distribution'}
         </span>
       </div>
 
-      <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
-        <StatCard
+      <div className="grid grid-cols-2 gap-y-4 border-y border-[var(--color-border-faint)] py-3.5 sm:grid-cols-5 sm:gap-y-0 sm:divide-x sm:divide-[var(--color-border-faint)]">
+        <StatItem
           label={t('total.label')}
           value={stats.totalArticles}
           description={t('total.description')}
-          dotColor="var(--badge-indigo-dot)"
         />
-        <StatCard
+        <StatItem
           label={t('standalone.label')}
           value={stats.standaloneArticleCount}
           description={t('standalone.description')}
-          dotColor="var(--badge-sky-dot)"
         />
-        <StatCard
+        <StatItem
           label={t('collectionArticles.label')}
           value={stats.collectionArticleCount}
           description={t('collectionArticles.description')}
-          dotColor="var(--badge-emerald-dot)"
         />
-        <StatCard
+        <StatItem
           label={t('collections.label')}
           value={stats.collectionCount}
           description={t('collections.description')}
-          dotColor="var(--badge-amber-dot)"
         />
-        <StatCard
+        <StatItem
           label={t('recentlyUpdated.label')}
           value={stats.recentlyUpdatedCount}
           description={t('recentlyUpdated.description')}
-          dotColor="var(--badge-rose-dot)"
         />
       </div>
+
+      <ProgressMeter
+        title={isZh ? '已发布内容占比' : 'Published distribution'}
+        summary={
+          isZh
+            ? `共 ${stats.totalArticles} 篇 · ${stats.collectionCount} 个合集`
+            : `${stats.totalArticles} total · ${stats.collectionCount} collections`
+        }
+        segments={[
+          {
+            id: 'standalone',
+            label: isZh ? '独立' : 'Standalone',
+            value: stats.standaloneArticleCount,
+            max: meterMax,
+            tone: 'sky',
+            valueText: `${toPercent(stats.standaloneArticleCount)}%`,
+          },
+          {
+            id: 'collection',
+            label: isZh ? '合集' : 'Series',
+            value: stats.collectionArticleCount,
+            max: meterMax,
+            tone: 'emerald',
+            valueText: `${toPercent(stats.collectionArticleCount)}%`,
+          },
+          {
+            id: 'recent',
+            label: isZh ? '近期更新' : 'Updated',
+            value: stats.recentlyUpdatedCount,
+            max: meterMax,
+            tone: 'accent',
+            valueText: `${toPercent(stats.recentlyUpdatedCount)}%`,
+          },
+        ]}
+      />
     </section>
   );
 }

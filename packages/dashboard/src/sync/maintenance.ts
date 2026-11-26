@@ -96,7 +96,7 @@ export async function backupSqlite(sourcePath:string,outputPath:string) {
   return {ok:true,source:basename(sourcePath),backup:basename(outputPath),bytes,sha256,fingerprint:databaseFingerprint(outputPath)};
 }
 
-function comparable(data:TokenDashboardData){return {...data,updatedAt:undefined,sync:undefined,checkedAt:undefined};}
+function comparable(data:TokenDashboardData){return {...data,updatedAt:undefined,sync:undefined,checkedAt:undefined,importsCheckedAt:undefined,importSignature:undefined,revalidating:undefined};}
 
 function firstDifference(left:unknown,right:unknown,path='$'):string|null {
   if(Object.is(left,right))return null;

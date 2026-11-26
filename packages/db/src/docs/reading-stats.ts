@@ -35,6 +35,7 @@ function getBlockText(block: DbDocsSectionBlock) {
       return `${text} ${block.attribution ?? ''}`;
     }
     case 'image':
+    case 'html':
       return block.caption ?? '';
     case 'code':
     case 'divider':

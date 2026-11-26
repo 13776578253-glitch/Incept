@@ -9,7 +9,7 @@ function ChecklistIcon({
     return (
       <span
         aria-hidden="true"
-        className="mt-[0.5rem] inline-flex size-4 shrink-0 items-center justify-center rounded-[4px] bg-[#4d9dff] text-[var(--color-white)]"
+        className="mt-[0.36em] inline-flex size-4 shrink-0 items-center justify-center rounded-[4px] bg-[var(--color-accent)] text-[var(--color-accent-fg)]"
       >
         <svg viewBox="0 0 16 16" className="size-3" fill="none">
           <path
@@ -27,7 +27,7 @@ function ChecklistIcon({
   return (
     <span
       aria-hidden="true"
-      className="mt-[0.5rem] inline-flex size-4 shrink-0 rounded-[4px] border border-[var(--color-text)]"
+      className="mt-[0.36em] inline-flex size-4 shrink-0 rounded-[4px] border border-[var(--color-border-strong)] bg-[var(--color-surface)]"
     />
   );
 }
@@ -38,11 +38,11 @@ export function DocsChecklistBlock({
   variant = 'default',
 }: DocsChecklistBlockModel) {
   const emphasis = variant === 'emphasis';
-  const listClassName = emphasis ? 'space-y-4' : 'space-y-3';
-  const itemClassName = emphasis ? 'gap-3.5' : 'gap-3';
+  const listClassName = emphasis ? 'space-y-2.5 md:space-y-3' : 'space-y-2 md:space-y-2.5';
+  const itemClassName = emphasis ? 'gap-3 md:gap-3.5' : 'gap-2.5 md:gap-3';
   const textClassName = emphasis
-    ? 'text-[1.02rem] leading-8 text-[var(--color-text)]'
-    : 'text-[1rem] leading-8 text-[var(--color-text-muted)]';
+    ? 'text-[length:calc(var(--docs-font-size)*1.02)] leading-[var(--docs-paragraph-line-height)] text-[var(--color-text)]'
+    : 'text-[length:var(--docs-font-size)] leading-[var(--docs-paragraph-line-height)] text-[var(--color-text-muted)]';
   const completedTextClassName = emphasis
     ? 'text-[color:var(--color-text-completed)] line-through'
     : 'text-[color:var(--color-text-strikethrough)] line-through';

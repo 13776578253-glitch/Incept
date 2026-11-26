@@ -94,8 +94,8 @@ describe('package server/client composition', () => {
     expect(mocks.load).toHaveBeenCalledWith('30d', { waitForFresh: false });
     expect(screen.getByRole('button', { name: messages.page.range30d }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(messages.page.title);
-    for (const section of ['overview', 'models', 'costs', 'projects'] as const) {
-      expect(screen.getByRole('heading', { name: messages[section].title })).toBeDefined();
-    }
+    expect(screen.getByRole('heading', { name: messages.workbench.trendTitle })).toBeDefined();
+    expect(screen.getByRole('heading', { name: messages.workbench.modelsTitle })).toBeDefined();
+    expect(screen.getByRole('button', { name: messages.workbench.diagnosticsOpen })).toBeDefined();
   });
 });

@@ -11,7 +11,7 @@ function renderInlineContentItem(item: DocsParagraphInlineModel, index: number) 
         href={item.href}
         target={isExternal ? '_blank' : undefined}
         rel={isExternal ? 'noreferrer' : undefined}
-        className="underline decoration-[color:var(--color-link-decoration)] underline-offset-[0.18em] transition-colors hover:text-[var(--color-text)] hover:decoration-[var(--color-text-muted)]"
+        className="underline decoration-[color:color-mix(in_oklab,var(--color-accent)_40%,var(--color-border-strong))] underline-offset-[0.2em] transition-colors hover:text-[var(--color-text)] hover:decoration-[var(--color-accent)]"
       >
         {item.label}
       </a>
@@ -33,7 +33,7 @@ function renderInlineContentItem(item: DocsParagraphInlineModel, index: number) 
     return (
       <mark
         key={`${item.text}-${index}`}
-        className="rounded-[0.28rem] bg-[#f3e8a8] px-[0.28rem] py-[0.08rem] text-[var(--color-text)] dark:bg-[#5d5223] dark:text-[#f5efcf]"
+        className="rounded-[0.26rem] bg-[var(--docs-mark-bg)] px-[0.28rem] py-[0.06rem] text-[var(--docs-mark-text)]"
       >
         {item.text}
       </mark>
@@ -44,7 +44,7 @@ function renderInlineContentItem(item: DocsParagraphInlineModel, index: number) 
     return (
       <code
         key={`${item.code}-${index}`}
-        className="rounded-[0.34rem] border border-[#ece7df] bg-[#f7f4ef] px-[0.34rem] py-[0.1rem] font-mono text-[0.92em] text-[#5f4632] dark:border-white/10 dark:bg-[#23211d] dark:text-[#f1dfc8]"
+        className="rounded-[0.32rem] border border-[var(--docs-inline-code-border)] bg-[var(--docs-inline-code-bg)] px-[0.34rem] py-[0.08rem] font-mono text-[0.88em] text-[var(--docs-inline-code-text)]"
       >
         {item.code}
       </code>

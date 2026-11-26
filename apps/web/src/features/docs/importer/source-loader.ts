@@ -97,11 +97,19 @@ async function loadMarkdownLikeDocsImportSource(
           .map((block) => [block.id, block.line] as const),
       ),
     );
+    const htmlLinesById = new Map(
+      parsed.document.sections.flatMap((section) =>
+        section.blocks
+          .filter((block) => block.type === 'html')
+          .map((block) => [block.id, block.line] as const),
+      ),
+    );
     const source = toMarkdownLikeDocsImportSource(parsed.document);
     const mediaResult = await resolveDocsImportMedia({
       source,
       sourceFilePath: absolutePath,
       imageLinesById,
+      htmlLinesById,
       mode: mediaMode,
     });
 

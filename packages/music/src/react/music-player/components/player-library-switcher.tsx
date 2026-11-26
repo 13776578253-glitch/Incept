@@ -27,7 +27,7 @@ export function PlayerLibrarySwitcher({
     <div
       role="group"
       aria-label={copy.librarySwitcherLabel}
-      className="flex gap-1.5 overflow-x-auto px-4 pb-2"
+      className="no-scrollbar flex gap-1 overflow-x-auto px-3 pb-2"
     >
       {options.map((option) => {
         const active = option.key === selected;
@@ -39,20 +39,12 @@ export function PlayerLibrarySwitcher({
             data-player-interactive
             aria-pressed={active}
             onClick={() => onSelect(option.key)}
-            style={{ outline: 'none' }}
-            className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[0.75rem] transition-all duration-[var(--duration-fast)] outline-none focus:outline-none focus-visible:outline-none ${
+            className={`inline-flex shrink-0 cursor-pointer items-center whitespace-nowrap rounded-full px-3 py-1 text-[length:var(--text-xs)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring-focus)] ${
               active
-                ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                : 'text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
+                ? 'bg-[var(--color-nav-item-active)] font-medium text-[var(--color-text)] ring-1 ring-[var(--color-border-faint)]'
+                : 'text-[var(--color-nav-muted)] hover:bg-[var(--color-nav-item-hover)] hover:text-[var(--color-text)]'
             }`}
           >
-            {active ? (
-              <span
-                aria-hidden="true"
-                className="size-1.5 shrink-0 rounded-full"
-                style={{ backgroundColor: 'var(--badge-sky-dot)' }}
-              />
-            ) : null}
             <span>{option.label}</span>
           </button>
         );

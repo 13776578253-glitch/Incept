@@ -1,21 +1,14 @@
 @import 'tailwindcss';
 @source '../../../../packages/roadmap/src';
 @source '../../../../packages/dashboard/src';
+@source '../../../../packages/music/src';
+@source '../../../../packages/ui/src';
 @import '../styles/tokens.css';
 @import '../styles/theme.css';
 @import '../styles/motion.css';
 @import '../styles/layout.css';
-@source '../../../../packages/music';
 
 @custom-variant dark (&:where(.dark, .dark *));
-
-:root {
-  color-scheme: light dark;
-}
-
-* {
-  box-sizing: border-box;
-}
 
 html,
 body {
@@ -26,7 +19,7 @@ body {
 html {
   min-height: 100%;
   scrollbar-gutter: stable;
-  overflow-y: auto;
+  overflow-y: scroll;
 }
 
 body {
@@ -34,8 +27,12 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-family-base);
+  font-size: var(--ui-font-size);
 }
 
+/* =========================================================================
+   Docs Shiki Code Block Multi-Theme Bridge
+   ========================================================================= */
 .docs-code-block {
   --docs-code-border: color-mix(in srgb, var(--shiki-light-bg, #ffffff) 90%, #111827);
   --docs-code-toolbar-text: color-mix(in srgb, var(--shiki-light, #111827) 54%, transparent);
@@ -80,7 +77,8 @@ body {
   font-weight: var(--shiki-dark-font-weight, inherit) !important;
 }
 
-html[data-eye-comfort-filter='warm']:not(.dark) .docs-code-block {
+/* Auto palette adapts directly to Warm Paper, Rosé Pine, and Catppuccin presets */
+html[data-code-palette='auto']:is([data-theme-preset='warm-paper'], [data-theme-preset='rose-pine-dawn']) .docs-code-block {
   --docs-code-border: color-mix(in srgb, var(--shiki-warm-bg, #faf4ed) 90%, #7a6655);
   --docs-code-toolbar-text: color-mix(in srgb, var(--shiki-warm, #575279) 58%, transparent);
   --docs-code-toolbar-hover: color-mix(in srgb, var(--shiki-warm-bg, #faf4ed) 84%, #7a6655);
@@ -90,20 +88,63 @@ html[data-eye-comfort-filter='warm']:not(.dark) .docs-code-block {
   color: var(--shiki-warm, #575279);
 }
 
-html[data-eye-comfort-filter='warm']:not(.dark) .docs-code-token {
+html[data-code-palette='auto']:is([data-theme-preset='warm-paper'], [data-theme-preset='rose-pine-dawn']) .docs-code-token {
   color: var(--shiki-warm, inherit) !important;
   font-style: var(--shiki-warm-font-style, inherit) !important;
   font-weight: var(--shiki-warm-font-weight, inherit) !important;
 }
 
+html[data-code-palette='auto'][data-theme-preset='catppuccin-latte'] .docs-code-block {
+  --docs-code-border: color-mix(in srgb, var(--shiki-catppuccin-latte-bg, #eff1f5) 88%, #4c4f69);
+  --docs-code-toolbar-text: color-mix(in srgb, var(--shiki-catppuccin-latte, #4c4f69) 58%, transparent);
+  --docs-code-toolbar-hover: color-mix(in srgb, var(--shiki-catppuccin-latte-bg, #eff1f5) 84%, #4c4f69);
+  --docs-code-toolbar-hover-text: var(--shiki-catppuccin-latte, #4c4f69);
+  --docs-code-toolbar-divider: color-mix(in srgb, var(--shiki-catppuccin-latte, #4c4f69) 18%, transparent);
+  background: var(--shiki-catppuccin-latte-bg, #eff1f5);
+  color: var(--shiki-catppuccin-latte, #4c4f69);
+}
+
+html[data-code-palette='auto'][data-theme-preset='catppuccin-latte'] .docs-code-token {
+  color: var(--shiki-catppuccin-latte, inherit) !important;
+  font-style: var(--shiki-catppuccin-latte-font-style, inherit) !important;
+  font-weight: var(--shiki-catppuccin-latte-font-weight, inherit) !important;
+}
+
+html[data-code-palette='auto'][data-theme-preset='catppuccin-mocha'] .docs-code-block {
+  --docs-code-border: color-mix(in srgb, var(--shiki-catppuccin-mocha-bg, #1e1e2e) 88%, #cdd6f4);
+  --docs-code-toolbar-text: color-mix(in srgb, var(--shiki-catppuccin-mocha, #cdd6f4) 56%, transparent);
+  --docs-code-toolbar-hover: color-mix(in srgb, var(--shiki-catppuccin-mocha-bg, #1e1e2e) 84%, #cdd6f4);
+  --docs-code-toolbar-hover-text: var(--shiki-catppuccin-mocha, #cdd6f4);
+  --docs-code-toolbar-divider: color-mix(in srgb, var(--shiki-catppuccin-mocha, #cdd6f4) 18%, transparent);
+  background: var(--shiki-catppuccin-mocha-bg, #1e1e2e);
+  color: var(--shiki-catppuccin-mocha, #cdd6f4);
+}
+
+html[data-code-palette='auto'][data-theme-preset='catppuccin-mocha'] .docs-code-token {
+  color: var(--shiki-catppuccin-mocha, inherit) !important;
+  font-style: var(--shiki-catppuccin-mocha-font-style, inherit) !important;
+  font-weight: var(--shiki-catppuccin-mocha-font-weight, inherit) !important;
+}
+
+html[data-code-palette='auto'][data-theme-preset='rose-pine'] .docs-code-block {
+  --docs-code-border: color-mix(in srgb, var(--shiki-rose-pine-bg, #191724) 88%, #e0def4);
+  --docs-code-toolbar-text: color-mix(in srgb, var(--shiki-rose-pine, #e0def4) 56%, transparent);
+  --docs-code-toolbar-hover: color-mix(in srgb, var(--shiki-rose-pine-bg, #191724) 84%, #e0def4);
+  --docs-code-toolbar-hover-text: var(--shiki-rose-pine, #e0def4);
+  --docs-code-toolbar-divider: color-mix(in srgb, var(--shiki-rose-pine, #e0def4) 18%, transparent);
+  background: var(--shiki-rose-pine-bg, #191724);
+  color: var(--shiki-rose-pine, #e0def4);
+}
+
+html[data-code-palette='auto'][data-theme-preset='rose-pine'] .docs-code-token {
+  color: var(--shiki-rose-pine, inherit) !important;
+  font-style: var(--shiki-rose-pine-font-style, inherit) !important;
+  font-weight: var(--shiki-rose-pine-font-weight, inherit) !important;
+}
+
 /* =========================================================================
    ChatGPT-Style Custom Overlay Scrollbar
-   - Auto-hidden in idle / unselected state
-   - Smoothly reveals floating rounded capsule thumb on scroll / hover / drag
-   - Gutter space reserved via scrollbar-gutter to eliminate page layout shift
-   - Strips browser default arrows, track backgrounds, and corner boxes
    ========================================================================= */
-
 * {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
@@ -136,7 +177,6 @@ html[data-eye-comfort-filter='warm']:not(.dark) .docs-code-token {
   background: transparent;
 }
 
-/* Active states: active scrolling, proximity hovering near the scroll area, or dragging */
 html[data-scrolling='true'] ::-webkit-scrollbar-thumb,
 html[data-scrollbar-hover='true'] ::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb:hover,
@@ -152,7 +192,6 @@ html[data-scrollbar-hover='true'] ::-webkit-scrollbar-thumb,
   background-color: var(--color-scrollbar-thumb-active);
 }
 
-/* Firefox scrollbar display on scroll or proximity hover */
 html[data-scrolling='true'],
 html[data-scrolling='true'] *,
 html[data-scrollbar-hover='true'],
@@ -195,4 +234,3 @@ html[data-scrollbar-hover='true'] * {
 .docs-code-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-scrollbar-thumb-hover);
 }
-

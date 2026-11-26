@@ -1,25 +1,35 @@
 'use client';
 
 import './dashboard.css';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 import type { TokenDashboardData } from '../domain/index';
+import {
+  recordKnownDashboardModels,
+  resolveColorSchemeForTheme,
+  useDashboardPreferences,
+  useDocumentThemeMode,
+} from './dashboard-preferences';
 import { useDashboardWindow } from './hooks/use-dashboard-window';
 import { useBillingPreview } from './hooks/use-billing-preview';
 import { reconcileDashboardWithBilling } from './reconcile-billing-models';
 import { DashboardToolbar } from './components/dashboard-toolbar';
-import { OverviewSection } from './sections/overview/overview-section';
-import { DeferredSection } from './components/deferred-section';
 import { SectionPlaceholder } from './components/section-placeholder';
+import { KpiStrip } from './sections/workbench/kpi-strip';
+import {
+  TrendWorkbench,
+  type CacheSubView,
+  type WorkbenchTrendTab,
+} from './sections/workbench/trend-workbench';
+import { CompositionAndModels } from './sections/workbench/composition-and-models';
 
-const ProjectsSection = dynamic(() => import('./sections/projects/projects-section').then(module => module.ProjectsSection),
-  { loading: () => <SectionPlaceholder section="projects" /> });
-const CostsSection = dynamic(() => import('./sections/costs/costs-section').then(module => module.CostsSection),
-  { loading: () => <SectionPlaceholder section="costs" /> });
-const ModelsSection = dynamic(() => import('./sections/models/models-section').then(module => module.ModelsSection),
-  { loading: () => <SectionPlaceholder section="models" /> });
-const ImportDialog = dynamic(() => import('./imports/import-dialog').then(module => module.ImportDialog), { ssr: false });
+const DiagnosticsDrawer = dynamic(
+  () =>
+    import('./sections/workbench/diagnostics-drawer').then(
+      (module) => module.DiagnosticsDrawer,
+    ),
+);
 
 export function TokenDashboardFeature({
   data: initialData,
@@ -28,12 +38,44 @@ export function TokenDashboardFeature({
   initialStatus = 'live',
   initialValidator,
   billingPreviewEnabled = false,
-}: { data: TokenDashboardData; canImport?: boolean; canViewDetails?: boolean; initialStatus?: 'history' | 'empty' | 'live'; initialValidator?: string; billingPreviewEnabled?: boolean }) {
-  const [importOpen, setImportOpen] = useState(false);
+}: {
+  data: TokenDashboardData;
+  canImport?: boolean;
+  canViewDetails?: boolean;
+  initialStatus?: 'history' | 'empty' | 'live';
+  initialValidator?: string;
+  billingPreviewEnabled?: boolean;
+}) {
+  const trendRef = useRef<HTMLDivElement>(null);
+
+  const [viewMode, setViewMode] = useState<'range' | 'day'>('range');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [trendTab, setTrendTab] = useState<WorkbenchTrendTab>('volume');
+  const [cacheSubView, setCacheSubView] = useState<CacheSubView>('global');
+  const [selectedCacheModels, setSelectedCacheModels] = useState<ReadonlySet<string> | null>(null);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+
+  const { preferences } = useDashboardPreferences();
+  const themeMode = useDocumentThemeMode();
+  const activeColorScheme = resolveColorSchemeForTheme(preferences, themeMode);
+  const effectivePreferences = useMemo(
+    () => ({
+      ...preferences,
+      ...activeColorScheme,
+    }),
+    [preferences, activeColorScheme],
+  );
+  const activeColorOverrides = useMemo(
+    () => ({
+      ...activeColorScheme,
+      themeMode,
+    }),
+    [activeColorScheme, themeMode],
+  );
+
   const {
     rangePreset,
     setRangePreset,
-    selectedTrendIndex,
     setSelectedTrendIndex,
     filteredDaily,
     data,
@@ -41,74 +83,186 @@ export function TokenDashboardFeature({
     refreshError,
     refresh,
     refreshCycle,
+    revalidationCycle,
+    viewerRole,
     isPollingPaused,
     hasSnapshot,
     showingHistory,
-    remoteInfo,remoteDevice,setRemoteDevice,remoteState,refreshInterval,lastPageUpdatedAt,
-  } = useDashboardWindow(initialData, { refreshOnMount: initialStatus !== 'live', initialHasSnapshot: initialStatus !== 'empty', owner: canImport, canViewDetails, initialValidator, loadRemoteOnMount: initialStatus === 'live' });
-  const billingPreview = useBillingPreview(canImport && billingPreviewEnabled, rangePreset, refreshCycle);
-  const {
-    data: displayData,
-    filteredDaily: displayFilteredDaily,
-    excludedModels,
-  } = useMemo(
+    remoteInfo,
+    remoteDevice,
+    setRemoteDevice,
+    remoteState,
+    refreshInterval,
+    lastPageUpdatedAt,
+  } = useDashboardWindow(initialData, {
+    refreshOnMount: initialStatus !== 'live',
+    initialHasSnapshot: initialStatus !== 'empty',
+    owner: canImport,
+    canViewDetails,
+    initialValidator,
+    loadRemoteOnMount: initialStatus === 'live',
+  });
+
+  const lastBillingRevisionRef = useRef<number | undefined>(
+    initialData.sync?.readMode === 'v2' ? initialData.sync.dataRevision : undefined,
+  );
+  if (data.sync?.readMode === 'v2' && typeof data.sync.dataRevision === 'number') {
+    lastBillingRevisionRef.current = data.sync.dataRevision;
+  }
+
+  // A server-confirmed role downgrade withdraws Owner-only Billing and import affordances at once.
+  const effectiveOwner = canImport && viewerRole === 'owner';
+  const billingPreview = useBillingPreview(
+    effectiveOwner && billingPreviewEnabled,
+    rangePreset,
+    revalidationCycle,
+    lastBillingRevisionRef.current,
+  );
+
+  const { data: displayData } = useMemo(
     () => reconcileDashboardWithBilling(data, billingPreview, filteredDaily),
     [data, billingPreview, filteredDaily],
   );
 
+  useEffect(() => {
+    if (displayData.models.length > 0) {
+      recordKnownDashboardModels(displayData.models);
+    }
+  }, [displayData.models]);
+
+  const sortedDaily = useMemo(
+    () => [...displayData.daily].sort((a, b) => a.date.localeCompare(b.date)),
+    [displayData.daily],
+  );
+
+  const selectedDay = useMemo(() => {
+    if (sortedDaily.length === 0) return null;
+    if (selectedDate) {
+      const exact = sortedDaily.find((d) => d.date === selectedDate);
+      if (exact) return exact;
+    }
+    return sortedDaily[sortedDaily.length - 1] ?? null;
+  }, [selectedDate, sortedDaily]);
+
+  const handleInspectModelCache = (modelName: string) => {
+    if (viewMode === 'day') {
+      setViewMode('range');
+    }
+    setTrendTab('cache');
+    setCacheSubView('models');
+    setSelectedCacheModels(new Set([modelName]));
+    if (typeof trendRef.current?.scrollIntoView === 'function') {
+      trendRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  const diagnosticsAlertCount =
+    (displayData.collectionIssues?.length ?? 0) > 0
+      ? displayData.collectionIssues!.length
+      : billingPreview?.status === 'ready'
+        ? billingPreview.data.unpricedGroups ?? 0
+        : displayData.costs.unpricedModels.length;
+
   return (
-    <div className="mx-auto w-full max-w-[1480px] px-6 pt-6 pb-24 md:pt-8 lg:px-10 lg:pt-9 lg:pb-28">
-      {/* =====================================================================
-          TOKLENS v0.1.2 UNIFIED TOP TOOLBAR (统一顶部工具栏)
-      ===================================================================== */}
+    <div
+      data-dashboard-palette={activeColorScheme.paletteStyle}
+      className="dashboard-page-shell mx-auto w-full max-w-[1440px] px-4 pt-4 pb-12 sm:px-6 md:pt-5 lg:px-10 lg:pt-5 lg:pb-8"
+    >
       <DashboardToolbar
         rangePreset={rangePreset}
         setRangePreset={setRangePreset}
         setSelectedTrendIndex={setSelectedTrendIndex}
+        viewMode={viewMode}
+        onSelectRangeMode={() => setViewMode('range')}
+        onSelectSingleDay={() => {
+          setViewMode('day');
+          if (!selectedDate && sortedDaily.length > 0) {
+            setSelectedDate(sortedDaily[sortedDaily.length - 1].date);
+          }
+        }}
+        onOpenDiagnostics={() => {
+          setDiagnosticsOpen(true);
+        }}
+        diagnosticsBadge={diagnosticsAlertCount > 0}
+        diagnosticsAlertCount={diagnosticsAlertCount}
         data={data}
         isRefreshing={isRefreshing}
         refreshError={refreshError}
         onRefresh={refresh}
         refreshCycle={refreshCycle}
         isPollingPaused={isPollingPaused}
-        onOpenImport={canImport ? () => setImportOpen(true) : undefined}
         hasSnapshot={hasSnapshot}
         showingHistory={showingHistory}
-        remoteInfo={remoteInfo} remoteDevice={remoteDevice} setRemoteDevice={setRemoteDevice} remoteState={remoteState} refreshInterval={refreshInterval} lastPageUpdatedAt={lastPageUpdatedAt}
+        remoteInfo={remoteInfo}
+        remoteDevice={remoteDevice}
+        setRemoteDevice={setRemoteDevice}
+        remoteState={remoteState}
+        refreshInterval={refreshInterval}
+        lastPageUpdatedAt={lastPageUpdatedAt}
       />
-      {canImport && importOpen ? <ImportDialog onClose={() => setImportOpen(false)} onImported={refresh} /> : null}
 
-      <div className="mt-2 space-y-14 md:mt-3 md:space-y-16">
-        {/* =====================================================================
-            SECTION 01: OVERVIEW (全局使用量、趋势、模型分布 — TokLens v0.1.2 布局)
-        ===================================================================== */}
-        {hasSnapshot ? <OverviewSection
+      {hasSnapshot ? (
+        <>
+          {/* Viewport 1 Closure: Frameless Hairline KPI Strip + Fixed-Height Trend Workbench */}
+          <div className="shrink-0 space-y-3.5">
+            <KpiStrip
+              data={displayData}
+              billingPreview={billingPreview}
+              viewMode={viewMode}
+              selectedDay={selectedDay}
+            />
+
+            <div ref={trendRef}>
+              <TrendWorkbench
+                data={displayData}
+                billingPreview={billingPreview}
+                preferences={effectivePreferences}
+                themeMode={themeMode}
+                rangePreset={rangePreset}
+                viewMode={viewMode}
+                selectedDay={selectedDay}
+                onSelectDate={(date) => {
+                  setSelectedDate(date);
+                  setViewMode('day');
+                }}
+                onExitSingleDay={() => setViewMode('range')}
+                activeTab={trendTab}
+                onTabChange={setTrendTab}
+                cacheSubView={cacheSubView}
+                onCacheSubViewChange={setCacheSubView}
+                selectedCacheModels={selectedCacheModels}
+                onSelectedCacheModelsChange={setSelectedCacheModels}
+              />
+            </div>
+          </div>
+
+          {/* Viewport 2 Decoupled Details: Full-Width Models Overview */}
+          <div className="dashboard-models-region mt-5">
+            <CompositionAndModels
+              data={displayData}
+              billingPreview={billingPreview}
+              colorOverrides={activeColorOverrides}
+              viewMode={viewMode}
+              selectedDay={selectedDay}
+              onInspectModelCache={handleInspectModelCache}
+            />
+          </div>
+        </>
+      ) : (
+        <SectionPlaceholder section="overview" />
+      )}
+
+      {diagnosticsOpen ? (
+        <DiagnosticsDrawer
+          open={diagnosticsOpen}
+          onClose={() => setDiagnosticsOpen(false)}
           data={displayData}
           billingPreview={billingPreview}
-          filteredDaily={displayFilteredDaily}
-          selectedTrendIndex={selectedTrendIndex}
-          setSelectedTrendIndex={setSelectedTrendIndex}
-        /> : <SectionPlaceholder section="overview" />}
-
-        {/* =====================================================================
-            SECTION 02: MODELS & SOURCES (按模型、客户端来源、Token 类型拆解)
-        ===================================================================== */}
-        <DeferredSection section="models" enabled={hasSnapshot}><ModelsSection data={displayData} excludedModels={excludedModels} /></DeferredSection>
-
-        {/* =====================================================================
-            SECTION 03: COSTS & COVERAGE (API 等效费用、价格覆盖率)
-        ===================================================================== */}
-        <DeferredSection section="costs" enabled={hasSnapshot || !!billingPreview}>
-          <CostsSection data={displayData} billingPreview={billingPreview} />
-        </DeferredSection>
-
-        {/* =====================================================================
-            SECTION 04: PROJECTS & SESSIONS (项目排行表格 + 会话主从检查器)
-        ===================================================================== */}
-        <DeferredSection section="projects" enabled={hasSnapshot || !canViewDetails}>
-          <ProjectsSection data={displayData} canViewDetails={canViewDetails} />
-        </DeferredSection>
-      </div>
+          remoteInfo={remoteInfo}
+          remoteDevice={remoteDevice}
+          remoteState={remoteState}
+        />
+      ) : null}
     </div>
   );
 }

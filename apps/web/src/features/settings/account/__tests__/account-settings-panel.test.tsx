@@ -43,3 +43,79 @@ it('shows styled error message when redeeming invalid code', async () => {
 
   expect(await screen.findByRole('status')).toHaveTextContent('访问码无效、已过期或已撤销');
 });
+
+it('paginates grant records and filters active grants', async () => {
+  const futureExpiry = new Date(Date.now() + 86400000).toISOString();
+  const grants = [
+    {
+      id: 'grant-1',
+      label: '有效授权-1',
+      mode: 'single' as const,
+      codeHint: '000001',
+      redeemExpiresAt: futureExpiry,
+      expiresAt: futureExpiry,
+      entitlementSeconds: null,
+      maxRedemptions: 1,
+      redeemedCount: 0,
+      revokedAt: null,
+    },
+    ...Array.from({ length: 6 }, (_, index) => ({
+      id: `grant-revoked-${index + 2}`,
+      label: `已撤销授权-${index + 2}`,
+      mode: 'shared' as const,
+      codeHint: `00000${index + 2}`,
+      redeemExpiresAt: futureExpiry,
+      expiresAt: futureExpiry,
+      entitlementSeconds: null,
+      maxRedemptions: 10,
+      redeemedCount: 0,
+      revokedAt: '2026-11-20T00:00:00.000Z',
+    })),
+  ];
+
+  vi.mocked(globalThis.fetch).mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      role: 'owner',
+      configured: true,
+      challenge: null,
+      management: {
+        username: 'owner',
+        sessionId: 'session-1',
+        recentAuthUntil: null,
+        sessions: [],
+        devices: [],
+        challenges: [],
+        permits: [],
+        grants,
+        audits: [],
+      },
+    }),
+  } as Response);
+
+  const user = userEvent.setup();
+  render(<AccountSettingsPanel language="zh" viewerRole="owner" />);
+
+  expect(await screen.findByText('授权记录')).toBeInTheDocument();
+  expect(screen.getByText('显示 5 / 7 条')).toBeInTheDocument();
+  expect(screen.getByText('有效授权-1')).toBeInTheDocument();
+  expect(screen.queryByText('已撤销授权-7')).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: '展开更多（剩余 2 条）' }));
+  expect(screen.getByText('已撤销授权-7')).toBeInTheDocument();
+  expect(screen.getByText('7 条记录')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: '收起' }));
+  expect(screen.getByText('显示 5 / 7 条')).toBeInTheDocument();
+  expect(screen.queryByText('已撤销授权-7')).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: '仅看有效 (1)' }));
+  expect(screen.getByText('1 条记录')).toBeInTheDocument();
+  expect(screen.getByText('有效授权-1')).toBeInTheDocument();
+  expect(screen.queryByText('已撤销授权-2')).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: '显示全部 (7)' }));
+  expect(screen.getByText('显示 5 / 7 条')).toBeInTheDocument();
+  expect(screen.getByText('已撤销授权-2')).toBeInTheDocument();
+});

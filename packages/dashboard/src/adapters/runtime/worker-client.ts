@@ -24,7 +24,7 @@ function stop(error: Error) {
   for (const job of pending.values()) { clearTimeout(job.timer); job.reject(error); }
   pending.clear(); void previous?.terminate();
 }
-export function collectInWorker(home: string, range: UsageRange, force: boolean): Promise<TokenDashboardData> {
+export function collectInWorker(home: string, range: UsageRange, force: boolean, background = false): Promise<TokenDashboardData> {
   const file = workerFile();
   const source = JSON.stringify([home, process.cwd(), process.env.INCEPT_DASHBOARD_IMPORTS_FILE,
     process.env.INCEPT_DASHBOARD_OVERRIDES_FILE, process.env.INCEPT_COMMANDCODE_CATALOG_FILE, process.env.INCEPT_DASHBOARD_CCUSAGE_BIN,
@@ -52,7 +52,7 @@ export function collectInWorker(home: string, range: UsageRange, force: boolean)
     const timer = setTimeout(() => { if (worker === instance) stop(new Error('Usage collection timed out')); }, 90_000);
     timer.unref();
     pending.set(id, { resolve: resolveJob, reject, timer });
-    instance.postMessage({ id, range, force });
+    instance.postMessage({ id, range, force, background });
   });
 }
 export function closeUsageWorker() { stop(new Error('Usage worker closed')); }

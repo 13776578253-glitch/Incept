@@ -72,10 +72,10 @@ export function MusicMultiSelect({
         aria-controls={isOpen ? listboxId : undefined}
         disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
-        className={`group inline-flex w-full items-center justify-between gap-2 rounded-full px-2.5 outline-none transition-all focus:outline-none disabled:cursor-default disabled:opacity-50 ${
+        className={`group inline-flex w-full items-center justify-between gap-2 rounded-full border border-transparent px-2.5 outline-none transition-all focus:outline-none disabled:cursor-default disabled:opacity-50 cursor-pointer ${
           isOpen
-            ? 'bg-[var(--color-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-card-sm)]'
-            : 'bg-transparent text-[var(--color-nav-dropdown-description)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)] hover:shadow-[var(--shadow-card-sm)]'
+            ? 'border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] font-medium text-[var(--color-text)]'
+            : 'bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border-faint)] hover:bg-[var(--color-surface-card,var(--color-bg))] hover:text-[var(--color-text)]'
         } ${buttonClassName}`}
       >
         <span className="min-w-0 truncate">
@@ -85,7 +85,7 @@ export function MusicMultiSelect({
           aria-hidden="true"
           viewBox="0 0 16 16"
           className={`size-3 shrink-0 transition-transform duration-200 ${
-            isOpen ? 'rotate-180 text-[var(--color-text)]' : 'text-[var(--color-nav-muted)] group-hover:text-[var(--color-text)]'
+            isOpen ? 'rotate-180 text-[var(--color-text)]' : 'text-[var(--color-text-subtle)] group-hover:text-[var(--color-text)]'
           }`}
           fill="none"
           stroke="currentColor"
@@ -101,7 +101,7 @@ export function MusicMultiSelect({
           role="listbox"
           aria-label={ariaLabel}
           aria-multiselectable="true"
-          className="absolute left-0 z-30 mt-1.5 min-w-full space-y-0.5 overflow-hidden rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg)] p-1.5 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-md"
+          className="absolute left-0 z-30 mt-1.5 min-w-full space-y-0.5 overflow-hidden rounded-[12px] border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-popover-bg,var(--color-surface-card,var(--color-bg)))] p-1 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-xl"
         >
           {options.map((option) => {
             const isSelected = values.includes(option.value);
@@ -116,22 +116,21 @@ export function MusicMultiSelect({
                 title={option.title}
                 // 展开状态保持
                 onClick={() => onToggle(option.value)}
-                className={`flex w-full items-center gap-2 rounded-[9px] px-2.5 py-1.5 text-left text-[0.78rem] leading-none whitespace-nowrap transition-colors disabled:cursor-default ${
+                className={`flex w-full items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-left text-[length:var(--text-xs)] leading-none whitespace-nowrap transition-colors disabled:cursor-default ${
                   isSelected
-                    ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                    : 'text-[var(--color-nav-dropdown-description)] disabled:opacity-50'
+                    ? 'bg-[var(--surface-pill-on-bg,var(--color-surface-hover))] font-medium text-[var(--color-text)]'
+                    : 'text-[var(--color-text-muted)] disabled:opacity-50'
                 } ${
                   option.disabled
                     ? ''
                     : isSelected
-                      ? 'hover:bg-[color:var(--color-row-hover-bg)]'
-                      : 'hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]'
+                      ? 'cursor-pointer hover:bg-[var(--color-surface-hover)]'
+                      : 'cursor-pointer hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]'
                 }`}
               >
                 <span
                   aria-hidden="true"
-                  className="inline-flex w-3.5 shrink-0 items-center justify-center text-[0.75rem]"
-                  style={{ color: isSelected ? 'var(--badge-sky-icon)' : undefined }}
+                  className="inline-flex w-3.5 shrink-0 items-center justify-center text-[length:var(--text-xs)] text-[var(--color-text)]"
                 >
                   {isSelected ? '✓' : ''}
                 </span>

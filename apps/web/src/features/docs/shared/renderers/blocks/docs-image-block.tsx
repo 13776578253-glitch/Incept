@@ -8,16 +8,18 @@ export function DocsImageBlock({
 }: DocsImageBlockModel) {
   return (
     <figure className="w-full max-w-[var(--docs-prose-max-width)]">
-      <img
-        src={src}
-        alt={alt}
-        className="block w-full rounded-[14px] border border-[color:var(--color-border-image)] bg-[var(--color-bg)] object-cover"
-      />
-      {caption ? (
-        <figcaption className="mt-3 text-[0.88rem] leading-6 text-[var(--color-text-soft)]">
-          {caption}
-        </figcaption>
-      ) : null}
+      <div className="mx-auto w-full max-w-[var(--docs-image-max-width,90%)]">
+        <img
+          src={src}
+          alt={alt}
+          className="block h-auto w-full rounded-[14px] border border-[color:var(--color-border-image)] bg-[var(--color-bg)] object-contain"
+        />
+        {caption ? (
+          <figcaption className="mt-3 text-[0.88rem] leading-6 text-[var(--color-text-soft)]">
+            {caption}
+          </figcaption>
+        ) : null}
+      </div>
     </figure>
   );
 }

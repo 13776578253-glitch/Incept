@@ -7,7 +7,7 @@ export function getAppearanceSettingsSection(locale: AppLocale): SettingsSection
   if (locale === 'zh') {
     return {
       id: 'appearance',
-      label: '主题',
+      label: '外观',
       description: '站点主体配置',
       visibility: 'public',
       rows: [

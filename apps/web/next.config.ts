@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
     '/api/internal/sync/*': ['../../packages/dashboard/dist/dashboard-sync-worker.mjs'],
   },
   serverExternalPackages: ['ccusage'],
-  transpilePackages: ['@incept/db', '@incept/music', '@incept/roadmap', '@incept/dashboard'],
+  transpilePackages: ['@incept/db', '@incept/music', '@incept/roadmap', '@incept/dashboard', '@incept/ui'],
 };
 
 export default withNextIntl(nextConfig);

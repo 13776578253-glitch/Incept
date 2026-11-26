@@ -28,6 +28,8 @@ export type MarkdownLikeParseIssueCode =
   | 'unclosed_code_fence'
   | 'unclosed_callout'
   | 'invalid_callout'
+  | 'unclosed_html'
+  | 'invalid_html'
   | 'invalid_image'
   | 'invalid_equation'
   | 'duplicate_equation_number'

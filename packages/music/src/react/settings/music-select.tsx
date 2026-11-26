@@ -81,20 +81,15 @@ export function MusicSelect({
             setIsOpen(true);
           }
         }}
-        className={`inline-flex w-full items-center justify-between gap-3 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-[var(--color-text)] shadow-[var(--shadow-card-sm)] outline-none transition-all hover:bg-[color:var(--color-row-hover-bg)] focus:outline-none disabled:cursor-default disabled:opacity-50 ${buttonClassName}`}
+        className={`inline-flex w-full items-center justify-between gap-2.5 rounded-[10px] border border-[var(--color-border-input,var(--color-border))] bg-[var(--color-surface-card,var(--color-bg))] px-3 text-[var(--color-text)] outline-none transition-all hover:border-[var(--color-border-strong)] focus:border-[var(--color-border-focus,var(--color-border-strong))] focus:outline-none disabled:cursor-default disabled:opacity-50 cursor-pointer ${buttonClassName}`}
       >
-        <span className="inline-flex min-w-0 items-center gap-2 truncate">
-          <span
-            aria-hidden="true"
-            className="size-1.5 shrink-0 rounded-full"
-            style={{ backgroundColor: 'var(--badge-sky-dot)' }}
-          />
-          <span className="truncate">{selected?.label ?? ''}</span>
+        <span className="min-w-0 truncate">
+          {selected?.label ?? ''}
         </span>
         <svg
           aria-hidden="true"
           viewBox="0 0 16 16"
-          className={`size-3 shrink-0 text-[var(--color-nav-muted)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`size-3 shrink-0 text-[var(--color-text-subtle)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           strokeWidth="1.75"
@@ -108,7 +103,7 @@ export function MusicSelect({
           id={listboxId}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute right-0 z-30 mt-1.5 min-w-full space-y-0.5 overflow-hidden rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg)] p-1.5 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-md"
+          className="absolute right-0 z-30 mt-1.5 min-w-full space-y-0.5 overflow-hidden rounded-[12px] border border-[var(--color-border-subtle,var(--color-border))] bg-[var(--color-popover-bg,var(--color-surface-card,var(--color-bg)))] p-1 shadow-[var(--shadow-nav-dropdown)] backdrop-blur-xl"
         >
           {options.map((option) => {
             const isSelected = option.value === value;
@@ -124,21 +119,27 @@ export function MusicSelect({
                   setIsOpen(false);
                   buttonRef.current?.focus();
                 }}
-                className={`flex w-full items-center gap-2 rounded-[9px] px-2.5 py-2 text-left text-[0.8125rem] leading-none whitespace-nowrap transition-colors ${
+                className={`flex w-full items-center justify-between gap-2 rounded-[8px] px-2.5 py-1.5 text-left text-[length:var(--text-xs)] leading-none whitespace-nowrap transition-colors cursor-pointer ${
                   isSelected
-                    ? 'bg-[var(--color-pill-active-bg)] font-medium text-[var(--color-text)] shadow-[var(--shadow-pill-active)]'
-                    : 'text-[var(--color-nav-dropdown-description)] hover:bg-[color:var(--color-row-hover-bg)] hover:text-[var(--color-text)]'
+                    ? 'bg-[var(--surface-pill-on-bg,var(--color-surface-hover))] font-medium text-[var(--color-text)]'
+                    : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]'
                 }`}
               >
-                <span
-                  aria-hidden="true"
-                  className="size-1.5 shrink-0 rounded-full transition-opacity"
-                  style={{
-                    backgroundColor: 'var(--badge-sky-dot)',
-                    opacity: isSelected ? 1 : 0,
-                  }}
-                />
                 <span>{option.label}</span>
+                {isSelected && (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 16 16"
+                    className="size-3 shrink-0 text-[var(--color-text)]"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="3.5 8.5 6.5 11.5 12.5 4.5" />
+                  </svg>
+                )}
               </button>
             );
           })}
