@@ -11,7 +11,7 @@ import {
   FAMILY_COLOR_PALETTES,
   MODEL_COLORS,
   normalizeModelColorKey,
-  resolveStableModelColor,
+  resolveFamilyModelColor,
   toColorFamilyKey,
   TOKEN_TYPE_COLORS,
   type ColorFamilyKey,
@@ -114,6 +114,7 @@ export function getModelSeriesColor(index: number): string {
 }
 
 export type DashboardColorOverrides = {
+  themeMode?: 'light' | 'dark';
   familyColors?: Partial<Record<ColorFamilyKey, string>>;
   modelColors?: Record<string, string>;
 };
@@ -146,11 +147,13 @@ function resolveColorWithOverrides(
   const family = resolveModelFamily(modelName, provider);
   const familyKey = toColorFamilyKey(family);
   const customFamilyColor = overrides?.familyColors?.[familyKey];
-  if (customFamilyColor) {
-    return customFamilyColor;
-  }
 
-  return resolveStableModelColor(canonicalId, family);
+  return resolveFamilyModelColor(
+    canonicalId,
+    family,
+    customFamilyColor,
+    overrides?.themeMode ?? 'light',
+  );
 }
 
 /**
@@ -576,7 +579,7 @@ export function buildModelCacheSeries(
 
     const resolvedColor =
       colorMap?.get(modelName) ??
-      resolveStableModelColor(modelName, resolveModelFamily(modelName)) ??
+      resolveFamilyModelColor(modelName, resolveModelFamily(modelName), undefined) ??
       getModelSeriesColor(index);
 
     return {
@@ -956,7 +959,7 @@ export function buildPerBucketModelBars(
       value,
       color:
         colorMap.get(modelName) ??
-        resolveStableModelColor(modelName, resolveModelFamily(modelName)),
+        resolveFamilyModelColor(modelName, resolveModelFamily(modelName), undefined),
     }));
 
     const topSum = segments.reduce((sum, s) => sum + s.value, 0);
@@ -1081,7 +1084,7 @@ export function buildStageHeroMigrationSeries(
   for (const name of selected) {
     colors[name] =
       colorMap.get(name) ??
-      resolveStableModelColor(name, resolveModelFamily(name, providerByModel.get(name)));
+      resolveFamilyModelColor(name, resolveModelFamily(name, providerByModel.get(name)), undefined);
   }
 
   let hasOthers = false;

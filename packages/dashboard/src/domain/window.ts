@@ -6,6 +6,10 @@ export function dashboardDate(timestampMs: number): string {
   return new Date(timestampMs + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+export function dashboardHour(timestampMs: number): number {
+  return new Date(timestampMs + 8 * 60 * 60 * 1000).getUTCHours();
+}
+
 export function dateWindow(range: UsageRange, now: number, firstDate?: string) {
   const to = dashboardDate(now);
   const days = range === 'all' ? null : Number.parseInt(range, 10);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useScrollReveal } from './use-scroll-reveal';
 
 export type StackedAreaBucket = {
   key: string;
@@ -48,6 +49,7 @@ export function StackedAreaChart({
 }: StackedAreaChartProps) {
   const [hoveredCol, setHoveredCol] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const handleScrollReveal = useScrollReveal();
 
   const shouldScroll = Boolean(minColumnWidth && minColumnWidth > 0 && buckets.length > 0);
   const minTrackWidth = shouldScroll ? buckets.length * (minColumnWidth as number) : undefined;
@@ -232,6 +234,7 @@ export function StackedAreaChart({
 
         <div
           ref={scrollRef}
+          onScroll={shouldScroll ? handleScrollReveal : undefined}
           className={`flex min-w-0 flex-1 flex-col ${
             shouldScroll ? 'dashboard-subtle-scrollbar overflow-x-auto overflow-y-hidden' : ''
           }`}
@@ -346,8 +349,11 @@ export function StackedAreaChart({
         </div>
       </div>
 
-      {/* Wrapped color-dot legend */}
-      <div className="flex min-h-5 shrink-0 flex-wrap items-center gap-x-3.5 gap-y-1 text-[0.69rem] tabular-nums text-[var(--color-text-muted)]">
+      {/* Fixed-height single-line color-dot legend so hovering/switching buckets never jumps chart height */}
+      <div
+        onScroll={handleScrollReveal}
+        className="dashboard-subtle-scrollbar flex h-6 shrink-0 flex-nowrap items-center gap-x-3.5 overflow-x-auto overflow-y-hidden whitespace-nowrap pl-[52px] text-[0.69rem] tabular-nums text-[var(--color-text-muted)]"
+      >
         {series.map((item) => {
           const val =
             hoveredCol !== null

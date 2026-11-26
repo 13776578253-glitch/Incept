@@ -116,7 +116,7 @@ export function SettingsPageContent({
         {selectedSection.id === 'appearance' ? (
           <AppearanceSettingsPanel />
         ) : selectedSection.id === 'dashboard' ? (
-          <DashboardSettingsPanel />
+          <DashboardSettingsPanel isOwner={viewerRole === 'owner'} />
         ) : selectedSection.id === 'docs' && viewerRole === 'owner' && docs ? (
           <DocsSettingsPanel page={docs} />
         ) : selectedSection.id === 'projects' && viewerRole === 'owner' ? (

@@ -155,10 +155,10 @@ export const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
   {
     id: 'dashboard-palette',
     sectionId: 'dashboard',
-    anchorId: 'dashboard-palette',
-    title: { zh: '图表色彩风格', en: 'Chart palette style' },
+    anchorId: 'dashboard-color-mode',
+    title: { zh: '图表色彩风格（亮色 / 暗色）', en: 'Chart palette style (Light / Dark)' },
     sectionLabel: { zh: '仪表盘', en: 'Dashboard' },
-    keywords: ['dashboard', 'chart', 'palette', 'vivid', 'pastel', '仪表盘', '图表', '配色', '清透活力', '柔和粉彩'],
+    keywords: ['dashboard', 'chart', 'palette', 'vivid', 'pastel', 'light', 'dark', '仪表盘', '图表', '配色', '亮色', '暗色', '清透活力', '柔和粉彩'],
   },
   {
     id: 'dashboard-family-colors',
@@ -166,7 +166,7 @@ export const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     anchorId: 'dashboard-family-colors',
     title: { zh: '模型家族色系', en: 'Model family hues' },
     sectionLabel: { zh: '仪表盘', en: 'Dashboard' },
-    keywords: ['deepseek', 'gemini', 'gpt', 'claude', 'family', 'color', '模型家族', '配色'],
+    keywords: ['deepseek', 'gemini', 'gpt', 'claude', 'family', 'color', 'light', 'dark', '模型家族', '配色', '亮色', '暗色'],
   },
   {
     id: 'dashboard-pinned-models',
@@ -175,6 +175,15 @@ export const SETTINGS_SEARCH_ITEMS: readonly SettingsSearchItem[] = [
     title: { zh: '固化展示模型与单模型配色', en: 'Pinned & recolored models' },
     sectionLabel: { zh: '仪表盘', en: 'Dashboard' },
     keywords: ['pin', 'pinned', 'model', 'hero', '固化模型', '固定模型', '单模型配色'],
+  },
+  {
+    id: 'dashboard-import',
+    sectionId: 'dashboard',
+    anchorId: 'dashboard-import',
+    title: { zh: '跨机器数据导入', en: 'Cross-device import' },
+    sectionLabel: { zh: '仪表盘', en: 'Dashboard' },
+    keywords: ['import', 'backup', 'json', 'rollback', 'cross-device', '导入', '跨机器', '回退'],
+    ownerOnly: true,
   },
 
   // Music

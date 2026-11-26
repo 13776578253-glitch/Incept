@@ -18,6 +18,7 @@ type DonutChartProps = {
   emptyLabel: string;
   ariaLabel: string;
   centerTransitionKey?: string;
+  modeTransitionKey?: string;
   transitionDirection?: 'prev' | 'next' | null;
   formatValue?: (value: number) => string;
 };
@@ -31,8 +32,6 @@ export function DonutChart({
   centerValue,
   emptyLabel,
   ariaLabel,
-  centerTransitionKey,
-  transitionDirection = null,
   formatValue = formatCompactTokens,
 }: DonutChartProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -41,7 +40,7 @@ export function DonutChart({
 
   if (nonZeroSlices.length === 0) {
     return (
-      <div className="flex h-[200px] items-center justify-center rounded-[10px] border border-dashed border-[var(--color-border-subtle)] text-[0.78rem] text-[var(--color-text-soft)]">
+      <div className="flex h-[352px] w-full items-center justify-center rounded-[10px] border border-dashed border-[var(--color-border-subtle)] text-[0.78rem] text-[var(--color-text-soft)] sm:h-[184px]">
         {emptyLabel}
       </div>
     );
@@ -59,7 +58,7 @@ export function DonutChart({
     <div
       aria-label={ariaLabel}
       role="region"
-      className="flex w-full flex-col items-center gap-5 sm:flex-row sm:items-center"
+      className="flex h-[352px] w-full flex-col items-center gap-5 sm:h-[184px] sm:flex-row sm:items-center"
     >
       <div className="relative size-[148px] shrink-0">
         <svg viewBox="0 0 148 148" className="size-full -rotate-90">
@@ -73,6 +72,7 @@ export function DonutChart({
           />
           {arcData.map((arc) => {
             const isDimmed = activeSlice !== null && activeSlice.id !== arc.id;
+            const arcGap = arcData.length > 1 && arc.length > 3 ? 1.5 : 0;
             return (
               <circle
                 key={arc.id}
@@ -82,7 +82,7 @@ export function DonutChart({
                 fill="none"
                 stroke={arc.color}
                 strokeWidth={activeSlice?.id === arc.id ? '19' : '16'}
-                strokeDasharray={`${arc.length} ${CIRCUMFERENCE}`}
+                strokeDasharray={`${Math.max(0.5, arc.length - arcGap)} ${CIRCUMFERENCE}`}
                 strokeDashoffset={-arc.offset}
                 className="dashboard-donut-arc cursor-pointer transition-[stroke-dasharray,stroke-dashoffset,stroke-width,opacity] duration-300 ease-out"
                 style={{ opacity: isDimmed ? 0.38 : 1 }}
@@ -93,16 +93,7 @@ export function DonutChart({
           })}
         </svg>
 
-        <div
-          key={centerTransitionKey}
-          className={`pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center ${
-            transitionDirection === 'prev'
-              ? 'dashboard-day-slide-prev'
-              : transitionDirection === 'next'
-                ? 'dashboard-day-slide-next'
-                : ''
-          }`}
-        >
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
           <span className="max-w-[84px] truncate text-[0.62rem] text-[var(--color-text-muted)]">
             {activeSlice ? activeSlice.label : centerLabel}
           </span>
@@ -112,7 +103,7 @@ export function DonutChart({
         </div>
       </div>
 
-      <ul className="flex min-h-[160px] w-full min-w-0 flex-1 flex-col justify-center space-y-1.5">
+      <ul className="flex h-[184px] w-full min-w-0 flex-1 flex-col justify-center gap-1 overflow-hidden">
         {slices.map((slice) => {
           const isActive = activeId === slice.id;
           return (
@@ -123,7 +114,7 @@ export function DonutChart({
                 onMouseLeave={() => setActiveId(null)}
                 onFocus={() => setActiveId(slice.id)}
                 onBlur={() => setActiveId(null)}
-                className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-[7px] px-2 py-1 text-left text-[0.74rem] transition-colors ${
+                className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-[7px] px-2 py-1 text-left text-[0.74rem] leading-[18px] transition-colors ${
                   isActive ? 'bg-[var(--color-row-bg)]' : 'hover:bg-[var(--color-row-bg)]'
                 }`}
               >

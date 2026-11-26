@@ -8,11 +8,20 @@ import {
 } from './model-colors';
 
 export type DashboardPaletteStyle = 'theme' | 'vivid' | 'pastel';
+export type DashboardThemeMode = 'light' | 'dark';
+
+export type DashboardColorScheme = {
+  paletteStyle: DashboardPaletteStyle;
+  familyColors: Partial<Record<ColorFamilyKey, string>>;
+  modelColors: Record<string, string>;
+};
 
 export type DashboardPreferences = {
   paletteStyle: DashboardPaletteStyle;
   familyColors: Partial<Record<ColorFamilyKey, string>>;
   modelColors: Record<string, string>;
+  light: DashboardColorScheme;
+  dark: DashboardColorScheme;
   pinnedModels: string[];
 };
 
@@ -28,11 +37,20 @@ export const DASHBOARD_PREFERENCES_CHANGE_EVENT = 'incept:dashboard-preferences-
 export const DASHBOARD_KNOWN_MODELS_CHANGE_EVENT = 'incept:dashboard-known-models-change';
 
 const EMPTY_KNOWN_MODELS: KnownDashboardModel[] = [];
+
+export const DEFAULT_COLOR_SCHEME: DashboardColorScheme = {
+  paletteStyle: 'theme',
+  familyColors: {},
+  modelColors: {},
+};
+
 let cachedPrefRaw: string | null | undefined = undefined;
 let cachedPrefValue: DashboardPreferences = {
   paletteStyle: 'theme',
   familyColors: {},
   modelColors: {},
+  light: DEFAULT_COLOR_SCHEME,
+  dark: DEFAULT_COLOR_SCHEME,
   pinnedModels: [],
 };
 let cachedModelsRaw: string | null | undefined = undefined;
@@ -42,6 +60,8 @@ export const DEFAULT_DASHBOARD_PREFERENCES: DashboardPreferences = {
   paletteStyle: 'theme',
   familyColors: {},
   modelColors: {},
+  light: DEFAULT_COLOR_SCHEME,
+  dark: DEFAULT_COLOR_SCHEME,
   pinnedModels: [],
 };
 
@@ -54,9 +74,9 @@ function sanitizeHex(value: unknown): string | null {
     : null;
 }
 
-function sanitizePreferences(raw: unknown): DashboardPreferences {
+function sanitizeColorScheme(raw: unknown): DashboardColorScheme {
   if (!raw || typeof raw !== 'object') {
-    return DEFAULT_DASHBOARD_PREFERENCES;
+    return DEFAULT_COLOR_SCHEME;
   }
   const obj = raw as Record<string, unknown>;
   const paletteStyle: DashboardPaletteStyle =
@@ -85,6 +105,25 @@ function sanitizePreferences(raw: unknown): DashboardPreferences {
     }
   }
 
+  return { paletteStyle, familyColors, modelColors };
+}
+
+function sanitizePreferences(raw: unknown): DashboardPreferences {
+  if (!raw || typeof raw !== 'object') {
+    return DEFAULT_DASHBOARD_PREFERENCES;
+  }
+  const obj = raw as Record<string, unknown>;
+  const hasScopedSchemes =
+    (Boolean(obj.light) && typeof obj.light === 'object') ||
+    (Boolean(obj.dark) && typeof obj.dark === 'object');
+
+  const light = hasScopedSchemes
+    ? sanitizeColorScheme(obj.light)
+    : sanitizeColorScheme(obj);
+  const dark = hasScopedSchemes
+    ? sanitizeColorScheme(obj.dark)
+    : sanitizeColorScheme(obj);
+
   const pinnedModels: string[] = [];
   if (Array.isArray(obj.pinnedModels)) {
     const seen = new Set<string>();
@@ -99,7 +138,14 @@ function sanitizePreferences(raw: unknown): DashboardPreferences {
     }
   }
 
-  return { paletteStyle, familyColors, modelColors, pinnedModels };
+  return {
+    paletteStyle: light.paletteStyle,
+    familyColors: light.familyColors,
+    modelColors: light.modelColors,
+    light,
+    dark,
+    pinnedModels,
+  };
 }
 
 export function readDashboardPreferences(): DashboardPreferences {
@@ -124,12 +170,32 @@ export function writeDashboardPreferences(
   const merged =
     typeof nextOrUpdater === 'function'
       ? nextOrUpdater(prev)
-      : {
-          paletteStyle: nextOrUpdater.paletteStyle ?? prev.paletteStyle,
-          familyColors: nextOrUpdater.familyColors ?? prev.familyColors,
-          modelColors: nextOrUpdater.modelColors ?? prev.modelColors,
-          pinnedModels: nextOrUpdater.pinnedModels ?? prev.pinnedModels,
-        };
+      : (() => {
+          const hasLegacyFields =
+            nextOrUpdater.paletteStyle !== undefined ||
+            nextOrUpdater.familyColors !== undefined ||
+            nextOrUpdater.modelColors !== undefined;
+          const legacyPatch: Partial<DashboardColorScheme> = {
+            ...(nextOrUpdater.paletteStyle !== undefined
+              ? { paletteStyle: nextOrUpdater.paletteStyle }
+              : {}),
+            ...(nextOrUpdater.familyColors !== undefined
+              ? { familyColors: nextOrUpdater.familyColors }
+              : {}),
+            ...(nextOrUpdater.modelColors !== undefined
+              ? { modelColors: nextOrUpdater.modelColors }
+              : {}),
+          };
+          return {
+            light:
+              nextOrUpdater.light ??
+              (hasLegacyFields ? { ...prev.light, ...legacyPatch } : prev.light),
+            dark:
+              nextOrUpdater.dark ??
+              (hasLegacyFields ? { ...prev.dark, ...legacyPatch } : prev.dark),
+            pinnedModels: nextOrUpdater.pinnedModels ?? prev.pinnedModels,
+          };
+        })();
   const sanitized = sanitizePreferences(merged);
   if (typeof window !== 'undefined') {
     cachedPrefRaw = undefined;
@@ -219,6 +285,40 @@ export function useDashboardPreferences(): {
     updatePreferences: writeDashboardPreferences,
     resetPreferences: resetDashboardPreferences,
   };
+}
+
+export function resolveColorSchemeForTheme(
+  preferences: DashboardPreferences,
+  themeMode: DashboardThemeMode,
+): DashboardColorScheme {
+  return themeMode === 'dark' ? preferences.dark : preferences.light;
+}
+
+function getDocumentThemeSnapshot(): DashboardThemeMode {
+  if (typeof document === 'undefined') {
+    return 'light';
+  }
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+}
+
+function subscribeDocumentTheme(callback: () => void): () => void {
+  if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') {
+    return () => {};
+  }
+  const observer = new MutationObserver(() => callback());
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class'],
+  });
+  return () => observer.disconnect();
+}
+
+export function useDocumentThemeMode(): DashboardThemeMode {
+  return useSyncExternalStore(
+    subscribeDocumentTheme,
+    getDocumentThemeSnapshot,
+    () => 'light',
+  );
 }
 
 function getKnownModelsSnapshot(): KnownDashboardModel[] {

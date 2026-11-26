@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { summarizeUsageEvents } from '../adapters/local/aggregation/summarize';
 import type { RawUsageEvent } from '../adapters/local/types';
-import { dashboardDate, dateWindow } from '../domain';
+import { dashboardDate, dashboardHour, dateWindow } from '../domain';
 import { formatPercent } from '../react/formatters';
 
 function event(overrides: Partial<RawUsageEvent> = {}): RawUsageEvent {
@@ -61,5 +61,40 @@ describe('usage calculations', () => {
     const data = summarizeUsageEvents(Array.from({ length: 81 }, (_, index) => event({ sessionId: String(index) })), 'missing-home', new Map(), 0);
     expect(data.sessions).toHaveLength(81);
     expect(data.totals.sessionCount).toBe(81);
+  });
+
+  it('aggregates UTC+8 hourly tokens while excluding day-precision legacy records', () => {
+    const ts14 = Date.parse('2026-10-10T06:30:00Z'); // 14:30 UTC+8
+    const ts01 = Date.parse('2026-10-09T17:15:00Z'); // 01:15 UTC+8 on 2026-10-10
+    expect(dashboardDate(ts14)).toBe('2026-10-10');
+    expect(dashboardHour(ts14)).toBe(14);
+    expect(dashboardDate(ts01)).toBe('2026-10-10');
+    expect(dashboardHour(ts01)).toBe(1);
+
+    const mixed = summarizeUsageEvents(
+      [
+        event({ sessionId: 's1', timestampMs: ts14, inputTokens: 200, cacheReadTokens: 0, outputTokens: 0, reasoningTokens: 0 }),
+        event({ sessionId: 's2', timestampMs: ts01, inputTokens: 100, cacheReadTokens: 0, outputTokens: 0, reasoningTokens: 0 }),
+        event({ sessionId: 's3', timestampPrecision: 'day', timestampMs: Date.parse('2026-10-10T00:00:00Z'), inputTokens: 300, cacheReadTokens: 0, outputTokens: 0, reasoningTokens: 0 }),
+        event({ sessionId: 's4', dateKey: '2026-10-11', monthKey: '2026-10', timestampPrecision: 'day', timestampMs: Date.parse('2026-10-11T00:00:00Z'), inputTokens: 400, cacheReadTokens: 0, outputTokens: 0, reasoningTokens: 0 }),
+      ],
+      'missing-home',
+      new Map(),
+      0,
+    );
+
+    const dayMixed = mixed.daily.find(d => d.date === '2026-10-10')!;
+    expect(dayMixed.totalTokens).toBe(600);
+    expect(dayMixed.hourlyMeasuredTokens).toBe(300);
+    expect(dayMixed.hourlyTokens).toHaveLength(24);
+    expect(dayMixed.hourlyTokens?.[1]).toBe(100);
+    expect(dayMixed.hourlyTokens?.[14]).toBe(200);
+    expect(dayMixed.hourlyTokens?.[0]).toBe(0);
+    expect(dayMixed.hourlyTokens?.[8]).toBe(0);
+
+    const dayOnly = mixed.daily.find(d => d.date === '2026-10-11')!;
+    expect(dayOnly.totalTokens).toBe(400);
+    expect(dayOnly.hourlyTokens).toBeUndefined();
+    expect(dayOnly.hourlyMeasuredTokens).toBeUndefined();
   });
 });

@@ -30,6 +30,7 @@ export function summarizeUsageEvents(allEvents: RawUsageEvent[], home: string, p
       if (!dailyMap.has(date)) dailyMap.set(date, {
         inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0,
         reasoningTokens: 0, totalTokens: 0, cost: 0, modelsUsed: new Set(), modelMap: new Map(),
+        hourlyTokens: Array<number>(24).fill(0), hourlyMeasuredTokens: 0,
       });
     }
   }
@@ -53,6 +54,9 @@ export function summarizeUsageEvents(allEvents: RawUsageEvent[], home: string, p
           y.cacheReadTokens -
           (x.inputTokens + x.outputTokens + x.cacheReadTokens),
       ),
+      ...(d.hourlyMeasuredTokens > 0
+        ? { hourlyTokens: d.hourlyTokens, hourlyMeasuredTokens: d.hourlyMeasuredTokens }
+        : {}),
     }));
 
   const monthly: MonthlyUsagePoint[] = Array.from(monthlyMap.entries())

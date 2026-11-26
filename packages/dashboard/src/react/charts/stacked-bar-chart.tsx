@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useScrollReveal } from './use-scroll-reveal';
 
 export type BarSegment = {
   id: string;
@@ -67,6 +68,7 @@ export function StackedBarChart({
   const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
   const [lockedSeriesId, setLockedSeriesId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const handleScrollReveal = useScrollReveal();
 
   const focusedSeriesId = enableSeriesSpotlight ? (hoveredSegmentId ?? lockedSeriesId) : null;
 
@@ -286,6 +288,7 @@ export function StackedBarChart({
 
           <div
             ref={scrollRef}
+            onScroll={shouldScroll ? handleScrollReveal : undefined}
             className={`flex min-w-0 flex-1 flex-col ${
               shouldScroll ? 'dashboard-subtle-scrollbar overflow-x-auto overflow-y-hidden' : ''
             }`}
@@ -436,9 +439,12 @@ export function StackedBarChart({
         </div>
       </div>
 
-      {/* Compact wrapped share legend */}
+      {/* Fixed-height single-line share legend aligned with bar plot start */}
       {activeLegendItems && activeLegendItems.length > 0 ? (
-        <div className="flex min-h-6 shrink-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.69rem] tabular-nums text-[var(--color-text-muted)]">
+        <div
+          onScroll={handleScrollReveal}
+          className="dashboard-subtle-scrollbar flex h-6 shrink-0 flex-nowrap items-center gap-x-2.5 overflow-x-auto overflow-y-hidden whitespace-nowrap pl-[52px] text-[0.69rem] tabular-nums text-[var(--color-text-muted)]"
+        >
           {activeLegendItems.map((item) => {
             if (!enableSeriesSpotlight) {
               return (

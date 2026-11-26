@@ -5,8 +5,8 @@ import type { TokenDashboardData } from '../../domain';
 import { formatDateTimeShort } from '../formatters';
 import { DASHBOARD_REFRESH_INTERVAL } from '../hooks/use-dashboard-window';
 import type { DashboardWindow } from '../hooks/use-dashboard-window';
-import { ImportIcon } from '../imports/import-icons';
 import type { RemoteStatus } from '../hooks/remote-refresh';
+import { IconRefresh } from '../sections/workbench/workbench-icons';
 
 type DashboardToolbarProps = {
   rangePreset: DashboardWindow['rangePreset'];
@@ -51,7 +51,6 @@ export function DashboardToolbar({
   onRefresh,
   refreshCycle,
   isPollingPaused,
-  onOpenImport,
   hasSnapshot = true,
   showingHistory = false,
   remoteInfo,
@@ -79,6 +78,21 @@ export function DashboardToolbar({
       remoteState === 'failed' ||
       remoteState === 'offline' ||
       !selectedDevice?.online);
+  const refreshAriaLabel =
+    isRefreshing && remoteInfo && remoteState
+      ? phaseLabel(remoteState)
+      : t(isRefreshing ? 'page.refreshing' : 'page.refresh');
+  const updatedTimeLabel = t('page.updatedAt', {
+    time: data.updatedAt ? formatDateTimeShort(data.updatedAt) : '—',
+  });
+  const refreshIntervalSeconds = Math.max(1, Math.round(refreshInterval / 1000));
+  const updateStateLine = showingHistory
+    ? t('page.showingHistory')
+    : isRefreshing
+      ? t('page.refreshing')
+      : isPollingPaused
+        ? t('page.autoRefreshPaused')
+        : t('page.autoRefreshInterval', { seconds: refreshIntervalSeconds });
 
   return (
     <header className="pb-3.5">
@@ -136,21 +150,59 @@ export function DashboardToolbar({
             </span>
           ) : null}
 
-          <div className="flex flex-col items-end gap-1">
-            <span className="font-mono text-[0.71rem] tabular-nums text-[var(--color-nav-muted)]">
-              {t('page.updatedAt', { time: data.updatedAt ? formatDateTimeShort(data.updatedAt) : '—' })}
-            </span>
-            <div className="dashboard-refresh-short-track">
-              <div
+          <div className="group relative flex items-center">
+            <button
+              type="button"
+              aria-label={updatedTimeLabel}
+              className="dashboard-update-ring-btn cursor-default"
+            >
+              <svg
+                key={refreshCycle}
                 role="progressbar"
                 aria-label={t(isRefreshing ? 'page.refreshing' : 'page.autoRefresh')}
                 aria-busy={isRefreshing}
-                className="dashboard-refresh-track"
                 data-running={isRefreshing}
                 data-paused={isPollingPaused}
+                viewBox="0 0 24 24"
+                className="dashboard-update-ring-svg size-5 -rotate-90"
                 style={{ animationDuration: refreshInterval + 'ms' }}
               >
-                <span key={refreshCycle} />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="8"
+                  fill="none"
+                  stroke="color-mix(in srgb, var(--color-text-muted) 22%, transparent)"
+                  strokeWidth="2.4"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="8"
+                  fill="none"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  className="dashboard-update-ring-arc"
+                  style={{ animationDuration: refreshInterval + 'ms' }}
+                />
+              </svg>
+              {showingHistory ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute top-1 right-1 size-1.5 rounded-full bg-[var(--badge-amber-dot)]"
+                />
+              ) : null}
+            </button>
+
+            <div className="dashboard-update-popover space-y-1 text-[0.7rem] leading-snug tabular-nums">
+              <div className="text-[0.66rem] font-medium text-[var(--color-text-soft)]">
+                {t('page.updateStatusTitle')}
+              </div>
+              <div className="font-mono font-medium text-[var(--color-text)]">
+                {updatedTimeLabel}
+              </div>
+              <div className="text-[0.67rem] text-[var(--color-text-muted)]">
+                {updateStateLine}
               </div>
             </div>
           </div>
@@ -265,24 +317,15 @@ export function DashboardToolbar({
               </button>
             ) : null}
 
-            {onOpenImport ? (
-              <button type="button" onClick={onOpenImport} className="dashboard-import-button cursor-pointer">
-                <span className="text-[var(--color-text-muted)]">
-                  <ImportIcon />
-                </span>
-                <span>{t('imports.open')}</span>
-              </button>
-            ) : null}
-
             <button
               type="button"
+              aria-label={refreshAriaLabel}
+              title={refreshAriaLabel}
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="dashboard-refresh-button cursor-pointer"
+              className="dashboard-refresh-icon-btn cursor-pointer"
             >
-              {isRefreshing && remoteInfo && remoteState
-                ? phaseLabel(remoteState)
-                : t(isRefreshing ? 'page.refreshing' : 'page.refresh')}
+              <IconRefresh className={isRefreshing ? 'size-3.5 animate-spin' : 'size-3.5'} />
             </button>
           </div>
         </div>

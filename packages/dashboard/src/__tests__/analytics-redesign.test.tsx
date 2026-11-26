@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { DailyUsagePoint, TokenDashboardData } from '../domain';
@@ -234,16 +234,39 @@ describe('dashboard analytics derivation & workbench redesign', () => {
     expect(screen.getByRole('heading', { name: zh.workbench.singleDayTitle })).toBeDefined();
     expect(screen.getByText(zh.workbench.hourlyReadyTitle)).toBeDefined();
 
-    // Return to window view, expand model row, and jump directly to per-model cache hit comparison
+    // Return to window view, toggle <1M curated filter off to reveal low-volume test models, expand row in place, and jump to multi-model cache comparison
     fireEvent.click(screen.getByRole('button', { name: zh.workbench.backToRange }));
+    fireEvent.click(screen.getByRole('button', { name: zh.workbench.curatedFilterOn }));
+    fireEvent.click(screen.getByRole('button', { name: '展开 claude-sonnet 详情' }));
+    expect(screen.getByText(new RegExp(zh.workbench.pricingSingleLineLabel))).toBeDefined();
+    // In-place overlay keeps total tbody rows equal to the page model count (2 models -> 2 tr, covering row 2)
+    expect(screen.queryByText('GPT-5')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '收起 claude-sonnet 详情' }));
+    expect(screen.getByText('GPT-5')).toBeDefined();
+    // Expand bottom-most row (gpt-5): overlays the row above in place cleanly and keeps full-width pricing row visible
+    const modelsTable = screen.getByRole('table');
+    fireEvent.click(screen.getByRole('button', { name: '展开 gpt-5 详情' }));
+    expect(screen.getByText(new RegExp(zh.workbench.pricingSingleLineLabel))).toBeDefined();
+    expect(within(modelsTable).queryByText('Claude Sonnet')).toBeNull();
+    expect(within(modelsTable).getByText('GPT-5')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: '收起 gpt-5 详情' }));
+    expect(within(modelsTable).getByText('Claude Sonnet')).toBeDefined();
+
     fireEvent.click(screen.getByRole('button', { name: '展开 claude-sonnet 详情' }));
     fireEvent.click(screen.getByRole('button', { name: zh.workbench.focusCacheTrend }));
     expect(screen.getByRole('button', { name: zh.workbench.cacheByModel }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: zh.workbench.cachePickerTitle }).textContent).toContain('1 /');
+    const globalAvgBtn = screen.getByRole('button', {
+      name: new RegExp(zh.workbench.cacheGlobalAvgLine),
+    });
+    expect(globalAvgBtn.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(globalAvgBtn);
+    expect(globalAvgBtn.getAttribute('aria-pressed')).toBe('true');
 
-    // Open and close diagnostics drawer
+    // Open and close minimalist diagnostics checklist
     fireEvent.click(screen.getByRole('button', { name: zh.workbench.diagnosticsOpen }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('tab', { name: zh.workbench.diagnosticsTabSources })).toBeDefined();
+    expect(within(dialog).getByText(zh.workbench.diagnosticsSectionSources)).toBeDefined();
     fireEvent.click(within(dialog).getByRole('button', { name: zh.workbench.diagnosticsClose }));
     expect(screen.queryByRole('dialog')).toBeNull();
   });
@@ -336,7 +359,7 @@ describe('dashboard analytics derivation & workbench redesign', () => {
     expect(singleMonthFallback[0].key).toBe('2026-10-12');
   });
 
-  it('defaults volume mode to by-model, toggles normalized net share & family migration area, and keeps alerts inline in toolbar', () => {
+  it('defaults volume mode to by-model, toggles normalized net share & family migration area, and keeps alerts inline in toolbar', async () => {
     const base = emptyDashboard('30d');
     const data: TokenDashboardData = {
       ...base,
@@ -429,7 +452,12 @@ describe('dashboard analytics derivation & workbench redesign', () => {
     expect(diagBtn.textContent).toContain('2');
     expect(screen.queryByText(/项采集警告/)).toBeNull();
 
-    // Default volume mode is By Model with 7D Avg toggle in Row 1 alongside Day/Week granularity
+    // Toolbar shows circular progressbar + hover freshness info + compact refresh button, without Import button
+    expect(screen.queryByRole('button', { name: zh.imports.open })).toBeNull();
+    expect(screen.getByRole('progressbar', { name: zh.page.autoRefresh })).toBeDefined();
+    expect(screen.getByRole('button', { name: zh.page.refresh })).toBeDefined();
+
+    // Default volume mode is By Model; dynamic moving average sits in Layer 2 (outside Row 1 header)
     const byModelBtn = screen.getByRole('button', { name: zh.workbench.modeByModel });
     const dayGrainBtn = screen.getByRole('button', { name: zh.workbench.grainDay });
     expect(byModelBtn.getAttribute('aria-pressed')).toBe('true');
@@ -437,10 +465,15 @@ describe('dashboard analytics derivation & workbench redesign', () => {
     expect(row1Header).not.toBeNull();
     expect(row1Header?.contains(dayGrainBtn)).toBe(true);
     expect(screen.queryByRole('button', { name: '总量' })).toBeNull();
-    const movingAvgBtn = screen.getByRole('button', { name: zh.workbench.movingAvg7d });
-    expect(row1Header?.contains(movingAvgBtn)).toBe(true);
+    const movingAvgBtn = screen.getByRole('button', { name: new RegExp(zh.workbench.movingAvg7d) });
+    expect(row1Header?.contains(movingAvgBtn)).toBe(false);
     fireEvent.click(movingAvgBtn);
     expect(movingAvgBtn.getAttribute('aria-pressed')).toBe('true');
+
+    // Switching grain to Weekly adapts moving-average label from 7D to 4W
+    fireEvent.click(screen.getByRole('button', { name: zh.workbench.grainWeek }));
+    expect(screen.getByRole('button', { name: new RegExp(zh.workbench.movingAvg4w) })).toBeDefined();
+    fireEvent.click(dayGrainBtn);
 
     // Cross-bar model spotlight: hovering a bar opens the floating breakdown popover; clicking legend locks series spotlight
     const volDay1Bar = screen.getByRole('button', { name: /^2026-10-12:/ });
@@ -478,7 +511,7 @@ describe('dashboard analytics derivation & workbench redesign', () => {
     fireEvent.mouseLeave(day1Bar);
     expect(compBarsRegion.textContent).toContain('56.0%');
 
-    // Switch to Cache Hit Rate & verify adaptive Y-axis default + 0-100% toggle sit in Row 1
+    // Switch to Cache Hit Rate & verify Zoomed/Full range labels in Row 1 + single-model searchable focus
     fireEvent.click(screen.getByRole('tab', { name: zh.workbench.tabCache }));
     const autoScaleBtn = screen.getByRole('button', { name: zh.workbench.cacheScaleAuto });
     expect(autoScaleBtn.getAttribute('aria-pressed')).toBe('true');
@@ -486,6 +519,19 @@ describe('dashboard analytics derivation & workbench redesign', () => {
     const fullScaleBtn = screen.getByRole('button', { name: zh.workbench.cacheScaleFull });
     fireEvent.click(fullScaleBtn);
     expect(fullScaleBtn.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: zh.workbench.cacheByModel }));
+    const pickerBtn = screen.getByRole('button', { name: zh.workbench.cachePickerTitle });
+    fireEvent.click(pickerBtn);
+    const pickerDialog = screen.getByRole('dialog', { name: zh.workbench.cachePickerTitle });
+    expect(within(pickerDialog).getByRole('button', { name: zh.workbench.cachePickerReset })).toBeDefined();
+    expect(within(pickerDialog).getByRole('button', { name: zh.workbench.cachePickerSelectAll })).toBeDefined();
+    expect(within(pickerDialog).getByRole('button', { name: zh.workbench.cachePickerClear })).toBeDefined();
+    const claudeOpt = within(pickerDialog).getByRole('checkbox', { name: /claude-sonnet/ });
+    expect(claudeOpt.getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(claudeOpt);
+    expect(claudeOpt.getAttribute('aria-checked')).toBe('false');
+    fireEvent.click(claudeOpt);
+    expect(claudeOpt.getAttribute('aria-checked')).toBe('true');
 
     // Switch to Model Trends tab & verify group/mode controls sit in Row 1 while global preferences drive palette, pins & colors
     fireEvent.click(screen.getByRole('tab', { name: zh.workbench.tabMigration }));
@@ -500,27 +546,122 @@ describe('dashboard analytics derivation & workbench redesign', () => {
     expect(screen.getByRole('button', { name: zh.workbench.migrationByModel }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.queryByRole('combobox', { name: zh.workbench.pinModelPlaceholder })).toBeNull();
 
-    // Apply preferences programmatically (as configured in Settings -> Dashboard)
+    // Apply independent Light/Dark preferences programmatically & verify live theme switching
     act(() => {
       writeDashboardPreferences({
-        paletteStyle: 'vivid',
+        light: {
+          paletteStyle: 'vivid',
+          familyColors: {},
+          modelColors: { 'claude-sonnet': '#ff6600' },
+        },
+        dark: {
+          paletteStyle: 'pastel',
+          familyColors: {},
+          modelColors: { 'claude-sonnet': '#66ccff' },
+        },
         pinnedModels: ['claude-sonnet'],
-        modelColors: { 'claude-sonnet': '#ff6600' },
       });
     });
-    const dashboardRoot = document.querySelector('[data-dashboard-palette="vivid"]');
-    expect(dashboardRoot).not.toBeNull();
+    expect(document.querySelector('[data-dashboard-palette="vivid"]')).not.toBeNull();
     expect(screen.getAllByText('claude-sonnet').length).toBeGreaterThan(0);
-    const customColoredSwatch = Array.from(document.querySelectorAll('span')).find(
+    const lightCustomSwatch = Array.from(document.querySelectorAll('span')).find(
       (el) => el.style.backgroundColor === 'rgb(255, 102, 0)' || el.style.backgroundColor === '#ff6600',
     );
-    expect(customColoredSwatch).toBeDefined();
+    expect(lightCustomSwatch).toBeDefined();
 
-    // Switch to Ref. Cost tab & verify EWMA trend toggle sits in Row 1
+    // Toggle dark class on documentElement -> Dashboard automatically applies dark scheme
+    act(() => {
+      document.documentElement.classList.add('dark');
+    });
+    await waitFor(() => {
+      expect(document.querySelector('[data-dashboard-palette="pastel"]')).not.toBeNull();
+    });
+    const darkCustomSwatch = Array.from(document.querySelectorAll('span')).find(
+      (el) => el.style.backgroundColor === 'rgb(102, 204, 255)' || el.style.backgroundColor === '#66ccff',
+    );
+    expect(darkCustomSwatch).toBeDefined();
+    act(() => {
+      document.documentElement.classList.remove('dark');
+    });
+
+    // Switch to Ref. Cost tab & verify EWMA trend toggle sits in Layer 2 (outside Row 1 header)
     fireEvent.click(screen.getByRole('tab', { name: zh.workbench.tabCost }));
-    const ewmaBtn = screen.getByRole('button', { name: zh.workbench.costTrendLine });
+    const ewmaBtn = screen.getByRole('button', { name: new RegExp(zh.workbench.costTrendLine) });
     expect(ewmaBtn.getAttribute('aria-pressed')).toBe('true');
-    expect(row1Header?.contains(ewmaBtn)).toBe(true);
+    expect(row1Header?.contains(ewmaBtn)).toBe(false);
+
+    // Calendar tab omits P25/P75 explanatory text
+    fireEvent.click(screen.getByRole('tab', { name: zh.workbench.tabCalendar }));
+    expect(screen.queryByText(/P25\s/)).toBeNull();
+  });
+
+  it('shows 3M average in All+Month, hides <1M models by default, and paginates models in fixed 8-row pages', () => {
+    const base = emptyDashboard('all');
+    const manyModels = Array.from({ length: 11 }, (_, idx) => {
+      const total = idx < 10 ? (12 - idx) * 1_000_000 : 250_000;
+      return {
+        ...emptyDayTokens,
+        inputTokens: Math.round(total * 0.2),
+        outputTokens: Math.round(total * 0.1),
+        cacheReadTokens: Math.round(total * 0.65),
+        cacheCreationTokens: Math.round(total * 0.03),
+        reasoningTokens: Math.round(total * 0.02),
+        totalTokens: total,
+        modelName: idx === 10 ? 'tiny-sub-1m-model' : `hero-model-${idx + 1}`,
+        displayName: idx === 10 ? 'tiny-sub-1m-model' : `hero-model-${idx + 1}`,
+        provider: 'openai' as const,
+        source: 'Codex',
+        shareOfTokens: 0.09,
+        shareOfCost: 0.09,
+        cacheHitRate: 0.74,
+        missingPricing: false,
+        slotStatus: 'measured' as const,
+        sessionCount: 4,
+        activeDays: 3,
+      };
+    });
+
+    const dataAll: TokenDashboardData = {
+      ...base,
+      range: 'all',
+      dateRange: { from: '2026-09-01', to: '2026-11-25', activeDays: 3, calendarDays: 86 },
+      totals: {
+        ...base.totals,
+        totalTokens: manyModels.reduce((sum, m) => sum + m.totalTokens, 0),
+        sessionCount: 44,
+      },
+      daily: [
+        { ...emptyDayTokens, date: '2026-09-02', totalTokens: 1_000_000, modelsUsed: ['hero-model-1'], modelBreakdowns: [] },
+        { ...emptyDayTokens, date: '2026-10-05', totalTokens: 2_000_000, modelsUsed: ['hero-model-1'], modelBreakdowns: [] },
+        { ...emptyDayTokens, date: '2026-11-12', totalTokens: 3_000_000, modelsUsed: ['hero-model-1'], modelBreakdowns: [] },
+      ],
+      monthly: [
+        { ...emptyDayTokens, month: '2026-09', totalTokens: 1_000_000, modelsUsed: ['hero-model-1'], modelBreakdowns: [] },
+        { ...emptyDayTokens, month: '2026-10', totalTokens: 2_000_000, modelsUsed: ['hero-model-1'], modelBreakdowns: [] },
+        { ...emptyDayTokens, month: '2026-11', totalTokens: 3_000_000, modelsUsed: ['hero-model-1'], modelBreakdowns: [] },
+      ],
+      models: manyModels,
+    };
+
+    render(wrap(<TokenDashboardFeature data={dataAll} canImport />));
+
+    // All + Month grain adapts moving average to 3 月均线
+    expect(screen.getByRole('button', { name: new RegExp(zh.workbench.movingAvg3m) })).toBeDefined();
+
+    // <1M model hidden by default, 10 >=1M models paginated into 2 pages (8 + 2)
+    expect(screen.queryByText('tiny-sub-1m-model')).toBeNull();
+    expect(screen.getByText('1 / 2')).toBeDefined();
+    expect(screen.queryByText('hero-model-9')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: zh.workbench.paginationNext }));
+    expect(screen.getByText('2 / 2')).toBeDefined();
+    expect(screen.getByText('hero-model-9')).toBeDefined();
+
+    // Toggle <1M filter off to inspect all 11 models
+    fireEvent.click(screen.getByRole('button', { name: zh.workbench.curatedFilterOn }));
+    expect(screen.getByText('1 / 2')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: zh.workbench.paginationNext }));
+    expect(screen.getByText('tiny-sub-1m-model')).toBeDefined();
   });
 
   it('keeps Weekly grain enabled in 7d range and switches to aggregated Donut and summary views', () => {
@@ -664,6 +805,46 @@ describe('dashboard analytics derivation & workbench redesign', () => {
     );
     expect(mapSmall.get('gemini-4-hydrogen')).toBe(mapLarge.get('gemini-4-hydrogen'));
 
+    // Same-family custom hex auto-derives distinct theme-aware shades; explicit per-model override wins
+    const makeGeminiModel = (modelName: string) => ({
+      ...emptyDayTokens,
+      modelName,
+      displayName: modelName,
+      provider: 'gemini' as const,
+      source: 'Antigravity',
+      shareOfTokens: 1 / 3,
+      shareOfCost: 0,
+      cacheHitRate: 0,
+      missingPricing: false,
+      slotStatus: 'measured' as const,
+      sessionCount: 1,
+      activeDays: 1,
+    });
+    const geminiCatalog = [
+      makeGeminiModel('gemini-4-hydrogen'),
+      makeGeminiModel('gemini-4-neon'),
+      makeGeminiModel('gemini-4-hydrogen-tiered-high'),
+    ];
+    const lightDerived = buildStableModelColorMap(geminiCatalog, [], {
+      themeMode: 'light',
+      familyColors: { Gemini: '#16a87a' },
+    });
+    const darkDerived = buildStableModelColorMap(geminiCatalog, [], {
+      themeMode: 'dark',
+      familyColors: { Gemini: '#16a87a' },
+    });
+    const lightColors = geminiCatalog.map((m) => lightDerived.get(m.modelName));
+    expect(new Set(lightColors).size).toBe(3);
+    expect(darkDerived.get('gemini-4-neon')).not.toBe(lightDerived.get('gemini-4-neon'));
+
+    const modelOverridden = buildStableModelColorMap(geminiCatalog, [], {
+      themeMode: 'light',
+      familyColors: { Gemini: '#16a87a' },
+      modelColors: { 'gemini-4-neon': '#ff5500' },
+    });
+    expect(modelOverridden.get('gemini-4-neon')).toBe('#ff5500');
+    expect(modelOverridden.get('gemini-4-hydrogen')).toBe(lightDerived.get('gemini-4-hydrogen'));
+
     // Period hero with tiny global rank still retains its own bar slot on Day 1
     const daily: DailyUsagePoint[] = [
       {
@@ -727,5 +908,86 @@ describe('dashboard analytics derivation & workbench redesign', () => {
     expect(forecast.weightedDailyUsd).toBeCloseTo(15);
     expect(forecast.projected30dUsd).toBeCloseTo(450);
     expect(forecast.projectedAnnualUsd).toBeCloseTo(5475);
+  });
+
+  it('renders 24h horizontal heatmap in 1D view with peak readout, hover/click inspection, partial coverage, and empty fallback', () => {
+    const hourlyDayOne = Array.from({ length: 24 }, (_, hour) =>
+      hour === 14 ? 4_000_000 : hour === 9 ? 1_000_000 : 0,
+    );
+    const data: TokenDashboardData = {
+      ...emptyDashboard('30d'),
+      updatedAt: '2026-10-15T12:00:00Z',
+      totals: {
+        ...emptyDayTokens,
+        inputTokens: 10_000_000,
+        totalTokens: 10_000_000,
+        cacheHitRate: 0,
+        outputToInputRatio: 0,
+        sessionCount: 2,
+        projectCount: 1,
+      },
+      daily: [
+        {
+          ...emptyDayTokens,
+          date: '2026-10-14',
+          inputTokens: 2_000_000,
+          totalTokens: 2_000_000,
+          modelsUsed: ['gpt-5'],
+          modelBreakdowns: [{ ...emptyDayTokens, modelName: 'gpt-5', inputTokens: 2_000_000, totalTokens: 2_000_000 }],
+        },
+        {
+          ...emptyDayTokens,
+          date: '2026-10-15',
+          inputTokens: 8_000_000,
+          totalTokens: 8_000_000,
+          modelsUsed: ['gpt-5'],
+          modelBreakdowns: [{ ...emptyDayTokens, modelName: 'gpt-5', inputTokens: 8_000_000, totalTokens: 8_000_000 }],
+          hourlyTokens: hourlyDayOne,
+          hourlyMeasuredTokens: 5_000_000,
+        },
+      ],
+      models: [
+        {
+          ...emptyDayTokens,
+          inputTokens: 10_000_000,
+          totalTokens: 10_000_000,
+          modelName: 'gpt-5',
+          displayName: 'GPT-5',
+          provider: 'openai',
+          source: 'Codex',
+          sourcesUsed: ['Codex'],
+          shareOfTokens: 1,
+          shareOfCost: 0,
+          cacheHitRate: 0,
+          missingPricing: false,
+          slotStatus: 'measured',
+          sessionCount: 2,
+          activeDays: 2,
+        },
+      ],
+    };
+
+    const { container } = render(wrap(<TokenDashboardFeature data={data} canImport />));
+    fireEvent.click(screen.getByRole('button', { name: zh.workbench.range1d }));
+
+    const hourButtons = container.querySelectorAll('button[data-hour]');
+    expect(hourButtons).toHaveLength(24);
+    expect(screen.getByText('峰值 14:00 · 4.00M')).toBeDefined();
+    expect(screen.getByText('分时覆盖 63%')).toBeDefined();
+    expect(screen.getByText('活跃 2 时段 · UTC+8')).toBeDefined();
+
+    const hour14 = container.querySelector('button[data-hour="14"]') as HTMLButtonElement;
+    const hour03 = container.querySelector('button[data-hour="3"]') as HTMLButtonElement;
+    fireEvent.mouseEnter(hour14);
+    expect(screen.getByText('14:00–14:59 · 4.00M · 50.0%')).toBeDefined();
+    fireEvent.click(hour14);
+    expect(hour14.getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.mouseEnter(hour03);
+    expect(screen.getByText('03:00–03:59 · 无用量')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: zh.workbench.prevDay }));
+    expect(container.querySelectorAll('button[data-hour]')).toHaveLength(0);
+    expect(screen.getByText(zh.workbench.hourlyReadyDesc)).toBeDefined();
   });
 });

@@ -159,11 +159,6 @@ export function CompactCalendarPicker({
           />
         ))}
         <span>{moreLabel}</span>
-        {thresholds.hasData ? (
-          <span className="ml-1 hidden font-mono text-[0.62rem] text-[var(--color-text-soft)] sm:inline">
-            P25 {formatCompactTokens(thresholds.p25)} · P75 {formatCompactTokens(thresholds.p75)}
-          </span>
-        ) : null}
       </div>
     </div>
   );

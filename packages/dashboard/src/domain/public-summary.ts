@@ -29,6 +29,11 @@ function modelBreakdowns(values: CcusageModelBreakdown[]) {
     totalTokens: value.totalTokens, cost: value.cost, billing: billingSummary(value.billing), missingPricing: value.missingPricing }));
 }
 
+function hourlyTokensSummary(values?: number[]): number[] | undefined {
+  if (!Array.isArray(values) || values.length !== 24) return undefined;
+  return values.map(value => (typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0));
+}
+
 export function publicDashboardSummary(data: TokenDashboardData, canViewDetails = false): TokenDashboardData {
   const result = emptyDashboard(data.range);
   return {
@@ -40,7 +45,21 @@ export function publicDashboardSummary(data: TokenDashboardData, canViewDetails 
     totals: { ...tokens(data.totals), cacheHitRate: data.totals.cacheHitRate,
       outputToInputRatio: data.totals.outputToInputRatio, sessionCount: data.totals.sessionCount,
       projectCount: data.totals.projectCount },
-    daily: data.daily.map(day => ({ ...tokens(day), date: day.date, modelsUsed: [...day.modelsUsed], modelBreakdowns: modelBreakdowns(day.modelBreakdowns) })),
+    daily: data.daily.map(day => {
+      const hourlyTokens = hourlyTokensSummary(day.hourlyTokens);
+      const hourlyMeasuredTokens = hourlyTokens && typeof day.hourlyMeasuredTokens === 'number'
+        && Number.isFinite(day.hourlyMeasuredTokens) && day.hourlyMeasuredTokens > 0
+        ? day.hourlyMeasuredTokens
+        : undefined;
+      return {
+        ...tokens(day),
+        date: day.date,
+        modelsUsed: [...day.modelsUsed],
+        modelBreakdowns: modelBreakdowns(day.modelBreakdowns),
+        ...(hourlyTokens ? { hourlyTokens } : {}),
+        ...(hourlyMeasuredTokens !== undefined ? { hourlyMeasuredTokens } : {}),
+      };
+    }),
     monthly: data.monthly.map(month => ({ ...tokens(month), month: month.month, modelsUsed: [...month.modelsUsed], modelBreakdowns: modelBreakdowns(month.modelBreakdowns) })),
     models: data.models.map(model => ({ ...tokens(model), modelName: model.modelName, displayName: model.displayName,
       canonicalModelId: model.canonicalModelId, rawModels: model.rawModels ? [...model.rawModels] : undefined,

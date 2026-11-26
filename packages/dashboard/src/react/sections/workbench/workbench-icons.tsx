@@ -56,3 +56,21 @@ export function IconClose({ className = 'size-4' }: { className?: string }) {
     </svg>
   );
 }
+
+export function IconRefresh({ className = 'size-3.5' }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M13.25 8a5.25 5.25 0 1 1-1.35-3.52" />
+      <path d="M13.5 2.75v2.75h-2.75" />
+    </svg>
+  );
+}
+
+export function IconSearch({ className = 'size-3.5' }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="7.25" cy="7.25" r="4.5" />
+      <path d="m10.75 10.75 2.75 2.75" />
+    </svg>
+  );
+}

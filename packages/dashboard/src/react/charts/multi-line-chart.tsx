@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useScrollReveal } from './use-scroll-reveal';
 
 export type LineSeriesItem = {
   id: string;
   label: string;
   color: string;
+  dashed?: boolean;
   values: ReadonlyArray<number | null>;
   summaryValue?: string;
   denominators?: ReadonlyArray<number>;
@@ -22,12 +24,14 @@ type MultiLineChartProps = {
   series: ReadonlyArray<LineSeriesItem>;
   hiddenSeriesIds?: ReadonlySet<string>;
   onToggleSeries?: (seriesId: string) => void;
+  hideSeriesChips?: boolean;
   hideReadoutBar?: boolean;
   onHoverIndexChange?: (index: number | null) => void;
   minColumnWidth?: number;
   yMin?: number;
   yMax?: number;
   showArea?: boolean;
+  referenceLine?: { value: number; label: string; color?: string };
   formatValue: (value: number) => string;
   formatDenominator?: (value: number) => string;
   emptyLabel: string;
@@ -70,12 +74,14 @@ export function MultiLineChart({
   series,
   hiddenSeriesIds,
   onToggleSeries,
+  hideSeriesChips = false,
   hideReadoutBar = false,
   onHoverIndexChange,
   minColumnWidth,
   yMin = 0,
   yMax = 1,
   showArea = false,
+  referenceLine,
   formatValue,
   formatDenominator,
   emptyLabel,
@@ -83,6 +89,7 @@ export function MultiLineChart({
 }: MultiLineChartProps) {
   const [hoveredCol, setHoveredCol] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const handleScrollReveal = useScrollReveal();
 
   const shouldScroll = Boolean(minColumnWidth && minColumnWidth > 0 && xAxis.length > 0);
   const minTrackWidth = shouldScroll ? xAxis.length * (minColumnWidth as number) : undefined;
@@ -108,6 +115,13 @@ export function MultiLineChart({
   }
 
   const visibleSeries = series.filter((s) => !hiddenSeriesIds?.has(s.id));
+  if (visibleSeries.length === 0) {
+    return (
+      <div className="flex flex-1 min-h-[210px] items-center justify-center rounded-[10px] border border-dashed border-[var(--color-border-subtle)] text-[0.78rem] text-[var(--color-text-soft)]">
+        {emptyLabel}
+      </div>
+    );
+  }
   const span = Math.max(0.0001, yMax - yMin);
   const plotW = svgWidth - PAD_LEFT - PAD_RIGHT;
   const plotH = SVG_HEIGHT - PAD_TOP - PAD_BOTTOM;
@@ -145,7 +159,7 @@ export function MultiLineChart({
       role="region"
     >
       {/* Interactive model chips (when more than 1 series or toggleable) */}
-      {series.length > 1 || onToggleSeries ? (
+      {!hideSeriesChips && (series.length > 1 || onToggleSeries) ? (
         <div className="dashboard-subtle-scrollbar flex h-7 shrink-0 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap">
           {series.map((item) => {
             const isHidden = hiddenSeriesIds?.has(item.id) ?? false;
@@ -244,6 +258,7 @@ export function MultiLineChart({
 
         <div
           ref={scrollRef}
+          onScroll={shouldScroll ? handleScrollReveal : undefined}
           className={`flex min-w-0 flex-1 flex-col ${
             shouldScroll ? 'dashboard-subtle-scrollbar overflow-x-auto overflow-y-hidden' : ''
           }`}
@@ -273,6 +288,20 @@ export function MultiLineChart({
                     />
                   );
                 })}
+
+                {referenceLine && Number.isFinite(referenceLine.value) ? (
+                  <line
+                    x1={PAD_LEFT}
+                    x2={svgWidth - PAD_RIGHT}
+                    y1={yForValue(referenceLine.value)}
+                    y2={yForValue(referenceLine.value)}
+                    stroke={referenceLine.color ?? 'var(--color-text-soft)'}
+                    strokeWidth="1.5"
+                    strokeDasharray="5 4"
+                    strokeOpacity={0.75}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ) : null}
 
                 {activeCol >= 0 ? (
                   <line
@@ -324,35 +353,14 @@ export function MultiLineChart({
                           d={d}
                           fill="none"
                           stroke={item.color}
-                          strokeWidth="2"
+                          strokeWidth={item.dashed ? '1.6' : '2'}
+                          strokeDasharray={item.dashed ? '5 4' : undefined}
+                          strokeOpacity={item.dashed ? 0.72 : 1}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           vectorEffect="non-scaling-stroke"
                         />
                       ))}
-                      {singleDots.map((pt, dotIdx) =>
-                        pt ? (
-                          <circle
-                            key={dotIdx}
-                            cx={pt.x}
-                            cy={pt.y}
-                            r={3.5}
-                            fill={item.color}
-                            vectorEffect="non-scaling-stroke"
-                          />
-                        ) : null,
-                      )}
-                      {coords[activeCol] ? (
-                        <circle
-                          cx={coords[activeCol]!.x}
-                          cy={coords[activeCol]!.y}
-                          r={4}
-                          fill={item.color}
-                          stroke="var(--color-surface-card, var(--color-bg))"
-                          strokeWidth={2}
-                          vectorEffect="non-scaling-stroke"
-                        />
-                      ) : null}
                     </g>
                   );
                 })}
@@ -379,6 +387,55 @@ export function MultiLineChart({
                   );
                 })}
               </svg>
+
+              {/* Circular point markers outside SVG so preserveAspectRatio="none" never stretches dots into ovals */}
+              {visibleSeries.map((item) => {
+                const coords = item.values.map((val, idx) => {
+                  if (val === null || !Number.isFinite(val)) return null;
+                  return { x: xForIndex(idx), y: yForValue(val) };
+                });
+                const singleDots = coords.filter((pt, idx) => {
+                  if (!pt) return false;
+                  const prevNull = idx === 0 || coords[idx - 1] === null;
+                  const nextNull = idx === coords.length - 1 || coords[idx + 1] === null;
+                  return prevNull && nextNull;
+                });
+                const activePt = coords[activeCol];
+
+                return (
+                  <div key={`${item.id}-dots`} aria-hidden="true" className="pointer-events-none absolute inset-0">
+                    {singleDots.map((pt, dotIdx) =>
+                      pt ? (
+                        <span
+                          key={dotIdx}
+                          className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+                          style={{
+                            left: `${(pt.x / svgWidth) * 100}%`,
+                            top: `${(pt.y / SVG_HEIGHT) * 100}%`,
+                            width: item.dashed ? 5 : 7,
+                            height: item.dashed ? 5 : 7,
+                            backgroundColor: item.color,
+                            opacity: item.dashed ? 0.72 : 1,
+                          }}
+                        />
+                      ) : null,
+                    )}
+                    {activePt ? (
+                      <span
+                        className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--color-surface-card,var(--color-bg))]"
+                        style={{
+                          left: `${(activePt.x / svgWidth) * 100}%`,
+                          top: `${(activePt.y / SVG_HEIGHT) * 100}%`,
+                          width: item.dashed ? 8 : 10,
+                          height: item.dashed ? 8 : 10,
+                          backgroundColor: item.color,
+                          opacity: item.dashed ? 0.75 : 1,
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-1.5 flex h-4 shrink-0 items-center justify-between gap-1">

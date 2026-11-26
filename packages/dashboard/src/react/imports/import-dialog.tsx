@@ -1,4 +1,5 @@
 'use client';
+import '../dashboard.css';
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useImportDialog } from './use-import-dialog';

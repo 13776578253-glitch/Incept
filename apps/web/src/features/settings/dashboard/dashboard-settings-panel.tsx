@@ -1,20 +1,26 @@
 'use client';
 
 import {
+  deriveFamilyColorVariants,
   FAMILY_COLOR_PALETTES,
+  ImportDialog,
   normalizeModelColorKey,
   recordKnownDashboardModels,
+  resolveColorSchemeForTheme,
+  resolveFamilyModelColor,
   resolveModelFamily,
-  resolveStableModelColor,
   toColorFamilyKey,
   useDashboardPreferences,
+  useDocumentThemeMode,
   useKnownDashboardModels,
   type ColorFamilyKey,
+  type DashboardColorScheme,
   type DashboardPaletteStyle,
+  type DashboardThemeMode,
   type KnownDashboardModel,
 } from '@incept/dashboard/react';
 import { SegmentedControl, SettingsGroup, SettingsRow } from '@incept/ui';
-import { Pin, Plus, RotateCcw, Search } from 'lucide-react';
+import { Check, ChevronDown, Moon, Palette, Pin, Plus, RotateCcw, Search, Sun, Upload } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
 
@@ -45,34 +51,57 @@ function resolveCssExprToHex(
 const FAMILY_CONFIG: ReadonlyArray<{
   key: ColorFamilyKey;
   label: { zh: string; en: string };
-  swatches: readonly string[];
+  swatches: Record<DashboardThemeMode, readonly string[]>;
 }> = [
   {
     key: 'DeepSeek',
     label: { zh: 'DeepSeek（蓝系）', en: 'DeepSeek (Blue)' },
-    swatches: ['#2b82df', '#54a3f0', '#0284c7', '#1e66f5'],
+    swatches: {
+      light: ['#2b82df', '#2563eb', '#0284c7', '#1d4ed8'],
+      dark: ['#93c5fd', '#7dd3fc', '#bae6fd', '#60a5fa'],
+    },
   },
   {
     key: 'Gemini',
     label: { zh: 'Gemini（青绿系）', en: 'Gemini (Emerald)' },
-    swatches: ['#16a87a', '#43c49b', '#0d9488', '#40a02b'],
+    swatches: {
+      light: ['#16a87a', '#059669', '#0d9488', '#40a02b'],
+      dark: ['#6ee7b7', '#86efac', '#5eead4', '#a7f3d0'],
+    },
   },
   {
     key: 'GPT',
     label: { zh: 'GPT（靛紫系）', en: 'GPT (Indigo)' },
-    swatches: ['#6461e0', '#8684ee', '#7287fd', '#8b5cf6'],
+    swatches: {
+      light: ['#6461e0', '#4f46e5', '#7c3aed', '#6366f1'],
+      dark: ['#c4b5fd', '#a5b4fc', '#d8b4fe', '#818cf8'],
+    },
   },
   {
     key: 'Claude',
     label: { zh: 'Claude（暖杏系）', en: 'Claude (Apricot)' },
-    swatches: ['#e5773c', '#f29866', '#ea580c', '#d7827e'],
+    swatches: {
+      light: ['#e5773c', '#ea580c', '#d97706', '#c2410c'],
+      dark: ['#fdba74', '#fca5a5', '#fcd34d', '#f9a8d4'],
+    },
   },
   {
     key: 'Other',
     label: { zh: '其他家族', en: 'Other Families' },
-    swatches: ['#e05275', '#9b5de5', '#d99b26', '#1ca6b8'],
+    swatches: {
+      light: ['#e05275', '#9333ea', '#ca8a04', '#0891b2'],
+      dark: ['#f472b6', '#c084fc', '#fde047', '#67e8f9'],
+    },
   },
 ];
+
+function isColorSchemeCustomized(scheme: DashboardColorScheme): boolean {
+  return (
+    scheme.paletteStyle !== 'theme' ||
+    Object.keys(scheme.familyColors).length > 0 ||
+    Object.keys(scheme.modelColors).length > 0
+  );
+}
 
 const FALLBACK_HEX_MAP: Record<ColorFamilyKey, string> = {
   DeepSeek: '#2b82df',
@@ -82,17 +111,46 @@ const FALLBACK_HEX_MAP: Record<ColorFamilyKey, string> = {
   Other: '#e05275',
 };
 
+const CROSS_ACCENT_SWATCHES: Record<DashboardThemeMode, readonly string[]> = {
+  light: ['#2563eb', '#0d9488', '#7c3aed', '#ea580c', '#db2777', '#ca8a04'],
+  dark: ['#60a5fa', '#5eead4', '#c4b5fd', '#fdba74', '#f472b6', '#fde047'],
+};
+
 const MAX_PINNED_MODELS = 8;
 
-export function DashboardSettingsPanel() {
+export function DashboardSettingsPanel({ isOwner = false }: { isOwner?: boolean } = {}) {
   const { language } = useLanguage();
   const isZh = language === 'zh';
   const { preferences, updatePreferences, resetPreferences } = useDashboardPreferences();
+  const activeDocumentTheme = useDocumentThemeMode();
+  const [editingTheme, setEditingTheme] = useState<DashboardThemeMode>(activeDocumentTheme);
+  const prevDocThemeRef = useRef<DashboardThemeMode>(activeDocumentTheme);
   const knownModels = useKnownDashboardModels();
-  const panelRef = useRef<HTMLDivElement>(null);
+  const probeRef = useRef<HTMLDivElement>(null);
   const [resolvedChartVars, setResolvedChartVars] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [manualModelId, setManualModelId] = useState('');
+  const [editingModelKey, setEditingModelKey] = useState<string | null>(null);
+  const [hexDraft, setHexDraft] = useState('');
+  const [importOpen, setImportOpen] = useState(false);
+
+  useEffect(() => {
+    if (prevDocThemeRef.current !== activeDocumentTheme) {
+      prevDocThemeRef.current = activeDocumentTheme;
+      setEditingTheme(activeDocumentTheme);
+    }
+  }, [activeDocumentTheme]);
+
+  const activeScheme = resolveColorSchemeForTheme(preferences, editingTheme);
+
+  const updateActiveScheme = (
+    updater: (scheme: DashboardColorScheme) => DashboardColorScheme,
+  ) => {
+    updatePreferences((prev) => ({
+      ...prev,
+      [editingTheme]: updater(prev[editingTheme]),
+    }));
+  };
 
   useEffect(() => {
     if (knownModels.length > 0 || typeof fetch !== 'function') {
@@ -129,7 +187,7 @@ export function DashboardSettingsPanel() {
 
   useEffect(() => {
     const syncResolvedVars = () => {
-      const el = panelRef.current;
+      const el = probeRef.current;
       if (!el || typeof window === 'undefined') return;
       const styles = window.getComputedStyle(el);
       const next: Record<string, string> = {};
@@ -157,12 +215,11 @@ export function DashboardSettingsPanel() {
       if (rafId && typeof window !== 'undefined') window.cancelAnimationFrame(rafId);
       observer?.disconnect();
     };
-  }, [preferences.paletteStyle]);
+  }, [activeScheme.paletteStyle, editingTheme]);
 
   const hasCustomizations =
-    preferences.paletteStyle !== 'theme' ||
-    Object.keys(preferences.familyColors).length > 0 ||
-    Object.keys(preferences.modelColors).length > 0 ||
+    isColorSchemeCustomized(preferences.light) ||
+    isColorSchemeCustomized(preferences.dark) ||
     preferences.pinnedModels.length > 0;
 
   // Merge known observed models + pinned/colored models so custom entries always remain visible
@@ -177,7 +234,10 @@ export function DashboardSettingsPanel() {
         map.set(norm, { modelName: pinned, displayName: pinned, provider: 'other' });
       }
     }
-    for (const coloredKey of Object.keys(preferences.modelColors)) {
+    for (const coloredKey of [
+      ...Object.keys(preferences.light.modelColors),
+      ...Object.keys(preferences.dark.modelColors),
+    ]) {
       const norm = normalizeModelColorKey(coloredKey);
       if (!map.has(norm)) {
         map.set(norm, { modelName: coloredKey, displayName: coloredKey, provider: 'other' });
@@ -201,7 +261,13 @@ export function DashboardSettingsPanel() {
         if (aPin !== bPin) return aPin - bPin;
         return a.displayName.localeCompare(b.displayName);
       });
-  }, [knownModels, preferences.modelColors, preferences.pinnedModels, searchQuery]);
+  }, [
+    knownModels,
+    preferences.dark.modelColors,
+    preferences.light.modelColors,
+    preferences.pinnedModels,
+    searchQuery,
+  ]);
 
   const handleTogglePin = (modelName: string) => {
     const norm = normalizeModelColorKey(modelName);
@@ -243,12 +309,28 @@ export function DashboardSettingsPanel() {
     setManualModelId('');
   };
 
+  const editingBadgeLabel =
+    editingTheme === 'dark'
+      ? isZh
+        ? '暗色模式配色'
+        : 'Dark theme'
+      : isZh
+        ? '亮色模式配色'
+        : 'Light theme';
+
   return (
     <div
-      ref={panelRef}
-      data-dashboard-palette={preferences.paletteStyle}
+      data-dashboard-palette={activeScheme.paletteStyle}
       className="space-y-8"
     >
+      {/* Hidden theme probe so color inputs reflect the edited Light/Dark theme CSS variables */}
+      <div
+        ref={probeRef}
+        aria-hidden="true"
+        className={editingTheme === 'dark' ? 'dark sr-only' : 'sr-only'}
+        data-dashboard-palette={activeScheme.paletteStyle}
+      />
+
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-[length:var(--text-xl)] font-semibold tracking-tight text-[var(--color-text)]">
@@ -256,8 +338,8 @@ export function DashboardSettingsPanel() {
           </h1>
           <p className="mt-1 text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
             {isZh
-              ? '统一配置图表色彩风格、模型家族色系与趋势图固化模型'
-              : 'Configure chart palette style, family hues, and pinned trend models'}
+              ? '按亮色与暗色模式独立配置图表色彩、模型家族色系与趋势图固化模型'
+              : 'Configure Light/Dark chart palettes, family hues, and pinned trend models'}
           </p>
         </div>
 
@@ -273,22 +355,58 @@ export function DashboardSettingsPanel() {
         ) : null}
       </header>
 
-      {/* Group 1: Palette Style + Family Hues */}
+      {/* Group 1: Light/Dark Theme Scope + Palette Style + Family Hues */}
       <SettingsGroup title={isZh ? '图表配色' : 'Chart palette'}>
+        <SettingsRow
+          id="dashboard-color-mode"
+          title={isZh ? '配色适用主题' : 'Theme color scope'}
+          description={
+            isZh
+              ? '亮色与暗色模式分别保存独立的色板、家族色系及单模型颜色，切换网站外观时自动生效'
+              : 'Store separate palette styles, family hues, and model colors for Light and Dark modes'
+          }
+          control={
+            <SegmentedControl<DashboardThemeMode>
+              ariaLabel={isZh ? '配色适用主题' : 'Theme color scope'}
+              value={editingTheme}
+              onValueChange={setEditingTheme}
+              options={[
+                { id: 'light', label: isZh ? '亮色模式' : 'Light' },
+                { id: 'dark', label: isZh ? '暗色模式' : 'Dark' },
+              ]}
+            />
+          }
+        />
+
         <SettingsRow
           id="dashboard-palette"
           title={isZh ? '色彩风格' : 'Palette style'}
           description={isZh ? '在主题自适应色板基础上切换清透饱和度倾向' : 'Choose overall chart saturation relative to your active site theme'}
           hint={
-            <span className="inline-flex flex-wrap items-center gap-3 pt-1">
+            <span
+              className={`mt-1.5 inline-flex flex-wrap items-center gap-3 rounded-lg border px-2.5 py-1.5 text-[length:var(--text-2xs)] ${
+                editingTheme === 'dark'
+                  ? 'dark border-zinc-700/80 bg-[#16171d] text-zinc-200'
+                  : 'border-zinc-200/90 bg-white text-zinc-700'
+              }`}
+              data-dashboard-palette={activeScheme.paletteStyle}
+            >
+              <span className="inline-flex items-center gap-1 font-medium opacity-75">
+                {editingTheme === 'dark' ? (
+                  <Moon className="size-3" strokeWidth={1.75} />
+                ) : (
+                  <Sun className="size-3" strokeWidth={1.75} />
+                )}
+                <span>{editingBadgeLabel}</span>
+              </span>
               {FAMILY_CONFIG.map((item) => {
                 const effectiveColor =
-                  preferences.familyColors[item.key] ?? FAMILY_COLOR_PALETTES[item.key][0];
+                  activeScheme.familyColors[item.key] ?? FAMILY_COLOR_PALETTES[item.key][0];
                 return (
                   <span key={item.key} className="inline-flex items-center gap-1.5">
                     <span
                       aria-hidden="true"
-                      className="size-2.5 rounded-full border border-[var(--color-border-subtle)]"
+                      className="size-2.5 rounded-full border border-current/20"
                       style={{ backgroundColor: effectiveColor }}
                     />
                     <span>{item.key}</span>
@@ -300,8 +418,10 @@ export function DashboardSettingsPanel() {
           control={
             <SegmentedControl<DashboardPaletteStyle>
               ariaLabel={isZh ? '色彩风格' : 'Palette style'}
-              value={preferences.paletteStyle}
-              onValueChange={(value) => updatePreferences({ paletteStyle: value })}
+              value={activeScheme.paletteStyle}
+              onValueChange={(value) =>
+                updateActiveScheme((scheme) => ({ ...scheme, paletteStyle: value }))
+              }
               options={[
                 { id: 'theme', label: isZh ? '跟随主题' : 'Theme' },
                 { id: 'vivid', label: isZh ? '清透活力' : 'Vivid' },
@@ -313,13 +433,20 @@ export function DashboardSettingsPanel() {
 
         <SettingsRow
           id="dashboard-family-colors"
-          title={isZh ? '模型家族色系' : 'Family hues'}
-          description={isZh ? '为不同模型家族指定固定颜色，覆盖默认主题色板' : 'Override default hues per model family across charts and tables'}
+          title={
+            <span className="inline-flex items-center gap-2">
+              <span>{isZh ? '模型家族色系' : 'Family hues'}</span>
+              <span className="rounded-full bg-[var(--surface-chip-bg,var(--color-row-bg))] px-2 py-0.5 text-[10px] font-medium text-[var(--color-text-muted)]">
+                {editingBadgeLabel}
+              </span>
+            </span>
+          }
+          description={isZh ? '为不同模型家族指定当前主题下的主色，同家族模型会自动按亮/暗模式派生区分色阶' : 'Set a base hue per model family for the active theme; sibling models auto-derive distinct shades'}
           stacked
           control={
             <div className="space-y-2">
             {FAMILY_CONFIG.map((family) => {
-              const customHex = preferences.familyColors[family.key];
+              const customHex = activeScheme.familyColors[family.key];
               const previewCssColor = customHex ?? FAMILY_COLOR_PALETTES[family.key][0];
               const pickerValue =
                 customHex ??
@@ -328,6 +455,7 @@ export function DashboardSettingsPanel() {
                   FAMILY_COLOR_PALETTES[family.key][0],
                   FALLBACK_HEX_MAP[family.key],
                 );
+              const modeSwatches = family.swatches[editingTheme];
 
               return (
                 <div
@@ -347,15 +475,15 @@ export function DashboardSettingsPanel() {
 
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5">
-                      {family.swatches.map((hex) => (
+                      {modeSwatches.map((hex) => (
                         <button
                           key={hex}
                           type="button"
                           aria-label={`${family.key} ${hex}`}
                           onClick={() =>
-                            updatePreferences((prev) => ({
-                              ...prev,
-                              familyColors: { ...prev.familyColors, [family.key]: hex },
+                            updateActiveScheme((scheme) => ({
+                              ...scheme,
+                              familyColors: { ...scheme.familyColors, [family.key]: hex },
                             }))
                           }
                           className={`size-4 cursor-pointer rounded-full border transition-transform hover:scale-110 ${
@@ -374,9 +502,9 @@ export function DashboardSettingsPanel() {
                       value={pickerValue}
                       onChange={(e) => {
                         const val = e.target.value;
-                        updatePreferences((prev) => ({
-                          ...prev,
-                          familyColors: { ...prev.familyColors, [family.key]: val },
+                        updateActiveScheme((scheme) => ({
+                          ...scheme,
+                          familyColors: { ...scheme.familyColors, [family.key]: val },
                         }));
                       }}
                       className="h-6 w-7 cursor-pointer rounded border border-[var(--color-border)] bg-transparent p-0.5"
@@ -386,10 +514,10 @@ export function DashboardSettingsPanel() {
                       <button
                         type="button"
                         onClick={() =>
-                          updatePreferences((prev) => {
-                            const next = { ...prev.familyColors };
+                          updateActiveScheme((scheme) => {
+                            const next = { ...scheme.familyColors };
                             delete next[family.key];
-                            return { ...prev, familyColors: next };
+                            return { ...scheme, familyColors: next };
                           })
                         }
                         className="cursor-pointer rounded px-1.5 py-0.5 text-[length:var(--text-2xs)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-row-bg)] hover:text-[var(--color-text)]"
@@ -416,8 +544,15 @@ export function DashboardSettingsPanel() {
       >
         <SettingsRow
           id="dashboard-pinned-models"
-          title={isZh ? '模型固定与独立配色' : 'Pin & recolor models'}
-          description={isZh ? '在「模型走势 · 阶段主力」中始终保留已固化模型，并为任意型号指定专属颜色' : 'Always retain pinned models in Model Trends and customize individual model colors'}
+          title={
+            <span className="inline-flex items-center gap-2">
+              <span>{isZh ? '模型固定与独立配色' : 'Pin & recolor models'}</span>
+              <span className="rounded-full bg-[var(--surface-chip-bg,var(--color-row-bg))] px-2 py-0.5 text-[10px] font-medium text-[var(--color-text-muted)]">
+                {editingBadgeLabel}
+              </span>
+            </span>
+          }
+          description={isZh ? '优先级：单模型自定义色 > 家族自动色阶 > 默认色板；点击右侧色块即可修改当前主题下的单模型颜色' : 'Precedence: per-model override > family auto-shade > default palette; click a swatch to recolor for the selected theme'}
           stacked
           control={
             <div className="space-y-3">
@@ -472,7 +607,7 @@ export function DashboardSettingsPanel() {
                   : 'No observed models yet; visit Dashboard or add a model ID above'}
               </p>
             ) : (
-              <div className="max-h-[320px] space-y-1.5 overflow-y-auto pr-1">
+              <div className="max-h-[380px] space-y-1.5 overflow-y-auto pr-1">
                 {mergedModels.map((item) => {
                   const norm = normalizeModelColorKey(item.modelName);
                   const isPinned = preferences.pinnedModels.some(
@@ -480,88 +615,236 @@ export function DashboardSettingsPanel() {
                   );
                   const family = resolveModelFamily(item.modelName, item.provider);
                   const familyKey = toColorFamilyKey(family);
-                  const customModelHex = preferences.modelColors[norm];
-                  const defaultModelExpr = resolveStableModelColor(item.modelName, family);
+                  const customFamilyHex = activeScheme.familyColors[familyKey];
+                  const customModelHex = activeScheme.modelColors[norm];
                   const effectiveColor =
                     customModelHex ??
-                    preferences.familyColors[familyKey] ??
-                    defaultModelExpr;
-                  const pickerFallback =
-                    customModelHex ??
-                    preferences.familyColors[familyKey] ??
+                    resolveFamilyModelColor(
+                      item.modelName,
+                      family,
+                      customFamilyHex,
+                      editingTheme,
+                    );
+                  const familyBaseHex =
+                    customFamilyHex ??
                     resolveCssExprToHex(
                       resolvedChartVars,
-                      defaultModelExpr,
+                      FAMILY_COLOR_PALETTES[familyKey][0],
                       FALLBACK_HEX_MAP[familyKey],
                     );
+                  const pickerFallback =
+                    customModelHex ??
+                    (/^#[0-9a-f]{6}$/i.test(effectiveColor)
+                      ? effectiveColor
+                      : resolveCssExprToHex(
+                          resolvedChartVars,
+                          effectiveColor,
+                          familyBaseHex,
+                        ));
+                  const isEditingColor = editingModelKey === norm;
+                  const sameFamilySwatches = deriveFamilyColorVariants(
+                    familyBaseHex,
+                    editingTheme,
+                  ).slice(0, 6);
+                  const crossSwatches = CROSS_ACCENT_SWATCHES[editingTheme];
+                  const normalizedDraft = hexDraft.trim().toLowerCase();
+                  const isDraftValidHex = /^#[0-9a-f]{6}$/.test(normalizedDraft);
+
+                  const toggleColorEditor = () => {
+                    if (isEditingColor) {
+                      setEditingModelKey(null);
+                    } else {
+                      setEditingModelKey(norm);
+                      setHexDraft(pickerFallback);
+                    }
+                  };
+
+                  const applyModelHex = (hex: string) => {
+                    const nextHex = hex.trim().toLowerCase();
+                    if (!/^#[0-9a-f]{6}$/.test(nextHex)) return;
+                    setHexDraft(nextHex);
+                    updateActiveScheme((scheme) => ({
+                      ...scheme,
+                      modelColors: { ...scheme.modelColors, [norm]: nextHex },
+                    }));
+                  };
 
                   return (
                     <div
                       key={item.modelName}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-md,10px)] border border-[var(--color-border-faint)] bg-[var(--color-surface-subtle)] px-3 py-2"
+                      className="rounded-[var(--radius-md,10px)] border border-[var(--color-border-faint)] bg-[var(--color-surface-subtle)] px-3 py-2"
                     >
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <span
-                          aria-hidden="true"
-                          className="size-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: effectiveColor }}
-                        />
-                        <span className="truncate font-mono text-[length:var(--text-xs)] font-medium text-[var(--color-text)]">
-                          {item.displayName || item.modelName}
-                        </span>
-                        <span className="shrink-0 rounded-full bg-[var(--surface-chip-bg)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-soft)]">
-                          {family === '__others__' ? 'Other' : family}
-                        </span>
-                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <span
+                            aria-hidden="true"
+                            className="size-2.5 shrink-0 rounded-full border border-black/10 dark:border-white/15"
+                            style={{ backgroundColor: effectiveColor }}
+                          />
+                          <span className="truncate font-mono text-[length:var(--text-xs)] font-medium text-[var(--color-text)]">
+                            {item.displayName || item.modelName}
+                          </span>
+                          <span className="shrink-0 rounded-full bg-[var(--surface-chip-bg)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-soft)]">
+                            {family === '__others__' ? 'Other' : family}
+                          </span>
+                          {customModelHex ? (
+                            <span className="shrink-0 rounded-full border border-[var(--color-accent-border)] bg-[var(--color-accent-soft)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text)]">
+                              {isZh ? '已覆盖' : 'Custom'}
+                            </span>
+                          ) : null}
+                        </div>
 
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          aria-label={
-                            isZh ? `${item.modelName} 颜色` : `${item.modelName} color`
-                          }
-                          value={pickerFallback}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            updatePreferences((prev) => ({
-                              ...prev,
-                              modelColors: { ...prev.modelColors, [norm]: val },
-                            }));
-                          }}
-                          className="h-6 w-7 cursor-pointer rounded border border-[var(--color-border)] bg-transparent p-0.5"
-                        />
-
-                        {customModelHex ? (
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() =>
-                              updatePreferences((prev) => {
-                                const next = { ...prev.modelColors };
-                                delete next[norm];
-                                return { ...prev, modelColors: next };
-                              })
+                            aria-expanded={isEditingColor}
+                            aria-label={
+                              isZh ? `${item.modelName} 颜色` : `${item.modelName} color`
                             }
-                            className="cursor-pointer rounded px-1.5 py-0.5 text-[length:var(--text-2xs)] text-[var(--color-text-muted)] hover:bg-[var(--color-row-bg)] hover:text-[var(--color-text)]"
+                            onClick={toggleColorEditor}
+                            className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[7px] border px-2 text-[length:var(--text-2xs)] transition-colors ${
+                              isEditingColor
+                                ? 'border-[var(--color-accent-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
+                                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)]'
+                            }`}
                           >
-                            {isZh ? '重置' : 'Reset'}
+                            <span
+                              aria-hidden="true"
+                              className="size-3.5 rounded-[4px] border border-black/15 dark:border-white/20"
+                              style={{ backgroundColor: effectiveColor }}
+                            />
+                            <ChevronDown
+                              className={`size-3 transition-transform duration-150 ${
+                                isEditingColor ? 'rotate-180' : ''
+                              }`}
+                              strokeWidth={1.75}
+                            />
                           </button>
-                        ) : null}
 
-                        <button
-                          type="button"
-                          aria-pressed={isPinned}
-                          disabled={!isPinned && preferences.pinnedModels.length >= MAX_PINNED_MODELS}
-                          onClick={() => handleTogglePin(item.modelName)}
-                          className={`inline-flex h-7 cursor-pointer items-center gap-1 rounded-full border px-2.5 text-[length:var(--text-2xs)] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                            isPinned
-                              ? 'border-[var(--color-accent-border)] bg-[var(--color-accent-soft)] text-[var(--color-text)]'
-                              : 'border-[var(--color-border-subtle)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
-                          }`}
-                        >
-                          <Pin className="size-3" strokeWidth={1.75} />
-                          <span>{isPinned ? (isZh ? '已固化' : 'Pinned') : (isZh ? '固化' : 'Pin')}</span>
-                        </button>
+                          {customModelHex ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateActiveScheme((scheme) => {
+                                  const next = { ...scheme.modelColors };
+                                  delete next[norm];
+                                  return { ...scheme, modelColors: next };
+                                })
+                              }
+                              className="cursor-pointer rounded px-1.5 py-0.5 text-[length:var(--text-2xs)] text-[var(--color-text-muted)] hover:bg-[var(--color-row-bg)] hover:text-[var(--color-text)]"
+                            >
+                              {isZh ? '重置' : 'Reset'}
+                            </button>
+                          ) : null}
+
+                          <button
+                            type="button"
+                            aria-pressed={isPinned}
+                            disabled={!isPinned && preferences.pinnedModels.length >= MAX_PINNED_MODELS}
+                            onClick={() => handleTogglePin(item.modelName)}
+                            className={`inline-flex h-7 cursor-pointer items-center gap-1 rounded-full border px-2.5 text-[length:var(--text-2xs)] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                              isPinned
+                                ? 'border-[var(--color-accent-border)] bg-[var(--color-accent-soft)] text-[var(--color-text)]'
+                                : 'border-[var(--color-border-subtle)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                            }`}
+                          >
+                            <Pin className="size-3" strokeWidth={1.75} />
+                            <span>{isPinned ? (isZh ? '已固化' : 'Pinned') : (isZh ? '固化' : 'Pin')}</span>
+                          </button>
+                        </div>
                       </div>
+
+                      {isEditingColor ? (
+                        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2.5 border-t border-[var(--color-border-faint)] pt-2.5">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] text-[var(--color-text-soft)]">
+                                {isZh ? '同系' : 'Family'}
+                              </span>
+                              {sameFamilySwatches.map((hex) => (
+                                <button
+                                  key={`fam-${hex}`}
+                                  type="button"
+                                  aria-label={`${item.modelName} ${hex}`}
+                                  onClick={() => applyModelHex(hex)}
+                                  className={`size-4 cursor-pointer rounded-full border transition-transform hover:scale-110 ${
+                                    customModelHex === hex
+                                      ? 'border-[var(--color-text)] ring-2 ring-[var(--color-ring-focus)]'
+                                      : 'border-[var(--color-border)]'
+                                  }`}
+                                  style={{ backgroundColor: hex }}
+                                />
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] text-[var(--color-text-soft)]">
+                                {isZh ? '跨色' : 'Accent'}
+                              </span>
+                              {crossSwatches.map((hex) => (
+                                <button
+                                  key={`acc-${hex}`}
+                                  type="button"
+                                  aria-label={`${item.modelName} ${hex}`}
+                                  onClick={() => applyModelHex(hex)}
+                                  className={`size-4 cursor-pointer rounded-full border transition-transform hover:scale-110 ${
+                                    customModelHex === hex
+                                      ? 'border-[var(--color-text)] ring-2 ring-[var(--color-ring-focus)]'
+                                      : 'border-[var(--color-border)]'
+                                  }`}
+                                  style={{ backgroundColor: hex }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={hexDraft}
+                              maxLength={7}
+                              aria-label={isZh ? `${item.modelName} 十六进制颜色` : `${item.modelName} hex color`}
+                              placeholder="#rrggbb"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setHexDraft(val);
+                                if (/^#[0-9a-f]{6}$/i.test(val.trim())) {
+                                  applyModelHex(val);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && isDraftValidHex) {
+                                  e.preventDefault();
+                                  applyModelHex(normalizedDraft);
+                                }
+                              }}
+                              className="h-7 w-[78px] rounded-[6px] border border-[var(--color-border-input)] bg-[var(--color-surface-card,var(--color-bg))] px-2 font-mono text-[11px] text-[var(--color-text)] outline-none focus:border-[var(--color-border-focus)]"
+                            />
+                            <button
+                              type="button"
+                              disabled={!isDraftValidHex}
+                              aria-label={isZh ? `应用 ${item.modelName} 颜色` : `Apply ${item.modelName} color`}
+                              onClick={() => applyModelHex(normalizedDraft)}
+                              className="inline-flex h-7 cursor-pointer items-center justify-center rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-[var(--color-text)] hover:bg-[var(--color-row-bg)] disabled:cursor-default disabled:opacity-40"
+                            >
+                              <Check className="size-3.5" strokeWidth={1.75} />
+                            </button>
+                            <label
+                              title={isZh ? '系统调色盘' : 'System color picker'}
+                              className="inline-flex h-7 cursor-pointer items-center justify-center rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-row-bg)] hover:text-[var(--color-text)]"
+                            >
+                              <Palette className="size-3.5" strokeWidth={1.75} />
+                              <input
+                                type="color"
+                                aria-label={isZh ? `${item.modelName} 系统调色盘` : `${item.modelName} system color`}
+                                value={pickerFallback}
+                                onChange={(e) => applyModelHex(e.target.value)}
+                                className="sr-only"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -571,6 +854,39 @@ export function DashboardSettingsPanel() {
           }
         />
       </SettingsGroup>
+
+      {isOwner ? (
+        <SettingsGroup title={isZh ? '数据导入' : 'Data import'}>
+          <SettingsRow
+            id="dashboard-import"
+            title={isZh ? '跨机器数据导入' : 'Cross-device import'}
+            description={
+              isZh
+                ? '从其他设备导出文件校验并导入 Token 用量记录，支持按批次回退'
+                : 'Validate and import token usage exports from another device with batch rollback'
+            }
+            control={
+              <button
+                type="button"
+                onClick={() => setImportOpen(true)}
+                className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md,10px)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-[length:var(--text-xs)] font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-row-bg)]"
+              >
+                <Upload className="size-3.5 text-[var(--color-text-muted)]" strokeWidth={1.75} />
+                <span>{isZh ? '打开导入' : 'Open import'}</span>
+              </button>
+            }
+          />
+        </SettingsGroup>
+      ) : null}
+
+      {isOwner && importOpen ? (
+        <ImportDialog
+          onClose={() => setImportOpen(false)}
+          onImported={() => {
+            void fetch('/api/dashboard/usage?range=30d&refresh=1').catch(() => {});
+          }}
+        />
+      ) : null}
     </div>
   );
 }

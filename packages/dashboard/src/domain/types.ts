@@ -33,6 +33,8 @@ export type DailyUsagePoint = TokenBreakdown & {
   date: string;
   modelsUsed: string[];
   modelBreakdowns: CcusageModelBreakdown[];
+  hourlyTokens?: number[];
+  hourlyMeasuredTokens?: number;
 };
 
 export type MonthlyUsagePoint = TokenBreakdown & {

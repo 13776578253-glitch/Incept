@@ -7,7 +7,9 @@ import dynamic from 'next/dynamic';
 import type { TokenDashboardData } from '../domain/index';
 import {
   recordKnownDashboardModels,
+  resolveColorSchemeForTheme,
   useDashboardPreferences,
+  useDocumentThemeMode,
 } from './dashboard-preferences';
 import { useDashboardWindow } from './hooks/use-dashboard-window';
 import { useBillingPreview } from './hooks/use-billing-preview';
@@ -21,17 +23,12 @@ import {
   type WorkbenchTrendTab,
 } from './sections/workbench/trend-workbench';
 import { CompositionAndModels } from './sections/workbench/composition-and-models';
-import type { DiagnosticsTab } from './sections/workbench/diagnostics-drawer';
 
 const DiagnosticsDrawer = dynamic(
   () =>
     import('./sections/workbench/diagnostics-drawer').then(
       (module) => module.DiagnosticsDrawer,
     ),
-);
-const ImportDialog = dynamic(
-  () => import('./imports/import-dialog').then((module) => module.ImportDialog),
-  { ssr: false },
 );
 
 export function TokenDashboardFeature({
@@ -51,16 +48,30 @@ export function TokenDashboardFeature({
 }) {
   const trendRef = useRef<HTMLDivElement>(null);
 
-  const [importOpen, setImportOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'range' | 'day'>('range');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [trendTab, setTrendTab] = useState<WorkbenchTrendTab>('volume');
   const [cacheSubView, setCacheSubView] = useState<CacheSubView>('global');
   const [selectedCacheModels, setSelectedCacheModels] = useState<ReadonlySet<string> | null>(null);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
-  const [diagnosticsTab, setDiagnosticsTab] = useState<DiagnosticsTab>('billing');
 
   const { preferences } = useDashboardPreferences();
+  const themeMode = useDocumentThemeMode();
+  const activeColorScheme = resolveColorSchemeForTheme(preferences, themeMode);
+  const effectivePreferences = useMemo(
+    () => ({
+      ...preferences,
+      ...activeColorScheme,
+    }),
+    [preferences, activeColorScheme],
+  );
+  const activeColorOverrides = useMemo(
+    () => ({
+      ...activeColorScheme,
+      themeMode,
+    }),
+    [activeColorScheme, themeMode],
+  );
 
   const {
     rangePreset,
@@ -133,39 +144,13 @@ export function TokenDashboardFeature({
     return sortedDaily[sortedDaily.length - 1] ?? null;
   }, [selectedDate, sortedDaily]);
 
-  const orderedTopCacheModels = useMemo(
-    () =>
-      displayData.models
-        .filter((m) => m.slotStatus !== 'configured' && m.totalTokens > 0)
-        .sort((a, b) => b.totalTokens - a.totalTokens)
-        .slice(0, 4)
-        .map((m) => m.modelName),
-    [displayData.models],
-  );
-
-  const handleToggleCacheModel = (modelName: string) => {
-    setSelectedCacheModels((prev) => {
-      const next = new Set(prev ?? orderedTopCacheModels);
-      if (next.has(modelName)) {
-        next.delete(modelName);
-      } else {
-        next.add(modelName);
-      }
-      return next;
-    });
-  };
-
   const handleInspectModelCache = (modelName: string) => {
     if (viewMode === 'day') {
       setViewMode('range');
     }
     setTrendTab('cache');
     setCacheSubView('models');
-    setSelectedCacheModels((prev) => {
-      const next = new Set(prev ?? orderedTopCacheModels);
-      next.add(modelName);
-      return next;
-    });
+    setSelectedCacheModels(new Set([modelName]));
     if (typeof trendRef.current?.scrollIntoView === 'function') {
       trendRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -180,8 +165,8 @@ export function TokenDashboardFeature({
 
   return (
     <div
-      data-dashboard-palette={preferences.paletteStyle}
-      className="mx-auto w-full max-w-[1440px] px-4 pt-4 pb-20 sm:px-6 md:pt-5 lg:px-10 lg:pt-6 lg:pb-24"
+      data-dashboard-palette={activeColorScheme.paletteStyle}
+      className="dashboard-page-shell mx-auto w-full max-w-[1440px] px-4 pt-4 pb-12 sm:px-6 md:pt-5 lg:px-10 lg:pt-5 lg:pb-8"
     >
       <DashboardToolbar
         rangePreset={rangePreset}
@@ -196,9 +181,6 @@ export function TokenDashboardFeature({
           }
         }}
         onOpenDiagnostics={() => {
-          setDiagnosticsTab(
-            (displayData.collectionIssues?.length ?? 0) > 0 ? 'sources' : 'billing',
-          );
           setDiagnosticsOpen(true);
         }}
         diagnosticsBadge={diagnosticsAlertCount > 0}
@@ -209,7 +191,6 @@ export function TokenDashboardFeature({
         onRefresh={refresh}
         refreshCycle={refreshCycle}
         isPollingPaused={isPollingPaused}
-        onOpenImport={effectiveOwner ? () => setImportOpen(true) : undefined}
         hasSnapshot={hasSnapshot}
         showingHistory={showingHistory}
         remoteInfo={remoteInfo}
@@ -220,14 +201,10 @@ export function TokenDashboardFeature({
         lastPageUpdatedAt={lastPageUpdatedAt}
       />
 
-      {effectiveOwner && importOpen ? (
-        <ImportDialog onClose={() => setImportOpen(false)} onImported={refresh} />
-      ) : null}
-
       {hasSnapshot ? (
         <>
           {/* Viewport 1 Closure: Frameless Hairline KPI Strip + Fixed-Height Trend Workbench */}
-          <div className="space-y-4">
+          <div className="shrink-0 space-y-3.5">
             <KpiStrip
               data={displayData}
               billingPreview={billingPreview}
@@ -239,7 +216,8 @@ export function TokenDashboardFeature({
               <TrendWorkbench
                 data={displayData}
                 billingPreview={billingPreview}
-                preferences={preferences}
+                preferences={effectivePreferences}
+                themeMode={themeMode}
                 rangePreset={rangePreset}
                 viewMode={viewMode}
                 selectedDay={selectedDay}
@@ -253,17 +231,17 @@ export function TokenDashboardFeature({
                 cacheSubView={cacheSubView}
                 onCacheSubViewChange={setCacheSubView}
                 selectedCacheModels={selectedCacheModels}
-                onToggleCacheModel={handleToggleCacheModel}
+                onSelectedCacheModelsChange={setSelectedCacheModels}
               />
             </div>
           </div>
 
           {/* Viewport 2 Decoupled Details: Full-Width Models Overview */}
-          <div className="mt-6">
+          <div className="dashboard-models-region mt-5">
             <CompositionAndModels
               data={displayData}
               billingPreview={billingPreview}
-              colorOverrides={preferences}
+              colorOverrides={activeColorOverrides}
               viewMode={viewMode}
               selectedDay={selectedDay}
               onInspectModelCache={handleInspectModelCache}
@@ -278,11 +256,8 @@ export function TokenDashboardFeature({
         <DiagnosticsDrawer
           open={diagnosticsOpen}
           onClose={() => setDiagnosticsOpen(false)}
-          activeTab={diagnosticsTab}
-          onTabChange={setDiagnosticsTab}
           data={displayData}
           billingPreview={billingPreview}
-          canViewDetails={canViewDetails}
           remoteInfo={remoteInfo}
           remoteDevice={remoteDevice}
           remoteState={remoteState}

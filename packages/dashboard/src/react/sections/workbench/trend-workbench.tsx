@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DailyUsagePoint, TokenDashboardData, UsageRange } from '../../../domain';
 import {
   aggregateBillingDaysByGrain,
@@ -24,6 +24,7 @@ import {
 } from '../../analytics/derive-analytics';
 import { CompactCalendarPicker } from '../../charts/compact-calendar-picker';
 import { DonutChart } from '../../charts/donut-chart';
+import { HourlyHeatmapStrip } from '../../charts/hourly-heatmap-strip';
 import { MultiLineChart } from '../../charts/multi-line-chart';
 import { StackedAreaChart } from '../../charts/stacked-area-chart';
 import { StackedBarChart, type StackedBarDatum } from '../../charts/stacked-bar-chart';
@@ -38,12 +39,24 @@ import type { BillingPreview } from '../../hooks/use-billing-preview';
 import {
   CHART_MUTED_COLOR,
   CHART_TOTAL_LINE_COLOR,
-  resolveStableModelColor,
+  resolveFamilyModelColor,
+  toColorFamilyKey,
   TOKEN_TYPE_COLORS,
 } from '../../model-colors';
-import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock } from './workbench-icons';
+import { useScrollReveal } from '../../charts/use-scroll-reveal';
+import {
+  IconCalendar,
+  IconChevronDown,
+  IconChevronLeft,
+  IconChevronRight,
+} from './workbench-icons';
 
-export type WorkbenchTrendTab = 'volume' | 'cache' | 'migration' | 'cost' | 'calendar';
+export type WorkbenchTrendTab =
+  | 'volume'
+  | 'cache'
+  | 'migration'
+  | 'cost'
+  | 'calendar';
 export type CacheSubView = 'global' | 'models';
 
 type VolumeMode = 'models' | 'tokens';
@@ -55,6 +68,7 @@ type TrendWorkbenchProps = {
   data: TokenDashboardData;
   billingPreview?: BillingPreview;
   preferences?: DashboardPreferences;
+  themeMode?: 'light' | 'dark';
   rangePreset: UsageRange;
   viewMode: 'range' | 'day';
   selectedDay: DailyUsagePoint | null;
@@ -65,7 +79,7 @@ type TrendWorkbenchProps = {
   cacheSubView: CacheSubView;
   onCacheSubViewChange: (view: CacheSubView) => void;
   selectedCacheModels: ReadonlySet<string> | null;
-  onToggleCacheModel: (modelName: string) => void;
+  onSelectedCacheModelsChange: (next: ReadonlySet<string> | null) => void;
 };
 
 function defaultGrainForRange(range: UsageRange): TimeGrain {
@@ -76,6 +90,7 @@ export function TrendWorkbench({
   data,
   billingPreview,
   preferences,
+  themeMode = 'light',
   rangePreset,
   viewMode,
   selectedDay,
@@ -86,7 +101,7 @@ export function TrendWorkbench({
   cacheSubView,
   onCacheSubViewChange,
   selectedCacheModels,
-  onToggleCacheModel,
+  onSelectedCacheModelsChange,
 }: TrendWorkbenchProps) {
   const t = useTranslations('dashboard');
   const locale = useLocale() === 'zh' ? 'zh' : 'en';
@@ -106,26 +121,35 @@ export function TrendWorkbench({
   const [showCostTrend, setShowCostTrend] = useState(true);
   const [dayDonutMode, setDayDonutMode] = useState<'models' | 'tokens'>('models');
   const [calendarPopoverOpen, setCalendarPopoverOpen] = useState(false);
-  const [dayNavDirection, setDayNavDirection] = useState<'prev' | 'next' | null>(null);
+  const [cacheModelPickerOpen, setCacheModelPickerOpen] = useState(false);
+  const [showCacheGlobalAvg, setShowCacheGlobalAvg] = useState(false);
+  const cachePickerRef = useRef<HTMLDivElement>(null);
+  const handleScrollReveal = useScrollReveal();
+
+  useEffect(() => {
+    if (!cacheModelPickerOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (cachePickerRef.current && !cachePickerRef.current.contains(event.target as Node)) {
+        setCacheModelPickerOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setCacheModelPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [cacheModelPickerOpen]);
 
   const [hoveredVolumeIdx, setHoveredVolumeIdx] = useState<number | null>(null);
   const [hoveredCacheIdx, setHoveredCacheIdx] = useState<number | null>(null);
   const [hoveredMigrationIdx, setHoveredMigrationIdx] = useState<number | null>(null);
   const [hoveredCostIdx, setHoveredCostIdx] = useState<number | null>(null);
-
-  const navigateDay = (nextDate: string, hint?: 'prev' | 'next') => {
-    const dir =
-      hint ??
-      (selectedDay
-        ? nextDate < selectedDay.date
-          ? 'prev'
-          : nextDate > selectedDay.date
-            ? 'next'
-            : null
-        : null);
-    setDayNavDirection(dir);
-    onSelectDate(nextDate);
-  };
 
   const sortedDaily = useMemo(
     () => [...data.daily].sort((a, b) => a.date.localeCompare(b.date)),
@@ -134,10 +158,11 @@ export function TrendWorkbench({
 
   const colorOverrides = useMemo(
     () => ({
+      themeMode,
       familyColors: preferences?.familyColors,
       modelColors: preferences?.modelColors,
     }),
-    [preferences?.familyColors, preferences?.modelColors],
+    [themeMode, preferences?.familyColors, preferences?.modelColors],
   );
 
   const modelColorMap = useMemo(
@@ -175,9 +200,17 @@ export function TrendWorkbench({
     [buckets, modelColorMap, t],
   );
 
-  const getStableColor = (modelName: string) =>
-    modelColorMap.get(modelName) ??
-    resolveStableModelColor(modelName, resolveModelFamily(modelName));
+  const getStableColor = (modelName: string) => {
+    const cached = modelColorMap.get(modelName);
+    if (cached) return cached;
+    const family = resolveModelFamily(modelName);
+    return resolveFamilyModelColor(
+      modelName,
+      family,
+      preferences?.familyColors?.[toColorFamilyKey(family)],
+      themeMode,
+    );
+  };
 
   // ==================== SINGLE-DAY (1D) VIEW ====================
   if (viewMode === 'day') {
@@ -245,25 +278,15 @@ export function TrendWorkbench({
         ? billingPreview.data.breakdown?.days.find((d) => d.day === selectedDay.date)
         : undefined;
 
-    const daySlideClass =
-      dayNavDirection === 'prev'
-        ? 'dashboard-day-slide-prev'
-        : dayNavDirection === 'next'
-          ? 'dashboard-day-slide-next'
-          : '';
-
     return (
       <section className="dashboard-wb-stage dashboard-wb-stage-fixed p-4 sm:p-5">
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-faint)] pb-3">
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex h-8 min-w-0 flex-nowrap items-center gap-2.5 overflow-x-auto whitespace-nowrap">
             <h2 className="text-[0.95rem] font-semibold text-[var(--color-text)]">
               {t('workbench.singleDayTitle')}
             </h2>
             {selectedDay ? (
-              <span
-                key={selectedDay.date}
-                className={`rounded-full bg-[var(--surface-chip-bg,var(--color-row-bg))] px-2.5 py-0.5 font-mono text-[0.74rem] font-medium tabular-nums text-[var(--color-text)] ${daySlideClass}`}
-              >
+              <span className="rounded-full bg-[var(--surface-chip-bg,var(--color-row-bg))] px-2.5 py-0.5 font-mono text-[0.74rem] font-medium tabular-nums text-[var(--color-text)]">
                 {selectedDay.date}
               </span>
             ) : null}
@@ -285,7 +308,7 @@ export function TrendWorkbench({
               type="button"
               aria-label={t('workbench.prevDay')}
               disabled={!prevDay}
-              onClick={() => prevDay && navigateDay(prevDay.date, 'prev')}
+              onClick={() => prevDay && onSelectDate(prevDay.date)}
               className="inline-flex size-8 cursor-pointer items-center justify-center rounded-[8px] border border-[var(--color-border)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-row-bg)] disabled:cursor-not-allowed disabled:opacity-35"
             >
               <IconChevronLeft className="size-3.5" />
@@ -294,7 +317,7 @@ export function TrendWorkbench({
               type="button"
               aria-label={t('workbench.nextDay')}
               disabled={!nextDay}
-              onClick={() => nextDay && navigateDay(nextDay.date, 'next')}
+              onClick={() => nextDay && onSelectDate(nextDay.date)}
               className="inline-flex size-8 cursor-pointer items-center justify-center rounded-[8px] border border-[var(--color-border)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-row-bg)] disabled:cursor-not-allowed disabled:opacity-35"
             >
               <IconChevronRight className="size-3.5" />
@@ -324,7 +347,7 @@ export function TrendWorkbench({
               points={sortedDaily}
               selectedDate={selectedDay?.date ?? null}
               onSelectDate={(date) => {
-                navigateDay(date);
+                onSelectDate(date);
                 setCalendarPopoverOpen(false);
               }}
               locale={locale}
@@ -339,17 +362,14 @@ export function TrendWorkbench({
             {t('workbench.noData')}
           </div>
         ) : (
-          <div className="mt-4 grid flex-1 min-h-0 grid-cols-1 gap-5 overflow-y-auto lg:grid-cols-12">
-            <div className="flex flex-col justify-between gap-4 lg:col-span-7">
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between text-[0.78rem]">
+          <div className="mt-4 grid flex-1 min-h-0 grid-cols-1 gap-5 overflow-y-auto lg:grid-cols-12 lg:overflow-hidden">
+            <div className="flex flex-col gap-4 lg:col-span-7">
+              <div className="h-[220px] shrink-0 overflow-hidden">
+                <div className="flex h-5 items-center justify-between text-[0.78rem]">
                   <span className="font-medium text-[var(--color-text)]">
                     {t('workbench.dayModelsBarTitle')}
                   </span>
-                  <span
-                    key={`summary-${selectedDay.date}`}
-                    className={`font-mono text-[0.72rem] tabular-nums text-[var(--color-text-muted)] ${daySlideClass}`}
-                  >
+                  <span className="font-mono text-[0.72rem] tabular-nums text-[var(--color-text-muted)]">
                     {t('workbench.dayKnownSummary', {
                       tokens: formatCompactTokens(dayTotal),
                       models: dayModels.length,
@@ -358,18 +378,18 @@ export function TrendWorkbench({
                 </div>
 
                 {dayModels.length === 0 ? (
-                  <p className="rounded-[8px] border border-dashed border-[var(--color-border-subtle)] py-6 text-center text-[0.76rem] text-[var(--color-text-soft)]">
+                  <p className="mt-2.5 rounded-[8px] border border-dashed border-[var(--color-border-subtle)] py-6 text-center text-[0.76rem] text-[var(--color-text-soft)]">
                     {t('workbench.noData')}
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="mt-2 space-y-1.5">
                     {dayModels.slice(0, 5).map((row) => {
                       const pct = dayTotal > 0 ? (row.tokens / dayTotal) * 100 : 0;
                       const hitRate = row.prompt > 0 ? row.cacheRead / row.prompt : null;
                       const rowColor = getStableColor(row.modelName);
                       return (
                         <div key={row.modelName} className="space-y-1">
-                          <div className="flex items-center justify-between gap-2 text-[0.74rem]">
+                          <div className="flex items-center justify-between gap-2 text-[0.74rem] leading-[16px]">
                             <span className="flex min-w-0 items-center gap-2">
                               <span
                                 aria-hidden="true"
@@ -399,7 +419,7 @@ export function TrendWorkbench({
                   })}
                   {otherDayTokens > 0 ? (
                     <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-2 text-[0.74rem]">
+                      <div className="flex items-center justify-between gap-2 text-[0.74rem] leading-[16px]">
                         <span className="flex min-w-0 items-center gap-2">
                           <span
                             aria-hidden="true"
@@ -430,28 +450,28 @@ export function TrendWorkbench({
               )}
             </div>
 
-              <div className="rounded-[12px] border border-dashed border-[var(--color-border-subtle)] bg-[var(--surface-recessed-bg,var(--color-row-bg))] p-3">
-                <div className="flex items-center justify-between gap-2 text-[0.75rem]">
-                  <span className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text)]">
-                    <IconClock className="size-3.5 text-[var(--color-accent)]" />
-                    <span>{t('workbench.hourlyReadyTitle')}</span>
-                  </span>
-                  <span className="text-[0.68rem] text-[var(--color-text-soft)]">
-                    {t('workbench.hourlyReadyDesc')}
-                  </span>
-                </div>
-                <div aria-hidden="true" className="mt-2.5 grid grid-cols-12 gap-1 opacity-35">
-                  {Array.from({ length: 24 }, (_, hour) => (
-                    <div
-                      key={hour}
-                      className="h-2.5 rounded-[2px] bg-[var(--color-border-strong)]"
-                    />
-                  ))}
-                </div>
-              </div>
+              <HourlyHeatmapStrip
+                date={selectedDay.date}
+                hourlyTokens={selectedDay.hourlyTokens}
+                hourlyMeasuredTokens={selectedDay.hourlyMeasuredTokens}
+                dayTotalTokens={dayTotal}
+                title={t('workbench.hourlyReadyTitle')}
+                emptyLabel={t('workbench.hourlyReadyDesc')}
+                peakSummaryLabel={(hour, tokens) =>
+                  t('workbench.hourlyPeakSummary', { hour, tokens })
+                }
+                activeDetailLabel={(range, tokens, share) =>
+                  t('workbench.hourlyCellDetail', { range, tokens, share })
+                }
+                quietHourLabel={(range) => t('workbench.hourlyCellQuiet', { range })}
+                coverageLabel={(percent) => t('workbench.hourlyCoverage', { percent })}
+                activeHoursLabel={(count) => t('workbench.hourlyActiveHours', { count })}
+                lessLabel={t('overview.trend.calendarLess')}
+                moreLabel={t('overview.trend.calendarMore')}
+              />
             </div>
 
-            <div className="flex flex-col rounded-[12px] border border-[var(--color-border-faint)] bg-[var(--color-surface)] p-4 lg:col-span-5">
+            <div className="flex h-[440px] flex-col rounded-[12px] border border-[var(--color-border-faint)] bg-[var(--color-surface)] p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.22)] sm:h-[272px] lg:col-span-5 lg:h-full">
               <div className="shrink-0 flex items-center justify-between gap-2">
                 <div className="dashboard-wb-tabs" role="tablist">
                   <button
@@ -488,8 +508,6 @@ export function TrendWorkbench({
                   centerLabel={selectedDay.date}
                   centerValue={formatCompactTokens(dayTotal)}
                   emptyLabel={t('workbench.noData')}
-                  centerTransitionKey={selectedDay.date}
-                  transitionDirection={dayNavDirection}
                 />
               </div>
             </div>
@@ -586,36 +604,92 @@ export function TrendWorkbench({
     activeTokenBucket ?? data.totals,
   );
 
+  const movingAvgConfig =
+    effectiveGrain === 'day'
+      ? { window: 7, label: t('workbench.movingAvg7d'), shortTag: '7D' }
+      : effectiveGrain === 'week'
+        ? { window: 4, label: t('workbench.movingAvg4w'), shortTag: '4W' }
+        : { window: 3, label: t('workbench.movingAvg3m'), shortTag: '3M' };
+
   const canOverlayMovingAvg = volumeMode === 'models' && buckets.length >= 2;
   const movingAvgValues =
     canOverlayMovingAvg && showMovingAvg
       ? computeMovingAverage(
           buckets.map((b) => b.totalTokens),
-          7,
+          movingAvgConfig.window,
         )
       : undefined;
 
   const globalCachePoints = buildGlobalCacheSeries(buckets);
-  const modelCacheSeriesList = buildModelCacheSeries(
+  const defaultTopCacheModels = orderedModelNames.slice(0, 3);
+  const effectiveSelectedCacheModels: Set<string> = (() => {
+    if (selectedCacheModels === null) {
+      return new Set(defaultTopCacheModels);
+    }
+    if (selectedCacheModels.size === 0) {
+      return new Set<string>();
+    }
+    const valid = new Set(
+      Array.from(selectedCacheModels).filter((name) => orderedModelNames.includes(name)),
+    );
+    return valid.size > 0 ? valid : new Set(defaultTopCacheModels);
+  })();
+
+  const selectedCacheModelNames = orderedModelNames.filter((name) =>
+    effectiveSelectedCacheModels.has(name),
+  );
+  const selectedModelCacheSeries = buildModelCacheSeries(
     buckets,
-    orderedModelNames.slice(0, 8),
+    selectedCacheModelNames,
     modelColorMap,
   );
-  const defaultActiveCacheModels = new Set(orderedModelNames.slice(0, 4));
-  const hiddenCacheIds = new Set(
-    modelCacheSeriesList
-      .map((s) => s.modelName)
-      .filter((name) =>
-        selectedCacheModels ? !selectedCacheModels.has(name) : !defaultActiveCacheModels.has(name),
-      ),
-  );
+
+  const cacheModelGroups = (() => {
+    const order = ['DeepSeek', 'Gemini', 'GPT', 'Claude', 'Other'] as const;
+    const grouped = new Map<
+      string,
+      Array<{ modelName: string; hitRate: number | null; color: string }>
+    >();
+    for (const familyKey of order) {
+      grouped.set(familyKey, []);
+    }
+    for (const modelName of orderedModelNames) {
+      const summary = data.models.find((m) => m.modelName === modelName);
+      const rawFamily = resolveModelFamily(modelName, summary?.provider);
+      const key = rawFamily === '__others__' ? 'Other' : rawFamily;
+      const list = grouped.get(key) ?? grouped.get('Other')!;
+      list.push({
+        modelName,
+        hitRate: summary?.cacheHitRate ?? null,
+        color: getStableColor(modelName),
+      });
+    }
+    return order
+      .map((key) => ({
+        key,
+        label: key === 'Other' ? t('workbench.familyOther') : key,
+        items: grouped.get(key) ?? [],
+      }))
+      .filter((group) => group.items.length > 0);
+  })();
+
+  const toggleCacheModelItem = (modelName: string) => {
+    const next = new Set(effectiveSelectedCacheModels);
+    if (next.has(modelName)) {
+      next.delete(modelName);
+    } else {
+      next.add(modelName);
+    }
+    onSelectedCacheModelsChange(next);
+  };
 
   const visibleCacheValues =
     cacheSubView === 'global'
       ? globalCachePoints.map((p) => p.hitRate)
-      : modelCacheSeriesList
-          .filter((s) => !hiddenCacheIds.has(s.modelName))
-          .flatMap((s) => s.points.map((p) => p.hitRate));
+      : [
+          ...selectedModelCacheSeries.flatMap((s) => s.points.map((p) => p.hitRate)),
+          ...(showCacheGlobalAvg ? [data.totals.cacheHitRate] : []),
+        ];
 
   const cacheDomain =
     cacheScale === 'full'
@@ -729,7 +803,7 @@ export function TrendWorkbench({
   const renderInlineReadout = () => {
     if (isSevenDayWeekly) {
       return (
-        <span className="truncate font-mono text-[0.68rem] tabular-nums text-[var(--color-text-soft)]">
+        <span className="block truncate font-mono text-[0.68rem] tabular-nums text-[var(--color-text-soft)]">
           {weeklySpanLabel}
         </span>
       );
@@ -746,9 +820,11 @@ export function TrendWorkbench({
         .map((s) => `${s.label} ${volumeMode === 'tokens' && bar.total > 0 ? `${((s.value / bar.total) * 100).toFixed(1)}%` : formatCompactTokens(s.value)}`)
         .join(' · ');
       return (
-        <span className="truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
+        <span className="block truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
           {bar.fullLabel} · <strong>{bar.formattedTotal}</strong>
-          {avg !== null && avg !== undefined ? ` · 7D ${formatCompactTokens(avg)}` : ''}
+          {avg !== null && avg !== undefined
+            ? ` · ${movingAvgConfig.shortTag} ${formatCompactTokens(avg)}`
+            : ''}
           {topSegments ? <span className="ml-2 text-[var(--color-text-muted)]">{topSegments}</span> : null}
         </span>
       );
@@ -756,24 +832,25 @@ export function TrendWorkbench({
 
     if (activeTab === 'cache' && hoveredCacheIdx !== null && buckets[hoveredCacheIdx]) {
       const b = buckets[hoveredCacheIdx];
+      const globalPt = globalCachePoints[hoveredCacheIdx];
       if (cacheSubView === 'global') {
-        const pt = globalCachePoints[hoveredCacheIdx];
         return (
-          <span className="truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
-            {b.fullLabel} · <strong>{pt?.hitRate !== null && pt?.hitRate !== undefined ? formatPercent(pt.hitRate) : '—'}</strong>
+          <span className="block truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
+            {b.fullLabel} · <strong>{globalPt?.hitRate !== null && globalPt?.hitRate !== undefined ? formatPercent(globalPt.hitRate) : '—'}</strong>
           </span>
         );
       }
-      const visible = modelCacheSeriesList.filter((s) => !hiddenCacheIds.has(s.modelName)).slice(0, 3);
-      const summary = visible
+      const summary = selectedModelCacheSeries
+        .slice(0, 3)
         .map((s) => {
           const val = s.points[hoveredCacheIdx]?.hitRate;
           return `${s.modelName} ${val !== null && val !== undefined ? formatPercent(val) : '—'}`;
         })
         .join(' · ');
       return (
-        <span className="truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
-          {b.fullLabel} · <span className="text-[var(--color-text-muted)]">{summary}</span>
+        <span className="block truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
+          {b.fullLabel}
+          {summary ? <span className="ml-2 text-[var(--color-text-muted)]">{summary}</span> : null}
         </span>
       );
     }
@@ -781,7 +858,7 @@ export function TrendWorkbench({
     if (activeTab === 'migration' && hoveredMigrationIdx !== null && migrationData.buckets[hoveredMigrationIdx]) {
       const mb = migrationData.buckets[hoveredMigrationIdx];
       return (
-        <span className="truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
+        <span className="block truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
           {mb.fullLabel} · <strong>{formatCompactTokens(mb.totalTokens)}</strong>
         </span>
       );
@@ -790,21 +867,21 @@ export function TrendWorkbench({
     if (activeTab === 'cost' && hoveredCostIdx !== null && costBars[hoveredCostIdx]) {
       const cb = costBars[hoveredCostIdx];
       return (
-        <span className="truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
+        <span className="block truncate font-mono text-[0.7rem] tabular-nums text-[var(--color-text)]">
           {cb.fullLabel} · <strong>{cb.formattedTotal}</strong>
         </span>
       );
     }
 
     return (
-      <span className="truncate font-mono text-[0.68rem] tabular-nums text-[var(--color-text-soft)]">
+      <span className="block truncate font-mono text-[0.68rem] tabular-nums text-[var(--color-text-soft)]">
         {defaultSpan}
       </span>
     );
   };
 
   return (
-    <section className="dashboard-wb-stage dashboard-wb-stage-fixed p-4 sm:p-5">
+    <section className="dashboard-wb-stage dashboard-wb-stage-fixed relative p-4 sm:p-5">
       <h2 className="sr-only">{t('workbench.trendTitle')}</h2>
 
       {/* Layer 1: Frameless underline main navigation + all view toggles + far-right granularity */}
@@ -838,23 +915,6 @@ export function TrendWorkbench({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pb-1.5">
-          {activeTab === 'volume' && volumeMode === 'models' && !isSevenDayWeekly ? (
-            <button
-              type="button"
-              aria-pressed={showMovingAvg}
-              disabled={!canOverlayMovingAvg}
-              onClick={() => setShowMovingAvg((prev) => !prev)}
-              className="dashboard-ghost-toggle"
-            >
-              <span
-                aria-hidden="true"
-                className="inline-block w-3.5 border-t-2 border-dashed"
-                style={{ borderColor: CHART_TOTAL_LINE_COLOR }}
-              />
-              <span>{t('workbench.movingAvg7d')}</span>
-            </button>
-          ) : null}
-
           {activeTab === 'volume' ? (
             <div className="dashboard-wb-tabs" role="group" aria-label={t('overview.trend.metric')}>
               {(
@@ -969,23 +1029,6 @@ export function TrendWorkbench({
             </div>
           ) : null}
 
-          {activeTab === 'cost' && !isSevenDayWeekly ? (
-            <button
-              type="button"
-              aria-pressed={showCostTrend}
-              disabled={costBars.length < 2}
-              onClick={() => setShowCostTrend((prev) => !prev)}
-              className="dashboard-ghost-toggle"
-            >
-              <span
-                aria-hidden="true"
-                className="inline-block w-3.5 border-t-2 border-dashed"
-                style={{ borderColor: CHART_TOTAL_LINE_COLOR }}
-              />
-              <span>{t('workbench.costTrendLine')}</span>
-            </button>
-          ) : null}
-
           {/* Permanently anchored far-right granularity slot */}
           <div
             className={`dashboard-wb-tabs shrink-0 transition-opacity ${isGrainDisabled ? 'opacity-45' : ''}`}
@@ -1013,9 +1056,185 @@ export function TrendWorkbench({
         </div>
       </div>
 
-      {/* Layer 2: Calm right-aligned inline hover readout */}
-      <div className="mt-1.5 flex min-h-5 shrink-0 items-center justify-end gap-2">
-        {renderInlineReadout()}
+      {/* Layer 2: Left-anchored transparent overlays / single-model selector + right inline hover readout */}
+      <div className="mt-1.5 flex h-[26px] shrink-0 flex-nowrap items-center justify-between gap-2">
+        <div className="flex shrink-0 items-center gap-2">
+          {activeTab === 'volume' && volumeMode === 'models' && !isSevenDayWeekly ? (
+            <button
+              type="button"
+              aria-pressed={showMovingAvg}
+              disabled={!canOverlayMovingAvg}
+              onClick={() => setShowMovingAvg((prev) => !prev)}
+              className="dashboard-ghost-toggle"
+            >
+              <span
+                aria-hidden="true"
+                className="inline-block w-3.5 border-t-2 border-dashed"
+                style={{ borderColor: CHART_TOTAL_LINE_COLOR }}
+              />
+              <span>{movingAvgConfig.label}</span>
+            </button>
+          ) : null}
+
+          {activeTab === 'cost' && !isSevenDayWeekly ? (
+            <button
+              type="button"
+              aria-pressed={showCostTrend}
+              disabled={costBars.length < 2}
+              onClick={() => setShowCostTrend((prev) => !prev)}
+              className="dashboard-ghost-toggle"
+            >
+              <span
+                aria-hidden="true"
+                className="inline-block w-3.5 border-t-2 border-dashed"
+                style={{ borderColor: CHART_TOTAL_LINE_COLOR }}
+              />
+              <span>{t('workbench.costTrendLine')}</span>
+            </button>
+          ) : null}
+
+          {activeTab === 'cache' && cacheSubView === 'models' && !isSevenDayWeekly ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <div ref={cachePickerRef} className="relative">
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={cacheModelPickerOpen}
+                  aria-label={t('workbench.cachePickerTitle')}
+                  onClick={() => setCacheModelPickerOpen((prev) => !prev)}
+                  className="inline-flex h-[26px] cursor-pointer items-center gap-1.5 rounded-[7px] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] px-2.5 text-[0.72rem] font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-border-strong)]"
+                >
+                  {selectedModelCacheSeries.slice(0, 3).map((s) => (
+                    <span
+                      key={s.modelName}
+                      aria-hidden="true"
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: s.color }}
+                    />
+                  ))}
+                  <span>{t('workbench.cachePickerTitle')}</span>
+                  <span className="font-mono text-[0.67rem] tabular-nums text-[var(--color-text-muted)]">
+                    {t('workbench.cachePickerSelectedCount', {
+                      selected: selectedCacheModelNames.length,
+                      total: orderedModelNames.length,
+                    })}
+                  </span>
+                  <IconChevronDown className="size-3 shrink-0 text-[var(--color-text-soft)]" />
+                </button>
+
+                {cacheModelPickerOpen ? (
+                  <div
+                    role="dialog"
+                    aria-label={t('workbench.cachePickerTitle')}
+                    className="absolute top-[calc(100%+6px)] left-0 z-30 w-[min(360px,calc(100vw-48px))] rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-card,var(--color-bg))] shadow-xl"
+                  >
+                    <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border-faint)] px-3.5 py-2.5 text-[0.72rem]">
+                      <span className="font-semibold text-[var(--color-text)]">
+                        {t('workbench.cachePickerTitle')}
+                      </span>
+                      <div className="flex items-center gap-2.5 text-[0.69rem]">
+                        <button
+                          type="button"
+                          onClick={() => onSelectedCacheModelsChange(null)}
+                          className="cursor-pointer text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
+                        >
+                          {t('workbench.cachePickerReset')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onSelectedCacheModelsChange(new Set(orderedModelNames))}
+                          className="cursor-pointer text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
+                        >
+                          {t('workbench.cachePickerSelectAll')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onSelectedCacheModelsChange(new Set())}
+                          className="cursor-pointer text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
+                        >
+                          {t('workbench.cachePickerClear')}
+                        </button>
+                        <span className="font-mono tabular-nums text-[var(--color-text-soft)]">
+                          {selectedCacheModelNames.length} / {orderedModelNames.length}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      onScroll={handleScrollReveal}
+                      className="dashboard-subtle-scrollbar max-h-[260px] space-y-2.5 overflow-y-auto px-2.5 py-2"
+                    >
+                      {cacheModelGroups.map((group) => (
+                        <div key={group.key} className="space-y-0.5">
+                          <div className="px-1.5 py-0.5 text-[0.65rem] font-medium text-[var(--color-text-soft)]">
+                            {group.label}
+                          </div>
+                          {group.items.map((item) => {
+                            const isChecked = effectiveSelectedCacheModels.has(item.modelName);
+                            return (
+                              <button
+                                key={item.modelName}
+                                type="button"
+                                role="checkbox"
+                                aria-checked={isChecked}
+                                onClick={() => toggleCacheModelItem(item.modelName)}
+                                className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-[7px] px-2 py-1.5 text-left text-[0.72rem] transition-colors ${
+                                  isChecked
+                                    ? 'bg-[var(--color-row-bg)] text-[var(--color-text)]'
+                                    : 'text-[var(--color-text-muted)] hover:bg-[var(--color-row-bg)] hover:text-[var(--color-text)]'
+                                }`}
+                              >
+                                <span className="flex min-w-0 items-center gap-2">
+                                  <span
+                                    aria-hidden="true"
+                                    className="size-2 shrink-0 rounded-full"
+                                    style={{ backgroundColor: item.color }}
+                                  />
+                                  <span className="truncate font-mono">{item.modelName}</span>
+                                </span>
+                                <span className="flex shrink-0 items-center gap-2 font-mono text-[0.68rem] tabular-nums">
+                                  <span className="text-[var(--color-text-muted)]">
+                                    {item.hitRate !== null ? formatPercent(item.hitRate) : '—'}
+                                  </span>
+                                  <span
+                                    aria-hidden="true"
+                                    className={`inline-block w-3 text-center ${
+                                      isChecked ? 'text-[var(--color-accent)]' : 'opacity-0'
+                                    }`}
+                                  >
+                                    ✓
+                                  </span>
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <button
+                type="button"
+                aria-pressed={showCacheGlobalAvg}
+                onClick={() => setShowCacheGlobalAvg((prev) => !prev)}
+                className="dashboard-ghost-toggle"
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-block w-3.5 border-t-2 border-dashed border-[var(--color-text-soft)]"
+                />
+                <span>{t('workbench.cacheGlobalAvgLine')}</span>
+                <span className="font-mono tabular-nums">
+                  {formatPercent(data.totals.cacheHitRate)}
+                </span>
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="min-w-0 flex-1 overflow-hidden text-right">{renderInlineReadout()}</div>
       </div>
 
       {/* Layer 3: Fixed flex chart stage */}
@@ -1133,6 +1352,7 @@ export function TrendWorkbench({
                       centerValue={formatCompactTokens(weeklyTotal)}
                       emptyLabel={t('workbench.noData')}
                       centerTransitionKey={`weekly-volume-${volumeMode}`}
+                      modeTransitionKey={`weekly-volume-${volumeMode}`}
                     />
                   </div>
                 </div>
@@ -1149,7 +1369,7 @@ export function TrendWorkbench({
               legendItems={modelLegendItems}
               formatYAxis={(val) => formatCompactTokens(val)}
               overlayLine={movingAvgValues}
-              overlayLabel={t('workbench.movingAvg7d')}
+              overlayLabel={movingAvgConfig.label}
               overlayColor={CHART_TOTAL_LINE_COLOR}
               partialLabel={t('workbench.partialBucket')}
               emptyLabel={t('workbench.noData')}
@@ -1180,7 +1400,7 @@ export function TrendWorkbench({
 
               <div
                 aria-label={t('workbench.modeByToken')}
-                className="flex shrink-0 flex-wrap items-center gap-1.5"
+                className="flex shrink-0 flex-wrap items-center gap-1.5 pl-[52px]"
               >
                 {animatedTokenSlices.map((part) => {
                   const pct = Math.max(0, Math.min(100, part.share * 100));
@@ -1334,22 +1554,30 @@ export function TrendWorkbench({
           ) : (
             <MultiLineChart
               ariaLabel={t('workbench.cacheByModel')}
+              hideSeriesChips
               hideReadoutBar
               minColumnWidth={scrollMinColWidth}
               onHoverIndexChange={setHoveredCacheIdx}
               yMin={cacheDomain.yMin}
               yMax={cacheDomain.yMax}
+              referenceLine={
+                showCacheGlobalAvg
+                  ? { value: data.totals.cacheHitRate, label: t('workbench.cacheGlobalAvgLine') }
+                  : undefined
+              }
               formatValue={(v) => formatPercent(v)}
               formatDenominator={(d) => t('workbench.promptDenominator', { value: formatCompactTokens(d) })}
-              emptyLabel={t('workbench.noData')}
+              emptyLabel={
+                selectedCacheModelNames.length === 0
+                  ? t('workbench.cachePickerEmpty')
+                  : t('workbench.noData')
+              }
               xAxis={buckets.map((b) => ({
                 key: b.key,
                 label: b.label,
                 fullLabel: b.fullLabel,
               }))}
-              hiddenSeriesIds={hiddenCacheIds}
-              onToggleSeries={onToggleCacheModel}
-              series={modelCacheSeriesList.map((item) => ({
+              series={selectedModelCacheSeries.map((item) => ({
                 id: item.modelName,
                 label: item.modelName,
                 color: item.color,
@@ -1438,6 +1666,7 @@ export function TrendWorkbench({
                       centerValue={formatCompactTokens(migrationTotals)}
                       emptyLabel={t('workbench.noData')}
                       centerTransitionKey={`weekly-migration-${migrationGroup}`}
+                      modeTransitionKey={`weekly-migration-${migrationGroup}`}
                     />
                   </div>
                 </div>

@@ -22,7 +22,7 @@ function withMessages(children: React.ReactNode) {
   return <NextIntlClientProvider locale="zh" timeZone="Asia/Singapore" messages={{ dashboard: zh }}>{children}</NextIntlClientProvider>;
 }
 
-it('Guest sees the workbench overview and three permission placeholders inside Diagnostics -> Projects', async () => {
+it('Guest sees the workbench overview and the minimalist Diagnostics checklist without private records', async () => {
   render(withMessages(<TokenDashboardFeature data={emptyDashboard()} />));
   expect(screen.getByRole('button', { name: zh.page.range30d })).toBeDefined();
   expect(screen.getByRole('heading', { name: zh.workbench.trendTitle })).toBeDefined();
@@ -32,9 +32,10 @@ it('Guest sees the workbench overview and three permission placeholders inside D
 
   fireEvent.click(screen.getByRole('button', { name: zh.workbench.diagnosticsOpen }));
   const dialog = await screen.findByRole('dialog');
-  fireEvent.click(within(dialog).getByRole('tab', { name: zh.workbench.diagnosticsTabProjects }));
-  expect(await within(dialog).findByRole('heading', { name: zh.projects.title })).toBeDefined();
-  expect(await within(dialog).findAllByText('无权限查看')).toHaveLength(3);
+  expect(within(dialog).getByText(zh.workbench.diagnosticsTitle)).toBeDefined();
+  expect(within(dialog).getByText(zh.workbench.diagnosticsNoAlerts)).toBeDefined();
+  expect(within(dialog).getByText(zh.workbench.diagnosticsSectionSources)).toBeDefined();
+  expect(within(dialog).queryByText('无权限查看')).toBeNull();
 });
 
 it('restricted project panels never render private records or interactive data controls', () => {
@@ -48,16 +49,18 @@ it('restricted project panels never render private records or interactive data c
   expect(screen.queryByRole('table')).toBeNull();
 });
 
-it('Pro sees project records inside Diagnostics while import remains Owner-only', async () => {
+it('Pro sees project records when permitted while import remains Owner-only', async () => {
   const data = emptyDashboard();
   data.projects = [{ ...data.totals, projectKey: 'readable-key', projectName: 'Readable project',
     modelsUsed: [], shareOfTokens: 1, shareOfCost: 1, lastActivity: '2026-10-14' }];
-  render(withMessages(<TokenDashboardFeature data={data} canViewDetails />));
-  fireEvent.click(screen.getByRole('button', { name: zh.workbench.diagnosticsOpen }));
-  const dialog = await screen.findByRole('dialog');
-  fireEvent.click(within(dialog).getByRole('tab', { name: zh.workbench.diagnosticsTabProjects }));
-  expect(await within(dialog).findByText('Readable project')).toBeDefined();
-  expect(within(dialog).queryByText('无权限查看')).toBeNull();
+  render(withMessages(
+    <>
+      <TokenDashboardFeature data={data} canViewDetails />
+      <ProjectsSection data={data} canViewDetails />
+    </>,
+  ));
+  expect(screen.getByText('Readable project')).toBeDefined();
+  expect(screen.queryByText('无权限查看')).toBeNull();
   expect(screen.queryByRole('button', { name: '导入' })).toBeNull();
 });
 
@@ -88,18 +91,12 @@ it('shows the reviewed USD total and coverage to an Owner, then clears them when
   expect(screen.getByText(/计费正在从版本 3287 更新至 3288/)).toBeDefined();
   expect(screen.queryByText('$999.00')).toBeNull();
 
-  // Open diagnostics drawer to inspect deep billing breakdown & channel filter
+  // Open diagnostics checklist to inspect unpriced models & source status
   fireEvent.click(screen.getByRole('button', { name: zh.workbench.diagnosticsOpen }));
   const dialog = await screen.findByRole('dialog');
-  expect(within(dialog).getAllByText('$1.25 USD')).toHaveLength(1);
-  expect(within(dialog).getByText(zh.costs.reference.liveRevision)).toBeDefined();
-  expect(within(dialog).getByText('3288')).toBeDefined();
-  expect(within(dialog).getByText(zh.costs.reference.unpricedGroups)).toBeDefined();
-  expect(within(dialog).getByText(zh.costs.reference.conflicted)).toBeDefined();
-  const modelTable = within(dialog).getByRole('table', { name: zh.costs.reference.modelCosts });
-  expect(within(modelTable).getByText('$1.25')).toBeDefined();
-  fireEvent.change(within(dialog).getByRole('combobox', { name: zh.costs.reference.channel }), { target: { value: 'claudeCode' } });
-  expect(within(modelTable).getByText('$0.25')).toBeDefined();
+  expect(within(dialog).getByText(zh.workbench.diagnosticsSectionUnpriced)).toBeDefined();
+  expect(within(dialog).getByText('provider/unknown')).toBeDefined();
+  expect(within(dialog).getByText(zh.workbench.diagnosticsSectionSources)).toBeDefined();
   fireEvent.click(within(dialog).getByRole('button', { name: zh.workbench.diagnosticsClose }));
 
   // Switch to cost trend tab in main workbench
@@ -252,32 +249,11 @@ it('preserves channel selection across range switches, formats sub-cent totals w
 
   fireEvent.click(screen.getByRole('button', { name: zh.workbench.diagnosticsOpen }));
   const dialog = await screen.findByRole('dialog');
-
-  const channelSelect = within(dialog).getByRole('combobox', { name: zh.costs.reference.channel }) as HTMLSelectElement;
-  fireEvent.change(channelSelect, { target: { value: 'claudeCode' } });
-  const modelTable = within(dialog).getByRole('table', { name: zh.costs.reference.modelCosts });
-  expect(within(modelTable).getByText('<$0.01')).toBeDefined();
+  expect(within(dialog).getByText('provider/new-model')).toBeDefined();
 
   fireEvent.click(screen.getByRole('button', { name: zh.page.rangeAll }));
-  await waitFor(() => expect(screen.getAllByText('$4.00 USD')).toHaveLength(2));
-  expect((within(dialog).getByRole('combobox', { name: zh.costs.reference.channel }) as HTMLSelectElement).value).toBe('claudeCode');
-  expect(within(within(dialog).getByRole('table', { name: zh.costs.reference.modelCosts })).getByText('$1.50')).toBeDefined();
-
-  const unpricedSummary = within(dialog).getByText(zh.costs.reference.unpricedDetails).closest('summary')!;
-  const unpricedDetails = unpricedSummary.closest('details')!;
-  unpricedDetails.open = true;
-  fireEvent(unpricedDetails, new Event('toggle'));
-  const unpricedTable = within(dialog).getByRole('table', { name: zh.costs.reference.unpricedDetails });
-  expect(unpricedTable.className).toContain('dashboard-data-table');
-  expect(within(unpricedTable).getByText('provider/new-model')).toBeDefined();
-
-  const dailySummary = within(dialog).getByText(zh.costs.reference.dailyCosts).closest('summary')!;
-  const dailyDetails = dailySummary.closest('details')!;
-  dailyDetails.open = true;
-  fireEvent(dailyDetails, new Event('toggle'));
-  const dailyTable = within(dialog).getByRole('table', { name: zh.costs.reference.dailyCosts });
-  expect(dailyTable.className).toContain('dashboard-data-table');
-  expect(within(dailyTable).getByText('2026-10-27')).toBeDefined();
+  await waitFor(() => expect(screen.getByText('$4.00 USD')).toBeDefined());
+  expect(within(dialog).getByText('provider/new-model')).toBeDefined();
 
   fireEvent.click(within(dialog).getByRole('button', { name: zh.workbench.diagnosticsClose }));
   fireEvent.click(screen.getByRole('tab', { name: zh.workbench.tabCost }));
@@ -362,6 +338,7 @@ it('fills continuous calendar dates for all-range reference cost trend and prese
   render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));
   await waitFor(() => expect(screen.getByText('$3.00 USD')).toBeDefined());
   expect(screen.queryByText('$999.00')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: zh.workbench.curatedFilterOn }));
   expect(screen.getAllByText('$12.34').length).toBeGreaterThan(0);
 });
 
