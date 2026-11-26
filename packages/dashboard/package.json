@@ -55,7 +55,7 @@
     "@types/react-dom": "^19",
     "esbuild": "^0.27.7",
     "jsdom": "^30.1.0",
-    "next": "16.4.3",
+    "next": "16.4.6",
     "next-intl": "4.11.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
