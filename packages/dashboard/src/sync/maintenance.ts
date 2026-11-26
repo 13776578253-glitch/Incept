@@ -19,6 +19,8 @@ import {resolveIdentityConflict} from './usage-identity-resolution';
 import {publishBillingRead,reviewBillingRead} from './usage-billing-publication';
 import {managedInput,readBillingPublication} from '../adapters/runtime/billing-publication';
 import {updateManagedBilling} from './managed-billing';
+import {reconcileColdBaseline,type BaselineMode} from './cold-baseline-reconcile';
+import {ingestColdBaselineWave1} from './cold-baseline-ingest';
 import type {SyncActor} from '../domain/sync';
 import type {TokenDashboardData,UsageRange} from '../domain';
 
@@ -182,6 +184,63 @@ export async function runMaintenance(argv=process.argv.slice(2),env=process.env)
       if(options.report)writeFileSync(absolute(options,'report'),JSON.stringify(result,null,2),{flag:'wx',mode:0o600});
       return result;
     }finally{db.close();}
+  }
+  if(command==='reconcile-cold-baseline'){
+    const cutoff=required(options,'cutoff');
+    const mode=options['baseline-mode'];
+    if(mode!==undefined&&(typeof mode!=='string'||!['prod-v4','local-native','archive'].includes(mode))){
+      throw new MaintenanceError('INVALID_BASELINE_MODE');
+    }
+    const optionalAbsolute=(key:string)=>options[key]===undefined?undefined:absolute(options,key);
+    const splitAbsoluteList=(key:string)=>typeof options[key]==='string'&&options[key].trim()
+      ?options[key].split(',').map(item=>item.trim()).filter(Boolean).map(item=>{
+        if(!isAbsolute(item))throw new MaintenanceError('ABSOLUTE_PATH_REQUIRED');
+        return resolve(item);
+      }):undefined;
+    const explicitActiveSessions=typeof options['active-sessions']==='string'&&options['active-sessions'].trim()
+      ?options['active-sessions'].split(',').map(item=>item.trim()).filter(Boolean):undefined;
+    return reconcileColdBaseline({
+      cutoff,
+      baselineMode:mode as BaselineMode|undefined,
+      excludeActiveSessions:options['include-active-sessions']===true?false:true,
+      baselineV4Path:optionalAbsolute('baseline-v4'),
+      baselineArchivePath:optionalAbsolute('baseline-archive'),
+      localHome:optionalAbsolute('local-home'),
+      localV1ImportsPath:optionalAbsolute('local-v1-imports'),
+      prodV1ImportsPath:optionalAbsolute('prod-v1-imports'),
+      deviceBundlePaths:splitAbsoluteList('device-bundles'),
+      agentStateDir:optionalAbsolute('agent-state-dir'),
+      explicitActiveSessions,
+      outputArchivePath:optionalAbsolute('output-archive'),
+      reportPath:optionalAbsolute('report'),
+    });
+  }
+  if(command==='ingest-cold-baseline-v1'){
+    const actor=owner(options);
+    const targetV4Path=absolute(options,'target-v4');
+    const cutoff=required(options,'cutoff');
+    const rawV1=required(options,'v1-imports');
+    const v1ImportPaths=rawV1.split(',').map(item=>item.trim()).filter(Boolean).map(item=>{
+      if(!isAbsolute(item))throw new MaintenanceError('ABSOLUTE_PATH_REQUIRED');
+      return resolve(item);
+    });
+    const parseOptionalInt=(key:string)=>{
+      if(options[key]===undefined)return undefined;
+      const value=Number(required(options,key));
+      if(!Number.isSafeInteger(value)||value<0)throw new MaintenanceError('INVALID_'+key.toUpperCase().replaceAll('-','_'));
+      return value;
+    };
+    const result=ingestColdBaselineWave1({
+      targetV4Path,
+      v1ImportPaths,
+      cutoff,
+      actor,
+      apply:options.apply===true,
+      expectedRecords:parseOptionalInt('expected-records'),
+      expectedTokens:parseOptionalInt('expected-tokens'),
+    });
+    if(options.report)writeFileSync(absolute(options,'report'),JSON.stringify(result,null,2)+'\n',{flag:'wx',mode:0o600});
+    return result;
   }
   if(!syncPath||!isAbsolute(syncPath))throw new MaintenanceError('SYNC_DATABASE_NOT_CONFIGURED');
   if(!legacyPath||!isAbsolute(legacyPath))throw new MaintenanceError('V1_DATABASE_NOT_CONFIGURED');
