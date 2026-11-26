@@ -8,6 +8,7 @@ import type {ParentCapture,SessionIsolation,RecoveryRange,buildCandidate} from '
 export type Candidate=ReturnType<typeof buildCandidate>;
 export type HistoricalSealDecision={deviceId:string;manifestHash:string;generationId:string;receipt:SyncReceipt;reason:string;owner:{subject:string;decisionId:string};disposition?:'sealed'|'isolated'};
 export type HistoricalSeal=HistoricalSealDecision&{scope:string;source:ParentCapture['header']['manifest']['scope']['source'];sessionId:string;parentHash:string;proofHash:string;signature:string};
+export type SupersededScope={source:ParentCapture['header']['manifest']['scope']['source'];sessionId:string;coveredBySessionId:string;reason:string};
 export const scopeKey=(source:string,sessionId:string)=>hash([source,sessionId]);
 export class AgentState {
   readonly db:DatabaseSync;
@@ -47,6 +48,7 @@ export class AgentState {
     return added;
   });}
   recoveryRanges(){return this.get<RecoveryRange[]>('recoveryRanges')??[];}
+  supersededScopes(){return this.get<SupersededScope[]>('supersededScopes')??[];}
   confirmedTokenTotal(scope:string){const row=this.db.prepare('SELECT token_total FROM lineage_tokens WHERE scope=?').get(scope);return row?Number(row.token_total):undefined;}
   historicalPolicies():HistoricalSeal[]{return this.db.prepare('SELECT seal_json FROM historical_seals ORDER BY scope').all().map(row=>JSON.parse(String(row.seal_json)));}
   historicalSeals(){return this.historicalPolicies().filter(policy=>policy.disposition!=='isolated');}

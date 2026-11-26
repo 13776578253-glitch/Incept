@@ -7,6 +7,8 @@ import * as files from '../adapters/local/files';
 import { collectCodexEvents } from '../adapters/local/collectors/codex';
 import { collectIndexedAgentEvents } from '../adapters/local/collectors/aiusage';
 import { exportTokenData } from '../adapters/local/imports/exporter';
+import { hash } from '../adapters/local/imports/identity';
+import { captureHome } from '../agent/capture';
 import type { RawUsageEvent } from '../adapters/local/types';
 
 let home = '';
@@ -164,4 +166,52 @@ it('deduplicates identical indexed rows without dropping other sessions, timesta
   expect(result.events).toHaveLength(4);
   expect(total(result.events)).toBe(481);
   expect(result.ingestedFiles.size).toBe(2);
+});
+
+it('preserves Codex subagent primary session_meta identity when a later line embeds parent session_meta', async () => {
+  const dir = join(home, '.codex', 'sessions');
+  mkdirSync(dir, { recursive: true });
+  // Parent thread has a much larger cumulative counter.
+  writeFileSync(join(dir, 'rollout-parent-thread.jsonl'), [
+    { type: 'session_meta', payload: { id: 'parent-thread', cwd: 'D:/project', source: 'vscode' } },
+    { type: 'turn_context', payload: { model: 'priced-model' } },
+    count(0, usage(10_000, 1_000, 8_000, 200), usage(10_000, 1_000, 8_000, 200)),
+    count(2, usage(12_000, 1_200, 9_500, 250), usage(2_000, 200, 1_500, 50)),
+  ].map(value => JSON.stringify(value)).join('\n'));
+
+  // Two subagent rollouts share an exact timestamp and both embed parent-thread session_meta on line 2.
+  const writeSubagent = (file: string, childId: string, firstUsage: ReturnType<typeof usage>) => {
+    writeFileSync(join(dir, file), [
+      { type: 'session_meta', payload: { id: childId, cwd: 'D:/project/child', source: { subagent: { thread_spawn: { parent_thread_id: 'parent-thread' } } } } },
+      { type: 'session_meta', payload: { id: 'parent-thread', cwd: 'D:/project', source: 'vscode' } },
+      { type: 'turn_context', payload: { model: 'priced-model' } },
+      count(1, firstUsage, firstUsage),
+    ].map(value => JSON.stringify(value)).join('\n'));
+  };
+  writeSubagent('rollout-child-a.jsonl', 'child-a', usage(300, 40, 100, 10));
+  writeSubagent('rollout-child-b.jsonl', 'child-b', usage(500, 60, 200, 20));
+
+  const collected = collect();
+  expect(collected.sessionIntegrity).toEqual([]);
+  const bySession = new Map<string, RawUsageEvent[]>();
+  for (const event of collected.events) {
+    const list = bySession.get(event.sessionId) ?? [];
+    list.push(event);
+    bySession.set(event.sessionId, list);
+  }
+  expect([...bySession.keys()].sort()).toEqual(['child-a', 'child-b', 'parent-thread']);
+  expect(total(bySession.get('parent-thread')!)).toBe(13_200);
+  expect(total(bySession.get('child-a')!)).toBe(340);
+  expect(total(bySession.get('child-b')!)).toBe(560);
+
+  // captureHome must produce 3 clean, isolated-free captures with session anchors bound to each file's primary session_meta.
+  const snap = join(home, 'snapshot');
+  const captured = await captureHome(home, snap, ['codex']);
+  expect(captured.isolations ?? []).toEqual([]);
+  expect(captured.issues).toEqual([]);
+  expect(captured.captures.map(c => c.sessionId).sort()).toEqual(['child-a', 'child-b', 'parent-thread']);
+  for (const item of captured.captures) {
+    expect(item.proofs).toHaveLength(1);
+    expect(item.proofs[0].range.sessionAnchorHash).toBe(hash(item.sessionId));
+  }
 });

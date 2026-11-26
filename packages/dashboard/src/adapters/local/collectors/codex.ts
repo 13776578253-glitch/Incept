@@ -64,6 +64,7 @@ export function collectCodexEvents(home: string, pricingMap: Map<string, UnitPri
       let currentModel = 'unknown';
       let currentCwd = '';
       let sessionId = basename(filePath.replace(/\.zst$/, ''), '.jsonl').replace(/^rollout-/, '');
+      let hasSessionMetaId = false;
       let malformedLines = 0;
 
       for(const [lineIndex, line] of content.split('\n').entries()) {
@@ -91,9 +92,14 @@ export function collectCodexEvents(home: string, pricingMap: Map<string, UnitPri
           if(obj.type === 'session_meta') {
             if(obj.payload?.id !== undefined) {
               if (typeof obj.payload.id !== 'string' || !obj.payload.id.trim()) throw new Error('Invalid session identity');
-              sessionId = obj.payload.id;
+              // Preserve the file's primary session_meta identity; Codex subagent rollouts
+              // embed the parent thread's session_meta on a later line and must not hijack child usage.
+              if (!hasSessionMetaId) {
+                sessionId = obj.payload.id;
+                hasSessionMetaId = true;
+              }
             }
-            if(obj.payload?.cwd) currentCwd = obj.payload.cwd;
+            if(obj.payload?.cwd && !currentCwd) currentCwd = obj.payload.cwd;
           } else if(obj.type === 'turn_context') {
             if(obj.payload?.model) currentModel = obj.payload.model;
             if(obj.payload?.cwd) currentCwd = obj.payload.cwd;

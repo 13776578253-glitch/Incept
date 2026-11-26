@@ -133,3 +133,15 @@ test('historical hold rejects an unverified receipt and invalid disposition',()=
   assert.throws(()=>ctx.state.sealHistorical(key,{...input,disposition:'ignore'}),/HISTORICAL_DISPOSITION_INVALID/);
   assert.equal(ctx.state.historicalPolicies().length,0);
 }));
+
+test('supersededScopes skips absorbed legacy child scopes without blocking independent new sessions',()=>setup(async ctx=>{
+  ctx.state.set('supersededScopes',[{source,sessionId:'absorbed-child',coveredBySessionId:'historical',reason:'ALREADY_IN_PARENT_EPOCH'}]);
+  f.writePhase0Source(ctx.home,source,{session:'absorbed-child',id:'child',at:f.PHASE0_AT+5000});
+  f.writePhase0Source(ctx.home,source,{session:'fresh-sibling',id:'fresh',at:f.PHASE0_AT+10000});
+  const first=await ctx.engine().run();
+  assert.equal(first.sent,1);
+  assert.equal(first.blockingIssues,0);
+  const scopes=ctx.service.db.prepare("SELECT json_extract(scope_json,'$.sessionId') sid FROM sync_origins").all().map(r=>r.sid);
+  assert(scopes.includes('fresh-sibling'));
+  assert(!scopes.includes('absorbed-child'));
+}));

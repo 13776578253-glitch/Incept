@@ -74,7 +74,8 @@ function fileProof(file:File,scope:{source:TransferSource;sessionId:string},read
     root=hash(parts.map(p=>[p.schema,p.rows]));envelopeRoot=hash(parts.map(p=>[p.schema,p.envelopes]));if(obj.sessionId===scope.sessionId)anchor=hash(scope.sessionId);
   }else if(text&&(file.locator.endsWith('.jsonl')||file.locator.endsWith('.jsonl.zst')||file.locator.endsWith('.jsonl.zstd'))){
     const rows=text.split('\n').filter(r=>r.trim()).map(r=>{try{return JSON.parse(r);}catch(error){if(scope.source==='deepseekHarness')return {unparsedLine:r};throw error;}});envelopeRoot=hash(rows.map(r=>hash(maskUsage(r,scope.source))));
-    if(scope.source==='codex'&&rows.some(r=>r.type==='session_meta'&&r.payload?.id===scope.sessionId)||scope.source==='claudeCode'&&rows.every(r=>!r.sessionId||r.sessionId===scope.sessionId)&&rows.some(r=>r.sessionId===scope.sessionId)
+    const primaryCodexMetaId=scope.source==='codex'?rows.find(r=>r.type==='session_meta'&&typeof r.payload?.id==='string'&&r.payload.id.trim())?.payload?.id:undefined;
+    if(scope.source==='codex'&&primaryCodexMetaId===scope.sessionId||scope.source==='claudeCode'&&rows.every(r=>!r.sessionId||r.sessionId===scope.sessionId)&&rows.some(r=>r.sessionId===scope.sessionId)
       ||scope.source==='deepseekHarness'&&rows.some(r=>r.type==='session'&&r.id===scope.sessionId)
       ||scope.source==='commandcode'&&'cc-'+basename(file.locator,'.jsonl')===scope.sessionId)anchor=hash(scope.sessionId);
   }else throw Error('UNSUPPORTED_EVIDENCE');

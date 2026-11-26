@@ -44,12 +44,14 @@ export class SyncEngine {
     // incomplete merely because an aggregate cap was reached.
     const captured={captures:[] as Capture[],issues:[] as string[],isolations:[] as SessionIsolation[]};let quarantineNew=0;
     const historicalPolicies=this.state.historicalPolicies();
+    const supersededScopes=this.state.supersededScopes();
     const policyFor=(source:string,sessionId:string)=>historicalPolicies.find(policy=>policy.source===source&&policy.sessionId===sessionId);
+    const supersededFor=(source:string,sessionId:string)=>supersededScopes.find(item=>item.source===source&&item.sessionId===sessionId);
     const currentPolicies=this.state.parents().filter(parent=>this.state.isHistoricalPolicyCurrent(parent,this.config.deviceId));
     const sourceReports:Record<string,{capturedSessions:number;isolatedSessions:number;sealedSessions?:number;heldHistoricalSessions?:number;failed:boolean;changedSessions?:number;outcome?:string}>={};
     for(const source of this.config.allowedSources){
       try{const part=await this.collect(this.config.home,[source],this.state.parents(),signal,{tolerantIncomplete:false,recoveryRanges:this.state.recoveryRanges(),autoReviewSessions:this.config.autoReviewSessions});
-        const restricted=(sessionId:string)=>!!policyFor(source,sessionId);
+        const restricted=(sessionId:string)=>!!policyFor(source,sessionId)||!!supersededFor(source,sessionId);
         const healthy=part.captures.filter(c=>!restricted(c.sessionId));
         const isolations:SessionIsolation[]=[...part.isolations??[],...part.captures.filter(c=>restricted(c.sessionId)).map(c=>({source,sessionId:c.sessionId,
           reason:policyFor(source,c.sessionId)?.disposition==='isolated'?'HISTORICAL_CONTINUATION_UNVERIFIED':'HISTORICAL_SCOPE_SEALED',affectedRecords:c.records.length,unattributedTokens:0,coverage:'session' as const}))];
