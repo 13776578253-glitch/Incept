@@ -1,0 +1,3903 @@
+{
+  "schemaVersion": 1,
+  "measuredDate": "2026-11-25",
+  "timeZone": "Asia/Singapore",
+  "main": "aefdab427ef90bf53f4f83c3713994735b582488",
+  "worktreeHead": "c1afe647786d1264be65e8e426450c371e98d2c5",
+  "dashboardSourceTreeSha256": "3590e5ca3ec02c0c41ad642b54c97de1febd632e436279280f85553f78f5f50e",
+  "nextBuildId": "9y7WS8anfTXsjC0Iu9hX9",
+  "browserRuns": [
+    {
+      "label": "Original redirected hostname on Next dev / Guest / existing local published snapshots",
+      "originalSampleFile": "dev-guest-final.json",
+      "digestNotes": "relative times only; no response bodies, request headers or device identifiers",
+      "dataset": {
+        "7d": {
+          "role": "guest",
+          "days": 7,
+          "models": 26,
+          "sessions": 0,
+          "bytes": 44726,
+          "checkedAt": "2026-11-25T06:02:49.541Z"
+        },
+        "30d": {
+          "role": "guest",
+          "days": 30,
+          "models": 29,
+          "sessions": 0,
+          "bytes": 96010,
+          "checkedAt": "2026-11-25T05:29:16.326Z"
+        },
+        "all": {
+          "role": "guest",
+          "days": 269,
+          "models": 43,
+          "sessions": 0,
+          "bytes": 246715,
+          "checkedAt": "2026-11-25T05:26:32.953Z"
+        }
+      },
+      "cases": [
+        {
+          "kind": "sequence",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 29.5,
+              "correctDomMs": 78,
+              "firstCorrectFrameMs": 83.7,
+              "stableMs": 83.7,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 165.9,
+              "feedbackMs": 20.9,
+              "correctDomMs": 50.8,
+              "firstCorrectFrameMs": 50.9,
+              "stableMs": 85.2,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 331.9,
+              "feedbackMs": 19.2,
+              "correctDomMs": 60.6,
+              "firstCorrectFrameMs": 67.1,
+              "stableMs": 67.1,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 498.8,
+              "feedbackMs": 79.1,
+              "correctDomMs": 106.1,
+              "firstCorrectFrameMs": 106.6,
+              "stableMs": 130.8,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 715.9,
+              "feedbackMs": 13.4,
+              "correctDomMs": 19.6,
+              "firstCorrectFrameMs": 29.3,
+              "stableMs": 50.1,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 25.9,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 58.1,
+              "jsonReadyMs": 58.7,
+              "ttfbMs": 29.9,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 184.4,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 224,
+              "jsonReadyMs": 228.2,
+              "ttfbMs": 29.4,
+              "downloadMs": 1.1,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 348.3,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 371.1,
+              "jsonReadyMs": 373.8,
+              "ttfbMs": 21.8,
+              "downloadMs": 1.6,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 573.1,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 605.2,
+              "jsonReadyMs": 616.3,
+              "ttfbMs": 14.4,
+              "downloadMs": 1.3,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 723.8,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 759.6,
+              "jsonReadyMs": 760.1,
+              "ttfbMs": 34.5,
+              "downloadMs": 0.5,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            24.6,
+            34.2,
+            78,
+            87.1,
+            183.8,
+            216.7,
+            251,
+            253.6,
+            347.7,
+            355,
+            392.5,
+            402.7,
+            565,
+            604.8,
+            623,
+            623.3,
+            723.5,
+            735.4,
+            765.2,
+            772.6
+          ],
+          "longTasks": [
+            {
+              "startMs": 499.6,
+              "durationMs": 77
+            }
+          ]
+        },
+        {
+          "kind": "cold-all",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "all",
+              "clickMs": 0,
+              "feedbackMs": 24.9,
+              "correctDomMs": 63.9,
+              "firstCorrectFrameMs": 68.5,
+              "stableMs": 68.5,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 20.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 40.4,
+              "jsonReadyMs": 44.6,
+              "ttfbMs": 18.1,
+              "downloadMs": 3.3,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            19.1,
+            30.3,
+            63.9,
+            71.8
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "rapid",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 28.5,
+              "correctDomMs": 66,
+              "firstCorrectFrameMs": 66.1,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 132.8,
+              "feedbackMs": 19.5,
+              "correctDomMs": 61,
+              "firstCorrectFrameMs": 65.5,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 232.7,
+              "feedbackMs": 61.3,
+              "correctDomMs": 105.4,
+              "firstCorrectFrameMs": 106.1,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 432.6,
+              "feedbackMs": 28.1,
+              "correctDomMs": 45,
+              "firstCorrectFrameMs": 45.2,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 566.5,
+              "feedbackMs": 20.1,
+              "correctDomMs": 39.2,
+              "firstCorrectFrameMs": 39.3,
+              "stableMs": 66,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 25.1,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 47.7,
+              "jsonReadyMs": 48.4,
+              "ttfbMs": 20.2,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 148.4,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 173,
+              "jsonReadyMs": 175.6,
+              "ttfbMs": 23.6,
+              "downloadMs": 1.6,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 290,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 338.4,
+              "jsonReadyMs": 350.1,
+              "ttfbMs": 20.9,
+              "downloadMs": 0.9,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 458.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 485.3,
+              "jsonReadyMs": 485.9,
+              "ttfbMs": 22.3,
+              "downloadMs": 0.7,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 583.6,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 610.8,
+              "jsonReadyMs": 616.4,
+              "ttfbMs": 16.1,
+              "downloadMs": 4.5,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            24.2,
+            32.9,
+            65.9,
+            77.4,
+            147.7,
+            156.7,
+            193.8,
+            202.8,
+            280.8,
+            338,
+            350.6,
+            373.5,
+            457.8,
+            477.6,
+            500.7,
+            504,
+            583.3,
+            605.7,
+            632.4,
+            638.8
+          ],
+          "longTasks": [
+            {
+              "startMs": 233.2,
+              "durationMs": 59
+            }
+          ]
+        },
+        {
+          "kind": "rapid-delay",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 29.4,
+              "correctDomMs": null,
+              "firstCorrectFrameMs": null,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 115.6,
+              "feedbackMs": 14.1,
+              "correctDomMs": null,
+              "firstCorrectFrameMs": null,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 199.5,
+              "feedbackMs": 13.5,
+              "correctDomMs": 41.3,
+              "firstCorrectFrameMs": 41.3,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 282.7,
+              "feedbackMs": 31.5,
+              "correctDomMs": null,
+              "firstCorrectFrameMs": null,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 398.4,
+              "feedbackMs": 15.1,
+              "correctDomMs": 374,
+              "firstCorrectFrameMs": 374.1,
+              "stableMs": 374.1,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 25.6,
+              "responseRole": null,
+              "status": null,
+              "cancelled": true,
+              "conditional": false,
+              "responseHeadersMs": null,
+              "jsonReadyMs": null,
+              "ttfbMs": -790,
+              "downloadMs": 894.1,
+              "encodedBodyBytes": 0,
+              "decodedBodyBytes": 0,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 119.2,
+              "responseRole": null,
+              "status": null,
+              "cancelled": true,
+              "conditional": false,
+              "responseHeadersMs": null,
+              "jsonReadyMs": null,
+              "ttfbMs": -882.1,
+              "downloadMs": 1012.4,
+              "encodedBodyBytes": 0,
+              "decodedBodyBytes": 0,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 202.4,
+              "responseRole": null,
+              "status": null,
+              "cancelled": true,
+              "conditional": false,
+              "responseHeadersMs": null,
+              "jsonReadyMs": null,
+              "ttfbMs": -965.3,
+              "downloadMs": 1081.7,
+              "encodedBodyBytes": 0,
+              "decodedBodyBytes": 0,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 312.1,
+              "responseRole": null,
+              "status": null,
+              "cancelled": true,
+              "conditional": false,
+              "responseHeadersMs": null,
+              "jsonReadyMs": null,
+              "ttfbMs": -1075,
+              "downloadMs": 1178,
+              "encodedBodyBytes": 0,
+              "decodedBodyBytes": 0,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 401.5,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 741.1,
+              "jsonReadyMs": 754.6,
+              "ttfbMs": 338.1,
+              "downloadMs": 12.6,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            24.4,
+            34.8,
+            118.7,
+            131.7,
+            202.2,
+            240.7,
+            311.6,
+            319.2,
+            401.1,
+            415.7,
+            755,
+            772.4
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "sequence",
+          "round": 2,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 32.6,
+              "correctDomMs": 84.6,
+              "firstCorrectFrameMs": 84.8,
+              "stableMs": 84.8,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 165,
+              "feedbackMs": 23.7,
+              "correctDomMs": 49.6,
+              "firstCorrectFrameMs": 49.6,
+              "stableMs": 80.7,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 331.6,
+              "feedbackMs": 21.2,
+              "correctDomMs": 62.6,
+              "firstCorrectFrameMs": 67.1,
+              "stableMs": 67.1,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 481,
+              "feedbackMs": 83.7,
+              "correctDomMs": 124,
+              "firstCorrectFrameMs": 128.1,
+              "stableMs": 153,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 714.5,
+              "feedbackMs": 13.9,
+              "correctDomMs": 20.4,
+              "firstCorrectFrameMs": 31.3,
+              "stableMs": 48.4,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 27.9,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 62.1,
+              "jsonReadyMs": 62.8,
+              "ttfbMs": 31.1,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 185.8,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 223.3,
+              "jsonReadyMs": 224,
+              "ttfbMs": 33.2,
+              "downloadMs": 1,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 349.3,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 373.1,
+              "jsonReadyMs": 375.8,
+              "ttfbMs": 22.6,
+              "downloadMs": 2,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 560,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 605.2,
+              "jsonReadyMs": 615.2,
+              "ttfbMs": 14.2,
+              "downloadMs": 0.8,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 722,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 749.6,
+              "jsonReadyMs": 750.1,
+              "ttfbMs": 23.3,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            26.8,
+            36.9,
+            84.6,
+            93.6,
+            185,
+            214.5,
+            245.6,
+            250.2,
+            348.4,
+            356.2,
+            394,
+            402.8,
+            549.6,
+            604.9,
+            614.2,
+            633.7,
+            721.8,
+            734.8,
+            754.9,
+            760.8
+          ],
+          "longTasks": [
+            {
+              "startMs": 481.6,
+              "durationMs": 81
+            }
+          ]
+        },
+        {
+          "kind": "cold-all",
+          "round": 2,
+          "clicks": [
+            {
+              "range": "all",
+              "clickMs": 0,
+              "feedbackMs": 26.6,
+              "correctDomMs": 63.6,
+              "firstCorrectFrameMs": 70,
+              "stableMs": 70,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 21.1,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 39.7,
+              "jsonReadyMs": 42.5,
+              "ttfbMs": 16.1,
+              "downloadMs": 1.9,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            19.8,
+            32.8,
+            63.6,
+            74.7
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "rapid",
+          "round": 2,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 30.9,
+              "correctDomMs": 73.9,
+              "firstCorrectFrameMs": 79.7,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 117.9,
+              "feedbackMs": 19.3,
+              "correctDomMs": 71.1,
+              "firstCorrectFrameMs": 71.3,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 234,
+              "feedbackMs": 63.3,
+              "correctDomMs": 105.5,
+              "firstCorrectFrameMs": 105.7,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 433.2,
+              "feedbackMs": 26.1,
+              "correctDomMs": 44,
+              "firstCorrectFrameMs": 44.1,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 567.4,
+              "feedbackMs": 18.3,
+              "correctDomMs": 38.1,
+              "firstCorrectFrameMs": 38.3,
+              "stableMs": 68.3,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 27.1,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 54.6,
+              "jsonReadyMs": 55.3,
+              "ttfbMs": 24.9,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 134,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 165.5,
+              "jsonReadyMs": 168.3,
+              "ttfbMs": 30.3,
+              "downloadMs": 1.8,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 293.4,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 345,
+              "jsonReadyMs": 351.7,
+              "ttfbMs": 24,
+              "downloadMs": 1,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 457.1,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 483.3,
+              "jsonReadyMs": 485.9,
+              "ttfbMs": 18.4,
+              "downloadMs": 0.4,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 582.6,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 617.1,
+              "jsonReadyMs": 619.6,
+              "ttfbMs": 33.5,
+              "downloadMs": 1.5,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            26.2,
+            35.4,
+            73.9,
+            84.3,
+            133.2,
+            140.5,
+            189,
+            199.8,
+            283.6,
+            339.4,
+            350.2,
+            373.3,
+            456.7,
+            477.2,
+            501,
+            506,
+            582.3,
+            605.5,
+            635.5,
+            640.1
+          ],
+          "longTasks": [
+            {
+              "startMs": 234.6,
+              "durationMs": 61
+            }
+          ]
+        },
+        {
+          "kind": "sequence",
+          "round": 3,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 30.3,
+              "correctDomMs": 66.4,
+              "firstCorrectFrameMs": 66.5,
+              "stableMs": 66.5,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 150.5,
+              "feedbackMs": 20.9,
+              "correctDomMs": 48,
+              "firstCorrectFrameMs": 48.1,
+              "stableMs": 81,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 317.8,
+              "feedbackMs": 20.7,
+              "correctDomMs": 59.4,
+              "firstCorrectFrameMs": 63.8,
+              "stableMs": 63.8,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 466,
+              "feedbackMs": 81.8,
+              "correctDomMs": 125.7,
+              "firstCorrectFrameMs": 126.2,
+              "stableMs": 160,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 716.5,
+              "feedbackMs": 24.8,
+              "correctDomMs": 43,
+              "firstCorrectFrameMs": 43.1,
+              "stableMs": 65.8,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 26.7,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 47.3,
+              "jsonReadyMs": 48.6,
+              "ttfbMs": 18.4,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 169.5,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 205.5,
+              "jsonReadyMs": 208.7,
+              "ttfbMs": 17.1,
+              "downloadMs": 0.8,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 334.5,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 358,
+              "jsonReadyMs": 360.4,
+              "ttfbMs": 22.1,
+              "downloadMs": 1.8,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 544.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 592.1,
+              "jsonReadyMs": 603,
+              "ttfbMs": 15.2,
+              "downloadMs": 0.9,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 739.3,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 766.4,
+              "jsonReadyMs": 767.1,
+              "ttfbMs": 21.4,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            25.9,
+            34.5,
+            66.3,
+            76.4,
+            168.8,
+            198.4,
+            231.4,
+            235.9,
+            333.7,
+            342.2,
+            377.2,
+            387.1,
+            534.3,
+            591.6,
+            601.6,
+            625.7,
+            739,
+            759.4,
+            782.2,
+            785.3
+          ],
+          "longTasks": [
+            {
+              "startMs": 467.1,
+              "durationMs": 79
+            }
+          ]
+        },
+        {
+          "kind": "cold-all",
+          "round": 3,
+          "clicks": [
+            {
+              "range": "all",
+              "clickMs": 0,
+              "feedbackMs": 22.9,
+              "correctDomMs": 61.1,
+              "firstCorrectFrameMs": 67.9,
+              "stableMs": 67.9,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 18.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 38.1,
+              "jsonReadyMs": 41.7,
+              "ttfbMs": 17.5,
+              "downloadMs": 2.6,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            17.1,
+            27.5,
+            61,
+            71.6
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "rapid",
+          "round": 3,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 27.1,
+              "correctDomMs": 61.9,
+              "firstCorrectFrameMs": 67.3,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 116.1,
+              "feedbackMs": 22.1,
+              "correctDomMs": 71.4,
+              "firstCorrectFrameMs": 71.4,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 231.9,
+              "feedbackMs": 80.5,
+              "correctDomMs": 120.8,
+              "firstCorrectFrameMs": 121,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 448.3,
+              "feedbackMs": 25.6,
+              "correctDomMs": 42.4,
+              "firstCorrectFrameMs": 42.5,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 581.6,
+              "feedbackMs": 20.2,
+              "correctDomMs": 41.5,
+              "firstCorrectFrameMs": 41.6,
+              "stableMs": 64.2,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 24.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 43.9,
+              "jsonReadyMs": 44.6,
+              "ttfbMs": 17.7,
+              "downloadMs": 0.5,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 135.1,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 153.6,
+              "jsonReadyMs": 168.3,
+              "ttfbMs": 17.3,
+              "downloadMs": 13.9,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 307.8,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 357.7,
+              "jsonReadyMs": 364.9,
+              "ttfbMs": 31.5,
+              "downloadMs": 0.9,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 471.8,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 498,
+              "jsonReadyMs": 498.5,
+              "ttfbMs": 17.8,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 598.6,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 627.7,
+              "jsonReadyMs": 634.7,
+              "ttfbMs": 17,
+              "downloadMs": 1.7,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            23.5,
+            31.4,
+            61.9,
+            73.3,
+            134.3,
+            142.8,
+            187.4,
+            194.1,
+            298.3,
+            352.5,
+            363.2,
+            387.2,
+            471.5,
+            490.6,
+            512.6,
+            519.4,
+            598.3,
+            623.1,
+            642.3,
+            645.7
+          ],
+          "longTasks": [
+            {
+              "startMs": 233,
+              "durationMs": 78
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Isolated Next start / Guest / matching saved public snapshots",
+      "originalSampleFile": "production-guest.json",
+      "digestNotes": "relative times only; no response bodies, request headers or device identifiers",
+      "dataset": {
+        "7d": {
+          "role": "guest",
+          "days": 7,
+          "models": 26,
+          "sessions": 0,
+          "bytes": 44726,
+          "checkedAt": "2026-11-25T06:02:49.541Z"
+        },
+        "30d": {
+          "role": "guest",
+          "days": 30,
+          "models": 29,
+          "sessions": 0,
+          "bytes": 96010,
+          "checkedAt": "2026-11-25T05:29:16.326Z"
+        },
+        "all": {
+          "role": "guest",
+          "days": 269,
+          "models": 43,
+          "sessions": 0,
+          "bytes": 246715,
+          "checkedAt": "2026-11-25T05:26:32.953Z"
+        }
+      },
+      "cases": [
+        {
+          "kind": "sequence",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 12.9,
+              "correctDomMs": 20,
+              "firstCorrectFrameMs": 28.6,
+              "stableMs": 28.6,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 115.5,
+              "feedbackMs": 13.3,
+              "correctDomMs": 18,
+              "firstCorrectFrameMs": 30.4,
+              "stableMs": 30.4,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 233.2,
+              "feedbackMs": 12.8,
+              "correctDomMs": 24.6,
+              "firstCorrectFrameMs": 28.6,
+              "stableMs": 28.6,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 348.6,
+              "feedbackMs": 22.9,
+              "correctDomMs": 43.8,
+              "firstCorrectFrameMs": 48.9,
+              "stableMs": 48.9,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 481.8,
+              "feedbackMs": 13.9,
+              "correctDomMs": 17.8,
+              "firstCorrectFrameMs": 30.9,
+              "stableMs": 30.9,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 5.5,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 15.6,
+              "jsonReadyMs": 16.5,
+              "ttfbMs": 4.1,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 118.9,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 133.6,
+              "jsonReadyMs": 134.5,
+              "ttfbMs": 3.9,
+              "downloadMs": 1,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 239.6,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 249.7,
+              "jsonReadyMs": 251.8,
+              "ttfbMs": 6.5,
+              "downloadMs": 1.5,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 368.6,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 392.7,
+              "jsonReadyMs": 394.4,
+              "ttfbMs": 3.3,
+              "downloadMs": 0.8,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 485.9,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 499.7,
+              "jsonReadyMs": 500.7,
+              "ttfbMs": 3,
+              "downloadMs": 0.4,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            4.9,
+            15.4,
+            19.9,
+            118.4,
+            133.5,
+            136.9,
+            239.1,
+            249.1,
+            257.7,
+            360.2,
+            392.3,
+            397.3,
+            485.7,
+            499.5,
+            502.6
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "cold-all",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "all",
+              "clickMs": 0,
+              "feedbackMs": 14.1,
+              "correctDomMs": 22.7,
+              "firstCorrectFrameMs": 30.5,
+              "stableMs": 30.5,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 6.3,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 16.6,
+              "jsonReadyMs": 18.1,
+              "ttfbMs": 4,
+              "downloadMs": 1,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            5.4,
+            16.4,
+            22.7
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "rapid",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 15.1,
+              "correctDomMs": 22.1,
+              "firstCorrectFrameMs": 30.8,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 99.6,
+              "feedbackMs": 15.4,
+              "correctDomMs": 22.3,
+              "firstCorrectFrameMs": 30.5,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 183.2,
+              "feedbackMs": 23.8,
+              "correctDomMs": 44,
+              "firstCorrectFrameMs": 48.6,
+              "stableMs": 48.6,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 316.7,
+              "feedbackMs": 15.5,
+              "correctDomMs": 19.4,
+              "firstCorrectFrameMs": 30.2,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 416,
+              "feedbackMs": 15.9,
+              "correctDomMs": 19.6,
+              "firstCorrectFrameMs": 31.4,
+              "stableMs": 31.4,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 5.5,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 17.7,
+              "jsonReadyMs": 18.6,
+              "ttfbMs": 3.7,
+              "downloadMs": 0.4,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 103.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 116.9,
+              "jsonReadyMs": 118.2,
+              "ttfbMs": 4.2,
+              "downloadMs": 0.9,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 204.5,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 227.4,
+              "jsonReadyMs": 228.4,
+              "ttfbMs": 3,
+              "downloadMs": 0.5,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 320,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 336.3,
+              "jsonReadyMs": 337,
+              "ttfbMs": 3.2,
+              "downloadMs": 0.4,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 418.8,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 435.7,
+              "jsonReadyMs": 437.3,
+              "ttfbMs": 3.9,
+              "downloadMs": 1.3,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            4.9,
+            17.5,
+            22,
+            102.8,
+            116.7,
+            121.9,
+            196.7,
+            227,
+            231.6,
+            319.7,
+            336.1,
+            338.6,
+            418.6,
+            435.6,
+            440.2
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "rapid-delay",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 13.8,
+              "correctDomMs": null,
+              "firstCorrectFrameMs": null,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 99.3,
+              "feedbackMs": 14.3,
+              "correctDomMs": null,
+              "firstCorrectFrameMs": null,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 182.9,
+              "feedbackMs": 13.8,
+              "correctDomMs": 18.9,
+              "firstCorrectFrameMs": 30.3,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 266.3,
+              "feedbackMs": 13.8,
+              "correctDomMs": null,
+              "firstCorrectFrameMs": null,
+              "stableMs": null,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 349,
+              "feedbackMs": 14.6,
+              "correctDomMs": 329,
+              "firstCorrectFrameMs": 330.6,
+              "stableMs": 330.6,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 4.8,
+              "responseRole": null,
+              "status": null,
+              "cancelled": true,
+              "conditional": false,
+              "responseHeadersMs": null,
+              "jsonReadyMs": null,
+              "ttfbMs": -496.4,
+              "downloadMs": 605.1,
+              "encodedBodyBytes": 0,
+              "decodedBodyBytes": 0,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 101.4,
+              "responseRole": null,
+              "status": null,
+              "cancelled": true,
+              "conditional": false,
+              "responseHeadersMs": null,
+              "jsonReadyMs": null,
+              "ttfbMs": -592.5,
+              "downloadMs": 692.6,
+              "encodedBodyBytes": 0,
+              "decodedBodyBytes": 0,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 184.5,
+              "responseRole": null,
+              "status": null,
+              "cancelled": true,
+              "conditional": false,
+              "responseHeadersMs": null,
+              "jsonReadyMs": null,
+              "ttfbMs": -675.5,
+              "downloadMs": 772.6,
+              "encodedBodyBytes": 0,
+              "decodedBodyBytes": 0,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 269.9,
+              "responseRole": null,
+              "status": null,
+              "cancelled": true,
+              "conditional": false,
+              "responseHeadersMs": null,
+              "jsonReadyMs": null,
+              "ttfbMs": -760.9,
+              "downloadMs": 855.2,
+              "encodedBodyBytes": 0,
+              "decodedBodyBytes": 0,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 350.5,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 672.2,
+              "jsonReadyMs": 674.2,
+              "ttfbMs": 320.7,
+              "downloadMs": 1.5,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            4.3,
+            16.6,
+            101,
+            114.5,
+            184.3,
+            201.8,
+            269.7,
+            281.8,
+            350.3,
+            364.5,
+            678,
+            732.3,
+            732.4
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "sequence",
+          "round": 2,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 13.4,
+              "correctDomMs": 21,
+              "firstCorrectFrameMs": 29,
+              "stableMs": 29,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 114.8,
+              "feedbackMs": 14.4,
+              "correctDomMs": 19.5,
+              "firstCorrectFrameMs": 30.9,
+              "stableMs": 30.9,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 232,
+              "feedbackMs": 14.5,
+              "correctDomMs": 21.9,
+              "firstCorrectFrameMs": 30.8,
+              "stableMs": 30.8,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 348.9,
+              "feedbackMs": 23,
+              "correctDomMs": 43.2,
+              "firstCorrectFrameMs": 47.9,
+              "stableMs": 47.9,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 481.8,
+              "feedbackMs": 14.4,
+              "correctDomMs": 17.6,
+              "firstCorrectFrameMs": 31.1,
+              "stableMs": 31.1,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 5.4,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 16.1,
+              "jsonReadyMs": 17.1,
+              "ttfbMs": 2.7,
+              "downloadMs": 0.3,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 118.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 134.4,
+              "jsonReadyMs": 135.2,
+              "ttfbMs": 3.1,
+              "downloadMs": 0.7,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 236.1,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 248.7,
+              "jsonReadyMs": 250.1,
+              "ttfbMs": 3.7,
+              "downloadMs": 6.3,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 369.1,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 392.4,
+              "jsonReadyMs": 394.3,
+              "ttfbMs": 2.9,
+              "downloadMs": 0.4,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 485.1,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 499.6,
+              "jsonReadyMs": 500.4,
+              "ttfbMs": 2.9,
+              "downloadMs": 0.4,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            4.8,
+            16,
+            21,
+            117.7,
+            134.2,
+            138.2,
+            235.8,
+            248.6,
+            253.9,
+            360.9,
+            392,
+            396.7,
+            484.8,
+            499.4,
+            502
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "cold-all",
+          "round": 2,
+          "clicks": [
+            {
+              "range": "all",
+              "clickMs": 0,
+              "feedbackMs": 15,
+              "correctDomMs": 23.2,
+              "firstCorrectFrameMs": 30.3,
+              "stableMs": 30.3,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 5.4,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 18,
+              "jsonReadyMs": 19.5,
+              "ttfbMs": 4.4,
+              "downloadMs": 0.9,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            4.7,
+            17.7,
+            23.1
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "rapid",
+          "round": 2,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 14.7,
+              "correctDomMs": 22.6,
+              "firstCorrectFrameMs": 30.3,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 98.8,
+              "feedbackMs": 15.6,
+              "correctDomMs": 23.9,
+              "firstCorrectFrameMs": 31.2,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 182.4,
+              "feedbackMs": 25.7,
+              "correctDomMs": 48.4,
+              "firstCorrectFrameMs": 49.1,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 316.4,
+              "feedbackMs": 14.3,
+              "correctDomMs": 17.8,
+              "firstCorrectFrameMs": 30.6,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 399.5,
+              "feedbackMs": 13.9,
+              "correctDomMs": 17.8,
+              "firstCorrectFrameMs": 30.4,
+              "stableMs": 30.4,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 6.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 18,
+              "jsonReadyMs": 19.2,
+              "ttfbMs": 2.9,
+              "downloadMs": 0.5,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 102.8,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 116.9,
+              "jsonReadyMs": 118.9,
+              "ttfbMs": 4.1,
+              "downloadMs": 0.9,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 204.5,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 231.2,
+              "jsonReadyMs": 238.2,
+              "ttfbMs": 3.4,
+              "downloadMs": 0.6,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 319.7,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 334.3,
+              "jsonReadyMs": 335,
+              "ttfbMs": 3.1,
+              "downloadMs": 0.3,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 401.9,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 417.5,
+              "jsonReadyMs": 418.8,
+              "ttfbMs": 3.7,
+              "downloadMs": 1.3,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            0.6,
+            0.7,
+            5.6,
+            17.6,
+            22.6,
+            102.3,
+            116.6,
+            122.6,
+            196.4,
+            230.7,
+            242,
+            319.6,
+            334.2,
+            336.5,
+            401.8,
+            417.3,
+            421.6
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "sequence",
+          "round": 3,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 12.6,
+              "correctDomMs": 19.5,
+              "firstCorrectFrameMs": 29.5,
+              "stableMs": 29.5,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 115.1,
+              "feedbackMs": 15.7,
+              "correctDomMs": 20.3,
+              "firstCorrectFrameMs": 30.6,
+              "stableMs": 30.6,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 232.1,
+              "feedbackMs": 14.8,
+              "correctDomMs": 39.1,
+              "firstCorrectFrameMs": 52.4,
+              "stableMs": 52.4,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 365.4,
+              "feedbackMs": 23.4,
+              "correctDomMs": 43.9,
+              "firstCorrectFrameMs": 47.6,
+              "stableMs": 47.6,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 499.8,
+              "feedbackMs": 12.9,
+              "correctDomMs": 16.1,
+              "firstCorrectFrameMs": 30.2,
+              "stableMs": 30.2,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 5.3,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 15.3,
+              "jsonReadyMs": 16.1,
+              "ttfbMs": 2.5,
+              "downloadMs": 0.2,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 118.4,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 135.5,
+              "jsonReadyMs": 136.4,
+              "ttfbMs": 3.2,
+              "downloadMs": 0.5,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 236.4,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 249.6,
+              "jsonReadyMs": 267.6,
+              "ttfbMs": 4.1,
+              "downloadMs": 22.5,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 385,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 409.6,
+              "jsonReadyMs": 410.5,
+              "ttfbMs": 3.7,
+              "downloadMs": 0.7,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 503.5,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 516,
+              "jsonReadyMs": 516.7,
+              "ttfbMs": 3.5,
+              "downloadMs": 0.3,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            4.7,
+            15.1,
+            19.5,
+            118.1,
+            135.4,
+            140,
+            236.1,
+            249.4,
+            271.2,
+            376.8,
+            409.2,
+            413,
+            503.3,
+            515.9,
+            518.9
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "cold-all",
+          "round": 3,
+          "clicks": [
+            {
+              "range": "all",
+              "clickMs": 0,
+              "feedbackMs": 13.9,
+              "correctDomMs": 22,
+              "firstCorrectFrameMs": 30.1,
+              "stableMs": 30.1,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 5.6,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 16.5,
+              "jsonReadyMs": 18.2,
+              "ttfbMs": 6.4,
+              "downloadMs": 0.9,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            4.8,
+            16.3,
+            22
+          ],
+          "longTasks": []
+        },
+        {
+          "kind": "rapid",
+          "round": 3,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 14.1,
+              "correctDomMs": 21.3,
+              "firstCorrectFrameMs": 31.1,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 82.9,
+              "feedbackMs": 14.3,
+              "correctDomMs": 22.7,
+              "firstCorrectFrameMs": 30.3,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 167.7,
+              "feedbackMs": 24.2,
+              "correctDomMs": 43.5,
+              "firstCorrectFrameMs": 48.4,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 282.9,
+              "feedbackMs": 14.6,
+              "correctDomMs": 18,
+              "firstCorrectFrameMs": 31,
+              "stableMs": null,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 366.5,
+              "feedbackMs": 14.9,
+              "correctDomMs": 19.8,
+              "firstCorrectFrameMs": 30.9,
+              "stableMs": 47.7,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 5.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 17.1,
+              "jsonReadyMs": 18.1,
+              "ttfbMs": 3.5,
+              "downloadMs": 0.3,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 87.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 99.1,
+              "jsonReadyMs": 100.7,
+              "ttfbMs": 5.2,
+              "downloadMs": 0.9,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 189.2,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 211.5,
+              "jsonReadyMs": 212.7,
+              "ttfbMs": 2.9,
+              "downloadMs": 0.9,
+              "encodedBodyBytes": 96010,
+              "decodedBodyBytes": 96010,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 286.4,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 301,
+              "jsonReadyMs": 301.7,
+              "ttfbMs": 2.5,
+              "downloadMs": 0.3,
+              "encodedBodyBytes": 44726,
+              "decodedBodyBytes": 44726,
+              "dailyRows": null,
+              "sessions": null
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 370.4,
+              "responseRole": "guest",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 386.5,
+              "jsonReadyMs": 403.7,
+              "ttfbMs": 4,
+              "downloadMs": 27.1,
+              "encodedBodyBytes": 246715,
+              "decodedBodyBytes": 246715,
+              "dailyRows": null,
+              "sessions": null
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            4.5,
+            16.8,
+            21.3,
+            86.6,
+            98.9,
+            105.5,
+            181.5,
+            211,
+            215.9,
+            286.1,
+            300.8,
+            303.2,
+            370.2,
+            386.3,
+            406
+          ],
+          "longTasks": []
+        }
+      ]
+    },
+    {
+      "label": "Isolated Next start / fixture Owner / local v1 / real local native sources, no import store or real auth",
+      "originalSampleFile": "production-owner-cold-all.json",
+      "digestNotes": "relative times only; no response bodies, request headers or device identifiers",
+      "dataset": {},
+      "cases": [
+        {
+          "kind": "owner-cold-all",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "all",
+              "clickMs": 0,
+              "feedbackMs": 12.5,
+              "correctDomMs": 21166.1,
+              "firstCorrectFrameMs": 21177.6,
+              "stableMs": 21177.6,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 5.9,
+              "responseRole": "owner",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 21137.7,
+              "jsonReadyMs": 21162.3,
+              "ttfbMs": 21130.2,
+              "downloadMs": 17.9,
+              "encodedBodyBytes": 894580,
+              "decodedBodyBytes": 894580,
+              "dailyRows": 252,
+              "sessions": 744
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            5.1,
+            15.6,
+            774.1,
+            774.3,
+            21166.1
+          ],
+          "longTasks": []
+        }
+      ]
+    },
+    {
+      "label": "Isolated Next start / fixture Owner / local v1 / live local native sources, no import store or real auth",
+      "originalSampleFile": "production-owner-sequence.json",
+      "digestNotes": "relative times only; no response bodies, request headers or device identifiers",
+      "dataset": {},
+      "cases": [
+        {
+          "kind": "owner-sequence",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "7d",
+              "clickMs": 0,
+              "feedbackMs": 28.5,
+              "correctDomMs": 22611,
+              "firstCorrectFrameMs": 22621.2,
+              "stableMs": 22621.2,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 22706.1,
+              "feedbackMs": 14.7,
+              "correctDomMs": 21,
+              "firstCorrectFrameMs": 31.1,
+              "stableMs": 14630.4,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "all",
+              "clickMs": 37424.1,
+              "feedbackMs": 14,
+              "correctDomMs": 1782.2,
+              "firstCorrectFrameMs": 1782.2,
+              "stableMs": 1782.2,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "30d",
+              "clickMs": 39288.1,
+              "feedbackMs": 22,
+              "correctDomMs": 42,
+              "firstCorrectFrameMs": 48,
+              "stableMs": 18497.7,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            },
+            {
+              "range": "7d",
+              "clickMs": 57871.8,
+              "feedbackMs": 13.5,
+              "correctDomMs": 17,
+              "firstCorrectFrameMs": 30.3,
+              "stableMs": 17880.1,
+              "localPlaceholderFrame": false,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 21.8,
+              "responseRole": "owner",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 22598.5,
+              "jsonReadyMs": 22603.9,
+              "ttfbMs": 22574.3,
+              "downloadMs": 1.1,
+              "encodedBodyBytes": 101055,
+              "decodedBodyBytes": 101055,
+              "dailyRows": 7,
+              "sessions": 52
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 22713,
+              "responseRole": "owner",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 37300.9,
+              "jsonReadyMs": 37324.2,
+              "ttfbMs": 14586.9,
+              "downloadMs": 19.2,
+              "encodedBodyBytes": 481763,
+              "decodedBodyBytes": 481763,
+              "dailyRows": 30,
+              "sessions": 401
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 37430.8,
+              "responseRole": "owner",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 39184.6,
+              "jsonReadyMs": 39202.8,
+              "ttfbMs": 1752.3,
+              "downloadMs": 12.7,
+              "encodedBodyBytes": 894597,
+              "decodedBodyBytes": 894597,
+              "dailyRows": 252,
+              "sessions": 744
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "30d",
+              "startMs": 39307.6,
+              "responseRole": "owner",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 57760.6,
+              "jsonReadyMs": 57779.1,
+              "ttfbMs": 18451.8,
+              "downloadMs": 16,
+              "encodedBodyBytes": 481745,
+              "decodedBodyBytes": 481745,
+              "dailyRows": 30,
+              "sessions": 401
+            },
+            {
+              "path": "/api/dashboard/usage",
+              "range": "7d",
+              "startMs": 57875.6,
+              "responseRole": "owner",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 75748.5,
+              "jsonReadyMs": 75749.2,
+              "ttfbMs": 17871.2,
+              "downloadMs": 0.5,
+              "encodedBodyBytes": 101495,
+              "decodedBodyBytes": 101495,
+              "dailyRows": 7,
+              "sessions": 52
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            19.3,
+            34.6,
+            801.2,
+            801.3,
+            22610.9,
+            22710.6,
+            22727,
+            37329,
+            37430.2,
+            37441.6,
+            39206.2,
+            39299.2,
+            39329.9,
+            57782.2,
+            57875.2,
+            57888.8,
+            75751.8
+          ],
+          "longTasks": []
+        }
+      ]
+    },
+    {
+      "label": "Isolated Next start / zh / fixture Owner / cold native all / local v1",
+      "originalSampleFile": "production-owner-cold-all-zh.json",
+      "digestNotes": "relative times only; no response bodies, headers or device identifiers",
+      "dataset": {},
+      "cases": [
+        {
+          "kind": "owner-cold-all",
+          "round": 1,
+          "clicks": [
+            {
+              "range": "all",
+              "clickMs": 0,
+              "feedbackMs": 24,
+              "correctDomMs": 30361.2,
+              "firstCorrectFrameMs": 30361.6,
+              "stableMs": 30361.6,
+              "localPlaceholderFrame": true,
+              "urlChanged": false,
+              "dashboardRemounted": false,
+              "routeLoading": false
+            }
+          ],
+          "requests": [
+            {
+              "path": "/api/dashboard/usage",
+              "range": "all",
+              "startMs": 17.9,
+              "responseRole": "owner",
+              "status": 200,
+              "cancelled": false,
+              "conditional": false,
+              "responseHeadersMs": 30321.4,
+              "jsonReadyMs": 30353.2,
+              "ttfbMs": 30301.5,
+              "downloadMs": 23,
+              "encodedBodyBytes": 895091,
+              "decodedBodyBytes": 895091,
+              "dailyRows": 252,
+              "sessions": 744
+            }
+          ],
+          "flightAfterFirstClick": 0,
+          "reactCommitsMs": [
+            15.8,
+            29.7,
+            815.5,
+            815.6,
+            30361.2
+          ],
+          "longTasks": []
+        }
+      ]
+    }
+  ],
+  "stages": {
+    "productionOwnerColdAll": [
+      {
+        "stage": "native-commandcode",
+        "ms": 862.3,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 18107.5,
+        "events": 71297
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 19234.3,
+        "events": 83209,
+        "range": "all"
+      },
+      {
+        "stage": "imports-match",
+        "ms": 1451,
+        "range": "all",
+        "events": 0
+      },
+      {
+        "stage": "ccusage-fallback",
+        "ms": 0.3,
+        "range": "all",
+        "sources": [],
+        "added": 0,
+        "errors": 0
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 1461,
+        "selected": 83209,
+        "range": "all"
+      },
+      {
+        "stage": "aggregate",
+        "ms": 342.9,
+        "sessions": 744,
+        "models": 40,
+        "days": 252,
+        "months": 5,
+        "range": "all"
+      }
+    ],
+    "productionOwnerSequence": [
+      {
+        "stage": "native-commandcode",
+        "ms": 1097.3,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 19788.1,
+        "events": 71305
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 21116.2,
+        "events": 83217,
+        "range": "7d"
+      },
+      {
+        "stage": "imports-match",
+        "ms": 1356.8,
+        "range": "7d",
+        "events": 0
+      },
+      {
+        "stage": "ccusage-fallback",
+        "ms": 0.3,
+        "range": "7d",
+        "sources": [],
+        "added": 0,
+        "errors": 0
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 1365.5,
+        "selected": 4919,
+        "range": "7d"
+      },
+      {
+        "stage": "aggregate",
+        "ms": 22.6,
+        "sessions": 52,
+        "models": 25,
+        "days": 7,
+        "months": 1,
+        "range": "7d"
+      },
+      {
+        "stage": "native-commandcode",
+        "ms": 747.2,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 11949.3,
+        "events": 71305
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 12929.1,
+        "events": 83217,
+        "range": "30d"
+      },
+      {
+        "stage": "imports-match",
+        "ms": 1406.7,
+        "range": "30d",
+        "events": 0
+      },
+      {
+        "stage": "ccusage-fallback",
+        "ms": 0.1,
+        "range": "30d",
+        "sources": [],
+        "added": 0,
+        "errors": 0
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 1415.8,
+        "selected": 40726,
+        "range": "30d"
+      },
+      {
+        "stage": "aggregate",
+        "ms": 207.5,
+        "sessions": 401,
+        "models": 29,
+        "days": 30,
+        "months": 2,
+        "range": "30d"
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 0,
+        "events": 83217,
+        "range": "all"
+      },
+      {
+        "stage": "imports-match",
+        "ms": 1409.4,
+        "range": "all",
+        "events": 0
+      },
+      {
+        "stage": "ccusage-fallback",
+        "ms": 0,
+        "range": "all",
+        "sources": [],
+        "added": 0,
+        "errors": 0
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 1418.3,
+        "selected": 83217,
+        "range": "all"
+      },
+      {
+        "stage": "aggregate",
+        "ms": 279,
+        "sessions": 744,
+        "models": 40,
+        "days": 252,
+        "months": 5,
+        "range": "all"
+      },
+      {
+        "stage": "native-commandcode",
+        "ms": 804.8,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 15765.1,
+        "events": 71306
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 16808.9,
+        "events": 83218,
+        "range": "30d"
+      },
+      {
+        "stage": "imports-match",
+        "ms": 1468.8,
+        "range": "30d",
+        "events": 0
+      },
+      {
+        "stage": "ccusage-fallback",
+        "ms": 0.1,
+        "range": "30d",
+        "sources": [],
+        "added": 0,
+        "errors": 0
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 1479.8,
+        "selected": 40727,
+        "range": "30d"
+      },
+      {
+        "stage": "aggregate",
+        "ms": 124.7,
+        "sessions": 401,
+        "models": 29,
+        "days": 30,
+        "months": 2,
+        "range": "30d"
+      },
+      {
+        "stage": "native-commandcode",
+        "ms": 758.5,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 15430.1,
+        "events": 71308
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 16423,
+        "events": 83220,
+        "range": "7d"
+      },
+      {
+        "stage": "imports-match",
+        "ms": 1330,
+        "range": "7d",
+        "events": 0
+      },
+      {
+        "stage": "ccusage-fallback",
+        "ms": 0.1,
+        "range": "7d",
+        "sources": [],
+        "added": 0,
+        "errors": 0
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 1338,
+        "selected": 4922,
+        "range": "7d"
+      },
+      {
+        "stage": "aggregate",
+        "ms": 80.7,
+        "sessions": 52,
+        "models": 26,
+        "days": 7,
+        "months": 1,
+        "range": "7d"
+      }
+    ],
+    "limitedSourceColdSequence": [
+      {
+        "stage": "snapshot-lookup",
+        "ms": 1,
+        "range": "7d",
+        "found": false
+      },
+      {
+        "stage": "native-commandcode",
+        "ms": 1098.1,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 10384.2,
+        "events": 23651
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 11648.5,
+        "events": 35563,
+        "range": "7d"
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 6021.6,
+        "selected": 1901,
+        "range": "7d"
+      },
+      {
+        "stage": "publish-encode-only",
+        "ms": 0.3,
+        "bytes": 51705,
+        "range": "7d"
+      },
+      {
+        "stage": "response-encode",
+        "ms": 4.2,
+        "range": "7d"
+      },
+      {
+        "stage": "owner-handler",
+        "range": "7d",
+        "status": 200,
+        "ttfbEquivalentMs": 17756,
+        "bytes": 51705
+      },
+      {
+        "stage": "aggregate",
+        "ms": 16,
+        "sessions": 27,
+        "models": 17,
+        "days": 7,
+        "months": 1,
+        "range": "7d"
+      },
+      {
+        "stage": "snapshot-lookup",
+        "ms": 0.6,
+        "range": "30d",
+        "found": false
+      },
+      {
+        "stage": "native-commandcode",
+        "ms": 885.1,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 9708.1,
+        "events": 23653
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 10733.8,
+        "events": 35565,
+        "range": "30d"
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 4309.6,
+        "selected": 18551,
+        "range": "30d"
+      },
+      {
+        "stage": "publish-encode-only",
+        "ms": 1,
+        "bytes": 206821,
+        "range": "30d"
+      },
+      {
+        "stage": "response-encode",
+        "ms": 1.6,
+        "range": "30d"
+      },
+      {
+        "stage": "owner-handler",
+        "range": "30d",
+        "status": 200,
+        "ttfbEquivalentMs": 15131,
+        "bytes": 206821
+      },
+      {
+        "stage": "aggregate",
+        "ms": 80.6,
+        "sessions": 152,
+        "models": 18,
+        "days": 30,
+        "months": 2,
+        "range": "30d"
+      },
+      {
+        "stage": "snapshot-lookup",
+        "ms": 1,
+        "range": "all",
+        "found": false
+      },
+      {
+        "stage": "native-commandcode",
+        "ms": 898.4,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 11510.7,
+        "events": 23653
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 12608.2,
+        "events": 35565,
+        "range": "all"
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 53730.4,
+        "selected": 35589,
+        "range": "all"
+      },
+      {
+        "stage": "publish-encode-only",
+        "ms": 2.5,
+        "bytes": 473970,
+        "range": "all"
+      },
+      {
+        "stage": "response-encode",
+        "ms": 4.2,
+        "range": "all"
+      },
+      {
+        "stage": "owner-handler",
+        "range": "all",
+        "status": 200,
+        "ttfbEquivalentMs": 66548,
+        "bytes": 473970
+      }
+    ],
+    "limitedSourceAllDetailed": [
+      {
+        "stage": "snapshot-lookup",
+        "ms": 0.9,
+        "range": "all",
+        "found": false
+      },
+      {
+        "stage": "native-commandcode",
+        "ms": 867.3,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 10150.1,
+        "events": 23669
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 11142.1,
+        "events": 35581,
+        "range": "all"
+      },
+      {
+        "stage": "imports-match",
+        "ms": 712.9,
+        "range": "all",
+        "events": 0
+      },
+      {
+        "stage": "ccusage-source",
+        "ms": 13334.1,
+        "sourceId": "antigravity",
+        "calls": 10,
+        "daily": 1,
+        "sessions": 9,
+        "longestChildMs": 5693.9,
+        "accepted": 0
+      },
+      {
+        "stage": "ccusage-source",
+        "ms": 329.5,
+        "sourceId": "opencode",
+        "calls": 12,
+        "daily": 1,
+        "sessions": 11,
+        "longestChildMs": 70.9,
+        "accepted": 22
+      },
+      {
+        "stage": "ccusage-source",
+        "ms": 135.3,
+        "sourceId": "zcode",
+        "calls": 3,
+        "daily": 1,
+        "sessions": 2,
+        "longestChildMs": 68.7,
+        "accepted": 2
+      },
+      {
+        "stage": "publish-encode-only",
+        "ms": 2,
+        "bytes": 473518,
+        "range": "all"
+      },
+      {
+        "stage": "response-encode",
+        "ms": 5.4,
+        "range": "all"
+      },
+      {
+        "stage": "owner-handler",
+        "range": "all",
+        "status": 200,
+        "ttfbEquivalentMs": 25915,
+        "bytes": 473518
+      }
+    ],
+    "limitedSourceAllWithoutFallbackControl": [
+      {
+        "stage": "snapshot-lookup",
+        "ms": 1,
+        "range": "all",
+        "found": false
+      },
+      {
+        "stage": "native-commandcode",
+        "ms": 882.2,
+        "events": 11912
+      },
+      {
+        "stage": "publish-encode-only",
+        "ms": 2,
+        "bytes": 454062,
+        "range": "all"
+      },
+      {
+        "stage": "response-encode",
+        "ms": 5.6,
+        "range": "all"
+      },
+      {
+        "stage": "owner-handler",
+        "range": "all",
+        "status": 200,
+        "ttfbEquivalentMs": 12404,
+        "bytes": 454062
+      }
+    ],
+    "productionOwnerColdAllZh": [
+      {
+        "stage": "native-commandcode",
+        "ms": 1644.8,
+        "events": 11912
+      },
+      {
+        "stage": "native-agents",
+        "ms": 26578.4,
+        "events": 71325
+      },
+      {
+        "stage": "raw-ready",
+        "ms": 28463.8,
+        "events": 83237,
+        "range": "all"
+      },
+      {
+        "stage": "imports-match",
+        "ms": 1439.9,
+        "range": "all",
+        "events": 0
+      },
+      {
+        "stage": "ccusage-fallback",
+        "ms": 0.3,
+        "range": "all",
+        "sources": [],
+        "added": 0,
+        "errors": 0
+      },
+      {
+        "stage": "select-and-fallback",
+        "ms": 1451.4,
+        "selected": 83237,
+        "range": "all"
+      },
+      {
+        "stage": "aggregate",
+        "ms": 285.4,
+        "sessions": 744,
+        "models": 41,
+        "days": 252,
+        "months": 5,
+        "range": "all"
+      }
+    ]
+  },
+  "httpGuestProbe": [
+    {
+      "range": "30d",
+      "acceptEncoding": "identity",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 55.36,
+      "totalMs": 56.64,
+      "encodedBodyBytes": 96010,
+      "decodedBodyBytes": 96010,
+      "role": "guest"
+    },
+    {
+      "range": "30d",
+      "acceptEncoding": "gzip",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 26.14,
+      "totalMs": 27.06,
+      "encodedBodyBytes": 96010,
+      "decodedBodyBytes": 96010,
+      "role": "guest"
+    },
+    {
+      "range": "30d",
+      "acceptEncoding": "gzip",
+      "sentValidator": true,
+      "status": 304,
+      "encoding": "identity",
+      "ttfbMs": 45.21,
+      "totalMs": 45.41,
+      "encodedBodyBytes": 0,
+      "decodedBodyBytes": 0,
+      "role": "guest"
+    },
+    {
+      "range": "30d",
+      "acceptEncoding": "identity",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 29.04,
+      "totalMs": 30.08,
+      "encodedBodyBytes": 96010,
+      "decodedBodyBytes": 96010,
+      "role": "guest"
+    },
+    {
+      "range": "30d",
+      "acceptEncoding": "gzip",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 28.94,
+      "totalMs": 31.14,
+      "encodedBodyBytes": 96010,
+      "decodedBodyBytes": 96010,
+      "role": "guest"
+    },
+    {
+      "range": "30d",
+      "acceptEncoding": "gzip",
+      "sentValidator": true,
+      "status": 304,
+      "encoding": "identity",
+      "ttfbMs": 29.94,
+      "totalMs": 30.04,
+      "encodedBodyBytes": 0,
+      "decodedBodyBytes": 0,
+      "role": "guest"
+    },
+    {
+      "range": "30d",
+      "acceptEncoding": "identity",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 13.24,
+      "totalMs": 14.23,
+      "encodedBodyBytes": 96010,
+      "decodedBodyBytes": 96010,
+      "role": "guest"
+    },
+    {
+      "range": "30d",
+      "acceptEncoding": "gzip",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 30.26,
+      "totalMs": 31.3,
+      "encodedBodyBytes": 96010,
+      "decodedBodyBytes": 96010,
+      "role": "guest"
+    },
+    {
+      "range": "30d",
+      "acceptEncoding": "gzip",
+      "sentValidator": true,
+      "status": 304,
+      "encoding": "identity",
+      "ttfbMs": 28.55,
+      "totalMs": 28.67,
+      "encodedBodyBytes": 0,
+      "decodedBodyBytes": 0,
+      "role": "guest"
+    },
+    {
+      "range": "all",
+      "acceptEncoding": "identity",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 30.16,
+      "totalMs": 35.34,
+      "encodedBodyBytes": 246715,
+      "decodedBodyBytes": 246715,
+      "role": "guest"
+    },
+    {
+      "range": "all",
+      "acceptEncoding": "gzip",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 58.48,
+      "totalMs": 64.4,
+      "encodedBodyBytes": 246715,
+      "decodedBodyBytes": 246715,
+      "role": "guest"
+    },
+    {
+      "range": "all",
+      "acceptEncoding": "gzip",
+      "sentValidator": true,
+      "status": 304,
+      "encoding": "identity",
+      "ttfbMs": 135.64,
+      "totalMs": 135.71,
+      "encodedBodyBytes": 0,
+      "decodedBodyBytes": 0,
+      "role": "guest"
+    },
+    {
+      "range": "all",
+      "acceptEncoding": "identity",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 216.12,
+      "totalMs": 221.49,
+      "encodedBodyBytes": 246715,
+      "decodedBodyBytes": 246715,
+      "role": "guest"
+    },
+    {
+      "range": "all",
+      "acceptEncoding": "gzip",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 227.75,
+      "totalMs": 230.63,
+      "encodedBodyBytes": 246715,
+      "decodedBodyBytes": 246715,
+      "role": "guest"
+    },
+    {
+      "range": "all",
+      "acceptEncoding": "gzip",
+      "sentValidator": true,
+      "status": 304,
+      "encoding": "identity",
+      "ttfbMs": 20.41,
+      "totalMs": 20.5,
+      "encodedBodyBytes": 0,
+      "decodedBodyBytes": 0,
+      "role": "guest"
+    },
+    {
+      "range": "all",
+      "acceptEncoding": "identity",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 38.82,
+      "totalMs": 41.72,
+      "encodedBodyBytes": 246715,
+      "decodedBodyBytes": 246715,
+      "role": "guest"
+    },
+    {
+      "range": "all",
+      "acceptEncoding": "gzip",
+      "sentValidator": false,
+      "status": 200,
+      "encoding": "identity",
+      "ttfbMs": 27.65,
+      "totalMs": 30.37,
+      "encodedBodyBytes": 246715,
+      "decodedBodyBytes": 246715,
+      "role": "guest"
+    },
+    {
+      "range": "all",
+      "acceptEncoding": "gzip",
+      "sentValidator": true,
+      "status": 304,
+      "encoding": "identity",
+      "ttfbMs": 22.99,
+      "totalMs": 23.05,
+      "encodedBodyBytes": 0,
+      "decodedBodyBytes": 0,
+      "role": "guest"
+    }
+  ],
+  "validation": {
+    "vitestFilesPassed": 9,
+    "vitestTestsPassed": 78,
+    "productionBuild": "passed",
+    "browserRunsErrors": 0
+  }
+}

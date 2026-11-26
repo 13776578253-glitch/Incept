@@ -1,0 +1,118 @@
+{
+  "displayTimeUnit": "ms",
+  "traceEvents": [
+    {
+      "name": "process_name",
+      "ph": "M",
+      "pid": 1,
+      "tid": 0,
+      "args": {
+        "name": "Incept Dashboard · zh · isolated Next production · local v1 Owner fixture"
+      }
+    },
+    {
+      "name": "thread_name",
+      "ph": "M",
+      "pid": 1,
+      "tid": 1,
+      "args": {
+        "name": "Browser UI"
+      }
+    },
+    {
+      "name": "thread_name",
+      "ph": "M",
+      "pid": 1,
+      "tid": 2,
+      "args": {
+        "name": "Usage GET all"
+      }
+    },
+    {
+      "name": "Click All",
+      "cat": "dashboard",
+      "ph": "i",
+      "pid": 1,
+      "tid": 1,
+      "ts": 0,
+      "s": "t"
+    },
+    {
+      "name": "Button pressed",
+      "cat": "dashboard",
+      "ph": "i",
+      "pid": 1,
+      "tid": 1,
+      "ts": 24000,
+      "s": "t"
+    },
+    {
+      "name": "Correct DOM",
+      "cat": "dashboard",
+      "ph": "i",
+      "pid": 1,
+      "tid": 1,
+      "ts": 30361200,
+      "s": "t"
+    },
+    {
+      "name": "First correct frame and stable",
+      "cat": "dashboard",
+      "ph": "i",
+      "pid": 1,
+      "tid": 1,
+      "ts": 30361600,
+      "s": "t"
+    },
+    {
+      "name": "Usage — wait for first byte",
+      "cat": "dashboard",
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 18900,
+      "dur": 30301500,
+      "args": {
+        "status": 200,
+        "range": "all",
+        "role": "owner"
+      }
+    },
+    {
+      "name": "Usage — download body",
+      "cat": "dashboard",
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 30320400,
+      "dur": 23000,
+      "args": {
+        "bodyBytes": 895091
+      }
+    },
+    {
+      "name": "Last byte to JSON ready",
+      "cat": "dashboard",
+      "ph": "X",
+      "pid": 1,
+      "tid": 1,
+      "ts": 30343400,
+      "dur": 9800,
+      "args": {}
+    },
+    {
+      "name": "JSON ready to target DOM",
+      "cat": "dashboard",
+      "ph": "X",
+      "pid": 1,
+      "tid": 1,
+      "ts": 30353200,
+      "dur": 8000,
+      "args": {}
+    }
+  ],
+  "metadata": {
+    "report": "dashboard-range-switch-investigation.md",
+    "provenance": "Reconstructed from observed Playwright and ResourceTiming relative timestamps. Server phase durations are kept in dashboard-range-switch-evidence.json."
+  }
+}
