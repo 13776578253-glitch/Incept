@@ -1,0 +1,726 @@
+{
+  "schemaVersion": 1,
+  "revision": "aefdab427ef90bf53f4f83c3713994735b582488",
+  "metrics": "metrics-dictionary.json",
+  "levels": {
+    "L0": "Current API",
+    "L1": "Derived aggregation",
+    "L2": "Read contract or API",
+    "L3": "Collection/storage/sync",
+    "L4": "Additional data domain"
+  },
+  "capabilities": [
+    {
+      "id": "viz.tokens.hour",
+      "nameZh": "小时 Tokens 趋势",
+      "nameEn": "Hourly tokens",
+      "origin": "可信事件时间和单桶区间",
+      "currentField": "RawUsageEvent.timestampMs, usageInterval",
+      "grain": "hour",
+      "timePrecision": "事件点或同小时闭合区间",
+      "coverage": "本地 Codex 差分有可量化下界；同步历史未量化",
+      "formula": "ΣT，另列无法归属",
+      "currentApi": "无",
+      "availability": "需改造",
+      "level": "L3",
+      "effort": "高",
+      "risks": "历史证据与跨桶区间",
+      "visualization": "单日 24 桶及未归属",
+      "metricIds": [
+        "tokens.known",
+        "quality.hourly_tokens",
+        "quality.hourly_coverage"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/types.ts#L24-L57",
+        "packages/dashboard/src/agent/capture.ts#L148-L166"
+      ]
+    },
+    {
+      "id": "viz.tokens.day",
+      "nameZh": "日 Tokens 趋势与 Calendar",
+      "nameEn": "Daily tokens",
+      "origin": "窗口内用量事件",
+      "currentField": "daily[].totalTokens",
+      "grain": "day",
+      "timePrecision": "自然日；缺失来源需独立说明",
+      "coverage": "Usage 所有可见来源",
+      "formula": "每自然日 ΣT",
+      "currentApi": "Usage.daily",
+      "availability": "直接可用",
+      "level": "L0",
+      "effort": "低",
+      "risks": "零值可能掩盖失采",
+      "visualization": "7/14/30 天折线与日历",
+      "metricIds": [
+        "tokens.known",
+        "time.active_days"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77",
+        "packages/dashboard/src/adapters/local/loader.ts#L59-L76"
+      ]
+    },
+    {
+      "id": "viz.tokens.week",
+      "nameZh": "周 Tokens 趋势",
+      "nameEn": "Weekly tokens",
+      "origin": "日桶",
+      "currentField": "daily[].totalTokens",
+      "grain": "week",
+      "timePrecision": "日级合并",
+      "coverage": "所有可见日桶",
+      "formula": "周一开始，不完整首尾周标记",
+      "currentApi": "Usage.daily 派生",
+      "availability": "可派生",
+      "level": "L1",
+      "effort": "低",
+      "risks": "窗口边界",
+      "visualization": "30 天或长窗折线",
+      "metricIds": [
+        "tokens.known",
+        "time.calendar_days"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77"
+      ]
+    },
+    {
+      "id": "viz.tokens.month",
+      "nameZh": "月 Tokens 趋势",
+      "nameEn": "Monthly tokens",
+      "origin": "月桶",
+      "currentField": "monthly[].totalTokens",
+      "grain": "month",
+      "timePrecision": "窗口内被裁剪的月",
+      "coverage": "所有可见来源",
+      "formula": "自然月 ΣT；注明部分月",
+      "currentApi": "Usage.monthly",
+      "availability": "直接可用",
+      "level": "L0",
+      "effort": "低",
+      "risks": "部分月误读",
+      "visualization": "全部历史柱状",
+      "metricIds": [
+        "tokens.known",
+        "time.calendar_days"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77"
+      ]
+    },
+    {
+      "id": "viz.models.hour_mix",
+      "nameZh": "小时模型组成",
+      "nameEn": "Hourly model mix",
+      "origin": "可信事件＋canonical model",
+      "currentField": "RawUsageEvent.modelName, timestampMs",
+      "grain": "hour×model",
+      "timePrecision": "依赖时间证据",
+      "coverage": "同小时可归属集合；历史版本无一致标志",
+      "formula": "先按 hour、model 聚合，再 Top N+Others",
+      "currentApi": "无",
+      "availability": "需改造",
+      "level": "L3",
+      "effort": "高",
+      "risks": "历史精度、稀疏维度",
+      "visualization": "单日堆叠柱",
+      "metricIds": [
+        "share.model_tokens",
+        "quality.hourly_tokens"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/types.ts#L24-L57",
+        "packages/dashboard/src/agent/capture.ts#L148-L166",
+        "packages/dashboard/src/domain/model-registry.ts#L17-L113"
+      ]
+    },
+    {
+      "id": "viz.models.day_mix",
+      "nameZh": "每日模型组成",
+      "nameEn": "Daily model mix",
+      "origin": "用量日与模型投影",
+      "currentField": "daily[].modelBreakdowns[].totalTokens",
+      "grain": "day×model",
+      "timePrecision": "日级归属",
+      "coverage": "所有可见来源",
+      "formula": "同筛选 Σ模型 T/桶 T；保持图例键",
+      "currentApi": "Usage.daily",
+      "availability": "直接可用",
+      "level": "L0",
+      "effort": "低",
+      "risks": "旧 payload 需按五分量回退",
+      "visualization": "日堆叠面积或矩阵",
+      "metricIds": [
+        "share.model_tokens",
+        "tokens.known"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77",
+        "packages/dashboard/src/domain/model-registry.ts#L17-L113"
+      ]
+    },
+    {
+      "id": "viz.models.share",
+      "nameZh": "模型使用占比与变化",
+      "nameEn": "Model usage share",
+      "origin": "窗口模型与日模型",
+      "currentField": "models[].shareOfTokens, daily[].modelBreakdowns",
+      "grain": "model / day×model",
+      "timePrecision": "自然日",
+      "coverage": "已测量 canonical，排除配置槽",
+      "formula": "静态份额用窗口分母，历史用桶分母",
+      "currentApi": "Usage.models/daily/monthly",
+      "availability": "可派生",
+      "level": "L1",
+      "effort": "低",
+      "risks": "全局分母与局部 Top N 混淆",
+      "visualization": "排行与百分比堆叠",
+      "metricIds": [
+        "share.model_tokens",
+        "model.active"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77",
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L92-L117"
+      ]
+    },
+    {
+      "id": "viz.models.cost_share",
+      "nameZh": "模型成本份额",
+      "nameEn": "Model cost share",
+      "origin": "Billing 成员聚合",
+      "currentField": "breakdown.models[].estimatedCostUsd",
+      "grain": "billing model×channel",
+      "timePrecision": "窗口级",
+      "coverage": "仅 Owner 且发布可读",
+      "formula": "同口径模型 USD / 同窗官方 USD",
+      "currentApi": "Billing.breakdown.models",
+      "availability": "可派生",
+      "level": "L1",
+      "effort": "低",
+      "risks": "费用币种、版本、排除项",
+      "visualization": "模型成本排行",
+      "metricIds": [
+        "share.model_cost",
+        "billing.api_equivalent"
+      ],
+      "evidence": [
+        "packages/dashboard/src/domain/usage-billing-read.ts#L4-L42",
+        "packages/dashboard/src/react/reconcile-billing-models.ts#L246-L314"
+      ]
+    },
+    {
+      "id": "viz.models.cost_history",
+      "nameZh": "精确模型成本份额变化",
+      "nameEn": "Model cost-share history",
+      "origin": "Billing 成员或托管日投影",
+      "currentField": "breakdown.days 与 models 分开",
+      "grain": "day×billing model×channel",
+      "timePrecision": "日期键受计价规则约束",
+      "coverage": "Owner 可见已发布计费成员",
+      "formula": "应从同一 revision 直接聚合 day×model；UI 旧估分非精确",
+      "currentApi": "无交叉 API",
+      "availability": "需改造",
+      "level": "L2",
+      "effort": "中",
+      "risks": "同步 lag 与金额调和",
+      "visualization": "多模型参考成本趋势",
+      "metricIds": [
+        "share.model_cost",
+        "billing.api_equivalent"
+      ],
+      "evidence": [
+        "packages/dashboard/src/domain/usage-billing-read.ts#L4-L42",
+        "packages/dashboard/src/react/reconcile-billing-models.ts#L246-L314"
+      ]
+    },
+    {
+      "id": "viz.tokens.model_composition",
+      "nameZh": "各模型五类 Tokens",
+      "nameEn": "Token types per model",
+      "origin": "模型用量投影",
+      "currentField": "models[].inputTokens/cacheReadTokens/cacheCreationTokens/outputTokens/reasoningTokens",
+      "grain": "model / day×model",
+      "timePrecision": "窗口或日",
+      "coverage": "用量所有归一化来源；字段覆盖差异",
+      "formula": "各桶独立聚合",
+      "currentApi": "Usage.models/daily",
+      "availability": "直接可用",
+      "level": "L0",
+      "effort": "低",
+      "risks": "当前图合并写入与推理",
+      "visualization": "五分量横向堆叠",
+      "metricIds": [
+        "tokens.input",
+        "tokens.cache_read",
+        "tokens.cache_write",
+        "tokens.output",
+        "tokens.reasoning"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77",
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L92-L117"
+      ]
+    },
+    {
+      "id": "viz.cache.global_trend",
+      "nameZh": "全局缓存命中率趋势",
+      "nameEn": "Overall cache efficiency trend",
+      "origin": "日或月计数",
+      "currentField": "daily[].cacheReadTokens/inputTokens/cacheCreationTokens",
+      "grain": "day/week/month",
+      "timePrecision": "跟随桶",
+      "coverage": "有已知 prompt 的可见集合",
+      "formula": "ΣR/Σ(I+R+W)",
+      "currentApi": "Usage.daily/monthly 派生",
+      "availability": "可派生",
+      "level": "L1",
+      "effort": "低",
+      "risks": "不能平均每日比率",
+      "visualization": "折线，附分母",
+      "metricIds": [
+        "ratio.cache_hit",
+        "ratio.cache_throughput"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77",
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L240-L289"
+      ]
+    },
+    {
+      "id": "viz.cache.model_compare",
+      "nameZh": "模型缓存效率趋势与对比",
+      "nameEn": "Model cache efficiency comparison",
+      "origin": "模型摘要和模型日桶",
+      "currentField": "models[].cacheHitRate, daily[].modelBreakdowns",
+      "grain": "model×day",
+      "timePrecision": "窗口或日",
+      "coverage": "条件同缓存跨源可比性",
+      "formula": "每模型每桶重新加权",
+      "currentApi": "Usage.models/daily",
+      "availability": "可派生",
+      "level": "L1",
+      "effort": "低",
+      "risks": "低分母、来源能力不同",
+      "visualization": "双轴禁混量纲；辅以分母",
+      "metricIds": [
+        "ratio.cache_hit",
+        "ratio.output_input"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77",
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L92-L117"
+      ]
+    },
+    {
+      "id": "viz.models.lifecycle",
+      "nameZh": "模型生命周期与迁移",
+      "nameEn": "Model lifecycle and usage migration",
+      "origin": "可见日期的 canonical 日桶",
+      "currentField": "daily[].modelBreakdowns, model registry",
+      "grain": "day×model",
+      "timePrecision": "观察日期；左截断",
+      "coverage": "全历史可见用量",
+      "formula": "最早／最近有正吞吐；份额按桶重新算",
+      "currentApi": "Usage.daily 派生",
+      "availability": "可派生",
+      "level": "L1",
+      "effort": "低",
+      "risks": "历史别名变化，首次观测",
+      "visualization": "生命周期条与份额迁移",
+      "metricIds": [
+        "model.lifetime",
+        "share.model_tokens"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77",
+        "packages/dashboard/src/domain/model-registry.ts#L17-L113"
+      ]
+    },
+    {
+      "id": "viz.sessions.frequency",
+      "nameZh": "Tokens 与会话频率",
+      "nameEn": "Tokens and session frequency",
+      "origin": "按日 scoped 会话集合",
+      "currentField": "sessions[].firstActivity/lastActivity 仅边界",
+      "grain": "day",
+      "timePrecision": "事件日；日报可参与",
+      "coverage": "新建会话需可信创建或全历史首次观测",
+      "formula": "日内去重，再与 ΣT 对齐",
+      "currentApi": "API 当前只有整窗数",
+      "availability": "需改造",
+      "level": "L2",
+      "effort": "中",
+      "risks": "跨天、重复、读取权限",
+      "visualization": "同日双序列和数字卡",
+      "metricIds": [
+        "session.active_daily",
+        "session.new",
+        "session.distinct",
+        "tokens.known"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/accumulate.ts#L275-L427",
+        "packages/dashboard/src/sync/projection.ts#L38-L48"
+      ]
+    },
+    {
+      "id": "viz.sessions.model_usage",
+      "nameZh": "各模型单会话平均吞吐",
+      "nameEn": "Model throughput per active session",
+      "origin": "模型会话集合与 T",
+      "currentField": "models[].totalTokens/sessionCount",
+      "grain": "window×model",
+      "timePrecision": "窗口级",
+      "coverage": "实测模型；同一会话可属多模型",
+      "formula": "T_model/S_model，S=0 时空",
+      "currentApi": "Usage.models 派生",
+      "availability": "可派生",
+      "level": "L1",
+      "effort": "低",
+      "risks": "低样本，不汇总模型会话数",
+      "visualization": "模型排序和对比",
+      "metricIds": [
+        "session.model_mean_tokens",
+        "session.distinct"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/accumulate.ts#L275-L427",
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L92-L117"
+      ]
+    },
+    {
+      "id": "viz.billing.trend",
+      "nameZh": "官方 API 等效成本趋势",
+      "nameEn": "API-equivalent cost trend",
+      "origin": "Billing 日或窗口汇总",
+      "currentField": "breakdown.days[].estimatedCostUsd",
+      "grain": "day/week/month",
+      "timePrecision": "出版时间窗",
+      "coverage": "Owner 且 Billing 有效",
+      "formula": "同响应币种和目录，按天合计",
+      "currentApi": "Billing.breakdown.days",
+      "availability": "直接可用",
+      "level": "L0",
+      "effort": "低",
+      "risks": "asOf、旧 checkpoint",
+      "visualization": "独立费用图",
+      "metricIds": [
+        "billing.api_equivalent",
+        "billing.coverage"
+      ],
+      "evidence": [
+        "packages/dashboard/src/domain/usage-billing-read.ts#L4-L42"
+      ]
+    },
+    {
+      "id": "viz.billing.schedule",
+      "nameZh": "峰谷成本",
+      "nameEn": "Peak and off-peak cost",
+      "origin": "旧按事件时段；新版 catalog 时段规则",
+      "currentField": "billing.peak/offPeak/standard",
+      "grain": "day×period",
+      "timePrecision": "依赖事件时间",
+      "coverage": "仅具有时段规则和有效时间的来源",
+      "formula": "Legacy 带倍率实测；新版需投影时段交叉",
+      "currentApi": "Usage 部分；Billing 无",
+      "availability": "需改造",
+      "level": "L2",
+      "effort": "中",
+      "risks": "跨区间、未知时间、额度与金额混用",
+      "visualization": "峰谷堆叠和规则说明",
+      "metricIds": [
+        "billing.peak",
+        "billing.api_equivalent"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/pricing-schedule.ts#L32-L41",
+        "packages/dashboard/src/domain/usage-billing-read.ts#L4-L42"
+      ]
+    },
+    {
+      "id": "viz.projects.matrix",
+      "nameZh": "项目与模型用量关联",
+      "nameEn": "Project by model",
+      "origin": "事件 projectKey×canonical model",
+      "currentField": "projects[].modelsUsed；可用受限会话模型近似时须注明",
+      "grain": "window×project×model",
+      "timePrecision": "窗口或日",
+      "coverage": "Owner/适用 Pro；Guest 仅总数",
+      "formula": "从事件直接双维聚合",
+      "currentApi": "Usage.projects 只有成员和项目合计",
+      "availability": "需改造",
+      "level": "L2",
+      "effort": "中",
+      "risks": "会话首项目、设备数据、隐私",
+      "visualization": "分页矩阵",
+      "metricIds": [
+        "project.distinct",
+        "share.model_tokens"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/accumulate.ts#L275-L427",
+        "packages/dashboard/src/domain/public-summary.ts#L32-L73"
+      ]
+    },
+    {
+      "id": "viz.agents.collaboration",
+      "nameZh": "主 Agent 与 Worker 协作",
+      "nameEn": "Orchestrator and worker collaboration",
+      "origin": "现有源 parent 或角色线索；需稳定关联",
+      "currentField": "RawUsageEvent 无 role/parent",
+      "grain": "request×role×session",
+      "timePrecision": "具源证据才有",
+      "coverage": "少数来源有模型名或 parent 线索",
+      "formula": "以可信父子键连边，unknown 保留",
+      "currentApi": "无",
+      "availability": "需改造",
+      "level": "L3",
+      "effort": "高",
+      "risks": "错误连边、敏感会话图",
+      "visualization": "Owner 会话详情，证据明确才画图",
+      "metricIds": [
+        "activity.requests",
+        "session.distinct"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/types.ts#L24-L57",
+        "packages/dashboard/src/agent/capture.ts#L148-L166",
+        "packages/dashboard/src/domain/model-registry.ts#L17-L113"
+      ]
+    },
+    {
+      "id": "viz.history.peak",
+      "nameZh": "历史吞吐峰值",
+      "nameEn": "Historical throughput peak",
+      "origin": "可见日/月桶",
+      "currentField": "daily[].totalTokens",
+      "grain": "day",
+      "timePrecision": "历史自然日",
+      "coverage": "发布窗口内已知数据",
+      "formula": "按 T 排序，过滤进行中日由查询指定",
+      "currentApi": "Usage.daily 派生",
+      "availability": "可派生",
+      "level": "L1",
+      "effort": "低",
+      "risks": "旧 costs.peakDay 按 cost 排名",
+      "visualization": "日历、极值标记",
+      "metricIds": [
+        "tokens.known",
+        "time.active_days"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77",
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L240-L289"
+      ]
+    },
+    {
+      "id": "viz.sources.simple",
+      "nameZh": "简化客户端来源",
+      "nameEn": "Client/source distribution",
+      "origin": "源摘要",
+      "currentField": "sources[].sourceId/collectionMode/shareOfTokens",
+      "grain": "source",
+      "timePrecision": "窗口级",
+      "coverage": "注册客户端；WorkBuddy provider 与客户端分离",
+      "formula": "source T / 窗口 T",
+      "currentApi": "Usage.sources",
+      "availability": "直接可用",
+      "level": "L0",
+      "effort": "低",
+      "risks": "渠道/厂商误归类，mixed 无份额拆分",
+      "visualization": "简明列表及诊断展开",
+      "metricIds": [
+        "tokens.known",
+        "share.model_tokens"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/accumulate.ts#L275-L427",
+        "packages/dashboard/src/domain/public-summary.ts#L32-L73",
+        "packages/dashboard/src/domain/model-registry.ts#L17-L113"
+      ]
+    },
+    {
+      "id": "viz.quality.pricing",
+      "nameZh": "价格覆盖及数据质量",
+      "nameEn": "Pricing and data quality",
+      "origin": "Coverage、来源模式及 Owner 诊断",
+      "currentField": "costs.unpricedModels / Billing.breakdown.unpriced",
+      "grain": "window / group",
+      "timePrecision": "窗口级",
+      "coverage": "Guest 只有公开字段，Owner 有详细原因",
+      "formula": "费用口径独立，收集质量另算",
+      "currentApi": "Usage.costs / Billing",
+      "availability": "直接可用",
+      "level": "L0",
+      "effort": "低",
+      "risks": "把 0 标为全覆盖，显示敏感日志",
+      "visualization": "状态条与展开表",
+      "metricIds": [
+        "billing.coverage",
+        "billing.unpriced_tokens",
+        "billing.model_coverage"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L240-L289",
+        "packages/dashboard/src/domain/usage-billing-read.ts#L4-L42",
+        "packages/dashboard/src/domain/public-summary.ts#L32-L73"
+      ]
+    },
+    {
+      "id": "viz.single_day",
+      "nameZh": "选择历史自然日分析",
+      "nameEn": "Single calendar day analysis",
+      "origin": "日级 Usage 及可选精确查询",
+      "currentField": "daily[].modelBreakdowns；完整日会话与小时暂无",
+      "grain": "day / hour",
+      "timePrecision": "当前日级，分时证据需扩展",
+      "coverage": "已缓存范围内日摘要；超范围需查询",
+      "formula": "日卡片先复用 T 与模型组成，深挖独立 endpoint",
+      "currentApi": "Usage.daily 单日挑选",
+      "availability": "可派生",
+      "level": "L1",
+      "effort": "低",
+      "risks": "日期存在性、历史覆盖、进行中",
+      "visualization": "日摘要、模型组成及展开",
+      "metricIds": [
+        "tokens.known",
+        "quality.hourly_coverage",
+        "session.active_daily"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/summarize.ts#L27-L77",
+        "packages/dashboard/src/adapters/local/types.ts#L24-L57",
+        "packages/dashboard/src/sync/projection.ts#L38-L48"
+      ]
+    },
+    {
+      "id": "viz.filters.cross_dimensions",
+      "nameZh": "多维过滤与跨图联动",
+      "nameEn": "Cross-dimension filtering",
+      "origin": "事件、价格和权限投影",
+      "currentField": "TokenDashboardData 预聚合独立维度",
+      "grain": "query-dependent",
+      "timePrecision": "按查询",
+      "coverage": "已存在的维度就地支持；渠道与角色视证据",
+      "formula": "同一筛选重聚合所有视图及分母",
+      "currentApi": "无统一多维查询 API",
+      "availability": "需改造",
+      "level": "L2",
+      "effort": "中",
+      "risks": "独立汇总不可反演交集、组合缓存",
+      "visualization": "共享分析面板",
+      "metricIds": [
+        "share.model_tokens",
+        "share.model_cost",
+        "project.distinct"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/types.ts#L24-L57",
+        "packages/dashboard/src/sync/projection.ts#L38-L48",
+        "packages/dashboard/src/domain/public-summary.ts#L32-L73"
+      ]
+    },
+    {
+      "id": "viz.sessions.details",
+      "nameZh": "会话列表和 Inspector",
+      "nameEn": "Session explorer and inspector",
+      "origin": "会话及会话模型聚合",
+      "currentField": "sessions[].durationMinutes/modelBreakdowns",
+      "grain": "session",
+      "timePrecision": "event 或 day 标志；跨窗裁剪",
+      "coverage": "Owner 与受 Pro 投影限制",
+      "formula": "按 scoped key 筛选，跨度为观测边界",
+      "currentApi": "Usage.sessions",
+      "availability": "直接可用",
+      "level": "L0",
+      "effort": "低",
+      "risks": "体积、路径与标题敏感",
+      "visualization": "保留，延后展开",
+      "metricIds": [
+        "session.distinct",
+        "session.activity_span"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/aggregation/accumulate.ts#L275-L427",
+        "packages/dashboard/src/domain/public-summary.ts#L32-L73"
+      ]
+    },
+    {
+      "id": "viz.activities.requests",
+      "nameZh": "真实请求、错误与重试",
+      "nameEn": "Verified requests, errors and retries",
+      "origin": "支持稳定请求 ID 的原生字段",
+      "currentField": "eventId, raw request ID 尚未统一",
+      "grain": "request",
+      "timePrecision": "依平台",
+      "coverage": "目前请求/步骤/日报混合",
+      "formula": "按 verifiedRequestKey 去重并输出覆盖",
+      "currentApi": "无",
+      "availability": "需改造",
+      "level": "L3",
+      "effort": "高",
+      "risks": "自动重试、聚合记录、历史不可回填",
+      "visualization": "Owner 诊断",
+      "metricIds": [
+        "activity.requests"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/types.ts#L24-L57",
+        "packages/dashboard/src/agent/capture.ts#L148-L166"
+      ]
+    },
+    {
+      "id": "viz.activities.tool_runtime",
+      "nameZh": "Tool、有效执行时长和任务规模",
+      "nameEn": "Tool and execution behavior",
+      "origin": "工具执行或任务事件",
+      "currentField": "当前无稳定字段",
+      "grain": "tool invocation / task",
+      "timePrecision": "需要可信 start/end",
+      "coverage": "无统一数据域",
+      "formula": "有效区间与互斥策略；跨度仅作会话行为",
+      "currentApi": "无",
+      "availability": "暂无来源",
+      "level": "L4",
+      "effort": "高",
+      "risks": "遥测授权、会话保密",
+      "visualization": "单独行为分析",
+      "metricIds": [
+        "activity.tool_calls",
+        "session.activity_span"
+      ],
+      "evidence": [
+        "packages/dashboard/src/adapters/local/types.ts#L24-L57",
+        "packages/dashboard/src/adapters/local/aggregation/accumulate.ts#L275-L427"
+      ]
+    },
+    {
+      "id": "viz.billing.actual_paid",
+      "nameZh": "实付与订阅额度",
+      "nameEn": "Actual spend and subscription quota",
+      "origin": "账单、订阅和渠道的独立数据",
+      "currentField": "recordedUnknownCurrency 仅计数",
+      "grain": "billing period",
+      "timePrecision": "账单区间",
+      "coverage": "现有 Dashboard 无实付统一来源",
+      "formula": "按账单币种和主体合并；额度权重独立",
+      "currentApi": "无",
+      "availability": "暂无来源",
+      "level": "L4",
+      "effort": "高",
+      "risks": "账单授权、货币与账号隔离",
+      "visualization": "独立 Owner 结算视图",
+      "metricIds": [
+        "billing.recorded_cost",
+        "billing.legacy_cost",
+        "billing.api_equivalent"
+      ],
+      "evidence": [
+        "packages/dashboard/src/domain/usage-billing-read.ts#L4-L42",
+        "packages/dashboard/src/adapters/local/types.ts#L24-L57"
+      ]
+    }
+  ]
+}

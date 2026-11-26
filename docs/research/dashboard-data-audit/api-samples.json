@@ -1,0 +1,506 @@
+{
+  "schemaVersion": 1,
+  "revision": "aefdab427ef90bf53f4f83c3713994735b582488",
+  "realUsageExcerpt": {
+    "kind": "redacted-snapshot-dto-excerpt",
+    "scope": "historical local disk DTO, not an HTTP capture and not current production",
+    "range": "7d",
+    "checkedAtDate": "2026-10-21",
+    "dateRange": {
+      "from": "2026-10-15",
+      "to": "2026-10-21",
+      "activeDays": 7,
+      "calendarDays": 7
+    },
+    "totals": {
+      "inputTokens": 97522081,
+      "outputTokens": 6724269,
+      "cacheReadTokens": 2972964697,
+      "cacheCreationTokens": 0,
+      "reasoningTokens": 4203048,
+      "totalTokens": 3081414095,
+      "cost": 445.113187807999,
+      "cacheHitRate": 0.9682388858669757,
+      "outputToInputRatio": 0.003558822359468893,
+      "sessionCount": 146,
+      "projectCount": 8
+    },
+    "coverage": {
+      "pricedTokens": 3008787225,
+      "unpricedTokens": 72626870,
+      "tokenCoverageRate": 0.9764306685953548
+    },
+    "nestedRecords": "omitted"
+  },
+  "fixtures": {
+    "description": "Synthetic DTOs. Owner usage = usageGuest + usageDetails + ownerSync; intentionally stale billing checkpoint for UI tests. The synthetic two session rows are not source observations.",
+    "usageGuest": {
+      "range": "7d",
+      "updatedAt": "2026-11-20T12:00:00.000Z",
+      "checkedAt": "2026-11-20T12:00:00.000Z",
+      "dateRange": {
+        "from": "2026-11-14",
+        "to": "2026-11-20",
+        "activeDays": 2,
+        "calendarDays": 7
+      },
+      "totals": {
+        "inputTokens": 65,
+        "outputTokens": 28,
+        "cacheReadTokens": 47,
+        "cacheCreationTokens": 7,
+        "reasoningTokens": 13,
+        "totalTokens": 160,
+        "cost": 0.002,
+        "cacheHitRate": 0.3949579831932773,
+        "outputToInputRatio": 0.3445378151260504,
+        "sessionCount": 2,
+        "projectCount": 1
+      },
+      "daily": [
+        {
+          "date": "2026-11-14",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "cacheCreationTokens": 0,
+          "reasoningTokens": 0,
+          "totalTokens": 0,
+          "cost": 0,
+          "modelsUsed": [],
+          "modelBreakdowns": []
+        },
+        {
+          "date": "2026-11-15",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "cacheCreationTokens": 0,
+          "reasoningTokens": 0,
+          "totalTokens": 0,
+          "cost": 0,
+          "modelsUsed": [],
+          "modelBreakdowns": []
+        },
+        {
+          "date": "2026-11-16",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "cacheCreationTokens": 0,
+          "reasoningTokens": 0,
+          "totalTokens": 0,
+          "cost": 0,
+          "modelsUsed": [],
+          "modelBreakdowns": []
+        },
+        {
+          "date": "2026-11-17",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "cacheCreationTokens": 0,
+          "reasoningTokens": 0,
+          "totalTokens": 0,
+          "cost": 0,
+          "modelsUsed": [],
+          "modelBreakdowns": []
+        },
+        {
+          "date": "2026-11-18",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "cacheCreationTokens": 0,
+          "reasoningTokens": 0,
+          "totalTokens": 0,
+          "cost": 0,
+          "modelsUsed": [],
+          "modelBreakdowns": []
+        },
+        {
+          "date": "2026-11-19",
+          "inputTokens": 20,
+          "outputTokens": 10,
+          "cacheReadTokens": 18,
+          "cacheCreationTokens": 2,
+          "reasoningTokens": 0,
+          "totalTokens": 50,
+          "cost": 0.0008,
+          "modelsUsed": [
+            "fixture-alpha"
+          ],
+          "modelBreakdowns": [
+            {
+              "modelName": "fixture-alpha",
+              "inputTokens": 20,
+              "outputTokens": 10,
+              "cacheReadTokens": 18,
+              "cacheCreationTokens": 2,
+              "reasoningTokens": 0,
+              "totalTokens": 50,
+              "cost": 0.0008
+            }
+          ]
+        },
+        {
+          "date": "2026-11-20",
+          "inputTokens": 45,
+          "outputTokens": 18,
+          "cacheReadTokens": 29,
+          "cacheCreationTokens": 5,
+          "reasoningTokens": 13,
+          "totalTokens": 110,
+          "cost": 0.0012,
+          "modelsUsed": [
+            "fixture-alpha",
+            "fixture-beta"
+          ],
+          "modelBreakdowns": [
+            {
+              "modelName": "fixture-alpha",
+              "inputTokens": 30,
+              "outputTokens": 10,
+              "cacheReadTokens": 24,
+              "cacheCreationTokens": 4,
+              "reasoningTokens": 12,
+              "totalTokens": 80,
+              "cost": 0.0012
+            },
+            {
+              "modelName": "fixture-beta",
+              "inputTokens": 15,
+              "outputTokens": 8,
+              "cacheReadTokens": 5,
+              "cacheCreationTokens": 1,
+              "reasoningTokens": 1,
+              "totalTokens": 30,
+              "cost": 0,
+              "missingPricing": true
+            }
+          ]
+        }
+      ],
+      "monthly": [
+        {
+          "month": "2026-11",
+          "inputTokens": 65,
+          "outputTokens": 28,
+          "cacheReadTokens": 47,
+          "cacheCreationTokens": 7,
+          "reasoningTokens": 13,
+          "totalTokens": 160,
+          "cost": 0.002,
+          "modelsUsed": [
+            "fixture-alpha",
+            "fixture-beta"
+          ],
+          "modelBreakdowns": [
+            {
+              "modelName": "fixture-alpha",
+              "inputTokens": 50,
+              "outputTokens": 20,
+              "cacheReadTokens": 42,
+              "cacheCreationTokens": 6,
+              "reasoningTokens": 12,
+              "totalTokens": 130,
+              "cost": 0.002
+            },
+            {
+              "modelName": "fixture-beta",
+              "inputTokens": 15,
+              "outputTokens": 8,
+              "cacheReadTokens": 5,
+              "cacheCreationTokens": 1,
+              "reasoningTokens": 1,
+              "totalTokens": 30,
+              "cost": 0,
+              "missingPricing": true
+            }
+          ]
+        }
+      ],
+      "models": [
+        {
+          "modelName": "fixture-alpha",
+          "inputTokens": 50,
+          "outputTokens": 20,
+          "cacheReadTokens": 42,
+          "cacheCreationTokens": 6,
+          "reasoningTokens": 12,
+          "totalTokens": 130,
+          "cost": 0.002,
+          "displayName": "fixture-alpha",
+          "canonicalModelId": "fixture-alpha",
+          "provider": "unknown",
+          "source": "Codex CLI",
+          "shareOfTokens": 0.8125,
+          "shareOfCost": 1,
+          "cacheHitRate": 0.42857142857142855,
+          "missingPricing": false,
+          "slotStatus": "measured",
+          "sessionCount": 1,
+          "activeDays": 2
+        },
+        {
+          "modelName": "fixture-beta",
+          "inputTokens": 15,
+          "outputTokens": 8,
+          "cacheReadTokens": 5,
+          "cacheCreationTokens": 1,
+          "reasoningTokens": 1,
+          "totalTokens": 30,
+          "cost": 0,
+          "missingPricing": true,
+          "displayName": "fixture-beta",
+          "canonicalModelId": "fixture-beta",
+          "provider": "unknown",
+          "source": "Codex CLI",
+          "shareOfTokens": 0.1875,
+          "shareOfCost": 0,
+          "cacheHitRate": 0.23809523809523808,
+          "slotStatus": "measured",
+          "sessionCount": 1,
+          "activeDays": 1
+        }
+      ],
+      "sources": [
+        {
+          "sourceId": "codex",
+          "label": "Codex CLI",
+          "descriptionKey": "codex",
+          "collectionMode": "mixed",
+          "inputTokens": 65,
+          "outputTokens": 28,
+          "cacheReadTokens": 47,
+          "cacheCreationTokens": 7,
+          "reasoningTokens": 13,
+          "totalTokens": 160,
+          "cost": 0.002,
+          "shareOfTokens": 1,
+          "shareOfCost": 1,
+          "sessionCount": 2,
+          "modelsUsed": [
+            "fixture-alpha",
+            "fixture-beta"
+          ],
+          "status": "active"
+        }
+      ],
+      "costs": {
+        "totalCost": 0.002,
+        "avgDailyCost": 0.00028571428571428574,
+        "peakDay": {
+          "date": "2026-11-20",
+          "cost": 0.0012,
+          "tokens": 110
+        },
+        "blendedCostPerMillion": 15.384615384615383,
+        "estimatedCacheSavings": 0,
+        "pricedTokens": 130,
+        "unpricedTokens": 30,
+        "tokenCoverageRate": 0.8125,
+        "pricedModelCount": 1,
+        "totalModelCount": 2,
+        "modelCoverageRate": 0.5,
+        "unpricedModels": [
+          {
+            "modelName": "fixture-beta",
+            "source": "Codex CLI",
+            "inputTokens": 15,
+            "outputTokens": 8,
+            "cacheReadTokens": 5,
+            "totalTokens": 30,
+            "sessionCount": 1
+          }
+        ]
+      },
+      "projects": [],
+      "sessions": []
+    },
+    "usageDetails": {
+      "projects": [
+        {
+          "inputTokens": 65,
+          "outputTokens": 28,
+          "cacheReadTokens": 47,
+          "cacheCreationTokens": 7,
+          "reasoningTokens": 13,
+          "totalTokens": 160,
+          "cost": 0.002,
+          "projectKey": "fixture-project",
+          "projectName": "Example",
+          "sessionCount": 2,
+          "shareOfTokens": 1,
+          "shareOfCost": 1,
+          "lastActivity": "2026-11-20",
+          "modelsUsed": [
+            "fixture-alpha",
+            "fixture-beta"
+          ]
+        }
+      ],
+      "sessions": [
+        {
+          "modelName": "fixture-alpha",
+          "inputTokens": 50,
+          "outputTokens": 20,
+          "cacheReadTokens": 42,
+          "cacheCreationTokens": 6,
+          "reasoningTokens": 12,
+          "totalTokens": 130,
+          "cost": 0.002,
+          "sessionKey": "fixture-cross-day",
+          "sessionId": "fixture-cross-day",
+          "projectKey": "fixture-project",
+          "projectName": "Example",
+          "source": "Codex CLI",
+          "firstActivity": "2026-11-19T15:58:00.000Z",
+          "lastActivity": "2026-11-19T16:07:00.000Z",
+          "durationMinutes": 9,
+          "modelsUsed": [
+            "fixture-alpha"
+          ],
+          "modelBreakdowns": [
+            {
+              "modelName": "fixture-alpha",
+              "inputTokens": 50,
+              "outputTokens": 20,
+              "cacheReadTokens": 42,
+              "cacheCreationTokens": 6,
+              "reasoningTokens": 12,
+              "totalTokens": 130,
+              "cost": 0.002
+            }
+          ]
+        },
+        {
+          "modelName": "fixture-beta",
+          "inputTokens": 15,
+          "outputTokens": 8,
+          "cacheReadTokens": 5,
+          "cacheCreationTokens": 1,
+          "reasoningTokens": 1,
+          "totalTokens": 30,
+          "cost": 0,
+          "missingPricing": true,
+          "sessionKey": "fixture-day-summary",
+          "sessionId": "fixture-day-summary",
+          "projectKey": "fixture-project",
+          "projectName": "Example",
+          "source": "Codex CLI",
+          "firstActivity": "2026-11-20T04:00:00.000Z",
+          "lastActivity": "2026-11-20T04:00:00.000Z",
+          "durationMinutes": 0,
+          "modelsUsed": [
+            "fixture-beta"
+          ],
+          "modelBreakdowns": [
+            {
+              "modelName": "fixture-beta",
+              "inputTokens": 15,
+              "outputTokens": 8,
+              "cacheReadTokens": 5,
+              "cacheCreationTokens": 1,
+              "reasoningTokens": 1,
+              "totalTokens": 30,
+              "cost": 0,
+              "missingPricing": true
+            }
+          ],
+          "timestampPrecision": "day",
+          "historyIncomplete": true
+        }
+      ]
+    },
+    "ownerSync": {
+      "remote": true,
+      "readMode": "v2",
+      "dataRevision": 43
+    },
+    "billingOwner": {
+      "range": "7d",
+      "members": 3,
+      "tokens": 160,
+      "estimatedCostUsd": "0.0022",
+      "estimatedTokens": 130,
+      "unpricedTokens": 30,
+      "excludedTokens": 0,
+      "recordedUnknownCurrency": 0,
+      "run": "fixture-run",
+      "revision": 42,
+      "liveRevision": 43,
+      "catalog": "fixture-catalog",
+      "asOf": "2026-11-20T12:00:00.000Z",
+      "breakdown": {
+        "days": [
+          {
+            "day": "2026-11-19",
+            "estimatedCostUsd": "0.0010",
+            "estimatedTokens": 50,
+            "unpricedTokens": 0,
+            "excludedTokens": 0
+          },
+          {
+            "day": "2026-11-20",
+            "estimatedCostUsd": "0.0012",
+            "estimatedTokens": 80,
+            "unpricedTokens": 30,
+            "excludedTokens": 0
+          }
+        ],
+        "models": [
+          {
+            "model": "fixture-alpha",
+            "estimatedCostUsd": "0.0022",
+            "estimatedTokens": 130,
+            "unpricedTokens": 0,
+            "excludedTokens": 0,
+            "channels": [
+              {
+                "channel": "codex",
+                "estimatedCostUsd": "0.0022",
+                "estimatedTokens": 130,
+                "unpricedTokens": 0,
+                "excludedTokens": 0
+              }
+            ]
+          },
+          {
+            "model": "fixture-beta",
+            "estimatedCostUsd": "0",
+            "estimatedTokens": 0,
+            "unpricedTokens": 30,
+            "excludedTokens": 0,
+            "channels": [
+              {
+                "channel": "codex",
+                "estimatedCostUsd": "0",
+                "estimatedTokens": 0,
+                "unpricedTokens": 30,
+                "excludedTokens": 0
+              }
+            ]
+          }
+        ],
+        "unpriced": [
+          {
+            "channel": "codex",
+            "model": "fixture-beta",
+            "reason": "RATE_NOT_FOUND",
+            "observations": 1
+          }
+        ]
+      }
+    },
+    "proposedDayQuality": {
+      "day": "2026-11-20",
+      "knownTokens": 110,
+      "hourAttributedTokens": 80,
+      "hourUnattributedTokens": 30,
+      "hourCoverage": 0.7272727272727273,
+      "availability": "ongoing",
+      "unattributedReason": "day-summary"
+    }
+  }
+}

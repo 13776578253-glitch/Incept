@@ -1,0 +1,1087 @@
+{
+  "schemaVersion": 1,
+  "revision": "aefdab427ef90bf53f4f83c3713994735b582488",
+  "windowSemantics": "Asia/Shanghai date keys (fixed UTC+08:00), request-time cutoff, one projected event set per query; later filtering recomputes all weights and distinct counts",
+  "tokens": {
+    "I": "inputTokens",
+    "R": "cacheReadTokens",
+    "W": "cacheCreationTokens",
+    "O": "outputTokens",
+    "Q": "reasoningTokens",
+    "T": "totalTokens"
+  },
+  "metrics": [
+    {
+      "id": "tokens.known",
+      "nameZh": "已知总 Tokens",
+      "nameEn": "Known total tokens",
+      "currentField": "totals.totalTokens",
+      "currentFormula": "Σ(I+R+W+O+Q), positive events",
+      "numerator": "I+R+W+O+Q",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "所有已归一化来源，模型与不相交日期可加",
+      "zeroMissingSemantics": "空窗返回 0；未覆盖历史单独标记",
+      "recommendedContract": "保留五分量恒等式；源 total 单独做核验",
+      "visualizations": "趋势、吞吐、日历",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "tokens.input",
+      "nameZh": "普通输入 Tokens",
+      "nameEn": "Uncached input tokens",
+      "currentField": "inputTokens",
+      "currentFormula": "ΣI",
+      "numerator": "I",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "按源归一化；包含关系见采集表",
+      "zeroMissingSemantics": "0 可由默认值产生",
+      "recommendedContract": "未覆盖字段保留 unknown 标识；按平台验证 cache 是否包含于原始输入",
+      "visualizations": "堆叠、模型比较",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        }
+      ]
+    },
+    {
+      "id": "tokens.cache_read",
+      "nameZh": "缓存读取 Tokens",
+      "nameEn": "Cache read tokens",
+      "currentField": "cacheReadTokens",
+      "currentFormula": "ΣR",
+      "numerator": "R",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "按源归一化",
+      "zeroMissingSemantics": "0 可由字段缺失产生",
+      "recommendedContract": "保留源字段覆盖；仅累计已知 R",
+      "visualizations": "堆叠、缓存趋势",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        }
+      ]
+    },
+    {
+      "id": "tokens.cache_write",
+      "nameZh": "缓存创建 Tokens",
+      "nameEn": "Cache creation tokens",
+      "currentField": "cacheCreationTokens",
+      "currentFormula": "ΣW",
+      "numerator": "W",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "独立字段；部分来源采集器固定 0",
+      "zeroMissingSemantics": "0 可能来自缺失或尚未采集",
+      "recommendedContract": "UI 独立成桶；不与推理合并；审计 Codex 和 CommandCode 后再调整",
+      "visualizations": "堆叠",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        },
+        {
+          "path": "packages/dashboard/src/react/sections/models/use-models-state.ts",
+          "symbol": "useModelsState",
+          "line": 79,
+          "endLine": 105
+        }
+      ]
+    },
+    {
+      "id": "tokens.output",
+      "nameZh": "可见输出 Tokens",
+      "nameEn": "Visible output tokens",
+      "currentField": "outputTokens",
+      "currentFormula": "ΣO；部分源先减推理或截断",
+      "numerator": "O",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "部分源无法区分可见输出和内部生成",
+      "zeroMissingSemantics": "缺字段或负差目前归零",
+      "recommendedContract": "统一为确认排除推理的可见输出；语义不充分的来源标明",
+      "visualizations": "堆叠、模型比较",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        }
+      ]
+    },
+    {
+      "id": "tokens.reasoning",
+      "nameZh": "推理 Tokens",
+      "nameEn": "Reasoning tokens",
+      "currentField": "reasoningTokens",
+      "currentFormula": "ΣQ",
+      "numerator": "Q",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "只有可拆分且已采集的来源",
+      "zeroMissingSemantics": "缺字段目前常为 0",
+      "recommendedContract": "将可见输出和推理分别展示；源包含关系独立核验",
+      "visualizations": "堆叠、模型比较",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        },
+        {
+          "path": "packages/dashboard/src/react/sections/models/use-models-state.ts",
+          "symbol": "useModelsState",
+          "line": 79,
+          "endLine": 105
+        }
+      ]
+    },
+    {
+      "id": "ratio.output_input",
+      "nameZh": "生成／输入比",
+      "nameEn": "Generated-to-prompt ratio",
+      "currentField": "totals.outputToInputRatio",
+      "currentFormula": "Σ(O+Q)/Σ(I+R+W)",
+      "numerator": "O+Q",
+      "denominator": "I+R+W",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "全局直接；模型和时间桶可从分量派生",
+      "zeroMissingSemantics": "当前分母 0 → 0；契约用 null",
+      "recommendedContract": "固定方向；可见输出比单独用 O/P；比例可能大于 1",
+      "visualizations": "趋势、模型对比",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/react/sections/overview/overview-metrics.tsx",
+          "symbol": "OverviewMetrics",
+          "line": 45,
+          "endLine": 81
+        }
+      ]
+    },
+    {
+      "id": "ratio.cache_hit",
+      "nameZh": "缓存命中率",
+      "nameEn": "Cache read share of prompt",
+      "currentField": "totals.cacheHitRate / models[].cacheHitRate",
+      "currentFormula": "ΣR/Σ(I+R+W)",
+      "numerator": "R",
+      "denominator": "I+R+W",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "全局与单模型同口径；源缺失影响可比性",
+      "zeroMissingSemantics": "当前分母 0 → 0；契约用 null",
+      "recommendedContract": "用桶内同口径分子分母重算；标注这是 Token 口径",
+      "visualizations": "趋势、多模型对比",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/react/sections/overview/overview-metrics.tsx",
+          "symbol": "OverviewMetrics",
+          "line": 45,
+          "endLine": 81
+        }
+      ]
+    },
+    {
+      "id": "ratio.cache_throughput",
+      "nameZh": "缓存读取占吞吐",
+      "nameEn": "Cache read share of throughput",
+      "currentField": "由 cacheReadTokens、totalTokens 派生",
+      "currentFormula": "当前无独立字段；分量占比可派生",
+      "numerator": "R",
+      "denominator": "I+R+W+O+Q",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "同一窗口或同一筛选集合",
+      "zeroMissingSemantics": "0 分母用 null",
+      "recommendedContract": "与缓存命中率使用不同名称和分母",
+      "visualizations": "总体构成、趋势",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/react/sections/models/use-models-state.ts",
+          "symbol": "useModelsState",
+          "line": 79,
+          "endLine": 105
+        }
+      ]
+    },
+    {
+      "id": "share.model_tokens",
+      "nameZh": "模型使用占比",
+      "nameEn": "Model token share",
+      "currentField": "models[].shareOfTokens",
+      "currentFormula": "模型 T / 窗口 T",
+      "numerator": "模型 T",
+      "denominator": "筛选后全体 T",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "canonical 模型分桶，可在同一分母下加份额",
+      "zeroMissingSemantics": "当前分母 0 → 0",
+      "recommendedContract": "Top N 的 Others 对同一分母保留；配置零槽不混入",
+      "visualizations": "占比、历史堆叠",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "share.model_cost",
+      "nameZh": "模型成本占比",
+      "nameEn": "Model cost share",
+      "currentField": "models[].shareOfCost / Billing.breakdown.models",
+      "currentFormula": "模型 C / 同窗口总 C；Owner 调和有估分",
+      "numerator": "模型 C",
+      "denominator": "同一费用口径与筛选的总 C",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "Legacy C 与 Billing USD 各自求份额",
+      "zeroMissingSemantics": "当前 0 分母 → 0；未定价独立展示",
+      "recommendedContract": "Owner 按 billing model 真值取数；用版本、窗口和模型键标识",
+      "visualizations": "费用构成、历史",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/domain/usage-billing-read.ts",
+          "symbol": "BillingReadResponse",
+          "line": 4,
+          "endLine": 42
+        },
+        {
+          "path": "packages/dashboard/src/react/reconcile-billing-models.ts",
+          "symbol": "reconcileDashboardWithBilling",
+          "line": 89,
+          "endLine": 180
+        }
+      ]
+    },
+    {
+      "id": "billing.legacy_cost",
+      "nameZh": "旧版参考费用",
+      "nameEn": "Legacy usage cost",
+      "currentField": "totals.cost / costs.totalCost",
+      "currentFormula": "Σ正吞吐事件 ev.cost",
+      "numerator": "已记录金额或估算金额",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "同定价实现、同可比金额语义才可合计",
+      "zeroMissingSemantics": "0 可能是免费、缺价或无活动",
+      "recommendedContract": "保留 legacy 标签和覆盖字段；历史价格差单独说明",
+      "visualizations": "旧版费用与过渡",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "billing.api_equivalent",
+      "nameZh": "API 等效成本",
+      "nameEn": "API equivalent cost USD",
+      "currentField": "Billing.estimatedCostUsd",
+      "currentFormula": "Σ版本化官方等效估算的十进制金额",
+      "numerator": "估算明细 USD",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "同 run/catalog/修订；Owner 独立读取",
+      "zeroMissingSemantics": "十进制字符串；excluded 与 unpriced 分开",
+      "recommendedContract": "保留精度，展示格式化；不混入订阅成本或实付",
+      "visualizations": "费用趋势、总额",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/domain/usage-billing-read.ts",
+          "symbol": "BillingReadResponse",
+          "line": 4,
+          "endLine": 42
+        }
+      ]
+    },
+    {
+      "id": "billing.recorded_cost",
+      "nameZh": "来源记录费用",
+      "nameEn": "Source recorded cost",
+      "currentField": "RawUsageEvent.costSource / TransferEvent.recordedCost",
+      "currentFormula": "旧聚合与估价混合；新版快照仅披露 recordedUnknownCurrency 未知币种成员计数",
+      "numerator": "来源金额，按币种",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "有记录的来源；没有独立金额 API",
+      "zeroMissingSemantics": "0 可是明确免费；未知币种留空",
+      "recommendedContract": "分币种汇总并保留 provenance；没有账单记录时不标实付",
+      "visualizations": "Owner 明细",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        },
+        {
+          "path": "packages/dashboard/src/domain/usage-billing-read.ts",
+          "symbol": "BillingReadResponse",
+          "line": 4,
+          "endLine": 42
+        }
+      ]
+    },
+    {
+      "id": "billing.coverage",
+      "nameZh": "价格覆盖率",
+      "nameEn": "Price coverage",
+      "currentField": "costs.tokenCoverageRate / Billing.estimatedTokens",
+      "currentFormula": "Legacy=(T-U)/T；Billing 建议分估算占总量与适用量覆盖",
+      "numerator": "pricedTokens 或 estimatedTokens",
+      "denominator": "T 或 T-excluded，显式命名",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "Legacy 以整条 missingPricing 处理；新版可拆 excluded",
+      "zeroMissingSemantics": "当前空窗为 0；契约为 null",
+      "recommendedContract": "输出分子分母，与未知和排除同列",
+      "visualizations": "诊断、趋势（需桶计数）",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/domain/usage-billing-read.ts",
+          "symbol": "BillingReadResponse",
+          "line": 4,
+          "endLine": 42
+        }
+      ]
+    },
+    {
+      "id": "billing.unpriced_tokens",
+      "nameZh": "未定价 Tokens",
+      "nameEn": "Unpriced tokens",
+      "currentField": "costs.unpricedTokens / Billing.unpricedTokens",
+      "currentFormula": "Legacy=ΣmissingPricing 事件的 T；新版消费自身口径",
+      "numerator": "U",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "按同一引擎、窗口、互斥成员合计",
+      "zeroMissingSemantics": "0 可以是全覆盖，也可为空窗",
+      "recommendedContract": "并列 excluded 与总量；未知币种为独立维度",
+      "visualizations": "覆盖与缺价明细",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/domain/usage-billing-read.ts",
+          "symbol": "BillingReadResponse",
+          "line": 4,
+          "endLine": 42
+        }
+      ]
+    },
+    {
+      "id": "billing.cost_per_million",
+      "nameZh": "每百万 Tokens 等效成本",
+      "nameEn": "Effective cost per million tokens",
+      "currentField": "costs.blendedCostPerMillion",
+      "currentFormula": "Legacy=1e6×C/pricedTokens",
+      "numerator": "C×1e6",
+      "denominator": "pricedTokens 或同口径 estimatedTokens",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "旧混合金额和新版 USD 各自重算",
+      "zeroMissingSemantics": "当前分母 0 → 0；契约用 null",
+      "recommendedContract": "对应分母记录于图例与 CSV，避免未定价被隐式计入",
+      "visualizations": "效率对比",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/domain/usage-billing-read.ts",
+          "symbol": "BillingReadResponse",
+          "line": 4,
+          "endLine": 42
+        }
+      ]
+    },
+    {
+      "id": "billing.cache_savings",
+      "nameZh": "缓存节省估算",
+      "nameEn": "Cache-read savings estimate",
+      "currentField": "costs.estimatedCacheSavings",
+      "currentFormula": "Σ模型 R×max(0,inputRate-cacheReadRate)/1e6",
+      "numerator": "缓存读取的参考价差",
+      "denominator": "1e6",
+      "aggregation": "pricedCounterfactual",
+      "fieldsAndApplicability": "仅有 input/cache read 单价的测量模型；忽略写入开销与逐事件价差",
+      "zeroMissingSemantics": "未覆盖分量在当前金额中为 0",
+      "recommendedContract": "标示假设和可测量范围；高精度需逐事件历史单价",
+      "visualizations": "Owner 审计卡",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "time.active_days",
+      "nameZh": "活跃日期数",
+      "nameEn": "Active days",
+      "currentField": "dateRange.activeDays / models[].activeDays",
+      "currentFormula": "count distinct day(T>0)",
+      "numerator": "有吞吐日",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "不相交时间段可加；跨模型、平台重计",
+      "zeroMissingSemantics": "0 可能是无活动、缺失或未覆盖",
+      "recommendedContract": "下发 coverage/status",
+      "visualizations": "日历与概览",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/domain/window.ts",
+          "symbol": "dateWindow",
+          "line": 1,
+          "endLine": 15
+        }
+      ]
+    },
+    {
+      "id": "time.calendar_days",
+      "nameZh": "自然日数量",
+      "nameEn": "Calendar days",
+      "currentField": "dateRange.calendarDays",
+      "currentFormula": "UTC+8 日期键差 +1",
+      "numerator": "结束日−开始日+1",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "同窗口固定；跨模型不可加",
+      "zeroMissingSemantics": "all 无记录仍以今天为一天",
+      "recommendedContract": "今天标为进行中；指定历史日为 1，自然日与滚动分开",
+      "visualizations": "窗口元数据",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/domain/window.ts",
+          "symbol": "dateWindow",
+          "line": 1,
+          "endLine": 15
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "time.daily_throughput",
+      "nameZh": "日均吞吐",
+      "nameEn": "Tokens per calendar day",
+      "currentField": "OverviewMetrics 派生",
+      "currentFormula": "T/max(1, calendarDays ?? activeDays)",
+      "numerator": "T",
+      "denominator": "自然日数；旧数据 fallback 活跃日",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "全段重算，不能平均每段日均",
+      "zeroMissingSemantics": "空窗 0；缺失状态随覆盖元数据展示",
+      "recommendedContract": "活跃日均另设指标；明确纳入进行中自然日",
+      "visualizations": "概览与趋势基准线",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/react/sections/overview/overview-metrics.tsx",
+          "symbol": "OverviewMetrics",
+          "line": 45,
+          "endLine": 81
+        },
+        {
+          "path": "packages/dashboard/src/domain/window.ts",
+          "symbol": "dateWindow",
+          "line": 1,
+          "endLine": 15
+        }
+      ]
+    },
+    {
+      "id": "session.new",
+      "nameZh": "新建会话数",
+      "nameEn": "New sessions",
+      "currentField": "暂无",
+      "currentFormula": "N/A；需要可信 createdAt 或首次观测另标",
+      "numerator": "进入窗口的全局 firstSeen scoped key",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "跨模型会重复；历史截断导致左删失",
+      "zeroMissingSemantics": "缺全历史或创建证据为 unknown",
+      "recommendedContract": "分 newSession 与 firstObservedSession，保留来源证据",
+      "visualizations": "每日会话趋势",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/domain/types.ts",
+          "symbol": "ProjectUsageSummary",
+          "line": 131,
+          "endLine": 159
+        }
+      ]
+    },
+    {
+      "id": "session.active_daily",
+      "nameZh": "日活跃会话数",
+      "nameEn": "Daily active sessions",
+      "currentField": "暂无，totals.sessionCount 是整窗",
+      "currentFormula": "N/A；建议按日对正吞吐事件 scoped key 去重",
+      "numerator": "每日期桶内 distinct key",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "跨日同 key 可重复，不能加成整窗去重",
+      "zeroMissingSemantics": "缺采集为 unknown；活跃 0 与未知区分",
+      "recommendedContract": "按 event→day 聚合，day fallback 可参与日活，不能派生小时",
+      "visualizations": "日序列、双指标",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/domain/types.ts",
+          "symbol": "ProjectUsageSummary",
+          "line": 131,
+          "endLine": 159
+        }
+      ]
+    },
+    {
+      "id": "session.distinct",
+      "nameZh": "去重活跃会话数",
+      "nameEn": "Distinct active sessions",
+      "currentField": "totals.sessionCount / models[].sessionCount",
+      "currentFormula": "distinct(deviceId or local, sourceId, sessionId) within selected events",
+      "numerator": "窗口内不同 scoped key",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "按来源和设备隔离；跨模型、跨日期桶重新去重",
+      "zeroMissingSemantics": "窗口为 0 可以是无可见事件",
+      "recommendedContract": "型号曝光次数与总会话用不同命名",
+      "visualizations": "KPI、排行辅助",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "session.model_mean_tokens",
+      "nameZh": "模型单会话平均吞吐",
+      "nameEn": "Model tokens per active session",
+      "currentField": "由 models[].totalTokens、sessionCount 派生",
+      "currentFormula": "当前无固定字段；建议 T_model/N_model_sessions",
+      "numerator": "模型 T",
+      "denominator": "模型去重活跃会话数",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "须同一窗口与模型筛选",
+      "zeroMissingSemantics": "除数 0 → null",
+      "recommendedContract": "展示样本量，注明每模型会话可重叠",
+      "visualizations": "模型比较",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "session.activity_span",
+      "nameZh": "会话活动跨度",
+      "nameEn": "Observed session span",
+      "currentField": "sessions[].durationMinutes",
+      "currentFormula": "round(max(0,lastSeen-firstSeen)/60000)",
+      "numerator": "窗口内末次减首次",
+      "denominator": "60000 ms/min",
+      "aggregation": "nonAdditive",
+      "fieldsAndApplicability": "正吞吐观察范围；精度与历史完整性随资料改变",
+      "zeroMissingSemantics": "0 可能是单记录、同日聚合或分钟取整",
+      "recommendedContract": "字段按 observed span 展示，独立时间领域才测执行时长",
+      "visualizations": "会话侧栏",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/domain/types.ts",
+          "symbol": "ProjectUsageSummary",
+          "line": 131,
+          "endLine": 159
+        }
+      ]
+    },
+    {
+      "id": "activity.requests",
+      "nameZh": "真实请求数",
+      "nameEn": "Requests",
+      "currentField": "无；旧 billing.*.requests 是聚合事件数",
+      "currentFormula": "现有计数 per positive event +1",
+      "numerator": "可验证请求主键的唯一计数",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "有时是请求，有时是 step、消息、累积差分、日报",
+      "zeroMissingSemantics": "无身份时 unknown；不将事件数改名为请求数",
+      "recommendedContract": "同时给 observed usage events 与 verified requests 及覆盖率",
+      "visualizations": "Owner 诊断",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        }
+      ]
+    },
+    {
+      "id": "activity.tool_calls",
+      "nameZh": "工具调用次数",
+      "nameEn": "Tool invocations",
+      "currentField": "暂无",
+      "currentFormula": "N/A",
+      "numerator": "稳定调用 ID 去重",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "需工具调用事件和结束状态",
+      "zeroMissingSemantics": "无事件域为 unknown",
+      "recommendedContract": "新领域、授权、去敏留存",
+      "visualizations": "可选行为分析",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        },
+        {
+          "path": "packages/dashboard/src/domain/types.ts",
+          "symbol": "ProjectUsageSummary",
+          "line": 131,
+          "endLine": 159
+        }
+      ]
+    },
+    {
+      "id": "model.active",
+      "nameZh": "实际活跃模型数",
+      "nameEn": "Active canonical models",
+      "currentField": "costs.totalModelCount / models[].slotStatus",
+      "currentFormula": "count measured canonical keys with T>0",
+      "numerator": "活跃 canonical key",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "跨源、跨日期并集重计",
+      "zeroMissingSemantics": "0 可为空或缺失",
+      "recommendedContract": "选中模型只在当前集合显示活跃",
+      "visualizations": "概览、变化趋势",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "model.configured",
+      "nameZh": "配置槽位数",
+      "nameEn": "Configured model slots",
+      "currentField": "models[].slotStatus='configured'",
+      "currentFormula": "统计 appendConfiguredModels 附加行",
+      "numerator": "当前配置快照附加槽位",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "动态读取；历史窗口复用当前配置",
+      "zeroMissingSemantics": "0 可无配置或已被测量条目抑制",
+      "recommendedContract": "保留与实测模型的区别，获取完整槽位需独立配置 API",
+      "visualizations": "配置诊断",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/configured-models.ts",
+          "symbol": "appendConfiguredModels",
+          "line": 11,
+          "endLine": 121
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "model.row_count",
+      "nameZh": "模型列表行数",
+      "nameEn": "Model list rows",
+      "currentField": "models.length",
+      "currentFormula": "测量行和补充配置行的总数",
+      "numerator": "呈现行",
+      "denominator": "—",
+      "aggregation": "count",
+      "fieldsAndApplicability": "含 configured；随筛选改变",
+      "zeroMissingSemantics": "空列表可为未加载或无数据",
+      "recommendedContract": "界面标明活跃模型数与补充槽位数，导出可含两类",
+      "visualizations": "诊断",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/configured-models.ts",
+          "symbol": "appendConfiguredModels",
+          "line": 11,
+          "endLine": 121
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "model.lifetime",
+      "nameZh": "模型可见生命周期",
+      "nameEn": "Observed model lifetime",
+      "currentField": "daily[].modelBreakdowns 派生",
+      "currentFormula": "取 T>0 日期的最小和最大值，可算日份额迁移",
+      "numerator": "first/last observed day",
+      "denominator": "—",
+      "aggregation": "nonAdditive",
+      "fieldsAndApplicability": "只在 all 且覆盖完整时逼近对象生命周期",
+      "zeroMissingSemantics": "无记录为 null，左截断标记",
+      "recommendedContract": "展示首次／末次观测与日期覆盖；聚合用稳定 canonical ID",
+      "visualizations": "迁移、模型生命周期",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "project.distinct",
+      "nameZh": "项目数及项目归因",
+      "nameEn": "Attributed projects",
+      "currentField": "totals.projectCount / projects[]",
+      "currentFormula": "distinct(projectKey)；事件按 projectKey 归并后累加 T",
+      "numerator": "投影项目 key",
+      "denominator": "—",
+      "aggregation": "distinct",
+      "fieldsAndApplicability": "自动推断、外部设备项目和受控显式 mapping；Guest 仅全局数",
+      "zeroMissingSemantics": "未归因需区别于无使用",
+      "recommendedContract": "将 unknown 项目单列；按事件做模型交叉表",
+      "visualizations": "项目归因与矩阵",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        },
+        {
+          "path": "packages/dashboard/src/domain/types.ts",
+          "symbol": "ProjectUsageSummary",
+          "line": 131,
+          "endLine": 159
+        }
+      ]
+    },
+    {
+      "id": "quality.hourly_tokens",
+      "nameZh": "可归属小时 Tokens",
+      "nameEn": "Hour-attributable tokens",
+      "currentField": "暂无",
+      "currentFormula": "当前只有 dayKey 和部分 Raw timestamp/interval；建议按可信事件点或同小时闭合区间 ΣT",
+      "numerator": "可归属正吞吐 T",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "点与区间证据逐平台；日汇总另保留",
+      "zeroMissingSemantics": "未归属单列，0 与 unknown 区分",
+      "recommendedContract": "桶内总和加不可归属集合＝自然日已知总量",
+      "visualizations": "单日小时趋势",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        },
+        {
+          "path": "packages/dashboard/src/domain/window.ts",
+          "symbol": "dateWindow",
+          "line": 1,
+          "endLine": 15
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        }
+      ]
+    },
+    {
+      "id": "quality.hourly_coverage",
+      "nameZh": "小时可归属率",
+      "nameEn": "Hour attribution coverage",
+      "currentField": "暂无",
+      "currentFormula": "建议 hourlyAttributedT/selectedDayT",
+      "numerator": "小时归属 T",
+      "denominator": "已知日 T",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "不完整范围用覆盖标记；跨日区间保留旧日归属旁注",
+      "zeroMissingSemantics": "空窗 null；历史 unknown",
+      "recommendedContract": "按来源与确定性输出数量和 Tokens 两项比例",
+      "visualizations": "单日质量",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        },
+        {
+          "path": "packages/dashboard/src/domain/window.ts",
+          "symbol": "dateWindow",
+          "line": 1,
+          "endLine": 15
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        }
+      ]
+    },
+    {
+      "id": "billing.model_coverage",
+      "nameZh": "模型价格覆盖率",
+      "nameEn": "Fully priced active model share",
+      "currentField": "costs.modelCoverageRate",
+      "currentFormula": "(#measured−#有缺价事件的模型)/#measured",
+      "numerator": "全覆盖实测模型数",
+      "denominator": "实测模型数",
+      "aggregation": "ratioOfSums",
+      "fieldsAndApplicability": "模型只要有缺价事件则整模型不计为完全覆盖",
+      "zeroMissingSemantics": "当前 0 分母 → 0；契约用 null",
+      "recommendedContract": "与 Token 价格覆盖分别标记；跨桶重计键与缺价状态",
+      "visualizations": "覆盖诊断",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/summarize.ts",
+          "symbol": "summarizeUsageEvents",
+          "line": 79,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "id": "billing.peak",
+      "nameZh": "峰谷参考费用",
+      "nameEn": "Peak/off-peak reference cost",
+      "currentField": "modelBreakdowns[].billing",
+      "currentFormula": "Legacy 按 isPeak true/false/undefined 汇总实际应用成本与 nominalCost，requests 计事件；新版暂无峰谷 breakdown API",
+      "numerator": "每区峰时/离峰/标准的 C 或 T",
+      "denominator": "—",
+      "aggregation": "sum",
+      "fieldsAndApplicability": "仅适配具时段规则的旧路径且时间可信；不能用本地当前费率改写过去",
+      "zeroMissingSemantics": "无峰谷字段为 standard，需规则限定",
+      "recommendedContract": "Owner 按版本化价目、渠道、时区状态输出",
+      "visualizations": "峰谷成本与对比",
+      "evidence": [
+        {
+          "path": "packages/dashboard/src/adapters/local/aggregation/accumulate.ts",
+          "symbol": "accumulateUsageEvents",
+          "line": 167,
+          "endLine": 427
+        },
+        {
+          "path": "packages/dashboard/src/domain/usage-billing-read.ts",
+          "symbol": "BillingReadResponse",
+          "line": 4,
+          "endLine": 42
+        },
+        {
+          "path": "packages/dashboard/src/adapters/local/types.ts",
+          "symbol": "RawUsageEvent",
+          "line": 24,
+          "endLine": 57
+        }
+      ]
+    }
+  ]
+}
