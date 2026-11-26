@@ -6,6 +6,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import zh from '../messages/zh.json';
 import en from '../messages/en.json';
 import { emptyDashboard, type BillingReadResponse, type UsageRange } from '../domain';
+import { clearSnapshots } from '../react/hooks/client-snapshots';
 import { useBillingPreview } from '../react/hooks/use-billing-preview';
 import { buildReferenceTrendDays } from '../react/sections/overview/reference-cost-trend';
 import { ProjectsSection } from '../react/sections/projects/projects-section';
@@ -15,6 +16,7 @@ import { TokenDashboardFeature } from '../react/token-dashboard-feature';
 
 afterEach(() => {
   cleanup();
+  clearSnapshots('owner');
   vi.unstubAllGlobals();
 });
 
@@ -82,7 +84,7 @@ it('shows the reviewed USD total and coverage to an Owner, then clears them when
         } });
     }
     if (url.startsWith('/api/dashboard/billing?')) return new Response(null, { status: 503 });
-    return Response.json(emptyDashboard('7d'));
+    return Response.json({ ...emptyDashboard('7d'), checkedAt: new Date().toISOString() });
   });
   vi.stubGlobal('fetch', fetchDashboard);
   render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));
@@ -169,7 +171,7 @@ it('reuses cached ready billing snapshots across range switches without double-f
   const fetchMock = vi.fn(async (url: string) => {
     const range = new URL(url, 'http://localhost').searchParams.get('range') as UsageRange;
     if (url.startsWith('/api/dashboard/billing')) return Response.json(billingFor(range, range === '7d' ? '2.00' : '1.00'));
-    return Response.json({ ...emptyDashboard(range), sync: { readMode: 'v2', dataRevision: 10 } });
+    return Response.json({ ...emptyDashboard(range), checkedAt: new Date().toISOString(), sync: { readMode: 'v2', dataRevision: 10 } });
   });
   vi.stubGlobal('fetch', fetchMock);
 
@@ -240,7 +242,7 @@ it('preserves channel selection across range switches, formats sub-cent totals w
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     if (url === '/api/dashboard/billing?range=30d') return Response.json(makeSnapshot('30d', '0.0042', '0.00'));
     if (url === '/api/dashboard/billing?range=all') return Response.json(makeSnapshot('all', '1.50', '2.50'));
-    return Response.json(emptyDashboard('all'));
+    return Response.json({ ...emptyDashboard('all'), checkedAt: new Date().toISOString() });
   }));
 
   render(withMessages(<TokenDashboardFeature data={data} canImport billingPreviewEnabled />));

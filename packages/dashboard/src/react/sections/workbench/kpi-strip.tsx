@@ -23,6 +23,23 @@ type KpiStripProps = {
   selectedDay: DailyUsagePoint | null;
 };
 
+const stripClass = 'grid grid-cols-1 gap-y-4 border-y border-[var(--color-border-faint)] py-3.5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-y-0 xl:divide-x xl:divide-[var(--color-border-faint)]';
+const colBase = 'min-w-0 sm:px-4 sm:first:pl-0 sm:last:pr-0 xl:px-5';
+
+export function KpiStripPlaceholder() {
+  return (
+    <div aria-hidden="true" className={stripClass}>
+      {[0, 1, 2, 3].map(index => (
+        <div key={index} className={`${colBase} flex min-h-[58px] flex-col justify-center gap-2 motion-safe:animate-pulse`}>
+          <div className="h-2.5 w-20 rounded-full bg-[var(--color-row-bg)]" />
+          <div className="h-5 w-28 rounded bg-[var(--color-row-bg)]" />
+          <div className="h-2.5 w-24 rounded-full bg-[var(--color-row-bg)]" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function KpiStrip({
   data,
   billingPreview,
@@ -77,7 +94,6 @@ export function KpiStrip({
       ? billingPreview.data.breakdown?.days.find((d) => d.day === selectedDay.date)
       : undefined;
 
-  const colBase = 'min-w-0 sm:px-4 sm:first:pl-0 sm:last:pr-0 xl:px-5';
 
   const renderCostColumn = () => {
     if (isSingleDay && billingPreview) {
@@ -248,7 +264,7 @@ export function KpiStrip({
   return (
     <section
       aria-label={t('overview.title')}
-      className="grid grid-cols-1 gap-y-4 border-y border-[var(--color-border-faint)] py-3.5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-y-0 xl:divide-x xl:divide-[var(--color-border-faint)]"
+      className={stripClass}
     >
       {/* Col 1: Throughput */}
       <article className={colBase}>

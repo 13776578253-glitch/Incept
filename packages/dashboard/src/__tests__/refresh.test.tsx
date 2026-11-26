@@ -107,8 +107,9 @@ describe('dashboard refresh', () => {
     expect(result.current.hasSnapshot).toBe(false);
     expect(result.current.data.totals.totalTokens).toBe(0);
     expect(clientSnapshot('all', 'pro')).toBeUndefined();
-    await act(async () => { resolveBody(emptyDashboard('all')); });
+    await act(async () => { resolveBody({ ...emptyDashboard('all'), checkedAt: '2026-10-15T00:00:00Z' }); });
     expect(result.current.hasSnapshot).toBe(true);
+    expect(result.current.data.totals.totalTokens).toBe(0);
     clearSnapshots('public');
   });
   it.each(['invalid JSON', 'wrong range'])('keeps privileged data cleared after a downgraded %s response', async failure => {

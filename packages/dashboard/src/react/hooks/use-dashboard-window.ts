@@ -37,7 +37,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
   const [showingHistory, setShowingHistory] = useState(!!options.refreshOnMount && hasSnapshot);
   const [rangePreset, setRangePreset] = useState<UsageRange>(initialData.range ?? '30d');
   const [selectedTrendIndex, setSelectedTrendIndex] = useState(999);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(() => !!options.refreshOnMount && !hasSnapshot);
   const [refreshError, setRefreshError] = useState(false);
   const [refreshCycle, setRefreshCycle] = useState(0);
   const [revalidationCycle, setRevalidationCycle] = useState(0);
@@ -205,7 +205,7 @@ export function useDashboardWindow(initialData: TokenDashboardData, options: { r
           setData(next);
           rememberSnapshot(next, accessReduced ? (validRole === 'pro' ? 'pro' : 'public') : scope);
           setLastPageUpdatedAt(new Date().toISOString());
-          setHasSnapshot(true);
+          setHasSnapshot(Number.isFinite(checkedAtMs));
           setShowingHistory(isStaleSwr);
           setRefreshError(false);
           if(completedStatus){setRemoteState(next.sync?.readMode==='v2'?completedPhase:completedStatus==='completed'?'stored_v2':completedPhase);void remoteStatus(current.signal).then(info=>{if(!disposed&&!current.signal.aborted){remoteInfoRef.current=info;setRemoteInfo(info);}}).catch(()=>{});}

@@ -98,7 +98,7 @@ export function DashboardToolbar({
     <header className="pb-3.5">
       <h1 className="sr-only">{t('page.title')}</h1>
       <p role="status" aria-atomic="true" className="sr-only">
-        {!hasSnapshot || showingHistory ? t(hasSnapshot ? 'page.showingHistory' : 'page.loadingFirst') : ''}
+        {showingHistory ? t('page.showingHistory') : ''}
       </p>
       <p
         role="status"
@@ -140,13 +140,13 @@ export function DashboardToolbar({
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2.5">
-          {refreshError ? (
+          {refreshError && hasSnapshot ? (
             <span
               role="status"
               className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--badge-rose-border)] bg-[var(--badge-rose-bg)] px-2.5 text-[0.7rem] font-medium text-[var(--badge-rose-fg)]"
             >
               <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--badge-rose-dot)]" />
-              <span>{t(hasSnapshot ? 'page.refreshFailed' : 'page.firstLoadFailed')}</span>
+              <span>{t('page.refreshFailed')}</span>
             </span>
           ) : null}
 

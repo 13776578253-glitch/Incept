@@ -3,7 +3,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { TokenDashboardData } from '@incept/dashboard/domain';
+import { emptyDashboard, type TokenDashboardData } from '@incept/dashboard/domain';
 import { TokenDashboardPage } from '@incept/dashboard/next';
 import { dashboardUsageRepresentation } from '../next/usage-validator';
 import en from '@incept/dashboard/messages/en';
@@ -56,11 +56,26 @@ describe('package server/client composition', () => {
   });
   it('renders a loading shell when history is absent without waiting for native collection', async () => {
     mocks.load.mockResolvedValue(null);
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     expect((await TokenDashboardPage()).props.initialValidator).toBeUndefined();
     render(<NextIntlClientProvider locale="zh" messages={{ dashboard: zh }} timeZone="Asia/Singapore">{await TokenDashboardPage()}</NextIntlClientProvider>);
     expect(screen.getByText(zh.page.loadingFirst)).toBeDefined();
+    expect(screen.getByRole('region', { name: zh.workbench.trendTitle })).toBeDefined();
+    expect(screen.queryByText(zh.overview.title)).toBeNull();
     expect(screen.queryByText(zh.overview.kpi.knownTokens)).toBeNull();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(zh.page.title);
+  });
+  it.each([
+    [{ ok: true, json: async () => emptyDashboard('30d') }, zh.page.noSnapshot],
+    [{ ok: false }, zh.page.firstLoadFailed],
+  ] as const)('settles the workbench without a snapshot when the request finishes', async (response, message) => {
+    mocks.load.mockResolvedValue(null);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
+    render(<NextIntlClientProvider locale="zh" messages={{ dashboard: zh }} timeZone="Asia/Singapore">{await TokenDashboardPage()}</NextIntlClientProvider>);
+    expect(await screen.findByText(message)).toBeDefined();
+    expect(screen.queryByText(zh.page.loadingFirst)).toBeNull();
+    expect(screen.queryByText(zh.workbench.totalThroughput)).toBeNull();
+    expect(screen.getByRole('progressbar').getAttribute('aria-busy')).toBe('false');
   });
   it('hands an existing SSR snapshot to the client without a mandatory mount refresh', async () => {
     mocks.load.mockResolvedValue(emptyData);

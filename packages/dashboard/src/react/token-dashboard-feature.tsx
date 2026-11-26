@@ -3,6 +3,7 @@
 import './dashboard.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 
 import type { TokenDashboardData } from '../domain/index';
 import {
@@ -15,8 +16,7 @@ import { useDashboardWindow } from './hooks/use-dashboard-window';
 import { useBillingPreview } from './hooks/use-billing-preview';
 import { reconcileDashboardWithBilling } from './reconcile-billing-models';
 import { DashboardToolbar } from './components/dashboard-toolbar';
-import { SectionPlaceholder } from './components/section-placeholder';
-import { KpiStrip } from './sections/workbench/kpi-strip';
+import { KpiStrip, KpiStripPlaceholder } from './sections/workbench/kpi-strip';
 import {
   TrendWorkbench,
   type CacheSubView,
@@ -46,6 +46,7 @@ export function TokenDashboardFeature({
   initialValidator?: string;
   billingPreviewEnabled?: boolean;
 }) {
+  const t = useTranslations('dashboard');
   const trendRef = useRef<HTMLDivElement>(null);
 
   const [viewMode, setViewMode] = useState<'range' | 'day'>('range');
@@ -249,7 +250,17 @@ export function TokenDashboardFeature({
           </div>
         </>
       ) : (
-        <SectionPlaceholder section="overview" />
+        <div className="shrink-0 space-y-3.5">
+          {isRefreshing ? <KpiStripPlaceholder /> : null}
+          <section
+            aria-label={t('workbench.trendTitle')}
+            className={`dashboard-wb-stage flex items-center justify-center p-4 text-center sm:p-5 ${isRefreshing ? 'dashboard-wb-stage-fixed' : 'min-h-56'}`}
+          >
+            <p role="status" className="text-sm text-[var(--color-text-muted)]">
+              {t(isRefreshing ? 'page.loadingFirst' : refreshError ? 'page.firstLoadFailed' : 'page.noSnapshot')}
+            </p>
+          </section>
+        </div>
       )}
 
       {diagnosticsOpen ? (
