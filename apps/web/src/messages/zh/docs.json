@@ -78,8 +78,8 @@
       "private": "私人"
     },
     "routeType": {
-      "singleArticle": "单篇文章",
-      "collectionArticle": "合集文章"
+      "singleArticle": "单篇",
+      "collectionArticle": "合集"
     },
     "filters": {
       "search": "搜索",
@@ -141,8 +141,10 @@
       "cancel": "取消"
     },
     "edit": {
+      "dialogTitleDocument": "编辑文档标题与权限",
+      "dialogTitleCollection": "编辑合集标题与权限",
       "titleLabel": "文档标题",
-      "accessRoleLabel": "编辑访问权限",
+      "accessRoleLabel": "访问权限",
       "applyToCollectionArticles": "同时更新合集内所有文章权限",
       "titleRequired": "标题不能为空",
       "saveError": "保存失败，请重试"

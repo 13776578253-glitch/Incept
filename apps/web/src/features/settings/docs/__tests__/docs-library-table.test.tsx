@@ -1,7 +1,7 @@
-import type {ReactNode} from 'react';
+import {StrictMode,type ReactNode} from 'react';
 import {cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
-import {afterEach,expect,it,vi} from 'vitest';
+import {afterEach,beforeAll,expect,it,vi} from 'vitest';
 import zh from '../../../../messages/zh/docs.json';
 import navigation from '../../../../messages/zh/navigation.json';
 import type {DocsLibraryEntryModel} from '../types';
@@ -11,6 +11,21 @@ vi.mock('next/link',()=>({
   default:(props:{href:string;children:ReactNode})=><a href={props.href}>{props.children}</a>,
   useLinkStatus: () => ({ pending: false }),
 }));
+
+beforeAll(()=>{
+  if(typeof HTMLDialogElement!=='undefined'){
+    if(!HTMLDialogElement.prototype.showModal){
+      HTMLDialogElement.prototype.showModal=function showModal(){
+        this.setAttribute('open','');
+      };
+    }
+    // Mirror the HTML spec where dialog.close() dispatches 'close' asynchronously.
+    HTMLDialogElement.prototype.close=function close(){
+      this.removeAttribute('open');
+      queueMicrotask(()=>this.dispatchEvent(new Event('close')));
+    };
+  }
+});
 
 afterEach(cleanup);
 
@@ -23,24 +38,24 @@ const entry:DocsLibraryEntryModel={
 };
 
 function renderTable(entries:DocsLibraryEntryModel[]){
-  return render(<NextIntlClientProvider locale="zh" messages={{docs:zh,navigation}}><DocsLibraryTable entries={entries}/></NextIntlClientProvider>);
+  return render(<StrictMode><NextIntlClientProvider locale="zh" messages={{docs:zh,navigation}}><DocsLibraryTable entries={entries}/></NextIntlClientProvider></StrictMode>);
 }
 
 function cells(){return Array.from(document.querySelectorAll('tbody tr td')).map(td=>td.textContent);}
 
-it('merges route type and kind into one plain Type column',()=>{
+it('merges route type and kind into one plain Type column with concise labels',()=>{
   renderTable([entry]);
   const headers=Array.from(document.querySelectorAll('thead th')).map(th=>th.textContent);
   expect(headers).toEqual(['标题','类型','访问权限','当前合集','当前位置','最近更新','操作']);
   expect(cells()).toHaveLength(7);
-  expect(cells()[1]).toBe('合集文章');
+  expect(cells()[1]).toBe('合集');
   // 去掉了彩色徽章：类型单元格里不再有圆角胶囊
   expect(document.querySelector('tbody tr td:nth-child(2) .rounded-full')).toBeNull();
 });
 
 it('appends the kind only when it is not a plain article',()=>{
   renderTable([{...entry,kind:'note'}]);
-  expect(cells()[1]).toBe('合集文章 · note');
+  expect(cells()[1]).toBe('合集 · note');
 });
 
 it('renders the open route link without the copy route button',()=>{
@@ -66,7 +81,7 @@ it('paginates long entry lists across pages',()=>{
   expect(screen.getByText('2 / 2')).toBeTruthy();
 });
 
-it('allows inline editing of document title and access role',async()=>{
+it('edits document title and access role in a modal dialog without mutating table layout',async()=>{
   const fetchMock=vi.fn().mockResolvedValue({
     ok:true,
     json:async()=>({
@@ -85,11 +100,12 @@ it('allows inline editing of document title and access role',async()=>{
   try{
     renderTable([entry]);
     fireEvent.click(screen.getByRole('button',{name:'编辑'}));
+    // Flush async microtask close events from StrictMode effect cleanup.
+    await new Promise((resolve)=>setTimeout(resolve,0));
     const titleInput=screen.getByLabelText('文档标题') as HTMLInputElement;
     expect(titleInput.value).toBe('设计模式（一）');
     fireEvent.change(titleInput,{target:{value:'设计模式（修订版）'}});
-    fireEvent.click(screen.getByRole('button',{name:'编辑访问权限'}));
-    fireEvent.click(screen.getByRole('option',{name:'访客'}));
+    fireEvent.click(screen.getByRole('radio',{name:'访客'}));
     fireEvent.click(screen.getByRole('button',{name:'保存'}));
     await screen.findByText('设计模式（修订版）');
     expect(fetchMock).toHaveBeenCalledWith('/api/internal/docs/metadata',expect.objectContaining({

@@ -1,7 +1,9 @@
 import 'server-only';
 
+import { cookies } from 'next/headers';
 import { findActiveAccessSessionByTokenHash } from '@incept/db/access';
 import { hashAccessCredential } from './crypto';
+import { DEV_GUEST_OVERRIDE_COOKIE_NAME, readDevAutoOwnerToken } from './dev-owner';
 import { readAccessSessionToken } from './session-cookie';
 import { traceNavigation } from '@/server/navigation-timing';
 
@@ -17,9 +19,28 @@ export type CurrentViewer =
       sessionId: string;
     };
 
+async function resolveSessionToken(): Promise<string | null> {
+  const cookieToken = await traceNavigation('session_cookie', readAccessSessionToken);
+  if (cookieToken) {
+    return cookieToken;
+  }
+
+  const devToken = readDevAutoOwnerToken();
+  if (!devToken) {
+    return null;
+  }
+
+  const guestOverride = (await cookies()).get(DEV_GUEST_OVERRIDE_COOKIE_NAME)?.value;
+  if (guestOverride === '1') {
+    return null;
+  }
+
+  return devToken;
+}
+
 // 获取当前访问者信息
 export async function getCurrentViewer(): Promise<CurrentViewer> {
-  const token = await traceNavigation('session_cookie', readAccessSessionToken);
+  const token = await resolveSessionToken();
 
   if (!token) {
     return { role: 'guest' };

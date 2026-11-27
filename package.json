@@ -39,6 +39,7 @@
     "auth:revoke-owner-sessions": "pnpm --filter @incept/db exec tsx ../../scripts/auth-revoke-owner-sessions.mjs",
     "auth:grant": "pnpm --filter @incept/db exec tsx ../../scripts/auth-grant.mjs",
     "auth:owner": "pnpm --filter @incept/db exec tsx ../../scripts/auth-owner.mjs",
+    "auth:dev-owner": "pnpm --filter @incept/db exec tsx ../../scripts/dev-owner-session.mts",
     "db:generate": "pnpm --filter @incept/db db:generate",
     "db:migrate": "pnpm --filter @incept/db db:migrate",
     "db:deploy": "pnpm --filter @incept/db db:deploy",

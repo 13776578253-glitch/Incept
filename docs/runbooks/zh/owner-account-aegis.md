@@ -387,4 +387,29 @@ pnpm auth:owner setup-code
 
 Aegis 操作依据官方主页、FAQ、当前编辑页实现、字段布局、TOTP 实现及备份设置，链接已放在相应段落。官方代码与 FAQ 有差异时，以实际选项为准，备份密码差异已在 G 节说明。核对日期为 2026-10-15。
 
-Incept 行为依据 `scripts/owner-local.ps1`、`scripts/owner-local.mts`、`scripts/auth-owner.mjs`、`packages/db/src/owner/index.ts`、`packages/db/src/owner/security.ts`、`apps/web/src/server/auth/owner-controller.ts`、`apps/web/src/app/api/auth/logout/route.ts` 及账户面板实现。
+Incept 行为依据 `scripts/owner-local.ps1`、`scripts/owner-local.mts`、`scripts/auth-owner.mjs`、`scripts/dev-owner-session.mts`、`packages/db/src/owner/index.ts`、`packages/db/src/owner/security.ts`、`apps/web/src/server/auth/dev-owner.ts`、`apps/web/src/server/auth/viewer.ts`、`apps/web/src/server/auth/owner-controller.ts`、`apps/web/src/app/api/auth/logout/route.ts`、`apps/web/src/app/api/dev/owner-login/route.ts` 及账户面板实现。
+
+## I 本地开发免重复登录（自动 Owner 会话注入，2026-11-27 新增）
+
+本地开发验收需要频繁访问 `/zh/settings` 等 Owner 页面时，可用本机持久会话复用工具避免每次重启或新浏览器窗口都重复输入密码和 TOTP：
+
+```powershell
+# 生成/刷新 365 天有效期的本地开发 Owner 会话，并写入 gitignored 的 apps/web/.env.local
+pnpm auth:dev-owner
+
+# 查看当前本地开发会话状态（是否启用、会话 ID 与到期时间；不打印明文 token）
+pnpm auth:dev-owner --status
+
+# 撤销本地开发会话并清理 apps/web/.env.local 中的自动注入开关
+pnpm auth:dev-owner --revoke
+```
+
+重启 `pnpm dev` 后，本机任意访问 `http://127.0.0.1:3000` 的请求都会在 `getViewerContext` 中自动复用该真实数据库会话：
+
+- **生产隔离四重硬锁**（任一条件不满足则静默失效，生产环境完全不可达）：
+  1. `NODE_ENV === 'development'`
+  2. `INCEPT_DEV_AUTO_OWNER === '1'`
+  3. `DATABASE_URL` 主机为 loopback（`localhost` / `127.0.0.1` / `::1`）
+  4. `INCEPT_DEV_OWNER_SESSION_TOKEN` 存在且长度 ≥ 32，且在本地 PostgreSQL `OwnerSession` 表中有效、未撤销、未过期
+- **临时切换访客/其他身份**：点击“退出登录”会设置 `incept_dev_skip_auto_owner=1` 临时跳过自动注入；需要一键恢复 Owner 身份时访问 `GET /api/dev/owner-login` 即可清除跳过标记并回跳设置页。
+- **敏感操作保护**：自动注入会话默认不伪造近期 TOTP 认证窗口（`recentAuthAt` 置空），不会破坏 TOTP 敏感操作边界；`apps/web/.env.local` 已被 `.gitignore` 与 Docker 构建排除，绝不会进入提交或生产镜像。

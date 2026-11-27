@@ -78,8 +78,8 @@
       "private": "Private"
     },
     "routeType": {
-      "singleArticle": "Standalone article",
-      "collectionArticle": "Collection article"
+      "singleArticle": "Single",
+      "collectionArticle": "Series"
     },
     "filters": {
       "search": "Search",
@@ -141,8 +141,10 @@
       "cancel": "Cancel"
     },
     "edit": {
+      "dialogTitleDocument": "Edit document title & access",
+      "dialogTitleCollection": "Edit collection title & access",
       "titleLabel": "Document title",
-      "accessRoleLabel": "Edit access role",
+      "accessRoleLabel": "Access role",
       "applyToCollectionArticles": "Also update access role for all articles in this collection",
       "titleRequired": "Title cannot be empty",
       "saveError": "Failed to save changes, please try again"
