@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
-import { createReadStream } from 'node:fs';
+import { createReadStream, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
 // Upload only verified completed backups; remote retention is scoped to this application's host/tag.
 const arguments_ = process.argv.slice(2);
@@ -13,13 +14,69 @@ async function digest(file) {
   for await (const bytes of createReadStream(file)) hash.update(bytes);
   return hash.digest('hex');
 }
-async function restic(command, configuration) {
-  const options = configuration.RESTIC_SFTP_COMMAND ? ['-o', `sftp.command=${configuration.RESTIC_SFTP_COMMAND}`] : [];
-  const child = spawn(configuration.INCEPT_RESTIC_BIN ?? 'restic', [...options, ...command], { env: configuration, stdio: ['ignore', 'pipe', 'pipe'] });
+async function runCommand(binary, command, configuration) {
+  const child = spawn(binary, command, { env: configuration, stdio: ['ignore', 'pipe', 'pipe'] });
   let output = '';
-  child.stdout.on('data', bytes => { output += bytes; }); child.stderr.resume();
-  await new Promise((resolve, reject) => { child.on('error', reject); child.on('close', code => code === 0 ? resolve() : reject(new Error('Encrypted repository operation failed.'))); });
+  let errors = '';
+  child.stdout.on('data', bytes => { output += bytes; });
+  child.stderr.on('data', bytes => {
+    if (errors.length < 4096) errors += bytes.toString('utf8').slice(0, 4096 - errors.length);
+  });
+  await new Promise((resolve, reject) => {
+    child.on('error', reject);
+    child.on('close', code => code === 0 ? resolve() : reject(new Error(`${binary} operation failed (${code}): ${errors.trim()}`)));
+  });
   return output;
+}
+async function restic(command, configuration) {
+  const options = [];
+  if (configuration.RESTIC_SFTP_COMMAND) options.push('-o', `sftp.command=${configuration.RESTIC_SFTP_COMMAND}`);
+  if (configuration.INCEPT_RESTIC_RCLONE_ARGS) options.push('-o', `rclone.args=${configuration.INCEPT_RESTIC_RCLONE_ARGS}`);
+  if (configuration.INCEPT_RESTIC_RCLONE_CONNECTIONS) options.push('-o', `rclone.connections=${configuration.INCEPT_RESTIC_RCLONE_CONNECTIONS}`);
+  return runCommand(configuration.INCEPT_RESTIC_BIN ?? 'restic', [...options, ...command], configuration);
+}
+async function extractStage(backup, manifest, stageRoot, configuration) {
+  const stageDir = path.resolve(stageRoot);
+  if (stageDir === path.parse(stageDir).root) throw new Error('Invalid staging directory.');
+  await fs.rm(stageDir, { recursive: true, force: true });
+  await fs.mkdir(path.join(stageDir, 'data'), { recursive: true, mode: 0o700 });
+  await runCommand('tar', ['-xzf', path.join(backup, 'data.tar.gz'), '-C', path.join(stageDir, 'data')], configuration);
+  if (manifest.sha256['caddy.tar.gz']) {
+    await fs.mkdir(path.join(stageDir, 'caddy'), { recursive: true, mode: 0o700 });
+    await runCommand('tar', ['-xzf', path.join(backup, 'caddy.tar.gz'), '-C', path.join(stageDir, 'caddy')], configuration);
+  }
+  await fs.copyFile(path.join(backup, 'database.dump'), path.join(stageDir, 'database.dump'));
+  await fs.copyFile(path.join(backup, 'manifest.json'), path.join(stageDir, 'manifest.json'));
+  if (manifest.sha256['auth-key.json']) {
+    await fs.copyFile(path.join(backup, 'auth-key.json'), path.join(stageDir, 'auth-key.json'));
+    if (process.platform !== 'win32') await fs.chmod(path.join(stageDir, 'auth-key.json'), 0o600);
+  }
+  return stageDir;
+}
+export function checkCommand(configuration, now = new Date()) {
+  const mode = (option('--check-mode') ?? configuration.INCEPT_RESTIC_CHECK_MODE ?? 'full').trim().toLowerCase();
+  const subset = (option('--check-subset') ?? configuration.INCEPT_RESTIC_CHECK_SUBSET ?? '5%').trim();
+  if (mode === 'metadata') return ['check'];
+  if (mode === 'subset') return ['check', `--read-data-subset=${subset}`];
+  if (mode === 'auto') {
+    const isWeeklyAuditDay = now.getUTCDay() === 0;
+    return isWeeklyAuditDay ? ['check', `--read-data-subset=${subset}`] : ['check'];
+  }
+  return ['check', '--read-data'];
+}
+export function retentionArgs(configuration, host) {
+  const base = ['forget', '--host', host, '--tag', 'incept-production', '--group-by', 'host'];
+  const daily = configuration.INCEPT_RESTIC_KEEP_DAILY;
+  const weekly = configuration.INCEPT_RESTIC_KEEP_WEEKLY;
+  const monthly = configuration.INCEPT_RESTIC_KEEP_MONTHLY;
+  if (daily || weekly || monthly) {
+    if (daily) base.push('--keep-daily', String(daily));
+    if (weekly) base.push('--keep-weekly', String(weekly));
+    if (monthly) base.push('--keep-monthly', String(monthly));
+    base.push('--prune');
+    return base;
+  }
+  return [...base, '--keep-within', '14d', '--keep-last', '2', '--prune'];
 }
 async function main() {
   const envFile = option('--env-file'), backupPath = option('--backup');
@@ -46,22 +103,59 @@ async function main() {
   }
   const fingerprint = createHash('sha256').update(repository).digest('hex');
   if (arguments_.includes('--init')) { phase = 'repository_initialization'; await restic(['init'], configuration); }
-  phase = 'encrypted_upload';
-  const output = await restic(['backup', backup, '--tag', 'incept-production', '--host', host, '--json'], configuration);
-  const summary = output.split('\n').filter(Boolean).map(line => JSON.parse(line)).find(item => item.message_type === 'summary');
-  if (!/^[a-f0-9]{8,64}$/.test(summary?.snapshot_id ?? '')) throw new Error('No complete encrypted snapshot was acknowledged.');
-  phase = 'repository_verification';
-  await restic(['check', '--read-data'], configuration);
-  const receipt = { version: 1, repositoryFingerprint: fingerprint, host, snapshotId: summary.snapshot_id,
-    verifiedAt: new Date().toISOString(), backupCreatedAt: manifest.createdAt, backupSha256: manifest.sha256 };
-  const temporary = path.join(backup, `.offsite-${randomUUID()}.tmp`);
-  try { await fs.writeFile(temporary, JSON.stringify(receipt, null, 2), { flag: 'wx', mode: 0o600 }); await fs.rename(temporary, path.join(backup, 'offsite-receipt.json')); }
-  finally { await fs.rm(temporary, { force: true }); }
-  if (arguments_.includes('--apply-retention')) {
-    phase = 'scoped_remote_retention';
-    await restic(['forget', '--host', host, '--tag', 'incept-production', '--group-by', 'host',
-      '--keep-within', '14d', '--keep-last', '2', '--prune'], configuration);
+  const stageRoot = option('--stage-dir') ?? configuration.INCEPT_OFFSITE_STAGE_DIR;
+  let uploadTarget = backup;
+  let stagedDir;
+  try {
+    if (stageRoot) {
+      phase = 'staging_uncompressed_snapshot';
+      stagedDir = await extractStage(backup, manifest, stageRoot, configuration);
+      uploadTarget = stagedDir;
+    }
+    phase = 'encrypted_upload';
+    const output = await restic(['backup', uploadTarget, '--tag', 'incept-production', '--host', host, '--json'], configuration);
+    const summary = output.split('\n').filter(Boolean).map(line => JSON.parse(line)).find(item => item.message_type === 'summary');
+    if (!/^[a-f0-9]{8,64}$/.test(summary?.snapshot_id ?? '')) throw new Error('No complete encrypted snapshot was acknowledged.');
+    phase = 'repository_verification';
+    const checkArgs = checkCommand(configuration);
+    await restic(checkArgs, configuration);
+    let repoRawBytes = null;
+    try {
+      const statsOutput = await restic(['stats', '--mode', 'raw-data', '--json'], configuration);
+      const parsedStats = JSON.parse(statsOutput);
+      if (Number.isFinite(parsedStats?.total_size)) repoRawBytes = parsedStats.total_size;
+    } catch {
+      // Non-fatal metadata query.
+    }
+    const warnGib = Number(configuration.INCEPT_OFFSITE_WARN_GIB ?? '220');
+    const capWarning = repoRawBytes !== null && Number.isFinite(warnGib) && repoRawBytes > warnGib * 1024 * 1024 * 1024;
+    const receipt = {
+      version: 1, repositoryFingerprint: fingerprint, host, snapshotId: summary.snapshot_id,
+      verifiedAt: new Date().toISOString(), backupCreatedAt: manifest.createdAt, backupSha256: manifest.sha256,
+      stagedUncompressed: Boolean(stagedDir), checkArgs, dataAddedBytes: summary.data_added ?? null,
+      repoRawBytes, capWarning,
+    };
+    const temporary = path.join(backup, `.offsite-${randomUUID()}.tmp`);
+    try { await fs.writeFile(temporary, JSON.stringify(receipt, null, 2), { flag: 'wx', mode: 0o600 }); await fs.rename(temporary, path.join(backup, 'offsite-receipt.json')); }
+    finally { await fs.rm(temporary, { force: true }); }
+    if (arguments_.includes('--apply-retention')) {
+      phase = 'scoped_remote_retention';
+      await restic(retentionArgs(configuration, host), configuration);
+    }
+    console.log(JSON.stringify({
+      event: 'encrypted_backup_verified',
+      snapshotId: summary.snapshot_id,
+      stagedUncompressed: Boolean(stagedDir),
+      checkArgs,
+      dataAddedBytes: summary.data_added ?? null,
+      repoRawBytes,
+      capWarning,
+      retentionApplied: arguments_.includes('--apply-retention'),
+    }));
+  } finally {
+    if (stagedDir) await fs.rm(stagedDir, { recursive: true, force: true });
   }
-  console.log(JSON.stringify({ event: 'encrypted_backup_verified', snapshotId: summary.snapshot_id, retentionApplied: arguments_.includes('--apply-retention') }));
 }
-main().catch(() => { console.error(JSON.stringify({ event: 'offsite_backup_failed', phase })); process.exitCode = 1; });
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+  main().catch(() => { console.error(JSON.stringify({ event: 'offsite_backup_failed', phase })); process.exitCode = 1; });
+}

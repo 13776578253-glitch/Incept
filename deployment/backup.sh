@@ -22,3 +22,7 @@ find "$deploy_root/backups" -mindepth 2 -maxdepth 2 -name manifest.json -printf 
 latest=$(cat "$deploy_root/latest-backup-path")
 test -n "$latest"
 install -m 0640 -o "$operator_user" -g "$operator_group" "$latest" "$deploy_root/latest-backup-manifest.json"
+keep_local=$(awk -F= '/^INCEPT_BACKUP_KEEP_LOCAL=/{sub(/\r$/, "", $2); print $2}' "$deploy_root/.env.production")
+if test -n "$keep_local"; then
+  node scripts/production-backup-prune.mjs --dir "$deploy_root/backups" --keep "$keep_local"
+fi
