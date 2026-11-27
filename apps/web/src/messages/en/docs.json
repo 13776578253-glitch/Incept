@@ -134,7 +134,18 @@
     "actions": {
       "openRoute": "Open route",
       "copyRoute": "Copy route",
-      "copied": "Copied"
+      "copied": "Copied",
+      "edit": "Edit",
+      "save": "Save",
+      "saving": "Saving",
+      "cancel": "Cancel"
+    },
+    "edit": {
+      "titleLabel": "Document title",
+      "accessRoleLabel": "Edit access role",
+      "applyToCollectionArticles": "Also update access role for all articles in this collection",
+      "titleRequired": "Title cannot be empty",
+      "saveError": "Failed to save changes, please try again"
     },
     "curation": {
       "eyebrow": "Docs Home",

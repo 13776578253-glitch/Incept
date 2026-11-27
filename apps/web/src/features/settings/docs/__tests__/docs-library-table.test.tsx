@@ -65,3 +65,45 @@ it('paginates long entry lists across pages',()=>{
   expect(document.querySelectorAll('tbody tr')).toHaveLength(2);
   expect(screen.getByText('2 / 2')).toBeTruthy();
 });
+
+it('allows inline editing of document title and access role',async()=>{
+  const fetchMock=vi.fn().mockResolvedValue({
+    ok:true,
+    json:async()=>({
+      ok:true,
+      entry:{
+        targetType:'document',
+        documentId:1,
+        locale:'zh',
+        title:'设计模式（修订版）',
+        accessRole:'guest',
+        updatedAt:'2026-11-27T11:30:00.000Z',
+      },
+    }),
+  });
+  vi.stubGlobal('fetch',fetchMock);
+  try{
+    renderTable([entry]);
+    fireEvent.click(screen.getByRole('button',{name:'编辑'}));
+    const titleInput=screen.getByLabelText('文档标题') as HTMLInputElement;
+    expect(titleInput.value).toBe('设计模式（一）');
+    fireEvent.change(titleInput,{target:{value:'设计模式（修订版）'}});
+    fireEvent.click(screen.getByRole('button',{name:'编辑访问权限'}));
+    fireEvent.click(screen.getByRole('option',{name:'访客'}));
+    fireEvent.click(screen.getByRole('button',{name:'保存'}));
+    await screen.findByText('设计模式（修订版）');
+    expect(fetchMock).toHaveBeenCalledWith('/api/internal/docs/metadata',expect.objectContaining({
+      method:'PATCH',
+      body:JSON.stringify({
+        targetType:'document',
+        targetId:1,
+        locale:'zh',
+        title:'设计模式（修订版）',
+        accessRole:'guest',
+      }),
+    }));
+    expect(cells()[2]).toBe('访客');
+  }finally{
+    vi.unstubAllGlobals();
+  }
+});

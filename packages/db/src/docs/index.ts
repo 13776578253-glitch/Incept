@@ -24,6 +24,15 @@ export {
 } from './curation';
 
 export {
+  updateDocsDocumentMetadata,
+  updateDocsCollectionMetadata,
+} from './metadata';
+export type {
+  UpdatedDocsDocumentMetadata,
+  UpdatedDocsCollectionMetadata,
+} from './metadata';
+
+export {
   importDocsArticleDraft,
   upsertDocsSingleArticle,
   upsertDocsCollectionArticle,
