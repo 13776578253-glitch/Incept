@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { test } from 'node:test';
 import { createHash } from 'node:crypto';
-import { checkCommand, retentionArgs } from './production-offsite.mjs';
+import { backupArgs, checkCommand, retentionArgs } from './production-offsite.mjs';
 
 test('rejects incomplete backups before invoking or initializing any repository', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'incept-offsite-test-'));
@@ -70,5 +70,14 @@ test('checkCommand and retentionArgs avoid full daily read-data and support cust
   assert.deepEqual(
     retentionArgs({}, 'prod-1'),
     ['forget', '--host', 'prod-1', '--tag', 'incept-production', '--group-by', 'host', '--keep-within', '14d', '--keep-last', '2', '--prune']
+  );
+
+  assert.deepEqual(
+    backupArgs('/srv/incept/.restic-stage', 'prod-1', true),
+    ['backup', '/srv/incept/.restic-stage', '--tag', 'incept-production', '--host', 'prod-1', '--ignore-inode', '--ignore-ctime', '--json']
+  );
+  assert.deepEqual(
+    backupArgs('/srv/incept/backups/b1', 'prod-1', false),
+    ['backup', '/srv/incept/backups/b1', '--tag', 'incept-production', '--host', 'prod-1', '--json']
   );
 });

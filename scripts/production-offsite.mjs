@@ -9,31 +9,64 @@ import { pathToFileURL } from 'node:url';
 const arguments_ = process.argv.slice(2);
 function option(name) { const index = arguments_.indexOf(name); return index < 0 ? undefined : arguments_[index + 1]; }
 let phase = 'configuration';
+let activeChild = null;
+const startedAt = Date.now();
+let phaseStartedAt = startedAt;
+const phaseDurationsMs = {};
+function logPhaseEvent(event, extra = {}) {
+  console.error(JSON.stringify({ event, phase, ...extra }));
+}
+async function runPhase(name, fn) {
+  phase = name;
+  phaseStartedAt = Date.now();
+  logPhaseEvent('offsite_phase_start');
+  const result = await fn();
+  const durationMs = Date.now() - phaseStartedAt;
+  phaseDurationsMs[name] = durationMs;
+  logPhaseEvent('offsite_phase_complete', { durationMs });
+  return result;
+}
 async function digest(file) {
   const hash = createHash('sha256');
   for await (const bytes of createReadStream(file)) hash.update(bytes);
   return hash.digest('hex');
 }
-async function runCommand(binary, command, configuration) {
+async function runCommand(binary, command, configuration, { streamStderr = false } = {}) {
   const child = spawn(binary, command, { env: configuration, stdio: ['ignore', 'pipe', 'pipe'] });
+  activeChild = child;
   let output = '';
   let errors = '';
   child.stdout.on('data', bytes => { output += bytes; });
   child.stderr.on('data', bytes => {
-    if (errors.length < 4096) errors += bytes.toString('utf8').slice(0, 4096 - errors.length);
+    const chunk = bytes.toString('utf8');
+    if (errors.length < 4096) errors += chunk.slice(0, 4096 - errors.length);
+    if (streamStderr) process.stderr.write(chunk);
   });
-  await new Promise((resolve, reject) => {
-    child.on('error', reject);
-    child.on('close', code => code === 0 ? resolve() : reject(new Error(`${binary} operation failed (${code}): ${errors.trim()}`)));
-  });
-  return output;
+  try {
+    await new Promise((resolve, reject) => {
+      child.on('error', reject);
+      child.on('close', (code, signal) => code === 0 ? resolve() : reject(new Error(`${binary} operation failed (${code ?? signal}): ${errors.trim()}`)));
+    });
+    return output;
+  } finally {
+    if (activeChild === child) activeChild = null;
+  }
 }
-async function restic(command, configuration) {
+async function restic(command, configuration, options_ = {}) {
   const options = [];
   if (configuration.RESTIC_SFTP_COMMAND) options.push('-o', `sftp.command=${configuration.RESTIC_SFTP_COMMAND}`);
   if (configuration.INCEPT_RESTIC_RCLONE_ARGS) options.push('-o', `rclone.args=${configuration.INCEPT_RESTIC_RCLONE_ARGS}`);
   if (configuration.INCEPT_RESTIC_RCLONE_CONNECTIONS) options.push('-o', `rclone.connections=${configuration.INCEPT_RESTIC_RCLONE_CONNECTIONS}`);
-  return runCommand(configuration.INCEPT_RESTIC_BIN ?? 'restic', [...options, ...command], configuration);
+  return runCommand(configuration.INCEPT_RESTIC_BIN ?? 'restic', [...options, ...command], configuration, { streamStderr: true, ...options_ });
+}
+export function backupArgs(uploadTarget, host, stagedUncompressed) {
+  return [
+    'backup', uploadTarget,
+    '--tag', 'incept-production',
+    '--host', host,
+    ...(stagedUncompressed ? ['--ignore-inode', '--ignore-ctime'] : []),
+    '--json',
+  ];
 }
 async function extractStage(backup, manifest, stageRoot, configuration) {
   const stageDir = path.resolve(stageRoot);
@@ -102,26 +135,39 @@ async function main() {
     if ((await fs.lstat(file)).isSymbolicLink() || !/^[a-f0-9]{64}$/.test(manifest.sha256?.[name] ?? '') || await digest(file) !== manifest.sha256[name]) throw new Error('Backup validation failed.');
   }
   const fingerprint = createHash('sha256').update(repository).digest('hex');
-  if (arguments_.includes('--init')) { phase = 'repository_initialization'; await restic(['init'], configuration); }
+  if (arguments_.includes('--init')) await runPhase('repository_initialization', () => restic(['init'], configuration));
+  if (arguments_.includes('--unlock-stale') || configuration.INCEPT_RESTIC_UNLOCK_STALE === '1') {
+    await runPhase('unlock_stale_locks', () => restic(['unlock'], configuration));
+  }
   const stageRoot = option('--stage-dir') ?? configuration.INCEPT_OFFSITE_STAGE_DIR;
   let uploadTarget = backup;
   let stagedDir;
+  let interrupted = false;
+  const onSignal = signal => {
+    if (interrupted) return;
+    interrupted = true;
+    logPhaseEvent('offsite_backup_interrupted', {
+      signal,
+      phaseElapsedMs: Date.now() - phaseStartedAt,
+      totalElapsedMs: Date.now() - startedAt,
+    });
+    try { activeChild?.kill('SIGTERM'); } catch { /* Best-effort child termination. */ }
+  };
+  process.once('SIGTERM', onSignal);
+  process.once('SIGINT', onSignal);
   try {
     if (stageRoot) {
-      phase = 'staging_uncompressed_snapshot';
-      stagedDir = await extractStage(backup, manifest, stageRoot, configuration);
+      stagedDir = await runPhase('staging_uncompressed_snapshot', () => extractStage(backup, manifest, stageRoot, configuration));
       uploadTarget = stagedDir;
     }
-    phase = 'encrypted_upload';
-    const output = await restic(['backup', uploadTarget, '--tag', 'incept-production', '--host', host, '--json'], configuration);
+    const output = await runPhase('encrypted_upload', () => restic(backupArgs(uploadTarget, host, Boolean(stagedDir)), configuration));
     const summary = output.split('\n').filter(Boolean).map(line => JSON.parse(line)).find(item => item.message_type === 'summary');
     if (!/^[a-f0-9]{8,64}$/.test(summary?.snapshot_id ?? '')) throw new Error('No complete encrypted snapshot was acknowledged.');
-    phase = 'repository_verification';
     const checkArgs = checkCommand(configuration);
-    await restic(checkArgs, configuration);
+    await runPhase('repository_verification', () => restic(checkArgs, configuration));
     let repoRawBytes = null;
     try {
-      const statsOutput = await restic(['stats', '--mode', 'raw-data', '--json'], configuration);
+      const statsOutput = await runPhase('repository_stats', () => restic(['stats', '--mode', 'raw-data', '--json'], configuration));
       const parsedStats = JSON.parse(statsOutput);
       if (Number.isFinite(parsedStats?.total_size)) repoRawBytes = parsedStats.total_size;
     } catch {
@@ -139,8 +185,7 @@ async function main() {
     try { await fs.writeFile(temporary, JSON.stringify(receipt, null, 2), { flag: 'wx', mode: 0o600 }); await fs.rename(temporary, path.join(backup, 'offsite-receipt.json')); }
     finally { await fs.rm(temporary, { force: true }); }
     if (arguments_.includes('--apply-retention')) {
-      phase = 'scoped_remote_retention';
-      await restic(retentionArgs(configuration, host), configuration);
+      await runPhase('scoped_remote_retention', () => restic(retentionArgs(configuration, host), configuration));
     }
     console.log(JSON.stringify({
       event: 'encrypted_backup_verified',
@@ -151,8 +196,12 @@ async function main() {
       repoRawBytes,
       capWarning,
       retentionApplied: arguments_.includes('--apply-retention'),
+      phaseDurationsMs,
+      totalDurationMs: Date.now() - startedAt,
     }));
   } finally {
+    process.off('SIGTERM', onSignal);
+    process.off('SIGINT', onSignal);
     if (stagedDir) await fs.rm(stagedDir, { recursive: true, force: true });
   }
 }

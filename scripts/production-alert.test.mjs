@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { notifyProbe } from './production-alert.mjs';
+import { formatAlertRequest, notifyProbe } from './production-alert.mjs';
 
 test('deduplicates failures, reports recovery and retains one retry event identity without private diagnostics', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'incept-alert-test-'));
@@ -31,9 +31,31 @@ test('deduplicates failures, reports recovery and retains one retry event identi
     fail = false;
     await notifyProbe(true, null, configuration, receiver);
     assert.equal(events[4].key, events[5].key);
+    await notifyProbe(false, 'sync_504', configuration, receiver);
+    assert.equal(events[6].body.check, 'sync_504');
+    await notifyProbe(false, 'snapshot_lag', configuration, receiver);
+    assert.equal(events[7].body.check, 'snapshot_lag');
   } finally {
     const resolved = path.resolve(directory);
     assert.ok(resolved.startsWith(path.join(path.resolve(os.tmpdir()), 'incept-alert-test-')));
     await fs.rm(resolved, { recursive: true, force: true });
   }
+});
+
+test('formatAlertRequest supports ntfy and feishu without leaking private diagnostics', () => {
+  const event = {
+    eventId: 'evt-1',
+    service: 'incept',
+    status: 'failure',
+    check: 'sync_504',
+    occurredAt: '2026-11-28T08:00:00.000Z',
+  };
+  const ntfy = formatAlertRequest(event, 'ntfy');
+  assert.equal(ntfy.headers.Title, 'Incept Alert: sync_504');
+  assert.equal(ntfy.headers.Priority, 'high');
+  assert.match(ntfy.body, /sync_504/);
+  const feishu = formatAlertRequest(event, 'feishu');
+  const parsed = JSON.parse(feishu.body);
+  assert.equal(parsed.msg_type, 'text');
+  assert.match(parsed.content.text, /sync_504/);
 });
