@@ -38,6 +38,11 @@ namespace InceptSync
         public int RemoteReviewTotal;
         public int RemoteHeld;
         public int ConfirmedScopes;
+        public int QuarantineActive;
+        public int ActionableIsolations;
+        public int BlockedRecords;
+        public long BlockedTokens;
+        public string PrimaryIsolationReason;
         public bool RemoteOnline;
 
         public static StatusSnapshot Load(string stateDirectory)
@@ -69,6 +74,11 @@ namespace InceptSync
                 snapshot.LastErrorCode = Json.Str(map, "lastErrorCode");
                 snapshot.LastErrorAt = Json.Str(map, "lastErrorAt");
                 snapshot.ConfirmedScopes = (int)Json.Num(map, "confirmedScopes", 0);
+                snapshot.QuarantineActive = (int)Json.Num(map, "quarantineActive", 0);
+                snapshot.ActionableIsolations = (int)Json.Num(map, "actionableIsolations", 0);
+                snapshot.BlockedRecords = (int)Json.Num(map, "blockedRecords", 0);
+                snapshot.BlockedTokens = (long)Json.Num(map, "blockedTokens", 0);
+                snapshot.PrimaryIsolationReason = Json.Str(map, "primaryIsolationReason");
                 snapshot.RemoteOnline = Json.Bool(map, "remoteOnline");
                 List<object> outbox = Json.Arr(map, "outbox");
                 if (outbox != null)
@@ -142,7 +152,7 @@ namespace InceptSync
             {
                 return AgentVisualState.Paused;
             }
-            if (ReviewBatches > 0 || HeldBatches > 0 || QuarantinedBatches > 0 || LineageBatches > 0 || RemoteReviewTotal > 0 || RemoteHeld > 0)
+            if (ReviewBatches > 0 || HeldBatches > 0 || QuarantinedBatches > 0 || LineageBatches > 0 || RemoteReviewTotal > 0 || RemoteHeld > 0 || ActionableIsolations > 0)
             {
                 return AgentVisualState.Attention;
             }

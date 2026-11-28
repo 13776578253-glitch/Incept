@@ -39,11 +39,18 @@ export class AgentState {
     for(const session of healthySessions)if(!items.some(item=>item.sessionId===session))this.db.prepare('UPDATE session_isolations SET active=0 WHERE source=? AND session_id=?').run(source,session);
     // One notification per issue identity. Changed counters do not create another alarm.
     const unique=new Map(items.map(item=>[hash([item.source,item.sessionId,item.reason]),item]));
-    for(const [id,item]of unique){const previous=this.db.prepare('SELECT active FROM session_isolations WHERE id=?').get(id);
+    const activeIdsBySession=new Map<string,Set<string>>();
+    for(const [id,item]of unique){
+      const ids=activeIdsBySession.get(item.sessionId)??new Set<string>();ids.add(id);activeIdsBySession.set(item.sessionId,ids);
+      const previous=this.db.prepare('SELECT active FROM session_isolations WHERE id=?').get(id);
       if(!previous)added++;
       this.db.prepare(`INSERT INTO session_isolations VALUES(?,?,?,?,?,?,?,1,1)
         ON CONFLICT(id) DO UPDATE SET detail_json=excluded.detail_json,last_seen=excluded.last_seen,occurrences=occurrences+1,active=1`)
         .run(id,item.source,item.sessionId,item.reason,JSON.stringify(item),now,now);
+    }
+    for(const [sessionId,ids] of activeIdsBySession){
+      const existing=this.db.prepare('SELECT id FROM session_isolations WHERE source=? AND session_id=? AND active=1').all(source,sessionId) as Array<{id:string}>;
+      for(const row of existing)if(!ids.has(String(row.id)))this.db.prepare('UPDATE session_isolations SET active=0 WHERE id=?').run(row.id);
     }
     return added;
   });}
@@ -128,6 +135,7 @@ export class AgentState {
     this.db.prepare('DELETE FROM lineage WHERE scope=?').run(scope);this.db.prepare('DELETE FROM lineage_tokens WHERE scope=?').run(scope);
     this.db.prepare('DELETE FROM heads WHERE scope=?').run(scope);
     this.db.prepare('INSERT INTO heads VALUES(?,?,?)').run(scope,JSON.stringify(head),signature);
+    this.db.prepare('UPDATE session_isolations SET active=0 WHERE source=? AND session_id=?').run(head.header.manifest.scope.source,head.header.manifest.scope.sessionId);
     return rows.length;});}
   reconcileHeadLag(scope:string,keepBatch:string,head:ParentCapture,signature:string){return this.tx(()=>{
     const rows=this.db.prepare("SELECT batch FROM outbox WHERE scope=? AND state IN ('pending','lineage') AND batch<>?").all(scope,keepBatch);

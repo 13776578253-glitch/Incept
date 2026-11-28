@@ -21,7 +21,8 @@ export type RangeProof={range:SyncRange;parts?:{schema:string;rows:string[];enve
 export type Capture={source:TransferSource;sessionId:string;reader:TransferSource|'aiusage';records:SyncRecord[];proofs:RangeProof[];rates:SyncHeader['basis']['rates'];prefixes:Record<string,string>};
 export type ParentCapture={header:SyncHeader;proofs:RangeProof[]};
 export type SessionIsolation={source:TransferSource;sessionId:string;reason:string;affectedRecords:number;unattributedTokens:number;
-  firstAffectedAtMs?:number;lastAffectedAtMs?:number;recoveryAfterTimestampMs?:number;locatorHashes?:string[];coverage:'session'|'prefix'};
+  models?:string[];firstAffectedAtMs?:number;lastAffectedAtMs?:number;lastConfirmedRevision?:number;blockedRecords?:number;blockedTokens?:number;
+  recoveryAfterTimestampMs?:number;locatorHashes?:string[];coverage:'session'|'prefix'};
 export type RecoveryRange={source:TransferSource;sessionId:string;afterTimestampMs:number};
 export type CaptureOptions={tolerantIncomplete?:boolean;recoveryRanges?:RecoveryRange[];autoReviewSessions?:string[];sessionIds?:string[]};
 export type CaptureResult={captures:Capture[];issues:string[];isolations?:SessionIsolation[]};
@@ -118,13 +119,34 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
   const rows=[...cc.events,...agents.events.filter(r=>r.sourceId!=='commandcode'||!r.sourceFile||!commandFiles.has(normalizeFile(r.sourceFile)))];
   const groups=new Map<string,typeof rows>();for(const row of rows){if(!allowed.includes(row.sourceId as TransferSource))continue;const key=JSON.stringify([row.sourceId,row.sessionId]),group=groups.get(key)??[];group.push(row);groups.set(key,group);}
   const captures:Capture[]=[];
+  const summarizeGroup=(items:typeof rows)=>{
+    let tokens=0,first:number|undefined,last:number|undefined;
+    const models=new Set<string>();
+    for(const item of items){
+      tokens+=(item.inputTokens??0)+(item.outputTokens??0)+(item.cacheReadTokens??0)+(item.cacheCreationTokens??0)+(item.reasoningTokens??0);
+      if(typeof item.modelName==='string'&&item.modelName.trim())models.add(item.modelName.trim());
+      if(Number.isFinite(item.timestampMs)){
+        first=first===undefined?item.timestampMs:Math.min(first,item.timestampMs);
+        last=last===undefined?item.timestampMs:Math.max(last,item.timestampMs);
+      }
+    }
+    return {tokens,models:[...models].sort(),firstAffectedAtMs:first,lastAffectedAtMs:last};
+  };
   for(let group of groups.values()){
     const source=group[0].sourceId as TransferSource,sessionId=group[0].sessionId,reader=group.some(r=>agents.fallbackEvents.includes(r))?'aiusage':source;
+    const groupMeta=summarizeGroup(group);
     let recoveryAfterTimestampMs:number|undefined;
     if(failed.has(source)||reader==='aiusage'&&failed.has('aiusage')){issues.push(source+':COLLECTOR_INCOMPLETE');continue;}
     const quarantined=isolations.filter(item=>item.source===source&&!(source==='deepseekHarness'&&item.coverage==='prefix')&&(item.sessionId===sessionId||item.locatorHashes?.some(locator=>files.some(file=>hash(file.locator)===locator&&group.some(row=>row.sourceFile&&normalizeFile(row.sourceFile)===normalizeFile(file.path))))));
     if(quarantined.length||group.some(r=>r.historyIncomplete)){
-      if(!quarantined.length){isolations.push({source,sessionId,reason:'HISTORY_INCOMPLETE',affectedRecords:group.length,unattributedTokens:0,coverage:'session'});issues.push(source+':SESSION_ISOLATED');continue;}
+      if(!quarantined.length){isolations.push({source,sessionId,reason:'HISTORY_INCOMPLETE',affectedRecords:group.length,unattributedTokens:groupMeta.tokens,models:groupMeta.models,firstAffectedAtMs:groupMeta.firstAffectedAtMs,lastAffectedAtMs:groupMeta.lastAffectedAtMs,coverage:'session'});issues.push(source+':SESSION_ISOLATED');continue;}
+      for(const item of quarantined){
+        if(!item.models?.length&&groupMeta.models.length)item.models=groupMeta.models;
+        if(!item.unattributedTokens&&groupMeta.tokens>0)item.unattributedTokens=groupMeta.tokens;
+        if(!item.affectedRecords&&group.length>0)item.affectedRecords=group.length;
+        if(item.firstAffectedAtMs===undefined&&groupMeta.firstAffectedAtMs!==undefined)item.firstAffectedAtMs=groupMeta.firstAffectedAtMs;
+        if(item.lastAffectedAtMs===undefined&&groupMeta.lastAffectedAtMs!==undefined)item.lastAffectedAtMs=groupMeta.lastAffectedAtMs;
+      }
       const recovery=options.recoveryRanges?.find(item=>item.source===source&&item.sessionId===sessionId);
       const openingOnly=quarantined.every(item=>['OPENING_PREFIX_MISSING','OPENING_USAGE_UNCERTAIN'].includes(item.reason)&&item.recoveryAfterTimestampMs!==undefined);
       const anchor=Math.max(...quarantined.map(item=>item.recoveryAfterTimestampMs??Infinity));
@@ -192,7 +214,7 @@ export async function captureHome(home:string,snapshot:string,allowed:TransferSo
       captures.push(capture);
     }catch(error){if(error instanceof Error&&error.message==='RUNNING_USAGE'){continue;}if(process.env.INCEPT_CAPTURE_DEBUG)console.error('CAPTURE_GROUP_FAILED',source,sessionId,error instanceof Error?error.stack:String(error));
       const reason=error instanceof Error&&/^[A-Z][A-Z0-9_]+$/.test(error.message)?error.message:'SOURCE_REVIEW_REQUIRED';
-      isolations.push({source,sessionId,reason,affectedRecords:group.length,unattributedTokens:0,coverage:'session'});issues.push(source+':SESSION_ISOLATED');}
+      isolations.push({source,sessionId,reason,affectedRecords:group.length,unattributedTokens:groupMeta.tokens,models:groupMeta.models,firstAffectedAtMs:groupMeta.firstAffectedAtMs,lastAffectedAtMs:groupMeta.lastAffectedAtMs,coverage:'session'});issues.push(source+':SESSION_ISOLATED');}
   }
   return {captures,issues:[...new Set(issues)],isolations};
 }
@@ -200,12 +222,17 @@ export function buildCandidate(capture:Capture,scope:SyncScope,parent:ParentCapt
   const proofs=capture.proofs.map(p=>structuredClone(p));
   for(const proof of proofs){const next=proof.range,old=parent?.proofs.find(p=>p.range.locatorHash===next.locatorHash);
     if(next.commitment?.kind==='stable-key-set')continue;
-    if(old&&old.range.root!==next.root){let retained=false;
+    if(old&&(old.range.root!==next.root||old.range.identityHash!==next.identityHash)){let retained=false;
       if(proof.parts&&old.parts){
         retained=old.parts.every((part,i)=>part.schema===proof.parts![i]?.schema&&part.rows.every((h,n)=>h===proof.parts![i].rows[n]));
       }
       else retained=(readCurrentPrefix?.(next.locatorHash,old.range.byteLength)??capture.prefixes[next.locatorHash+':'+old.range.byteLength])===old.range.root;
-      next.previous={locatorHash:old.range.locatorHash,root:old.range.root,retainedRoot:retained?old.range.root:hash('PREFIX_NOT_RETAINED'),retainedBytes:old.range.byteLength,change:retained?'append':next.envelopeRoot===old.range.envelopeRoot&&capture.reader!=='aiusage'&&scope.source!=='antigravity'?'usage-revision':'append'};
+      const samePathIdentityDrift=old.range.identityHash!==next.identityHash&&retained
+        &&next.kind!=='sqlite'&&next.byteLength>=old.range.byteLength
+        &&['codex','claudeCode','geminiCli','deepseekHarness'].includes(scope.source)
+        &&!!next.sessionAnchorHash&&next.sessionAnchorHash===old.range.sessionAnchorHash;
+      next.previous={locatorHash:old.range.locatorHash,root:old.range.root,retainedRoot:retained?old.range.root:hash('PREFIX_NOT_RETAINED'),retainedBytes:old.range.byteLength,
+        change:samePathIdentityDrift?'rotation':retained?'append':next.envelopeRoot===old.range.envelopeRoot&&capture.reader!=='aiusage'&&scope.source!=='antigravity'?'usage-revision':'append'};
     }}
   const ranges=proofs.map(p=>p.range),root=hash(ranges.map(r=>[r.locatorHash,r.root])),basis=parent?.header.basis??{rates:capture.rates,aliases:{},schedule:'commandcode-peak-v1' as const},mappings=parent?.header.mappings??{};
   const header:SyncHeader={batchId,basis,mappings,manifest:makeManifest({version:2,scope,reader:capture.reader,collectorVersion:'incept-collector/1',epoch:parent?.header.manifest.epoch??0,parent:parent?{generationId:parent.header.manifest.generationId,manifestHash:parent.header.manifest.manifestHash}:null,

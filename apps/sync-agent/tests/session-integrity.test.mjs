@@ -4,7 +4,7 @@ import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync,appendFileSync} 
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {AgentState,SyncEngine,captureHome,buildCandidate} from '../dist/library.mjs';
+import {AgentState,SyncEngine,captureHome,buildCandidate,reconcileHeads} from '../dist/library.mjs';
 import {fixtures as f} from './helpers.mjs';
 
 const deviceId='00000000-0000-4000-8000-000000000003',actor={role:'device',deviceId};
@@ -157,5 +157,90 @@ test('missing Antigravity session DB isolates only that session without blocking
     assert(state.sessionIsolations().some(row=>row.source==='antigravity'&&row.sessionId==='ag-old'&&row.reason==='MISSING_ORIGIN_RETAINED'&&row.active));
     assert.deepEqual(state.parents().find(p=>p.header.manifest.scope.sessionId==='ag-old'),oldParent);
     assert(state.parents().some(p=>p.header.manifest.scope.sessionId==='ag-new'));
+  }finally{state.close();service.close();}
+}));
+
+test('same-path Codex identity drift with intact byte prefix and matching session anchor continues automatically',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Pricing(home);
+  const file=session(home,'drift-session',[point(at,10)]),original=readFileSync(file);
+  const state=new AgentState(join(dir,'state')),service=new f.CompatibleSyncService(join(dir,'cloud.db'));
+  const config={version:1,endpoint:'https://synthetic.invalid',deviceId,home,allowedSources:['codex']};
+  const engine=new SyncEngine(state,config,localHttp(service),(h,_a,parents)=>scan(h,dir,parents));
+  try{
+    assert.equal((await engine.run()).sent,1);
+    // Simulate Windows NTFS inode/birthtime drift at the exact same path by replacing the file with identical prefix + new point
+    rmSync(file);
+    writeFileSync(file,Buffer.concat([original,Buffer.from(JSON.stringify(point(at+1000,17,7))+'\n')]));
+    // Also perturb stored identityHash to guarantee drift regardless of filesystem inode reuse
+    const row=state.db.prepare('SELECT scope,parent_json FROM lineage').get();
+    const stored=JSON.parse(String(row.parent_json));
+    stored.header.manifest.ranges[0].identityHash=stored.proofs[0].range.identityHash='0'.repeat(64);
+    // Keep server head consistent with the simulated old identityHash so both client and server qualifyRanges verify same-path rotation
+    const headRow=service.db.prepare('SELECT id,scope_id,header_json FROM sync_manifests ORDER BY rowid DESC LIMIT 1').get();
+    const headHeader=JSON.parse(String(headRow.header_json));
+    headHeader.manifest.ranges[0].identityHash='0'.repeat(64);
+    const {generationId:_g,manifestHash:_m,...body}=headHeader.manifest;
+    const updatedManifest=f.makeManifest(body);
+    headHeader.manifest=updatedManifest;
+    stored.header=headHeader;
+    state.db.prepare('UPDATE lineage SET parent_json=? WHERE scope=?').run(JSON.stringify(stored),row.scope);
+    service.db.prepare('UPDATE sync_manifests SET id=?,generation_id=?,header_json=? WHERE id=?').run(updatedManifest.manifestHash,updatedManifest.generationId,JSON.stringify(headHeader),headRow.id);
+    service.db.prepare('UPDATE sync_scopes SET head_manifest=?,head_generation=? WHERE scope_id=?').run(updatedManifest.manifestHash,updatedManifest.generationId,headRow.scope_id);
+    const res=await engine.run();
+    assert.equal(res.sent,1);
+    assert.equal(res.newTokens,7);
+    assert.equal(res.quarantineActive,0);
+    assert.equal(f.readSyncView(service).events.reduce((sum,e)=>sum+e.inputTokens,0),17);
+    const repeat=await engine.run();
+    assert.equal(repeat.sent,0);
+    assert.equal(repeat.newTokens,0);
+  }finally{state.close();service.close();}
+}));
+
+test('same-path Codex identity drift with altered prefix is still quarantined',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Pricing(home);
+  const file=session(home,'tampered-drift',[point(at,10)]);
+  const state=new AgentState(join(dir,'state')),service=new f.CompatibleSyncService(join(dir,'cloud.db'));
+  const config={version:1,endpoint:'https://synthetic.invalid',deviceId,home,allowedSources:['codex']};
+  const engine=new SyncEngine(state,config,localHttp(service),(h,_a,parents)=>scan(h,dir,parents));
+  try{
+    assert.equal((await engine.run()).sent,1);
+    // Alter prefix bytes AND change identityHash -> must still fail with ROTATION_UNVERIFIED
+    writeFileSync(file,JSON.stringify({type:'session_meta',payload:{id:'tampered-drift'}})+'\n'+JSON.stringify(point(at,12))+'\n');
+    const row=state.db.prepare('SELECT scope,parent_json FROM lineage').get();
+    const stored=JSON.parse(String(row.parent_json));
+    stored.header.manifest.ranges[0].identityHash=stored.proofs[0].range.identityHash='f'.repeat(64);
+    state.db.prepare('UPDATE lineage SET parent_json=? WHERE scope=?').run(JSON.stringify(stored),row.scope);
+    const res=await engine.run();
+    assert.equal(res.sent,0);
+    assert.equal(res.quarantineActive,1);
+    assert(state.sessionIsolations().some(i=>i.sessionId==='tampered-drift'&&i.reason==='ROTATION_UNVERIFIED'&&i.active));
+  }finally{state.close();service.close();}
+}));
+
+test('reconcileHeads with explicit session reconciles pre-commit isolated lineage scope and clears active isolation',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Pricing(home);
+  session(home,'rebased-session',[point(at,10)]);
+  const state=new AgentState(join(dir,'state')),service=new f.CompatibleSyncService(join(dir,'cloud.db'));
+  const config={version:1,endpoint:'https://synthetic.invalid',deviceId,home,allowedSources:['codex']};
+  const http=localHttp(service);
+  const engine=new SyncEngine(state,config,http,(h,_a,parents)=>scan(h,dir,parents));
+  try{
+    assert.equal((await engine.run()).sent,1);
+    // Mark an active pre-commit isolation without any outbox entry
+    state.observeSessionIsolations('codex',[{source:'codex',sessionId:'rebased-session',reason:'ROTATION_UNVERIFIED',affectedRecords:1,unattributedTokens:10,coverage:'session'}],[]);
+    assert.equal(state.sessionIsolations().filter(i=>i.active).length,1);
+    // Simulate a server head advancement (epoch + 1 rebase)
+    const headRow=service.db.prepare('SELECT id,scope_id,header_json FROM sync_manifests ORDER BY rowid DESC LIMIT 1').get();
+    const oldHead=JSON.parse(String(headRow.header_json));
+    const {generationId:_g,manifestHash:_m,...body}=oldHead.manifest;
+    const newManifest=f.makeManifest({...body,epoch:oldHead.manifest.epoch+1,parent:{generationId:oldHead.manifest.generationId,manifestHash:oldHead.manifest.manifestHash},intent:'rebase'});
+    const newHead={...oldHead,batchId:randomUUID(),manifest:newManifest};
+    service.db.prepare('UPDATE sync_manifests SET id=?,generation_id=?,header_json=? WHERE id=?').run(newManifest.manifestHash,newManifest.generationId,JSON.stringify(newHead),headRow.id);
+    service.db.prepare('UPDATE sync_scopes SET head_manifest=?,head_generation=? WHERE scope_id=?').run(newManifest.manifestHash,newManifest.generationId,headRow.scope_id);
+    const reconciled=await reconcileHeads(state,http,{session:'rebased-session'});
+    assert.equal(reconciled.reconciled.length,1);
+    assert.equal(reconciled.reconciled[0].head,newManifest.manifestHash);
+    assert.equal(state.sessionIsolations().filter(i=>i.active).length,0);
   }finally{state.close();service.close();}
 }));

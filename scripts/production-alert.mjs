@@ -9,6 +9,7 @@ export const ALLOWED_ALERT_CHECKS = new Set([
   'backup',
   'sync_504',
   'snapshot_lag',
+  'collection_isolation',
 ]);
 
 export function formatAlertRequest(event, format = 'json') {

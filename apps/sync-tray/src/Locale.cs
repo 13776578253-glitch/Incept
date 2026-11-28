@@ -159,6 +159,9 @@ namespace InceptSync
         public static string AttentionHeld { get { return Locale.Pick("保留批次待处理", "Held batches"); } }
         public static string AttentionQuarantined { get { return Locale.Pick("隔离批次待处理", "Quarantined batches"); } }
         public static string AttentionLineage { get { return Locale.Pick("历史谱系冲突", "Lineage conflict"); } }
+        public static string AttentionPreCommitIsolated { get { return Locale.Pick("采集会话已隔离", "Sessions isolated before upload"); } }
+        public static string PreCommitIsolatedLabel { get { return Locale.Pick("提交前隔离", "Isolated"); } }
+        public static string PreCommitIsolatedCount { get { return Locale.Pick("{0} 个会话未入账", "{0} sessions unrecorded"); } }
         public static string StateOffline { get { return Locale.Pick("未运行", "Not running"); } }
         public static string UnknownError { get { return Locale.Pick("未知错误", "Unknown error"); } }
         public static string ErrorUpstreamTimeout { get { return Locale.Pick("上传超时，等待重试", "Upload timed out, waiting to retry"); } }

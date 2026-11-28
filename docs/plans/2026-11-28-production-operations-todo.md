@@ -30,11 +30,13 @@
 - [ ] 同步发布新版 `sync-agent` 与 `sync-tray`（含 504「上传超时，等待重试」、`nextOffset`/回执续传及任务超期释放）
 - [ ] 观察 2026-11-29 03:02 下一轮 `incept-backup.timer` → `incept-offsite.service` 定时离机备份是否自动通过
 
-### 3. P2 · 历史用量、计价与 Kimi 接入
+### 3. 重构后的 P2（新 P0 / 新 P1 / 新 P2）
 
-- [ ] 收尾 V4 历史对账：核查 Wave 1/Wave 2 已入库范围，优先处理仍开放的 `#44` Antigravity `PARENT_MISMATCH`，S01/S03 保持隔离
-- [ ] 重测模型映射与缺价：同一口径比较本地 Usage、生产访客 Usage、Owner Managed Billing，优先核对 Antigravity Worker/Orchestrator 别名与 Claude 缓存写入费率，拆分诊断清单
-- [ ] 接入 Kimi Code Desktop / CLI：首批真实会话落盘后取脱敏样本，确认口径后实现共享采集器并完成去重与回放测试
+> 2026-11-28 经 7 天全源离线重放发现 2 条 Codex 会话（77.0M Tokens）被提交前静默隔离，且全历史共 116 条 Codex 会话处于隔离态；详细执行方案见 [2026-11-28-p2-sync-integrity-and-codex-recovery-plan.md](./2026-11-28-p2-sync-integrity-and-codex-recovery-plan.md)。
+
+- [ ] **新 P0**：定向扩查 Codex 116 条历史隔离会话 + 11/28 当天增量；协议层修复「同路径指纹漂移」不对称 Bug；隔离副本预演并执行父子拆分会话同批原子拆净（`6a9be12c6ea0` 等）与指纹漂移自动续传（`8478030ffc24` 等）；顺手闭环 `#44` Antigravity `PARENT_MISMATCH`
+- [ ] **新 P1**：打通全链路采集完整性显式上报（Agent 统计真实未入账 Token/模型/最早时间/原因 → 持久化上报服务端 + 托盘 `status.json` → Owner Dashboard 拆分设备在线/采集完成/提交前隔离三态 + 监控告警）
+- [ ] **新 P2**：核对 11/28 ~100K `k3.1-pro` 落盘目录并补齐 Claude Code `thinking_tokens` 拆解与 `cost-state` 差额诊断；重测模型映射与缺价；接入 Kimi Code Desktop / CLI
 
 ### 4. P3 · 运维整理与长期容量
 

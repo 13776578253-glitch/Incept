@@ -134,7 +134,11 @@ namespace InceptSync
 
             DrawInfo(graphics, Strings.LastSync, _snapshot.LastSyncText(), _palette.Text, 0);
             DrawInfo(graphics, Strings.Interval, _snapshot.IntervalText(), _palette.Text, 1);
-            if (state == AgentVisualState.Attention && !string.IsNullOrEmpty(_snapshot.LastErrorCode))
+            if (state == AgentVisualState.Attention && _snapshot.ActionableIsolations > 0)
+            {
+                DrawInfo(graphics, Strings.PreCommitIsolatedLabel, string.Format(System.Globalization.CultureInfo.InvariantCulture, Strings.PreCommitIsolatedCount, _snapshot.ActionableIsolations), _palette.StateColor(AgentVisualState.Attention), 2);
+            }
+            else if (state == AgentVisualState.Attention && !string.IsNullOrEmpty(_snapshot.LastErrorCode))
             {
                 DrawInfo(graphics, Strings.LastError, Strings.FormatErrorCode(_snapshot.LastErrorCode), _palette.StateColor(AgentVisualState.Attention), 2);
             }
@@ -194,6 +198,10 @@ namespace InceptSync
 
         private string AttentionText()
         {
+            if (_snapshot.ActionableIsolations > 0)
+            {
+                return Strings.AttentionPreCommitIsolated;
+            }
             if (!string.IsNullOrEmpty(_snapshot.LastErrorCode))
             {
                 return Strings.FormatErrorCode(_snapshot.LastErrorCode);

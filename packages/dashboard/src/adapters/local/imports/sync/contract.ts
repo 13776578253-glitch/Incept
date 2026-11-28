@@ -150,6 +150,7 @@ export function qualifyRanges(parent: SyncManifest | undefined, next: SyncManife
     const proof=range.previous,old=parent.ranges.find(row=>row.locatorHash===proof.locatorHash);
     requireSync(old&&old.root===proof.root,'ROTATION_UNVERIFIED');requireSync(old.kind===range.kind,'UNSUPPORTED_EVIDENCE');
     if(proof.change==='rotation') requireSync(range.sessionAnchorHash&&range.sessionAnchorHash===old.sessionAnchorHash&&proof.retainedRoot===old.root&&proof.retainedBytes===old.byteLength
+      && (range.kind!=='jsonl'||range.byteLength>=old.byteLength)
       && (range.identityHash===old.identityHash||['codex','claudeCode','geminiCli','deepseekHarness'].includes(next.scope.source)),'ROTATION_UNVERIFIED');
     else {
       requireSync(range.locatorHash===old.locatorHash&&range.identityHash===old.identityHash,'ROTATION_UNVERIFIED');
@@ -162,12 +163,20 @@ export function qualifyRanges(parent: SyncManifest | undefined, next: SyncManife
     requireSync(current, 'ROTATION_UNVERIFIED');
     requireSync(current.kind===old.kind,'UNSUPPORTED_EVIDENCE');
     if(stable(old)||stable(current)){verifyStable(old,current);continue;}
-    if (current.locatorHash === old.locatorHash && current.identityHash !== old.identityHash) throw new SyncError(old.kind === 'sqlite' ? 'DB_REPLACED_UNVERIFIED' : 'ROTATION_UNVERIFIED');
+    const verifiedSamePathRotation = current.locatorHash === old.locatorHash && current.identityHash !== old.identityHash
+      && old.kind !== 'sqlite' && current.previous?.change === 'rotation'
+      && current.previous.locatorHash === old.locatorHash && current.previous.root === old.root
+      && current.previous.retainedRoot === old.root && current.previous.retainedBytes === old.byteLength
+      && (current.kind !== 'jsonl' || current.byteLength >= old.byteLength)
+      && !!current.sessionAnchorHash && current.sessionAnchorHash === old.sessionAnchorHash
+      && ['codex','claudeCode','geminiCli','deepseekHarness'].includes(next.scope.source);
+    if (current.locatorHash === old.locatorHash && current.identityHash !== old.identityHash && !verifiedSamePathRotation) throw new SyncError(old.kind === 'sqlite' ? 'DB_REPLACED_UNVERIFIED' : 'ROTATION_UNVERIFIED');
     if (current.root === old.root && current.identityHash === old.identityHash && current.locatorHash === old.locatorHash) continue;
     const proof = current.previous;
     requireSync(proof?.root === old.root, 'PREFIX_LOST');
     if (proof.change === 'rotation') requireSync(current.sessionAnchorHash && current.sessionAnchorHash === old.sessionAnchorHash
       && proof.retainedRoot === old.root && proof.retainedBytes === old.byteLength
+      && (current.kind!=='jsonl'||current.byteLength >= old.byteLength)
       && (current.identityHash === old.identityHash || ['codex','claudeCode','geminiCli','deepseekHarness'].includes(next.scope.source)), 'ROTATION_UNVERIFIED');
     else if (proof.change === 'append') requireSync(proof.retainedRoot === old.root && proof.retainedBytes === old.byteLength && (current.kind!=='jsonl'||current.byteLength >= old.byteLength), 'PREFIX_LOST');
     else requireSync(current.envelopeRoot === old.envelopeRoot && next.scope.source !== 'antigravity' && next.reader !== 'aiusage', 'SOURCE_REVISION_UNVERIFIED');

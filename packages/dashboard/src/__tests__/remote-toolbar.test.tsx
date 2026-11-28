@@ -5,6 +5,7 @@ import {afterEach,expect,it,vi} from 'vitest';
 import zh from '../messages/zh.json';
 import {emptyDashboard} from '../domain';
 import {DashboardToolbar} from '../react/components/dashboard-toolbar';
+import {DiagnosticsDrawer} from '../react/sections/workbench/diagnostics-drawer';
 
 afterEach(cleanup);
 it('shows the verified remote phase, backlog, refresh delta and all synchronization timestamps',()=>{
@@ -66,18 +67,80 @@ it('splits chart refresh from remote capture and shows separate job and chart re
   render(<NextIntlClientProvider locale="zh" messages={{dashboard:zh}}><DashboardToolbar
     rangePreset="7d" setRangePreset={()=>{}} setSelectedTrendIndex={()=>{}} data={data}
     isRefreshing={false} refreshError={false} onRefresh={()=>{}} onRefreshCharts={onRefreshCharts} onTriggerRemoteSync={onTriggerRemoteSync}
+    onOpenDiagnostics={()=>{}}
     refreshCycle={1} isPollingPaused={false}
     remoteInfo={{remoteEnabled:true,readMode:'v2',intervalMs:300000,devices:[{id:'a',name:'Win',online:true,
       lastCollectedAt:'2026-11-27T13:20:00Z',lastCommittedAt:'2026-11-27T13:20:29Z',
       lastJob:{id:'job-4575',status:'completed',phase:'committed',dataRevision:4575,newTokens:293922}}]}}
     remoteDevice="a" setRemoteDevice={()=>{}} remoteState="committed" refreshInterval={300000}/>
   </NextIntlClientProvider>);
-  fireEvent.click(screen.getByRole('button',{name:'刷新图表'}));
+  const refreshBtn=screen.getByRole('button',{name:'刷新图表'});
+  const collectBtn=screen.getByRole('button',{name:'立即采集并上传'});
+  const diagBtn=screen.getByRole('button',{name:'诊断清单'});
+  expect(Boolean(refreshBtn.compareDocumentPosition(collectBtn)&Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+  expect(Boolean(collectBtn.compareDocumentPosition(diagBtn)&Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+  fireEvent.click(refreshBtn);
   expect(onRefreshCharts).toHaveBeenCalledTimes(1);
   expect(onTriggerRemoteSync).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button',{name:'立即采集并上传'}));
+  fireEvent.click(collectBtn);
   expect(onTriggerRemoteSync).toHaveBeenCalledTimes(1);
   const timeline=screen.getByTestId('sync-timeline').textContent ?? '';
   expect(timeline).toContain('rev 4575');
   expect(timeline).toContain('图表版本 rev 4578');
+});
+
+it('surfaces pre-commit isolated sessions in both toolbar timeline and diagnostics drawer',()=>{
+  const remoteInfo={
+    remoteEnabled:true,
+    readMode:'v2',
+    intervalMs:300000,
+    devices:[{
+      id:'a',
+      name:'Win',
+      online:true,
+      lastCollectedAt:'2026-11-28T10:00:00Z',
+      lastCommittedAt:'2026-11-28T09:50:00Z',
+      integrity:{
+        version:1 as const,
+        collectedAt:'2026-11-28T10:00:00Z',
+        reportedAt:'2026-11-28T10:00:05Z',
+        outcome:'partial_success',
+        lastConfirmedRevision:4633,
+        totalIsolatedSessions:116,
+        actionableSessions:2,
+        totalBlockedRecords:347,
+        totalBlockedTokens:88084618,
+        earliestAffectedAt:'2026-11-26T08:00:00Z',
+        items:[{
+          source:'codex',
+          sessionHash:'6a9be12c6ea0',
+          models:['gpt-6.2-sol'],
+          reason:'ROTATION_UNVERIFIED',
+          affectedRecords:426,
+          blockedRecords:277,
+          blockedTokens:67624768,
+          firstAffectedAt:'2026-11-26T08:00:00Z',
+          lastAffectedAt:'2026-11-28T09:50:00Z',
+          lastConfirmedRevision:4345,
+        }],
+      },
+    }],
+  };
+  render(<NextIntlClientProvider locale="zh" messages={{dashboard:zh}}>
+    <DashboardToolbar
+      rangePreset="7d" setRangePreset={()=>{}} setSelectedTrendIndex={()=>{}} data={emptyDashboard('7d')}
+      isRefreshing={false} refreshError={false} onRefresh={()=>{}} refreshCycle={1} isPollingPaused={false}
+      remoteInfo={remoteInfo} remoteDevice="a" setRemoteDevice={()=>{}} remoteState="idle" refreshInterval={300000}/>
+    <DiagnosticsDrawer
+      open onClose={()=>{}} data={emptyDashboard('7d')}
+      remoteInfo={remoteInfo} remoteDevice="a" remoteState="idle"/>
+  </NextIntlClientProvider>);
+  expect(screen.getByTestId('sync-timeline-isolation').textContent).toContain('提交前隔离');
+  expect(screen.getByTestId('sync-timeline-isolation').textContent).toContain('2 个会话');
+  const panel=screen.getByTestId('pre-commit-isolation-panel').textContent ?? '';
+  expect(panel).toContain('gpt-6.2-sol');
+  expect(panel).toContain('6a9be12c6ea0');
+  expect(panel).toContain('ROTATION_UNVERIFIED');
+  expect(panel).toContain('rev 4633');
+  expect(panel).toContain('rev 4345');
 });

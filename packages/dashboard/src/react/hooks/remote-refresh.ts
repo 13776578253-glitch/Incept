@@ -1,6 +1,8 @@
 export type RemoteActivity='idle'|'collecting'|'uploading';
 export type RemotePhase='requesting'|'collecting'|'uploading'|'still_syncing'|'updating_charts'|'committed'|'no_change'|'partial'|'review'|'failed'|'offline'|'expired'|'cancelled';
-export type RemoteDevice={id:string;name:string;online:boolean;activity?:RemoteActivity;lastCollectedAt?:string;lastReportAt?:string;lastCommittedAt?:string;lastJob?:{id?:string;status:string;phase?:RemotePhase;dataRevision?:number|null;reviewTotal?:number;reviewNew?:number;held?:number;warnings?:number;blockingIssues?:number;newTokens?:number}|null};
+export type DeviceIntegrityItem={source:string;sessionHash:string;models:string[];reason:string;affectedRecords:number;blockedRecords:number;blockedTokens:number;firstAffectedAt:string|null;lastAffectedAt:string|null;lastConfirmedRevision:number|null};
+export type DeviceIntegrityReport={version:1;collectedAt:string;reportedAt:string;outcome:string;lastConfirmedRevision:number|null;totalIsolatedSessions:number;actionableSessions:number;totalBlockedRecords:number;totalBlockedTokens:number;earliestAffectedAt:string|null;items:DeviceIntegrityItem[]};
+export type RemoteDevice={id:string;name:string;online:boolean;activity?:RemoteActivity;lastCollectedAt?:string;lastReportAt?:string;lastCommittedAt?:string;integrity?:DeviceIntegrityReport|null;lastJob?:{id?:string;status:string;phase?:RemotePhase;dataRevision?:number|null;reviewTotal?:number;reviewNew?:number;held?:number;warnings?:number;blockingIssues?:number;newTokens?:number}|null};
 export type RemoteStatus={remoteEnabled:boolean;readMode:string;intervalMs:number;devices:RemoteDevice[]};
 export type RemoteJob={id:string;status:string;phase?:RemotePhase;online?:boolean;dataRevision:number|null;errorCode:string|null};
 export type PersistedRemoteJob={jobId:string;deviceId:string;startedAt:number};

@@ -110,7 +110,12 @@ export class SyncEngine {
           this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),capture.source+':OUTBOX_CAPACITY']);continue;}
         const isolation:SessionIsolation={source:capture.source,sessionId:capture.sessionId,
           reason:error instanceof Error&&/^[A-Z][A-Z0-9_]+$/.test(error.message)?error.message:'CANDIDATE_VALIDATION_FAILED',
-          affectedRecords:capture.records.length,unattributedTokens:0,coverage:'session'};
+          affectedRecords:capture.records.length,
+          unattributedTokens:capture.records.reduce((sum,r)=>sum+r.event.inputTokens+r.event.outputTokens+r.event.cacheReadTokens+r.event.cacheCreationTokens+r.event.reasoningTokens,0),
+          models:[...new Set(capture.records.map(r=>r.event.modelName).filter(Boolean))].sort(),
+          firstAffectedAtMs:capture.records.length?Math.min(...capture.records.map(r=>r.event.timestampMs)):undefined,
+          lastAffectedAtMs:capture.records.length?Math.max(...capture.records.map(r=>r.event.timestampMs)):undefined,
+          coverage:'session'};
         quarantineNew+=this.state.observeSessionIsolations(capture.source,[isolation],[]);captured.isolations.push(isolation);
         this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),capture.source+':SESSION_ISOLATED']);
         if(sourceReports[capture.source]){sourceReports[capture.source].isolatedSessions++;sourceReports[capture.source].capturedSessions--;}
@@ -158,9 +163,64 @@ export class SyncEngine {
     }
     const failed=Object.values(sourceReports).some(report=>report.outcome==='source_failed'),healthy=Object.values(sourceReports).some(report=>report.capturedSessions>0);
     const outcome=failed&&!healthy||uploadIncomplete&&!sent?'source_failed':currentPolicies.some(parent=>this.config.allowedSources.includes(parent.header.manifest.scope.source))||this.state.sessionIsolations().some(item=>item.active&&this.config.allowedSources.includes(item.source))||failed||classified.blocking.length||reviewTotal||uploadIncomplete?'partial_success':sent?'complete_success':'no_change';
+    const integrityReport=this.buildIntegrityReport(outcome);
+    this.state.set('lastIntegrityReport',integrityReport);
     this.state.set('lastCollectionReport',{outcome,sourceReports,quarantineNew,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null,collectTotalMs,uploadMs});
+    // Best-effort sanitized integrity push after every cycle (scheduled or manual);
+    // never blocks or fails collection if an older server returns 404 or is unreachable.
+    await this.http.request('/agent/integrity','POST',integrityReport,[200,204,404]).catch(()=>{});
     return {sent,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null,reviewTotal,reviewNew,held:this.state.heldCount(),warnings:classified.warnings.length,blockingIssues:classified.blocking.length+(failed?1:0)+(lineage||quarantined?1:0),
-      outcome,quarantineNew,sourceReports,collectTotalMs,uploadMs,...this.state.status()};
+      outcome,quarantineNew,sourceReports,collectTotalMs,uploadMs,integrity:integrityReport,...this.state.status()};
+  }
+  private buildIntegrityReport(outcome:string){
+    const active=this.state.sessionIsolations().filter(item=>item.active&&this.config.allowedSources.includes(item.source));
+    const lineageMap=new Map<string,{records:number;tokens?:number;rev:number|null}>();
+    for(const row of this.state.db.prepare('SELECT scope,parent_json,receipt_json FROM lineage').all() as Array<{scope:string;parent_json:string;receipt_json:string}>){
+      try{
+        const parent=JSON.parse(String(row.parent_json)) as ParentCapture;
+        const receipt=JSON.parse(String(row.receipt_json)) as {dataRevision?:number};
+        lineageMap.set(String(row.scope),{
+          records:parent.header.manifest.recordCount,
+          tokens:this.state.confirmedTokenTotal(String(row.scope)),
+          rev:typeof receipt.dataRevision==='number'?receipt.dataRevision:null,
+        });
+      }catch{/* ignore malformed row */}
+    }
+    const items=active.map(item=>{
+      const key=scopeKey(item.source,item.sessionId);
+      const confirmed=lineageMap.get(key);
+      const observedTokens=Math.max(0,Math.round(Number(item.unattributedTokens??0)));
+      const blockedRecords=confirmed?Math.max(0,item.affectedRecords-confirmed.records):Math.max(0,item.affectedRecords);
+      const blockedTokens=confirmed&&confirmed.tokens!==undefined?Math.max(0,observedTokens-confirmed.tokens):observedTokens;
+      return {
+        source:item.source,
+        sessionHash:hash([item.source,item.sessionId]).slice(0,12),
+        models:(item.models??[]).slice(0,12),
+        reason:item.reason,
+        affectedRecords:Math.max(0,item.affectedRecords),
+        blockedRecords,
+        blockedTokens,
+        firstAffectedAt:typeof item.firstAffectedAtMs==='number'&&Number.isFinite(item.firstAffectedAtMs)?new Date(item.firstAffectedAtMs).toISOString():null,
+        lastAffectedAt:typeof item.lastAffectedAtMs==='number'&&Number.isFinite(item.lastAffectedAtMs)?new Date(item.lastAffectedAtMs).toISOString():null,
+        lastConfirmedRevision:confirmed?.rev??null,
+      };
+    });
+    const actionable=items.filter(item=>item.blockedTokens>0||item.blockedRecords>0);
+    actionable.sort((a,b)=>b.blockedTokens-a.blockedTokens||b.blockedRecords-a.blockedRecords||a.sessionHash.localeCompare(b.sessionHash));
+    const earliestMs=actionable.map(item=>item.firstAffectedAt?Date.parse(item.firstAffectedAt):NaN).filter(Number.isFinite);
+    const dataRev=this.state.get<number>('dataRevision');
+    return {
+      version:1 as const,
+      collectedAt:this.state.get<string>('lastCollectedAt')??new Date().toISOString(),
+      outcome,
+      lastConfirmedRevision:typeof dataRev==='number'&&Number.isSafeInteger(dataRev)?dataRev:null,
+      totalIsolatedSessions:new Set(items.map(item=>`${item.source}:${item.sessionHash}`)).size,
+      actionableSessions:new Set(actionable.map(item=>`${item.source}:${item.sessionHash}`)).size,
+      totalBlockedRecords:actionable.reduce((sum,item)=>sum+item.blockedRecords,0),
+      totalBlockedTokens:actionable.reduce((sum,item)=>sum+item.blockedTokens,0),
+      earliestAffectedAt:earliestMs.length?new Date(Math.min(...earliestMs)).toISOString():null,
+      items:actionable.slice(0,32),
+    };
   }
   private async upload(signal?:AbortSignal){
     this.state.set('activity','uploading');let sent=0,newTokens:number|null=0,uploadedTokens=0;

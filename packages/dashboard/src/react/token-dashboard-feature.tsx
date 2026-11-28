@@ -161,12 +161,14 @@ export function TokenDashboardFeature({
     }
   };
 
+  const selectedRemoteDevice = remoteInfo?.devices.find((d) => d.id === remoteDevice);
+  const preCommitAlertCount = selectedRemoteDevice?.integrity?.actionableSessions ?? 0;
+  const unpricedAlertCount =
+    billingPreview?.status === 'ready'
+      ? billingPreview.data.unpricedGroups ?? 0
+      : displayData.costs.unpricedModels.length;
   const diagnosticsAlertCount =
-    (displayData.collectionIssues?.length ?? 0) > 0
-      ? displayData.collectionIssues!.length
-      : billingPreview?.status === 'ready'
-        ? billingPreview.data.unpricedGroups ?? 0
-        : displayData.costs.unpricedModels.length;
+    (displayData.collectionIssues?.length ?? 0) + preCommitAlertCount + unpricedAlertCount;
 
   return (
     <div

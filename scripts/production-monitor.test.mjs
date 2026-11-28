@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
-import { checkSnapshotLag, checkSync504, runProductionChecks } from './production-monitor.mjs';
+import { checkDeviceIntegrity, checkSnapshotLag, checkSync504, runProductionChecks } from './production-monitor.mjs';
 import { summarizeCaddySync504Logs } from './production-monitor-proxy-log.mjs';
 
 async function withTempDir(fn) {
@@ -195,5 +195,29 @@ test('runProductionChecks reports exact failing check for backup, sync_504, snap
     const failLag = await runProductionChecks(baseCfg, deps);
     assert.equal(failLag.healthy, false);
     assert.equal(failLag.check, 'snapshot_lag');
+
+    // Catch up snapshot and trigger collection_isolation via device integrity report
+    await fs.writeFile(cacheFile, JSON.stringify({ version: 1, sync: { revision: 4620 } }));
+    const integrityFile = path.join(dir, 'device-integrity.json');
+    await fs.writeFile(integrityFile, JSON.stringify({
+      version: 1,
+      updatedAt: new Date(nowMs).toISOString(),
+      devices: {
+        'dev-1': { actionableSessions: 2, totalBlockedTokens: 88084618 },
+      },
+    }));
+    const failIso = await runProductionChecks({ ...baseCfg, INCEPT_DEVICE_INTEGRITY_FILE: integrityFile }, deps);
+    assert.equal(failIso.healthy, false);
+    assert.equal(failIso.check, 'collection_isolation');
+
+    await fs.writeFile(integrityFile, JSON.stringify({
+      version: 1,
+      updatedAt: new Date(nowMs).toISOString(),
+      devices: {
+        'dev-1': { actionableSessions: 0, totalBlockedTokens: 0 },
+      },
+    }));
+    const cleanIso = await checkDeviceIntegrity({ INCEPT_DEVICE_INTEGRITY_FILE: integrityFile });
+    assert.equal(cleanIso.totalBlockedTokens, 0);
   });
 });

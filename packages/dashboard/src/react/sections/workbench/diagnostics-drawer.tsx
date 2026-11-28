@@ -117,8 +117,11 @@ export function DiagnosticsDrawer({
         .filter((model) => model.slotStatus !== 'configured' && isExcludedBillingModelName(model.modelName))
         .reduce((sum, model) => sum + model.totalTokens, 0);
   const visibleUnpriced = showAllUnpriced ? unpricedItems : unpricedItems.slice(0, COMPACT_UNPRICED_LIMIT);
-  const issueCount = collectionIssues.length + unpricedItems.length;
   const selectedDevice = remoteInfo?.devices.find((d) => d.id === remoteDevice);
+  const integrity = selectedDevice?.integrity ?? null;
+  const preCommitItems = integrity?.items ?? [];
+  const preCommitCount = integrity?.actionableSessions ?? 0;
+  const issueCount = collectionIssues.length + preCommitCount + unpricedItems.length;
   const phaseLabel = (state?: string) =>
     t(state === 'offline' ? 'remote.unreachable' : 'remote.' + (state || 'idle'));
 
@@ -183,24 +186,90 @@ export function DiagnosticsDrawer({
           <section className="space-y-1.5">
             <div className="flex items-center justify-between text-[0.7rem] font-medium text-[var(--color-text-soft)]">
               <span>{t('workbench.diagnosticsSectionAlerts')}</span>
-              <span className="font-mono tabular-nums">{collectionIssues.length}</span>
+              <span className="font-mono tabular-nums">{collectionIssues.length + preCommitCount}</span>
             </div>
-            {collectionIssues.length === 0 ? (
+            {collectionIssues.length === 0 && preCommitCount === 0 ? (
               <div className="flex items-center gap-2 rounded-[9px] border border-[var(--color-border-faint)] px-3 py-2 text-[0.72rem] text-[var(--color-text-muted)]">
                 <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[var(--badge-emerald-dot)]" />
                 <span>{t('workbench.diagnosticsNoAlerts')}</span>
               </div>
             ) : (
-              <ul className="space-y-1">
-                {collectionIssues.map((issue, idx) => (
-                  <li
-                    key={`${issue}-${idx}`}
-                    className="rounded-[9px] border border-[var(--badge-amber-border)] bg-[var(--badge-amber-bg)] px-2.5 py-1.5 font-mono text-[0.7rem] text-[var(--badge-amber-fg)]"
+              <div className="space-y-2">
+                {preCommitCount > 0 && integrity ? (
+                  <div
+                    data-testid="pre-commit-isolation-panel"
+                    className="space-y-1.5 rounded-[10px] border border-[var(--badge-amber-border)] bg-[var(--badge-amber-bg)] p-2.5 text-[var(--badge-amber-fg)]"
                   >
-                    {issue}
-                  </li>
-                ))}
-              </ul>
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[0.72rem] font-medium">
+                      <span>{t('workbench.diagnosticsSectionPreCommitIsolation')}</span>
+                      <span className="font-mono text-[0.68rem] tabular-nums">
+                        {t('workbench.diagnosticsPreCommitSummary', {
+                          sessions: preCommitCount,
+                          tokens: formatCompactTokens(integrity.totalBlockedTokens),
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 font-mono text-[0.64rem] opacity-90">
+                      {integrity.earliestAffectedAt ? (
+                        <span>
+                          {t('workbench.diagnosticsPreCommitEarliest', {
+                            time: formatDateTimeShort(integrity.earliestAffectedAt),
+                          })}
+                        </span>
+                      ) : null}
+                      {integrity.lastConfirmedRevision !== null ? (
+                        <span>
+                          {t('workbench.diagnosticsPreCommitConfirmedRev', {
+                            rev: integrity.lastConfirmedRevision,
+                          })}
+                        </span>
+                      ) : null}
+                    </div>
+                    {preCommitItems.length > 0 ? (
+                      <ul className="divide-y divide-[var(--badge-amber-border)] rounded-[8px] border border-[var(--badge-amber-border)]/70 bg-[var(--color-surface-card,transparent)]/40">
+                        {preCommitItems.slice(0, 6).map((item) => (
+                          <li
+                            key={`${item.source}:${item.sessionHash}:${item.reason}`}
+                            className="space-y-0.5 px-2.5 py-1.5 text-[0.68rem]"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate font-mono font-medium">
+                                {item.models.length > 0
+                                  ? item.models.join(', ')
+                                  : t('workbench.diagnosticsPreCommitNoModels')}
+                              </span>
+                              <span className="shrink-0 font-mono tabular-nums">
+                                {formatCompactTokens(item.blockedTokens)}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 font-mono text-[0.62rem] opacity-85">
+                              <span>
+                                {item.source} · {item.sessionHash} · {item.reason}
+                              </span>
+                              <span>
+                                {item.firstAffectedAt ? formatDateTimeShort(item.firstAffectedAt) : '—'}
+                                {item.lastConfirmedRevision !== null ? ` · rev ${item.lastConfirmedRevision}` : ''}
+                              </span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ) : null}
+                {collectionIssues.length > 0 ? (
+                  <ul className="space-y-1">
+                    {collectionIssues.map((issue, idx) => (
+                      <li
+                        key={`${issue}-${idx}`}
+                        className="rounded-[9px] border border-[var(--badge-amber-border)] bg-[var(--badge-amber-bg)] px-2.5 py-1.5 font-mono text-[0.7rem] text-[var(--badge-amber-fg)]"
+                      >
+                        {issue}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
             )}
           </section>
 

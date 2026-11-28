@@ -4,6 +4,7 @@ import type {SyncExecutor} from '@incept/dashboard/sync';
 import {hash} from '../../../../../packages/dashboard/src/adapters/local/imports/identity';
 import {rpcCall,RpcError,RpcVerifier} from '../../../../../packages/dashboard/src/sync/rpc';
 import {boundedJson,exactFields,response,DeviceRequestLimiter} from './http';
+import {readDeviceIntegrityMap,resolveIntegrityFilePath,validateDeviceIntegrityPayload,writeDeviceIntegrityReport} from './integrity';
 type Owner=(r:Request,mutating:boolean)=>Promise<{sessionId:string;ownerId:string}>;
 type Job=Awaited<ReturnType<typeof createSyncJob>>;
 type DeviceActivity='idle'|'collecting'|'uploading';
@@ -42,19 +43,24 @@ export class RemoteSync {
   }catch(error){return response({error:error instanceof RpcError||error instanceof JobError?error.code:'RPC_FORBIDDEN'},error instanceof RpcError||error instanceof JobError?error.status:403);}}
   async handle(request:Request):Promise<Response|undefined>{
     const url=new URL(request.url),path=url.pathname.replace('/api/dashboard/sync/','').split('/');
-    const ownerRoute=path[0]==='jobs'||path.join('/')==='devices/status'||path.join('/')==='reviews';const agentRoute=path[0]==='agent'&&path[1]==='jobs';if(!ownerRoute&&!agentRoute)return;
-    try{if(url.search)throw new JobError('QUERY_NOT_ALLOWED',400);if(ownerRoute&&path[0]==='jobs'&&path.length>1&&!isSyncJobId(path[1])||agentRoute&&path.length>2&&!isSyncJobId(path[2]))throw new JobError('INVALID_JOB_ID',400);
+    const ownerRoute=path[0]==='jobs'||path.join('/')==='devices/status'||path.join('/')==='reviews';
+    const agentIntegrityRoute=path.length===2&&path[0]==='agent'&&path[1]==='integrity';
+    const agentRoute=(path[0]==='agent'&&path[1]==='jobs')||agentIntegrityRoute;
+    if(!ownerRoute&&!agentRoute)return;
+    try{if(url.search)throw new JobError('QUERY_NOT_ALLOWED',400);if(ownerRoute&&path[0]==='jobs'&&path.length>1&&!isSyncJobId(path[1])||!agentIntegrityRoute&&agentRoute&&path.length>2&&!isSyncJobId(path[2]))throw new JobError('INVALID_JOB_ID',400);
       if(ownerRoute){if(request.headers.has('authorization'))throw new JobError('FORBIDDEN',403);const owner=await this.options.owner(request,request.method!=='GET');const ownerId=await requireSyncOwner(owner.sessionId);await expireJobs();
         if(path.join('/')==='reviews'&&request.method==='GET')return response(await this.options.executor.execute({op:'reviews',actor:{role:'owner',subject:ownerId,reason:'Read-only historical review status'}}));
         if(path.join('/')==='devices/status'&&request.method==='GET'){
           const devices=await prisma.agentDevice.findMany({where:{ownerAccountId:ownerId},select:{id:true,name:true,revokedAt:true,lastUsedAt:true},take:100,orderBy:{createdAt:'asc'}}),snapshot=await this.telemetry(devices.filter(d=>!d.revokedAt).map(d=>d.id));
           const commits=this.options.executor.readDeviceSummary(devices.map(d=>d.id)),executor=this.options.executor.state();
+          const integrityMap=readDeviceIntegrityMap(resolveIntegrityFilePath());
           return response({remoteEnabled:true,readMode:this.options.readMode(),intervalMs:this.options.pollMs??300000,executor,devices:await Promise.all(devices.map(async d=>{
             const latest=await prisma.syncJob.findFirst({where:{deviceId:d.id,ownerAccountId:ownerId},orderBy:{createdAt:'desc'}}),success=await prisma.syncJob.findFirst({where:{deviceId:d.id,ownerAccountId:ownerId,status:{in:['completed','completed_no_change']}},orderBy:{finishedAt:'desc'}});
             const online=!!snapshot.online[d.id],activity=snapshot.reported[d.id]?.activity??'idle';
             const result=latest?.result as {reviewTotal?:number;review?:number;reviewNew?:number;held?:number;warnings?:number;blockingIssues?:number;newTokens?:number;issues?:number}|null;
             return {...d,online,activity,lastCollectedAt:snapshot.reported[d.id]?.lastCollectedAt??(success?.result as {collectedAt?:string}|null)?.collectedAt,
               lastReportAt:snapshot.reported[d.id]?.lastReportAt??success?.finishedAt?.toISOString()??null,lastCommittedAt:commits[d.id]??null,
+              integrity:integrityMap[d.id]??null,
               lastJob:latest?{id:latest.id,status:latest.status,errorCode:latest.errorCode,dataRevision:latest.dataRevision===null?null:Number(latest.dataRevision),finishedAt:latest.finishedAt?.toISOString()??null,phase:this.phase(latest,online,activity),
                 reviewTotal:Number(result?.reviewTotal??result?.review??0),reviewNew:Number(result?.reviewNew??0),held:Number(result?.held??0),warnings:Number(result?.warnings??0),
                 blockingIssues:Number(result?.blockingIssues??result?.issues??0),newTokens:Number(result?.newTokens??0)}:null};
@@ -66,6 +72,14 @@ export class RemoteSync {
         throw new JobError('NOT_FOUND',404);
       }
       const identity=await authenticateAgent(request.headers.get('authorization'));this.limiter.check(identity.deviceId);await expireJobs(identity.deviceId);
+      if(agentIntegrityRoute&&request.method==='POST'){
+        const body=await boundedJson(request,32768);
+        let report;
+        try{report=validateDeviceIntegrityPayload(body);}
+        catch(err){throw new JobError(err instanceof Error?err.message:'INVALID_INTEGRITY_REPORT',400);}
+        writeDeviceIntegrityReport(resolveIntegrityFilePath(),identity.deviceId,report);
+        return response({recorded:true,reportedAt:report.reportedAt});
+      }
       if(path.length===2&&request.method==='GET'){const job=await prisma.syncJob.findUnique({where:{activeKey:identity.deviceId}});return response({job:job&&job.credentialVersion===identity.version&&job.policyHash===policyHash(identity.allowedSources)?{id:job.id,expiresAt:job.expiresAt}:null});}
       if(path.length===3&&request.method==='GET'){const job=await deviceJob(path[2],identity);return response({job:{id:job.id,status:job.status,expiresAt:job.expiresAt}});}
       if(path.length===4&&request.method==='POST'){

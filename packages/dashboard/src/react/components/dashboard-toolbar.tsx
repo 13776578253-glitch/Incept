@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import type { TokenDashboardData } from '../../domain';
-import { formatDateTimeShort } from '../formatters';
+import { formatCompactTokens, formatDateTimeShort } from '../formatters';
 import { DASHBOARD_REFRESH_INTERVAL, type DashboardWindow, type SnapshotLagState } from '../hooks/use-dashboard-window';
 import type { RemoteStatus } from '../hooks/remote-refresh';
 import { IconRefresh } from '../sections/workbench/workbench-icons';
@@ -80,11 +80,14 @@ export function DashboardToolbar({
     : '';
   const refreshState = phaseLabel(remoteState || job?.phase);
   const historyReviews = job?.reviewTotal ?? 0;
+  const preCommitIntegrity = selectedDevice?.integrity ?? null;
+  const preCommitIsolatedSessions = preCommitIntegrity?.actionableSessions ?? 0;
   const legacyImportedAt = data.sync?.readMode === 'v2' ? data.sync.legacyImportedAt : undefined;
   const alertCount = diagnosticsAlertCount > 0 ? diagnosticsAlertCount : diagnosticsBadge ? 1 : 0;
   const needsRemoteAttention =
     Boolean(remoteInfo) &&
-    (remoteState === 'needs_review' ||
+    (preCommitIsolatedSessions > 0 ||
+      remoteState === 'needs_review' ||
       remoteState === 'review_required' ||
       remoteState === 'failed' ||
       remoteState === 'offline' ||
@@ -228,8 +231,19 @@ export function DashboardToolbar({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              aria-label={chartRefreshAriaLabel}
+              title={chartRefreshAriaLabel}
+              onClick={remoteInfo ? (onRefreshCharts ?? onRefresh) : onRefresh}
+              disabled={isRefreshing && !remoteBusy}
+              className="dashboard-refresh-icon-btn cursor-pointer"
+            >
+              <IconRefresh className={isRefreshing && !remoteBusy ? 'size-3.5 animate-spin' : 'size-3.5'} />
+            </button>
+
             {remoteInfo ? (
-              <div className="group relative flex items-center">
+              <div className="group relative flex items-center gap-2">
                 {remoteInfo.devices.length > 1 ? (
                   <select
                     aria-label={t('remote.device')}
@@ -244,39 +258,42 @@ export function DashboardToolbar({
                       </option>
                     ))}
                   </select>
-                ) : (
+                ) : null}
+
+                <button
+                  type="button"
+                  aria-label={remoteActionLabel}
+                  title={`${t('remote.device')} · ${t(selectedDevice?.online ? 'remote.online' : 'remote.offline')}`}
+                  onClick={onTriggerRemoteSync ?? onRefresh}
+                  disabled={remoteBusy}
+                  className="dashboard-refresh-button cursor-pointer"
+                >
                   <span
-                    tabIndex={0}
-                    className="dashboard-refresh-button is-static"
-                    title={selectedDevice?.name}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`size-1.5 rounded-full ${
-                        needsRemoteAttention
-                          ? 'bg-[var(--badge-amber-dot)]'
-                          : selectedDevice?.online
-                            ? 'bg-[var(--badge-emerald-dot)]'
-                            : 'bg-[var(--color-text-soft)]'
-                      }`}
-                    />
-                    <span>
-                      {t('remote.device')} · {t(selectedDevice?.online ? 'remote.online' : 'remote.offline')}
+                    aria-hidden="true"
+                    className={`size-1.5 rounded-full ${
+                      needsRemoteAttention
+                        ? 'bg-[var(--badge-amber-dot)]'
+                        : selectedDevice?.online
+                          ? 'bg-[var(--badge-emerald-dot)]'
+                          : 'bg-[var(--color-text-soft)]'
+                    }`}
+                  />
+                  <span>{remoteActionLabel}</span>
+                  {remoteState === 'needs_review' ? (
+                    <span className="rounded-full bg-[var(--badge-amber-bg)] px-1.5 py-0 text-[0.64rem] text-[var(--badge-amber-fg)]">
+                      {phaseLabel('needs_review')}
                     </span>
-                    {remoteState === 'needs_review' ? (
-                      <span className="rounded-full bg-[var(--badge-amber-bg)] px-1.5 py-0 text-[0.64rem] text-[var(--badge-amber-fg)]">
-                        {phaseLabel('needs_review')}
-                      </span>
-                    ) : null}
-                  </span>
-                )}
+                  ) : null}
+                </button>
 
                 <div
                   data-testid="sync-timeline"
                   className="dashboard-sync-popover space-y-1.5 text-[0.7rem] tabular-nums text-[var(--color-text-muted)]"
                 >
                   <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border-faint)] pb-1 text-[0.68rem] font-medium text-[var(--color-text)]">
-                    <span>{t('workbench.remoteSyncTitle')}</span>
+                    <span>
+                      {t('remote.device')} · {t(selectedDevice?.online ? 'remote.online' : 'remote.offline')}
+                    </span>
                     <span className="text-[var(--color-text-soft)]">{refreshState}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
@@ -309,6 +326,20 @@ export function DashboardToolbar({
                       </span>
                     </div>
                   ) : null}
+                  {preCommitIsolatedSessions > 0 && preCommitIntegrity ? (
+                    <div
+                      data-testid="sync-timeline-isolation"
+                      className="flex items-center justify-between gap-3 text-[var(--badge-amber-fg)]"
+                    >
+                      <span>{t('workbench.diagnosticsSectionPreCommitIsolation')} </span>
+                      <span className="font-mono font-medium">
+                        {t('workbench.diagnosticsPreCommitSummary', {
+                          sessions: preCommitIsolatedSessions,
+                          tokens: formatCompactTokens(preCommitIntegrity.totalBlockedTokens),
+                        })}
+                      </span>
+                    </div>
+                  ) : null}
                   {historyReviews > 0 ? (
                     <div className="flex items-center justify-between gap-3 text-[var(--badge-amber-fg)]">
                       <span>{t('remote.historyReviews')} </span>
@@ -325,19 +356,6 @@ export function DashboardToolbar({
                   ) : null}
                 </div>
               </div>
-            ) : null}
-
-            {remoteInfo ? (
-              <button
-                type="button"
-                aria-label={remoteActionLabel}
-                title={remoteActionLabel}
-                onClick={onTriggerRemoteSync ?? onRefresh}
-                disabled={remoteBusy}
-                className="dashboard-refresh-button cursor-pointer"
-              >
-                <span>{remoteActionLabel}</span>
-              </button>
             ) : null}
 
             {onOpenDiagnostics ? (
@@ -359,17 +377,6 @@ export function DashboardToolbar({
                 ) : null}
               </button>
             ) : null}
-
-            <button
-              type="button"
-              aria-label={chartRefreshAriaLabel}
-              title={chartRefreshAriaLabel}
-              onClick={remoteInfo ? (onRefreshCharts ?? onRefresh) : onRefresh}
-              disabled={isRefreshing && !remoteBusy}
-              className="dashboard-refresh-icon-btn cursor-pointer"
-            >
-              <IconRefresh className={isRefreshing && !remoteBusy ? 'size-3.5 animate-spin' : 'size-3.5'} />
-            </button>
           </div>
         </div>
       </div>

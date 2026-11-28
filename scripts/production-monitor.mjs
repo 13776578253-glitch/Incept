@@ -113,6 +113,32 @@ export async function checkSync504(configuration, nowMs = Date.now()) {
   return { sync504Count, windowMinutes: summary.windowMinutes ?? null };
 }
 
+export async function checkDeviceIntegrity(configuration) {
+  const integrityFile = configuration.INCEPT_DEVICE_INTEGRITY_FILE;
+  if (!integrityFile) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(await fs.readFile(integrityFile, 'utf8'));
+  } catch (error) {
+    if (error?.code === 'ENOENT') return { actionableSessions: 0, totalBlockedTokens: 0 };
+    throw error;
+  }
+  if (parsed?.version !== 1 || !parsed.devices || typeof parsed.devices !== 'object') {
+    throw new Error('Invalid device integrity file');
+  }
+  const maxBlockedTokens = parseBoundedNumber(configuration.INCEPT_ISOLATION_MAX_BLOCKED_TOKENS, 1, 1, 1e14, 'isolation blocked token threshold');
+  let actionableSessions = 0;
+  let totalBlockedTokens = 0;
+  for (const report of Object.values(parsed.devices)) {
+    actionableSessions += Number(report?.actionableSessions ?? 0);
+    totalBlockedTokens += Number(report?.totalBlockedTokens ?? 0);
+  }
+  if (totalBlockedTokens >= maxBlockedTokens) {
+    throw new Error(`Pre-commit collection isolation blocked ${totalBlockedTokens} token(s) across ${actionableSessions} session(s)`);
+  }
+  return { actionableSessions, totalBlockedTokens };
+}
+
 export async function runProductionChecks(configuration = process.env, deps = {}) {
   const fetchImpl = deps.fetch ?? fetch;
   const nowMs = deps.nowMs ?? Date.now();
@@ -153,6 +179,9 @@ export async function runProductionChecks(configuration = process.env, deps = {}
     check = 'snapshot_lag';
     const snapshotLag = await checkSnapshotLag(configuration, nowMs, deps);
 
+    check = 'collection_isolation';
+    const collectionIsolation = await checkDeviceIntegrity(configuration);
+
     return {
       healthy: true,
       check: null,
@@ -166,6 +195,10 @@ export async function runProductionChecks(configuration = process.env, deps = {}
           snapshotRevision: snapshotLag.snapshotRevision,
           snapshotLagRevisions: snapshotLag.lagRevisions,
           snapshotLagSeconds: snapshotLag.lagSeconds,
+        } : {}),
+        ...(collectionIsolation ? {
+          actionableIsolatedSessions: collectionIsolation.actionableSessions,
+          blockedIsolationTokens: collectionIsolation.totalBlockedTokens,
         } : {}),
       },
     };
