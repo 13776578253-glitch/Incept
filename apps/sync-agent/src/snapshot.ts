@@ -10,11 +10,15 @@ const publications=new Map<string,{signature:string;at:number}>();
 export function publishStatus(state:AgentState,running=true,force=false){
   try{
     const status=state.status();
+    const detail=status.lastErrorDetail as {status?:number;stage?:string}|null|undefined;
     const body={version:STATUS_VERSION,running,pid:process.pid,intervalMs:DEFAULT_INTERVAL_MS,
       paused:state.get<boolean>('paused')===true,activity:state.get<string>('activity')??'idle',
       outbox:status.outbox,confirmedScopes:status.confirmedScopes,lastCollectedAt:status.lastCollectedAt,
       lastReportAt:status.lastReportAt,lastSuccessfulSyncAt:status.lastSuccessfulSyncAt,
-      lastErrorCode:status.lastErrorCode,lastErrorAt:status.lastErrorAt,remoteOnline:running&&status.remoteOnline===true};
+      lastErrorCode:status.lastErrorCode,lastErrorAt:status.lastErrorAt,
+      lastErrorStatus:typeof detail?.status==='number'?detail.status:null,
+      lastErrorStage:typeof detail?.stage==='string'?detail.stage:null,
+      remoteOnline:running&&status.remoteOnline===true};
     const signature=JSON.stringify(body),now=Date.now(),previous=publications.get(state.directory);
     if(!force&&previous?.signature===signature&&now-previous.at<5000)return;
     atomicJson(join(state.directory,STATUS_FILE),{...body,at:now});

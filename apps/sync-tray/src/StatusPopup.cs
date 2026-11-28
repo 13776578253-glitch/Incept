@@ -136,7 +136,7 @@ namespace InceptSync
             DrawInfo(graphics, Strings.Interval, _snapshot.IntervalText(), _palette.Text, 1);
             if (state == AgentVisualState.Attention && !string.IsNullOrEmpty(_snapshot.LastErrorCode))
             {
-                DrawInfo(graphics, Strings.LastError, _snapshot.LastErrorCode, _palette.StateColor(AgentVisualState.Attention), 2);
+                DrawInfo(graphics, Strings.LastError, Strings.FormatErrorCode(_snapshot.LastErrorCode), _palette.StateColor(AgentVisualState.Attention), 2);
             }
             else
             {
@@ -196,7 +196,7 @@ namespace InceptSync
         {
             if (!string.IsNullOrEmpty(_snapshot.LastErrorCode))
             {
-                return _snapshot.LastErrorCode;
+                return Strings.FormatErrorCode(_snapshot.LastErrorCode);
             }
             if (_snapshot.ReviewBatches > 0 || _snapshot.RemoteReviewTotal > 0)
             {

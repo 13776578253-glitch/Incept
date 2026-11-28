@@ -1,4 +1,4 @@
-import {authenticateAgent,requireCanaryDevice,policyHash,requireSyncOwner,createSyncJob,getSyncJob,deviceJob,beginSyncJob,finishSyncJob,expireJobs,activeJobStates,isSyncJobId,JobError,type JobCompletion} from '@incept/db/agent';
+import {authenticateAgent,requireCanaryDevice,policyHash,requireSyncOwner,createSyncJob,getSyncJob,deviceJob,beginSyncJob,abandonSyncJob,finishSyncJob,expireJobs,activeJobStates,isSyncJobId,JobError,type JobCompletion} from '@incept/db/agent';
 import {prisma} from '@incept/db';
 import type {SyncExecutor} from '@incept/dashboard/sync';
 import {hash} from '../../../../../packages/dashboard/src/adapters/local/imports/identity';
@@ -70,6 +70,7 @@ export class RemoteSync {
       if(path.length===3&&request.method==='GET'){const job=await deviceJob(path[2],identity);return response({job:{id:job.id,status:job.status,expiresAt:job.expiresAt}});}
       if(path.length===4&&request.method==='POST'){
         if(path[3]==='start'){const value=await boundedJson(request,4096,true);exactFields(value,[]);const checkpoint=await this.options.executor.execute<{dataRevision:number}>({op:'checkpoint',actor:{role:'device',deviceId:identity.deviceId}});return response({job:await beginSyncJob(path[2],identity,checkpoint.dataRevision)});}
+        if(path[3]==='fail'){const value=await boundedJson(request,4096,true);exactFields(value,['reason']);const reason=typeof value.reason==='string'&&/^[A-Z][A-Z0-9_]{0,60}$/.test(value.reason)?value.reason:'JOB_EXPIRED';return response({job:await abandonSyncJob(path[2],identity,reason)});}
         if(path[3]==='complete'){const body=await boundedJson(request,32768);exactFields(body,['scanId','collectedAt','issues','pending','review','batches','lineageHash','reviewTotal','reviewNew','held','warnings','blockingIssues','newTokens']);
           if(typeof body.scanId!=='string'||!/^[a-f\d-]{36}$/i.test(body.scanId)||typeof body.collectedAt!=='string'||!Number.isFinite(Date.parse(body.collectedAt))||['issues','pending','review'].some(k=>!Number.isSafeInteger(body[k])||Number(body[k])<0)||!Array.isArray(body.batches)||body.batches.length>256||new Set(body.batches).size!==body.batches.length||body.batches.some(id=>typeof id!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(id)))throw new JobError('INVALID_COMPLETION',400);
           for(const key of ['reviewTotal','reviewNew','held','warnings','blockingIssues','newTokens'])if(key in body&&(!Number.isSafeInteger(body[key])||Number(body[key])<0))throw new JobError('INVALID_COMPLETION',400);

@@ -209,3 +209,191 @@ test('remote Job retains its cursor across transient upload failure and reports 
     assert.equal(reports,1);assert.deepEqual(payload.batches,[candidate.header.batchId]);assert.equal(payload.lineageHash.length,64);assert.equal(state.status().lastRemoteJob.status,'completed');
   }finally{state.close();service.close();}
 }));
+test('AgentHttp preserves real HTTP 504/502 status, Retry-After, and rejects HTML 404 or bad 200 JSON',()=>sandbox(async()=>{
+  let mode='empty-504';
+  const server=createServer((_req,res)=>{
+    if(mode==='empty-504'){res.writeHead(504,{'x-request-id':'req-empty-504'});res.end();return;}
+    if(mode==='json-504'){res.writeHead(504,{'content-type':'application/json','retry-after':'7','x-request-id':'req-json-504'});res.end(JSON.stringify({error:'UPSTREAM_TIMEOUT',status:504}));return;}
+    if(mode==='custom-504'){res.writeHead(504,{'content-type':'application/json','retry-after':'9'});res.end(JSON.stringify({error:'QUEUE_OVERLOADED'}));return;}
+    if(mode==='text-502'){res.writeHead(502,{'content-type':'text/plain','retry-after':'3'});res.end('Bad Gateway');return;}
+    if(mode==='html-404'){res.writeHead(404,{'content-type':'text/html'});res.end('<html>404 Not Found</html>');return;}
+    if(mode==='batch-404'){res.writeHead(404,{'content-type':'application/json'});res.end(JSON.stringify({error:'BATCH_NOT_FOUND',requestId:'req-404'}));return;}
+    if(mode==='bad-200'){res.writeHead(200,{'content-type':'application/json'});res.end('{broken');return;}
+    if(mode==='huge-200'){res.writeHead(200,{'content-type':'application/json'});res.end('{"pad":"'+'x'.repeat(270*1024)+'"}');return;}
+    if(mode==='proxy-413'){res.writeHead(413,{'content-type':'text/html'});res.end('<html>Payload Too Large</html>');return;}
+    res.writeHead(200,{'content-type':'application/json'});res.end('{"ok":true}');
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const address=server.address();if(!address||typeof address==='string')throw Error('SERVER_ADDRESS_REQUIRED');
+  const http=new AgentHttp('http://127.0.0.1:'+address.port,'token',{allowLoopbackHttp:true,paceMs:0});
+  try{
+    mode='empty-504';
+    await assert.rejects(()=>http.request('/batches/abc123/pages/0','PUT',{records:[]}),error=>{
+      assert(error instanceof RemoteError);assert.equal(error.code,'UPSTREAM_TIMEOUT');assert.equal(error.status,504);
+      assert.equal(error.fromJson,false);assert.equal(error.stage,'stage');assert.equal(error.pathCategory,'/batches/:batch/pages/:offset');
+      assert.equal(error.requestId,'req-empty-504');return true;
+    });
+    mode='json-504';
+    await assert.rejects(()=>http.request('/batches/abc123/pages/0','PUT',{records:[]}),error=>{
+      assert(error instanceof RemoteError);assert.equal(error.code,'UPSTREAM_TIMEOUT');assert.equal(error.status,504);
+      assert.equal(error.retryMs,7000);assert.equal(error.fromJson,true);assert.equal(error.requestId,'req-json-504');return true;
+    });
+    mode='custom-504';
+    await assert.rejects(()=>http.request('/batches','POST',{header:{}}),error=>{
+      assert(error instanceof RemoteError);assert.equal(error.code,'QUEUE_OVERLOADED');assert.equal(error.status,504);assert.equal(error.retryMs,9000);return true;
+    });
+    mode='text-502';
+    await assert.rejects(()=>http.request('/batches/abc123/commit','POST'),error=>{
+      assert(error instanceof RemoteError);assert.equal(error.code,'UPSTREAM_UNAVAILABLE');assert.equal(error.status,502);assert.equal(error.retryMs,3000);assert.equal(error.stage,'commit');return true;
+    });
+    mode='html-404';
+    await assert.rejects(()=>http.request('/batches/abc123','GET',undefined,[200,404]),error=>{
+      assert(error instanceof RemoteError);assert.equal(error.code,'INVALID_JSON_RESPONSE');assert.equal(error.status,404);return true;
+    });
+    mode='batch-404';
+    assert.deepEqual(await http.request('/batches/abc123','GET',undefined,[200,404]),{error:'BATCH_NOT_FOUND',requestId:'req-404'});
+    mode='bad-200';
+    await assert.rejects(()=>http.request('/agent','GET'),error=>{
+      assert(error instanceof RemoteError);assert.equal(error.code,'INVALID_JSON_RESPONSE');assert.equal(error.status,200);return true;
+    });
+    mode='huge-200';
+    await assert.rejects(()=>http.request('/agent','GET'),error=>{
+      assert(error instanceof RemoteError);assert.equal(error.code,'RESPONSE_TOO_LARGE');assert.equal(error.status,200);return true;
+    });
+    mode='proxy-413';
+    await assert.rejects(()=>http.request('/batches/abc123/pages/0','PUT',{records:[]}),error=>{
+      assert(error instanceof RemoteError);assert.equal(error.code,'REMOTE_HTTP_ERROR');assert.equal(error.status,413);assert.equal(error.fromJson,false);return true;
+    });
+  }finally{await new Promise(resolve=>server.close(()=>resolve()));}
+}));
+test('empty HTTP 504 and non-JSON proxy 413 keep the pending batch intact and recover cleanly on retry',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Source(home,'claudeCode');const capture=(await scan(home,dir)).captures[0],candidate=buildCandidate(capture,scope(capture),undefined,'timeout-batch-1'),state=new AgentState(join(dir,'state')),service=new f.CompatibleSyncService(join(dir,'cloud.db'));
+  let failMode='empty-504';
+  const server=createServer((req,res)=>{
+    const chunks=[];req.on('data',chunk=>chunks.push(chunk));
+    req.on('end',()=>{
+      const url=req.url??'';
+      if(url.endsWith('/pages/0')&&failMode==='empty-504'){res.writeHead(504,{'x-request-id':'req-stage-504'});res.end();return;}
+      if(url.endsWith('/pages/0')&&failMode==='proxy-413'){res.writeHead(413,{'content-type':'text/html'});res.end('<html>proxy 413</html>');return;}
+      const body=chunks.length?JSON.parse(Buffer.concat(chunks).toString('utf8')):undefined;
+      if(url.endsWith('/scopes/resolve')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(f.resolveScope(service,body,actor)));return;}
+      if(req.method==='GET'&&url.includes('/batches/')){
+        const batch=url.split('/batches/')[1];const receipt=service.receipt(deviceId,batch);
+        if(receipt){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({state:receipt.status,receipt}));return;}
+        res.writeHead(404,{'content-type':'application/json'});res.end(JSON.stringify({error:'BATCH_NOT_FOUND'}));return;
+      }
+      if(req.method==='POST'&&url.endsWith('/batches')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(service.begin(body.header,actor)));return;}
+      if(req.method==='PUT'&&url.includes('/pages/')){
+        const batch=url.split('/batches/')[1].split('/pages/')[0];const offset=Number(url.split('/pages/')[1]);
+        res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({nextOffset:service.stage(deviceId,batch,offset,body.records,actor)}));return;
+      }
+      if(req.method==='POST'&&url.endsWith('/commit')){
+        const batch=url.split('/batches/')[1].split('/commit')[0];
+        res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({receipt:service.commit(deviceId,batch,actor)}));return;
+      }
+      res.writeHead(404,{'content-type':'application/json'});res.end(JSON.stringify({error:'NOT_FOUND'}));
+    });
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const address=server.address();if(!address||typeof address==='string')throw Error('SERVER_ADDRESS_REQUIRED');
+  const http=new AgentHttp('http://127.0.0.1:'+address.port,'token',{allowLoopbackHttp:true,paceMs:0});
+  const engine=new SyncEngine(state,{version:1,endpoint:'http://127.0.0.1:'+address.port,deviceId,home,allowedSources:['claudeCode'],allowLoopbackHttp:true},http,async()=>{throw Error('NO_CAPTURE');});
+  try{
+    state.enqueue(candidate,'signature-504');
+    await engine.flush();
+    let row=state.db.prepare('SELECT state,error,attempts FROM outbox WHERE batch=?').get('timeout-batch-1');
+    assert.equal(row.state,'pending');assert.equal(row.error,'UPSTREAM_TIMEOUT');assert.equal(row.attempts,1);
+    assert.equal(state.status().lastErrorCode,'UPSTREAM_TIMEOUT');
+    assert.equal(state.status().lastErrorDetail.status,504);assert.equal(state.status().lastErrorDetail.stage,'stage');assert.equal(state.status().lastErrorDetail.requestId,'req-stage-504');
+
+    // Non-JSON proxy 413 must not quarantine the batch.
+    failMode='proxy-413';state.db.exec('UPDATE outbox SET next_retry=0');
+    await engine.flush();
+    row=state.db.prepare('SELECT state,error,attempts FROM outbox WHERE batch=?').get('timeout-batch-1');
+    assert.equal(row.state,'pending');assert.equal(row.error,'REMOTE_HTTP_ERROR');assert.equal(row.attempts,2);
+
+    // Once upstream recovers, the exact same batch commits and clears the timeout error.
+    failMode='none';state.db.exec('UPDATE outbox SET next_retry=0');
+    const result=await engine.flush();
+    assert.equal(result.sent,1);assert.equal(state.status().confirmedScopes,1);
+    assert.equal(state.status().lastErrorCode,null);assert.equal(state.status().lastErrorDetail,null);
+    assert.equal(state.db.prepare('SELECT COUNT(*) n FROM outbox').get().n,0);
+  }finally{state.close();service.close();await new Promise(resolve=>server.close(()=>resolve()));}
+}));
+test('lost commit response confirms the original receipt once, and staging resumes from nextOffset without repeating begin',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Source(home,'claudeCode');const capture=(await scan(home,dir)).captures[0],candidate=buildCandidate(capture,scope(capture),undefined,'lost-commit-batch'),state=new AgentState(join(dir,'state')),service=new f.CompatibleSyncService(join(dir,'cloud.db'));
+  let beginCalls=0,commitCalls=0,dropStageOnce=true,dropCommitOnce=true;
+  const server=createServer((req,res)=>{
+    const chunks=[];req.on('data',chunk=>chunks.push(chunk));
+    req.on('end',()=>{
+      const url=req.url??'';const body=chunks.length?JSON.parse(Buffer.concat(chunks).toString('utf8')):undefined;
+      if(url.endsWith('/scopes/resolve')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(f.resolveScope(service,body,actor)));return;}
+      if(req.method==='GET'&&url.includes('/batches/')){
+        const batch=url.split('/batches/')[1];const receipt=service.receipt(deviceId,batch);
+        if(receipt){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({state:receipt.status,receipt}));return;}
+        const staged=service.db.prepare('SELECT next_offset,expires_at FROM sync_staging WHERE device_id=? AND batch_id=?').get(deviceId,batch);
+        if(staged){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({state:'staging',nextOffset:Number(staged.next_offset)}));return;}
+        res.writeHead(404,{'content-type':'application/json'});res.end(JSON.stringify({error:'BATCH_NOT_FOUND'}));return;
+      }
+      if(req.method==='POST'&&url.endsWith('/batches')){beginCalls++;res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(service.begin(body.header,actor)));return;}
+      if(req.method==='PUT'&&url.includes('/pages/')){
+        if(dropStageOnce){dropStageOnce=false;res.writeHead(504);res.end();return;}
+        const batch=url.split('/batches/')[1].split('/pages/')[0];const offset=Number(url.split('/pages/')[1]);
+        res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({nextOffset:service.stage(deviceId,batch,offset,body.records,actor)}));return;
+      }
+      if(req.method==='POST'&&url.endsWith('/commit')){
+        commitCalls++;
+        const batch=url.split('/batches/')[1].split('/commit')[0];
+        const receipt=service.commit(deviceId,batch,actor);
+        if(dropCommitOnce){dropCommitOnce=false;res.writeHead(504);res.end();return;}
+        res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({receipt}));return;
+      }
+      res.writeHead(404,{'content-type':'application/json'});res.end(JSON.stringify({error:'NOT_FOUND'}));
+    });
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const address=server.address();if(!address||typeof address==='string')throw Error('SERVER_ADDRESS_REQUIRED');
+  const http=new AgentHttp('http://127.0.0.1:'+address.port,'token',{allowLoopbackHttp:true,paceMs:0});
+  const engine=new SyncEngine(state,{version:1,endpoint:'http://127.0.0.1:'+address.port,deviceId,home,allowedSources:['claudeCode'],allowLoopbackHttp:true},http,async()=>scan(home,dir));
+  try{
+    // Round 1: cycle captures (with timing metrics), begins batch, hits 504 on stage.
+    const firstRun=await engine.run();
+    assert.equal(typeof firstRun.collectTotalMs,'number');assert.equal(typeof firstRun.uploadMs,'number');
+    assert.equal(typeof firstRun.sourceReports.claudeCode.captureMs,'number');
+    assert.equal(beginCalls,1);assert.equal(commitCalls,0);
+    // Round 2: flush resumes from server staging nextOffset WITHOUT calling POST /batches again, stages, commits on server, then loses commit response (504).
+    state.db.exec('UPDATE outbox SET next_retry=0');
+    await engine.flush();
+    assert.equal(beginCalls,1);assert.equal(commitCalls,1);assert.equal(state.db.prepare("SELECT COUNT(*) n FROM outbox WHERE state='pending'").get().n,1);
+    // Round 3: flush queries original batch receipt via GET, confirms it without calling POST /batches or POST /commit again!
+    state.db.exec('UPDATE outbox SET next_retry=0');
+    const recovered=await engine.flush();
+    assert.equal(recovered.sent,1);assert.equal(beginCalls,1);assert.equal(commitCalls,1);
+    assert.equal(state.status().confirmedScopes,1);assert.equal(state.db.prepare('SELECT COUNT(*) n FROM outbox').get().n,0);
+    assert.equal(service.revision(),1);
+  }finally{state.close();service.close();await new Promise(resolve=>server.close(()=>resolve()));}
+}));
+test('RemoteLink aligns running deadline from server start and releases abandoned expired jobs via /fail',()=>sandbox(async dir=>{
+  const state=new AgentState(join(dir,'state'));
+  const calls=[];
+  const extendedDeadline=new Date(Date.now()+30*60_000).toISOString();
+  const http={request:async(path,method,body)=>{calls.push({path,method,body});
+    if(path.endsWith('/start'))return {job:{status:'running',expiresAt:extendedDeadline}};
+    if(path.endsWith('/fail'))return {job:{status:'expired'}};
+    return {job:{status:'completed',dataRevision:1}};
+  }};
+  const remote=new RemoteLink(state,{version:1,endpoint:'https://synthetic.invalid',deviceId,home:dir,allowedSources:['claudeCode']},http,'unused',()=>{});
+  try{
+    const activeId=randomUUID();
+    state.db.prepare("INSERT INTO remote_jobs(id,expires_at,state) VALUES(?,?,'pending')").run(activeId,Date.now()+60_000);
+    await remote.execute(async()=>{throw new RemoteError('UPLOAD_PENDING',503,1000);});
+    const updated=state.db.prepare('SELECT expires_at FROM remote_jobs WHERE id=?').get(activeId);
+    assert.equal(Number(updated.expires_at),Date.parse(extendedDeadline));
+
+    // Expire the job locally and verify the Agent notifies /fail so the server releases activeKey immediately.
+    state.db.prepare('UPDATE remote_jobs SET expires_at=?,next_retry=0 WHERE id=?').run(Date.now()-1000,activeId);
+    await remote.execute(async()=>{throw Error('MUST_NOT_RUN');});
+    assert(calls.some(c=>c.path==='/agent/jobs/'+activeId+'/fail'&&c.method==='POST'&&c.body.reason==='JOB_EXPIRED'));
+    assert.equal(state.db.prepare('SELECT state FROM remote_jobs WHERE id=?').get(activeId).state,'expired');
+  }finally{state.close();}
+}));

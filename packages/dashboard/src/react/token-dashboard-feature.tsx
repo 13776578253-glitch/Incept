@@ -81,8 +81,12 @@ export function TokenDashboardFeature({
     filteredDaily,
     data,
     isRefreshing,
+    isRemoteSyncing,
+    snapshotLag,
     refreshError,
     refresh,
+    refreshCharts,
+    triggerRemoteSync,
     refreshCycle,
     revalidationCycle,
     viewerRole,
@@ -188,8 +192,12 @@ export function TokenDashboardFeature({
         diagnosticsAlertCount={diagnosticsAlertCount}
         data={data}
         isRefreshing={isRefreshing}
+        isRemoteSyncing={isRemoteSyncing}
+        snapshotLag={snapshotLag}
         refreshError={refreshError}
         onRefresh={refresh}
+        onRefreshCharts={refreshCharts}
+        onTriggerRemoteSync={triggerRemoteSync}
         refreshCycle={refreshCycle}
         isPollingPaused={isPollingPaused}
         hasSnapshot={hasSnapshot}

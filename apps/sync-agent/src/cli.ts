@@ -149,11 +149,21 @@ async function main(){
   state.db.exec("UPDATE commands SET state='pending' WHERE state='running'");
   const tick=()=>{const parent=Number(process.env.INCEPT_AGENT_SUPERVISOR_PID);if(Number.isSafeInteger(parent)&&parent>0){try{process.kill(parent,0);}catch{stop();return;}}state.set('heartbeat',{pid:process.pid,at:Date.now(),rssBytes:process.memoryUsage().rss,cpu:process.cpuUsage()});publishStatus(state);const commands=state.db.prepare("SELECT id,kind FROM commands WHERE state='pending'").all();
     if(commands.some(c=>c.kind==='stop')){state.db.prepare("UPDATE commands SET state='done' WHERE kind='stop'").run();stop();return;}
-    if(job||stopping)return;const paused=state.get<boolean>('paused')===true;if(paused&&!commands.some(c=>c.kind==='sync'))return;void remote?.discover();if(Date.now()<next&&!commands.length&&!remote?.hasPending())return;
+    if(job||stopping)return;const paused=state.get<boolean>('paused')===true;if(paused&&!commands.some(c=>c.kind==='sync'))return;void remote?.discover();
+    const dueCycle=Date.now()>=next||commands.length>0||Boolean(remote?.hasPending());
+    if(!dueCycle){
+      // Prioritize flushing due pending outbox batches without re-scanning all source files.
+      if(state.pending().length){
+        log('FLUSHING_PENDING');
+        job=engine.flush(abort.signal).then(()=>{log('FLUSH_FINISHED');}).catch(()=>{state.set('lastErrorCode','CYCLE_FAILED');state.set('lastErrorAt',new Date().toISOString());log('CYCLE_FAILED');}).finally(()=>{job=undefined;});
+      }
+      return;
+    }
     state.db.prepare("DELETE FROM commands WHERE state IN ('done','failed') AND at<?").run(Date.now()-86400000);state.db.prepare("UPDATE commands SET state='running' WHERE state='pending' AND kind='sync'").run();
     next=Date.now()+300000;log('COLLECTING');job=(remote?.hasPending()?remote.execute(()=>engine.run(abort.signal)):engine.run(abort.signal)).then(()=>{log('CYCLE_FINISHED');state.db.prepare("UPDATE commands SET state='done' WHERE state='running'").run();
-      const networkRetry=state.get('lastErrorCode')==='NETWORK_UNAVAILABLE'||!!state.db.prepare("SELECT 1 FROM outbox WHERE state='pending' AND error='NETWORK_UNAVAILABLE' LIMIT 1").get();
-      if(networkRetry){next=Date.now()+30000;log('NETWORK_RETRY_SCHEDULED');}}).catch(()=>{state.set('lastErrorCode','CYCLE_FAILED');state.set('lastErrorAt',new Date().toISOString());log('CYCLE_FAILED');state.db.prepare("UPDATE commands SET state='failed' WHERE state='running'").run();}).finally(()=>{job=undefined;});};
+      const retryableErrors=['NETWORK_UNAVAILABLE','UPSTREAM_TIMEOUT','UPSTREAM_UNAVAILABLE','RATE_LIMITED','QUEUE_FULL','BACKEND_UNAVAILABLE'];
+      const hasRetryablePending=retryableErrors.includes(String(state.get('lastErrorCode')??''))||!!state.db.prepare("SELECT 1 FROM outbox WHERE state='pending' LIMIT 1").get();
+      if(hasRetryablePending){log('PENDING_RETRY_SCHEDULED');}}).catch(()=>{state.set('lastErrorCode','CYCLE_FAILED');state.set('lastErrorAt',new Date().toISOString());log('CYCLE_FAILED');state.db.prepare("UPDATE commands SET state='failed' WHERE state='running'").run();}).finally(()=>{job=undefined;});};
   try{
     if(command==='flush'){const result=await engine.flush(abort.signal);output(result);if(state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}
     else if(command==='run-once'){const result=await engine.run(abort.signal);output(result);if(result&&typeof result==='object'&&'outcome' in result&&result.outcome==='source_failed'||state.pending().length||state.db.prepare('SELECT 1 FROM outbox LIMIT 1').get())process.exitCode=2;}

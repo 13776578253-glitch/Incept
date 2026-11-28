@@ -27,8 +27,8 @@ export function exactFields(value:Record<string,unknown>,allowed:string[]) {
 export function safeId(value:unknown):string {
   if(typeof value!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(value))throw new SyncTransportError('INVALID_ID',400,0);return value;
 }
-export function response(value:unknown,status=200,requestId=randomUUID(),retryAfter?:number) {
-  return Response.json({...value as object,requestId},{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(retryAfter?{'Retry-After':String(retryAfter)}:{})}});
+export function response(value:unknown,status=200,requestId:string=randomUUID(),retryAfter?:number) {
+  return Response.json({...value as object,requestId},{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Request-ID':requestId,...(retryAfter?{'Retry-After':String(retryAfter)}:{})}});
 }
 export class DeviceRequestLimiter {
   private buckets=new Map<string,{count:number;until:number}>();

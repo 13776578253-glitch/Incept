@@ -46,12 +46,19 @@ it('returns 503 when the trusted snapshot is unavailable and never falls back to
   expect(execute).not.toHaveBeenCalled();
 });
 
-it('refuses a snapshot below the requested minimum revision',async()=>{
+it('refuses a snapshot below the requested minimum revision with retryable SNAPSHOT_UPDATING metadata',async()=>{
   mocks.readSnapshot.mockResolvedValue(snapshot(2));
   const response=await syncUsageGet(request('?minRevision=3'),'session',executor,'v2');
   expect(response.status).toBe(503);
+  expect(response.headers.get('Retry-After')).toBe('3');
+  expect(await response.json()).toEqual({error:'SNAPSHOT_UPDATING',targetRevision:3,publishedRevision:2,retryAfterSeconds:3});
   expect(mocks.readSnapshot).toHaveBeenCalledWith('30d',{waitForFresh:true});
   expect(execute).not.toHaveBeenCalled();
+
+  mocks.readSnapshot.mockClear();
+  const nonBlocking=await syncUsageGet(request('?minRevision=3&wait=0'),'session',executor,'v2');
+  expect(nonBlocking.status).toBe(503);
+  expect(mocks.readSnapshot).toHaveBeenCalledWith('30d',{waitForFresh:false});
 });
 
 it('keeps shadow mode on the live projection path for comparison',async()=>{

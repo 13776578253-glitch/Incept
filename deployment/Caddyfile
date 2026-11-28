@@ -139,4 +139,42 @@ https://{$INCEPT_DOMAIN} {
 			import incept-upstream
 		}
 	}
+	handle_errors {
+		@sync_api_504 {
+			path /api/dashboard/sync /api/dashboard/sync/*
+			expression {err.status_code} == 504
+		}
+		handle @sync_api_504 {
+			header Content-Type "application/json; charset=utf-8"
+			header Cache-Control "no-store"
+			header X-Content-Type-Options "nosniff"
+			header X-Request-ID "{http.request.uuid}"
+			header Retry-After "5"
+			respond `{"error":"UPSTREAM_TIMEOUT","status":504,"requestId":"{http.request.uuid}"}` 504
+		}
+		@sync_api_502 {
+			path /api/dashboard/sync /api/dashboard/sync/*
+			expression {err.status_code} == 502
+		}
+		handle @sync_api_502 {
+			header Content-Type "application/json; charset=utf-8"
+			header Cache-Control "no-store"
+			header X-Content-Type-Options "nosniff"
+			header X-Request-ID "{http.request.uuid}"
+			header Retry-After "5"
+			respond `{"error":"UPSTREAM_UNAVAILABLE","status":502,"requestId":"{http.request.uuid}"}` 502
+		}
+		@sync_api_503 {
+			path /api/dashboard/sync /api/dashboard/sync/*
+			expression {err.status_code} == 503
+		}
+		handle @sync_api_503 {
+			header Content-Type "application/json; charset=utf-8"
+			header Cache-Control "no-store"
+			header X-Content-Type-Options "nosniff"
+			header X-Request-ID "{http.request.uuid}"
+			header Retry-After "5"
+			respond `{"error":"UPSTREAM_UNAVAILABLE","status":503,"requestId":"{http.request.uuid}"}` 503
+		}
+	}
 }

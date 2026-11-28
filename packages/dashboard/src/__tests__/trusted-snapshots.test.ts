@@ -241,3 +241,87 @@ it('receipt ACK completes while display publication is pending; the public API t
   expect(JSON.stringify(result)).not.toContain(device.deviceId);
   expect((await cache.readDashboardSnapshot('all'))?.sync?.dataRevision).toBe(version().revision);
 });
+
+it('shares snapshot scheduling across separate module instances so each revision publishes only once', async () => {
+  const execute = vi.fn<(work: SyncWork) => Promise<unknown>>(async work => batch(work));
+  const listeners: Array<() => void> = [];
+  const sharedExecutor = {
+    path: database,
+    execute,
+    onCommitted: vi.fn((fn: () => void) => {
+      listeners.push(fn);
+      return () => {
+        const index = listeners.indexOf(fn);
+        if (index >= 0) listeners.splice(index, 1);
+      };
+    }),
+  } as unknown as SyncExecutor;
+
+  // Simulate separate Next.js SSR and API Turbopack module graphs sharing one SyncExecutor.
+  const apiStore = await import('../adapters/runtime/snapshot-store');
+  apiStore.configureTrustedDashboardExecutor(sharedExecutor);
+  vi.resetModules();
+  const ssrStore = await import('../adapters/runtime/snapshot-store');
+  ssrStore.configureTrustedDashboardExecutor(sharedExecutor);
+
+  expect(sharedExecutor.onCommitted).toHaveBeenCalledTimes(1);
+  expect(listeners).toHaveLength(1);
+
+  revision(1);
+  for (const listener of listeners) listener();
+
+  await vi.waitFor(() => expect(execute).toHaveBeenCalledTimes(1), { timeout: 3_000, interval: 25 });
+  expect(execute.mock.calls[0][0]).toMatchObject({ op: 'projection-snapshots', revision: 1 });
+
+  // Concurrent and repeated refreshes at the same revision across both module instances must be no-ops.
+  await Promise.all([
+    apiStore.refreshTrustedDashboardSnapshots(),
+    ssrStore.refreshTrustedDashboardSnapshots(),
+  ]);
+  expect(execute).toHaveBeenCalledTimes(1);
+  expect((await apiStore.readDashboardSnapshot('all'))?.sync?.dataRevision).toBe(1);
+  expect((await ssrStore.readDashboardSnapshot('all'))?.sync?.dataRevision).toBe(1);
+});
+
+it('runs projection-snapshots on a dedicated read-only worker without blocking concurrent uploads', async () => {
+  const executor = new SyncExecutor(database, { trusted: true }); workers.push(executor);
+  const device = { role: 'device' as const, deviceId: 'synthetic-concurrent-device' };
+  const scope = { deviceId: device.deviceId, source: 'claudeCode' as const, sessionId: 'synthetic-concurrent-session', originId: 'synthetic-concurrent-origin' };
+  const owner = { role: 'owner' as const, subject: 'fixture', reason: 'read-only worker isolation test' };
+  const candidate = fromEvents([{ eventId: hash('concurrent-event-1'), source: scope.source, sessionId: scope.sessionId, timestampMs: Date.parse('2026-10-01T00:00:00Z'),
+    modelName: 'phase0-fixture-model', projectKey: 'synthetic', projectName: 'Synthetic', inputTokens: 150, outputTokens: 50,
+    cacheReadTokens: 0, cacheCreationTokens: 0, reasoningTokens: 0 }], scope, undefined, 'concurrent-batch-1');
+  await executor.execute({ op: 'register', scope, label: 'Synthetic', actor: owner });
+
+  // Hold a projection-snapshots job in the dedicated read-only projection lane.
+  let releaseProjection!: () => void;
+  const ver = version();
+  const projectionPromise = executor.execute<Record<string, TokenDashboardData>>(
+    { op: 'projection-snapshots', home, revision: ver.revision, identity: ver.identity, now: Date.now(), actor: owner },
+    () => new Promise<void>(resolve => { releaseProjection = resolve; }),
+  );
+  await vi.waitFor(() => expect(executor.state().projectionRunning).toBe(true));
+
+  // While projection is actively held on the read-only lane, begin/stage/commit MUST proceed immediately.
+  const beginRes = await executor.execute({ op: 'begin', header: candidate.header, actor: device });
+  expect(beginRes).toBeTruthy();
+  const stageRes = await executor.execute<{ nextOffset: number }>({ op: 'stage', device: device.deviceId, batch: candidate.header.batchId, offset: 0, records: candidate.records, actor: device });
+  expect(stageRes.nextOffset).toBe(1);
+  const commitRes = await executor.execute<{ receipt: { status: string; dataRevision: number } }>({ op: 'commit', device: device.deviceId, batch: candidate.header.batchId, actor: device });
+  expect(commitRes.receipt.status).toBe('committed');
+  expect(commitRes.receipt.dataRevision).toBe(1);
+
+  // Release the held rev-0 projection (which cleanly detects SNAPSHOT_VERSION_CHANGED because rev moved to 1).
+  releaseProjection();
+  await expect(projectionPromise).rejects.toThrow('SNAPSHOT_VERSION_CHANGED');
+
+  // Now run a fresh single-read 4-window projection at rev 1 on the read-only worker.
+  const latest = version();
+  const snapshots = await executor.execute<Record<string, TokenDashboardData>>({
+    op: 'projection-snapshots', home, revision: latest.revision, identity: latest.identity, now: Date.now(), actor: owner,
+  });
+  for (const range of usageRanges) {
+    expect(snapshots[range]?.sync?.dataRevision).toBe(1);
+  }
+  expect(snapshots.all?.totals.totalTokens).toBe(200);
+});

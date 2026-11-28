@@ -14,7 +14,7 @@ export async function requireSyncOwner(sessionId:string,tx:Prisma.TransactionCli
 export async function expireJobs(deviceId?:string){
   const now=new Date();
   await prisma.syncJob.updateMany({where:{...(deviceId?{deviceId}:{}),status:{in:['queued','dispatched']},expiresAt:{lte:now}},data:{status:'expired',activeKey:null,finishedAt:now,errorCode:'JOB_EXPIRED'}});
-  await prisma.syncJob.updateMany({where:{...(deviceId?{deviceId}:{}),status:'running',startedAt:{lte:new Date(now.getTime()-JOB_RUNNING_GRACE_MS)}},data:{status:'expired',activeKey:null,finishedAt:now,errorCode:'JOB_EXPIRED'}});
+  await prisma.syncJob.updateMany({where:{...(deviceId?{deviceId}:{}),status:'running',OR:[{expiresAt:{lte:now}},{startedAt:{lte:new Date(now.getTime()-JOB_RUNNING_GRACE_MS)}}]},data:{status:'expired',activeKey:null,finishedAt:now,errorCode:'JOB_EXPIRED'}});
 }
 export async function createSyncJob(sessionId:string,deviceId:string,idempotencyKey:string,online:boolean){
   ensure(isSyncJobId(deviceId)&&isSyncJobId(idempotencyKey),'INVALID_JOB_REQUEST',400);
@@ -35,7 +35,32 @@ export async function deviceJob(id:string,identity:AgentIdentity,tx:Prisma.Trans
   const job=await tx.syncJob.findFirst({where:{id,deviceId:identity.deviceId,ownerAccountId:identity.ownerAccountId}});ensure(job,'JOB_NOT_FOUND',404);
   ensure(job!.credentialVersion===identity.version&&job!.policyHash===policyHash(identity.allowedSources),'JOB_AUTH_CHANGED',403);return job!;
 }
-export async function beginSyncJob(id:string,identity:AgentIdentity,revision:number){await expireJobs(identity.deviceId);return prisma.$transaction(async tx=>{await tx.$queryRaw`SELECT id FROM sync_jobs WHERE id=${id}::uuid FOR UPDATE`;const job=await deviceJob(id,identity,tx);ensure(activeJobStates.includes(job.status)&&job.expiresAt>new Date(),'JOB_TERMINAL');if(job.status==='running')return publicJob(job);return publicJob(await tx.syncJob.update({where:{id},data:{status:'running',startedAt:new Date(),startRevision:BigInt(revision)}}));});}
+export async function beginSyncJob(id:string,identity:AgentIdentity,revision:number){
+  await expireJobs(identity.deviceId);
+  return prisma.$transaction(async tx=>{
+    await tx.$queryRaw`SELECT id FROM sync_jobs WHERE id=${id}::uuid FOR UPDATE`;
+    const job=await deviceJob(id,identity,tx);
+    ensure(activeJobStates.includes(job.status)&&job.expiresAt>new Date(),'JOB_TERMINAL');
+    if(job.status==='running')return publicJob(job);
+    const startedAt=new Date();
+    // Align the running deadline returned to the Agent with the server's running grace window.
+    const runningExpiresAt=new Date(Math.max(job.expiresAt.getTime(),startedAt.getTime()+JOB_RUNNING_GRACE_MS));
+    return publicJob(await tx.syncJob.update({where:{id},data:{status:'running',startedAt,startRevision:BigInt(revision),expiresAt:runningExpiresAt}}));
+  });
+}
+export async function abandonSyncJob(id:string,identity:AgentIdentity,reason='JOB_EXPIRED'){
+  const safeReason=/^[A-Z][A-Z0-9_]{0,60}$/.test(reason)?reason:'JOB_EXPIRED';
+  return prisma.$transaction(async tx=>{
+    await tx.$queryRaw`SELECT id FROM sync_jobs WHERE id=${id}::uuid FOR UPDATE`;
+    const job=await deviceJob(id,identity,tx),device=await tx.agentDevice.findUnique({where:{id:identity.deviceId}});
+    ensure(device&&!device.revokedAt&&device.credentialVersion===identity.version&&policyHash(device.allowedSources)===job.policyHash,'JOB_AUTH_CHANGED',403);
+    if(!activeJobStates.includes(job.status))return publicJob(job);
+    const status=safeReason==='JOB_EXPIRED'?'expired':'failed';
+    const updated=await tx.syncJob.update({where:{id},data:{status,activeKey:null,finishedAt:new Date(),errorCode:safeReason}});
+    await tx.securityAudit.create({data:{actorId:identity.deviceId,action:'sync.job.abandon',targetId:id,result:status}});
+    return publicJob(updated);
+  });
+}
 export type JobCompletion={scanId:string;collectedAt:string;issues:number;pending:number;review:number;batches:string[];lineageHash:string;
   reviewTotal?:number;reviewNew?:number;held?:number;warnings?:number;blockingIssues?:number;newTokens?:number};
 export type NormalizedJobStatus={status:'completed'|'completed_no_change'|'partial'|'review_required';reviewTotal:number;reviewNew:number;held:number;warnings:number;blockingIssues:number;newTokens:number};

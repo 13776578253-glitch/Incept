@@ -3,8 +3,7 @@
 import { useTranslations } from 'next-intl';
 import type { TokenDashboardData } from '../../domain';
 import { formatDateTimeShort } from '../formatters';
-import { DASHBOARD_REFRESH_INTERVAL } from '../hooks/use-dashboard-window';
-import type { DashboardWindow } from '../hooks/use-dashboard-window';
+import { DASHBOARD_REFRESH_INTERVAL, type DashboardWindow, type SnapshotLagState } from '../hooks/use-dashboard-window';
 import type { RemoteStatus } from '../hooks/remote-refresh';
 import { IconRefresh } from '../sections/workbench/workbench-icons';
 
@@ -20,8 +19,12 @@ type DashboardToolbarProps = {
   diagnosticsAlertCount?: number;
   data: TokenDashboardData;
   isRefreshing: boolean;
+  isRemoteSyncing?: boolean;
+  snapshotLag?: SnapshotLagState | null;
   refreshError: boolean;
   onRefresh: () => void;
+  onRefreshCharts?: () => void;
+  onTriggerRemoteSync?: () => void;
   refreshCycle: number;
   isPollingPaused: boolean;
   onOpenImport?: () => void;
@@ -47,8 +50,12 @@ export function DashboardToolbar({
   diagnosticsAlertCount = 0,
   data,
   isRefreshing,
+  isRemoteSyncing = false,
+  snapshotLag = null,
   refreshError,
   onRefresh,
+  onRefreshCharts,
+  onTriggerRemoteSync,
   refreshCycle,
   isPollingPaused,
   hasSnapshot = true,
@@ -62,6 +69,9 @@ export function DashboardToolbar({
   const t = useTranslations('dashboard');
   const selectedDevice = remoteInfo?.devices.find((d) => d.id === remoteDevice);
   const job = selectedDevice?.lastJob;
+  const chartRevision = data.sync?.readMode === 'v2' && typeof data.sync.dataRevision === 'number'
+    ? data.sync.dataRevision
+    : undefined;
   // "offline" describes the remote link, not the device, so it gets its own wording.
   const phaseLabel = (state?: string) =>
     t(state === 'offline' ? 'remote.unreachable' : 'remote.' + (state || 'idle'));
@@ -75,24 +85,34 @@ export function DashboardToolbar({
   const needsRemoteAttention =
     Boolean(remoteInfo) &&
     (remoteState === 'needs_review' ||
+      remoteState === 'review_required' ||
       remoteState === 'failed' ||
       remoteState === 'offline' ||
       !selectedDevice?.online);
-  const refreshAriaLabel =
-    isRefreshing && remoteInfo && remoteState
-      ? phaseLabel(remoteState)
-      : t(isRefreshing ? 'page.refreshing' : 'page.refresh');
+  const remoteBusy = isRemoteSyncing || (Boolean(remoteInfo) && isRefreshing && ['requesting', 'collecting', 'uploading', 'committing', 'reading'].includes(remoteState ?? ''));
+  const remoteActionLabel = remoteBusy
+    ? phaseLabel(remoteState)
+    : remoteState === 'still_syncing'
+      ? t('remote.still_syncing')
+      : remoteState === 'updating_charts'
+        ? t('remote.updating_charts')
+        : t('remote.collectNow');
+  const chartRefreshAriaLabel = remoteInfo
+    ? t(isRefreshing && !remoteBusy ? 'page.refreshing' : 'page.refreshCharts')
+    : t(isRefreshing ? 'page.refreshing' : 'page.refresh');
   const updatedTimeLabel = t('page.updatedAt', {
     time: data.updatedAt ? formatDateTimeShort(data.updatedAt) : '—',
   });
   const refreshIntervalSeconds = Math.max(1, Math.round(refreshInterval / 1000));
-  const updateStateLine = showingHistory
-    ? t('page.showingHistory')
-    : isRefreshing
-      ? t('page.refreshing')
-      : isPollingPaused
-        ? t('page.autoRefreshPaused')
-        : t('page.autoRefreshInterval', { seconds: refreshIntervalSeconds });
+  const updateStateLine = snapshotLag
+    ? t('remote.updating_charts')
+    : showingHistory
+      ? t('page.showingHistory')
+      : isRefreshing
+        ? t('page.refreshing')
+        : isPollingPaused
+          ? t('page.autoRefreshPaused')
+          : t('page.autoRefreshInterval', { seconds: refreshIntervalSeconds });
 
   return (
     <header className="pb-3.5">
@@ -279,6 +299,16 @@ export function DashboardToolbar({
                       {job?.newTokens ? ` · +${job.newTokens} tokens` : ''}
                     </span>
                   </div>
+                  {chartRevision !== undefined || snapshotLag ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{t('remote.chartRevision')} </span>
+                      <span className="font-mono text-[var(--color-text)]">
+                        {snapshotLag
+                          ? `rev ${snapshotLag.publishedRevision} → ${snapshotLag.targetRevision}`
+                          : `rev ${chartRevision}`}
+                      </span>
+                    </div>
+                  ) : null}
                   {historyReviews > 0 ? (
                     <div className="flex items-center justify-between gap-3 text-[var(--badge-amber-fg)]">
                       <span>{t('remote.historyReviews')} </span>
@@ -295,6 +325,19 @@ export function DashboardToolbar({
                   ) : null}
                 </div>
               </div>
+            ) : null}
+
+            {remoteInfo ? (
+              <button
+                type="button"
+                aria-label={remoteActionLabel}
+                title={remoteActionLabel}
+                onClick={onTriggerRemoteSync ?? onRefresh}
+                disabled={remoteBusy}
+                className="dashboard-refresh-button cursor-pointer"
+              >
+                <span>{remoteActionLabel}</span>
+              </button>
             ) : null}
 
             {onOpenDiagnostics ? (
@@ -319,13 +362,13 @@ export function DashboardToolbar({
 
             <button
               type="button"
-              aria-label={refreshAriaLabel}
-              title={refreshAriaLabel}
-              onClick={onRefresh}
-              disabled={isRefreshing}
+              aria-label={chartRefreshAriaLabel}
+              title={chartRefreshAriaLabel}
+              onClick={remoteInfo ? (onRefreshCharts ?? onRefresh) : onRefresh}
+              disabled={isRefreshing && !remoteBusy}
               className="dashboard-refresh-icon-btn cursor-pointer"
             >
-              <IconRefresh className={isRefreshing ? 'size-3.5 animate-spin' : 'size-3.5'} />
+              <IconRefresh className={isRefreshing && !remoteBusy ? 'size-3.5 animate-spin' : 'size-3.5'} />
             </button>
           </div>
         </div>

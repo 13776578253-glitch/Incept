@@ -48,8 +48,10 @@ export class SyncEngine {
     const policyFor=(source:string,sessionId:string)=>historicalPolicies.find(policy=>policy.source===source&&policy.sessionId===sessionId);
     const supersededFor=(source:string,sessionId:string)=>supersededScopes.find(item=>item.source===source&&item.sessionId===sessionId);
     const currentPolicies=this.state.parents().filter(parent=>this.state.isHistoricalPolicyCurrent(parent,this.config.deviceId));
-    const sourceReports:Record<string,{capturedSessions:number;isolatedSessions:number;sealedSessions?:number;heldHistoricalSessions?:number;failed:boolean;changedSessions?:number;outcome?:string}>={};
+    const sourceReports:Record<string,{capturedSessions:number;isolatedSessions:number;sealedSessions?:number;heldHistoricalSessions?:number;failed:boolean;changedSessions?:number;outcome?:string;captureMs?:number}>={};
+    const collectStartedAt=Date.now();
     for(const source of this.config.allowedSources){
+      const sourceStartedAt=Date.now();
       try{const part=await this.collect(this.config.home,[source],this.state.parents(),signal,{tolerantIncomplete:false,recoveryRanges:this.state.recoveryRanges(),autoReviewSessions:this.config.autoReviewSessions});
         const restricted=(sessionId:string)=>!!policyFor(source,sessionId)||!!supersededFor(source,sessionId);
         const healthy=part.captures.filter(c=>!restricted(c.sessionId));
@@ -60,10 +62,12 @@ export class SyncEngine {
         sourceReports[source]={capturedSessions:healthy.length,isolatedSessions:new Set(isolations.map(item=>item.sessionId)).size,
           sealedSessions:currentPolicies.filter(parent=>parent.header.manifest.scope.source===source&&policyFor(source,parent.header.manifest.scope.sessionId)?.disposition!=='isolated').length,
           heldHistoricalSessions:currentPolicies.filter(parent=>parent.header.manifest.scope.source===source&&policyFor(source,parent.header.manifest.scope.sessionId)?.disposition==='isolated').length,
-          failed:classifyIssues(part.issues,[source]).blocking.length>0||!healthy.length&&isolations.some(item=>!restricted(item.sessionId))};
+          failed:classifyIssues(part.issues,[source]).blocking.length>0||!healthy.length&&isolations.some(item=>!restricted(item.sessionId)),
+          captureMs:Date.now()-sourceStartedAt};
       }
-      catch{if(signal?.aborted)break;captured.issues.push(source+':COLLECTOR_FAILED');sourceReports[source]={capturedSessions:0,isolatedSessions:0,failed:true};}
+      catch{if(signal?.aborted)break;captured.issues.push(source+':COLLECTOR_FAILED');sourceReports[source]={capturedSessions:0,isolatedSessions:0,failed:true,captureMs:Date.now()-sourceStartedAt};}
     }
+    const collectTotalMs=Date.now()-collectStartedAt;
     this.state.set('lastCollectedAt',new Date().toISOString());this.state.set('issues',[...new Set(captured.issues)]);
     const reviewBefore=new Set(this.state.reviewBatches());
     const seen=new Set<string>(),allSeen=new Set(captured.captures.map(c=>scopeKey(c.source,c.sessionId))),oldParents=this.state.parents();
@@ -139,7 +143,9 @@ export class SyncEngine {
     if(missing.length!==unexpectedMissing.length)this.state.set('issues',[...(this.state.get<string[]>('issues')??[]),...new Set(missing.filter(parent=>!unexpectedMissing.includes(parent)).map(parent=>parent.header.manifest.scope.source+':ISOLATED_ORIGIN_RETAINED'))]);
     // Offline captures above are durable BEFORE any network operation. Planned
     // outbox parents do not advance the separate confirmed lineage table.
+    const uploadStartedAt=Date.now();
     const {sent,newTokens,uploadedTokens}=await this.upload(signal);
+    const uploadMs=Date.now()-uploadStartedAt;
     const issues=this.state.get<string[]>('issues')??[],classified=classifyIssues(issues,this.config.allowedSources);
     for(const source of this.config.allowedSources)if(sourceReports[source])sourceReports[source].isolatedSessions=new Set([...captured.isolations,...this.state.sessionIsolations().filter(item=>item.active)].filter(item=>item.source===source).map(item=>item.sessionId)).size;
     const reviewTotal=this.state.reviewCount(),reviewNew=this.state.reviewBatches().filter(batch=>!reviewBefore.has(batch)).length;
@@ -152,9 +158,9 @@ export class SyncEngine {
     }
     const failed=Object.values(sourceReports).some(report=>report.outcome==='source_failed'),healthy=Object.values(sourceReports).some(report=>report.capturedSessions>0);
     const outcome=failed&&!healthy||uploadIncomplete&&!sent?'source_failed':currentPolicies.some(parent=>this.config.allowedSources.includes(parent.header.manifest.scope.source))||this.state.sessionIsolations().some(item=>item.active&&this.config.allowedSources.includes(item.source))||failed||classified.blocking.length||reviewTotal||uploadIncomplete?'partial_success':sent?'complete_success':'no_change';
-    this.state.set('lastCollectionReport',{outcome,sourceReports,quarantineNew,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null});
+    this.state.set('lastCollectionReport',{outcome,sourceReports,quarantineNew,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null,collectTotalMs,uploadMs});
     return {sent,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null,reviewTotal,reviewNew,held:this.state.heldCount(),warnings:classified.warnings.length,blockingIssues:classified.blocking.length+(failed?1:0)+(lineage||quarantined?1:0),
-      outcome,quarantineNew,sourceReports,...this.state.status()};
+      outcome,quarantineNew,sourceReports,collectTotalMs,uploadMs,...this.state.status()};
   }
   private async upload(signal?:AbortSignal){
     this.state.set('activity','uploading');let sent=0,newTokens:number|null=0,uploadedTokens=0;
@@ -165,12 +171,13 @@ export class SyncEngine {
     for(let round=0;round<100&&!signal?.aborted;round++){
       const pending=this.state.pending();if(!pending.length)break;let progress=false;
       for(const row of pending){const header=JSON.parse(String(row.header_json)),batch=String(row.batch),base='/batches/'+batch;
-        const acknowledgeCommitted=async(receipt:any)=>{
-          const confirmed=await this.http.request(base);if(!confirmed.receipt||hash(confirmed.receipt)!==hash(receipt))throw Error('RECEIPT_MISMATCH');
+        const acknowledgeCommitted=async(receipt:any,alreadyConfirmedFromStatus=false)=>{
+          const confirmed=alreadyConfirmedFromStatus?{receipt}:await this.http.request(base);
+          if(!confirmed.receipt||hash(confirmed.receipt)!==hash(receipt))throw Error('RECEIPT_MISMATCH');
           const tokens=this.state.batchTokens(batch),previousTokens=this.state.confirmedTokenTotal(String(row.scope))??(header.manifest.parent?undefined:0);
           this.state.acknowledge(batch,confirmed.receipt);uploadedTokens+=tokens;
           if(previousTokens===undefined)newTokens=null;else if(newTokens!==null)newTokens+=tokens-previousTokens;
-          this.state.set('lastReportAt',new Date().toISOString());this.state.set('lastErrorCode',null);sent++;progress=true;
+          this.state.set('lastReportAt',new Date().toISOString());this.state.set('lastErrorCode',null);this.state.set('lastErrorDetail',null);sent++;progress=true;
         };
         try{
           if(!row.admitted){const admission=await this.http.request('/scopes/resolve','POST',{source:header.manifest.scope.source,sessionId:header.manifest.scope.sessionId});
@@ -183,13 +190,16 @@ export class SyncEngine {
           if(status.receipt){
             if(status.receipt.status==='review-required'){this.state.markReviewRequired(batch,status.receipt,status.receipt.code);progress=true;continue;}
             if(status.receipt.status!=='committed')throw new RemoteError('INVALID_RECEIPT_STATUS',502);
-            await acknowledgeCommitted(status.receipt);continue;
+            await acknowledgeCommitted(status.receipt,true);continue;
           }
-          status=await this.http.request('/batches','POST',{header});
-          if(status.receipt){
-            if(status.receipt.status==='review-required'){this.state.markReviewRequired(batch,status.receipt,status.receipt.code);progress=true;continue;}
-            if(status.receipt.status!=='committed')throw new RemoteError('INVALID_RECEIPT_STATUS',502);
-            await acknowledgeCommitted(status.receipt);continue;
+          // Resume staging directly from the server's nextOffset when the original batch is already open.
+          if(status.state!=='staging'||typeof status.nextOffset!=='number'){
+            status=await this.http.request('/batches','POST',{header});
+            if(status.receipt){
+              if(status.receipt.status==='review-required'){this.state.markReviewRequired(batch,status.receipt,status.receipt.code);progress=true;continue;}
+              if(status.receipt.status!=='committed')throw new RemoteError('INVALID_RECEIPT_STATUS',502);
+              await acknowledgeCommitted(status.receipt);continue;
+            }
           }
           let offset=status.nextOffset??0;
           if(!Number.isSafeInteger(offset)||offset<0||offset>header.manifest.recordCount)throw Error('INVALID_REMOTE_OFFSET');
@@ -201,11 +211,12 @@ export class SyncEngine {
           await acknowledgeCommitted(committed);
         }catch(error){const remote=error instanceof RemoteError?error:undefined,code=remote?.code??(error instanceof Error?error.message:'LOCAL_SYNC_FAILED');
           const retry=Math.max(remote?.retryMs??0,Math.min(300000,1000*2**Math.min(Number(row.attempts),8))*(1+Math.random()*.2));
-          if(remote&&[400,413].includes(remote.status)){this.state.quarantine(batch,code);progress=true;continue;}
-          if(remote&&remote.status===409){this.state.markLineageRecovery(batch,code);progress=true;continue;}
+          if(remote)this.state.set('lastErrorDetail',{code,status:remote.status,fromJson:remote.fromJson,stage:remote.stage??null,pathCategory:remote.pathCategory??null,durationMs:remote.durationMs??null,requestId:remote.requestId??null,retryMs:Math.round(retry),at:new Date().toISOString()});
+          if(remote&&remote.fromJson&&[400,413].includes(remote.status)){this.state.quarantine(batch,code);progress=true;continue;}
+          if(remote&&remote.fromJson&&remote.status===409){this.state.markLineageRecovery(batch,code);progress=true;continue;}
           if(code==='RECEIPT_MISMATCH'||code==='REVIEW_RECEIPT_MISMATCH'){this.state.quarantine(batch,code);progress=true;continue;}
           if(code==='LOCAL_PARENT_MISMATCH'||code==='LOCAL_LINEAGE_RECOVERY_REQUIRED'){this.state.markLineageRecovery(batch,code);progress=true;continue;}
-          this.state.fail(batch,code,false,retry);if(remote?.status===401||remote?.status===403||remote?.status===429||remote?.status===503)break;
+          this.state.fail(batch,code,false,retry);if(remote?.status===401||remote?.status===403||remote?.status===429||remote?.status===502||remote?.status===503||remote?.status===504)break;
         }
       }if(!progress)break;
     }

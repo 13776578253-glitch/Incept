@@ -161,6 +161,26 @@ namespace InceptSync
         public static string AttentionLineage { get { return Locale.Pick("历史谱系冲突", "Lineage conflict"); } }
         public static string StateOffline { get { return Locale.Pick("未运行", "Not running"); } }
         public static string UnknownError { get { return Locale.Pick("未知错误", "Unknown error"); } }
+        public static string ErrorUpstreamTimeout { get { return Locale.Pick("上传超时，等待重试", "Upload timed out, waiting to retry"); } }
+        public static string ErrorUpstreamUnavailable { get { return Locale.Pick("服务暂不可用，等待重试", "Service unavailable, waiting to retry"); } }
+        public static string ErrorNetworkUnavailable { get { return Locale.Pick("网络不可用，等待重试", "Network unavailable, waiting to retry"); } }
+
+        public static string FormatErrorCode(string code)
+        {
+            if (code == "UPSTREAM_TIMEOUT")
+            {
+                return ErrorUpstreamTimeout;
+            }
+            if (code == "UPSTREAM_UNAVAILABLE")
+            {
+                return ErrorUpstreamUnavailable;
+            }
+            if (code == "NETWORK_UNAVAILABLE")
+            {
+                return ErrorNetworkUnavailable;
+            }
+            return code;
+        }
 
         // Tray notifications and tooltip.
         public static string TrayRunning { get { return Locale.Pick("正常运行", "Running"); } }

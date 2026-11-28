@@ -1,5 +1,5 @@
 {
-  "remote":{"online":"设备在线","offline":"设备离线","unreachable":"远程未响应","reading":"已提交，读取统计中","idle":"就绪","device":"同步设备","collected":"采集","reported":"上传","cloudCommitted":"提交","webUpdated":"Dashboard 最近读取","thisRefresh":"刷新","historyReviews":"待审阅","v1Imported":"v1 最后导入","requesting":"正在请求采集","collecting":"正在采集","uploading":"正在上传","committed":"已提交，图表已更新","committing":"正在核验回执","no_change":"数据无变化","partial":"部分同步","review":"需要审阅","review_required":"有冲突，需审阅","failed":"失败","expired":"已过期","cancelled":"已取消","stored_v2":"已同步到 v2，当前仍显示旧视图","queued":"排队中","dispatched":"已通知设备","running":"同步中","completed":"已提交，图表已更新","completed_no_change":"数据无变化"},
+  "remote":{"online":"设备在线","offline":"设备离线","unreachable":"远程未响应","reading":"已提交，读取统计中","idle":"就绪","device":"同步设备","collectNow":"立即采集并上传","still_syncing":"仍在同步","updating_charts":"已提交，图表更新中","chartRevision":"图表版本","collected":"采集","reported":"上传","cloudCommitted":"提交","webUpdated":"Dashboard 最近读取","thisRefresh":"刷新","historyReviews":"待审阅","v1Imported":"v1 最后导入","requesting":"正在请求采集","collecting":"正在采集","uploading":"正在上传","committed":"已提交，图表已更新","committing":"正在核验回执","no_change":"数据无变化","partial":"部分同步","review":"需要审阅","review_required":"新增用量已提交，仍待核对同步范围","failed":"失败","expired":"已过期","cancelled":"已取消","stored_v2":"已同步到 v2，当前仍显示旧视图","queued":"排队中","dispatched":"已通知设备","running":"同步中","completed":"已提交，图表已更新","completed_no_change":"数据无变化"},
   "imports": {
     "open": "导入", "title": "跨机器数据导入", "close": "关闭",
     "intro": "导入其他电脑的 Token 数据，校验后确认，可按批次回退",
@@ -40,6 +40,7 @@
     "range14d": "近 14 天",
     "range7d": "近 7 天",
     "refresh": "立即刷新",
+    "refreshCharts": "刷新图表",
     "refreshing": "刷新中…",
     "autoRefresh": "自动刷新",
     "refreshFailed": "刷新失败，保留上次数据；可重试",

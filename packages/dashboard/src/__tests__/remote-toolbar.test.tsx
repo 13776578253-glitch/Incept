@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import {cleanup,render,screen} from '@testing-library/react';
+import {cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
-import {afterEach,expect,it} from 'vitest';
+import {afterEach,expect,it,vi} from 'vitest';
 import zh from '../messages/zh.json';
 import {emptyDashboard} from '../domain';
 import {DashboardToolbar} from '../react/components/dashboard-toolbar';
@@ -59,4 +59,25 @@ it('lists every bound device by name once more than one exists',()=>{
   const select=screen.getByRole('combobox');
   expect(select.textContent).toContain('台式机 · 设备在线');
   expect(select.textContent).toContain('笔记本 · 设备离线');
+});
+it('splits chart refresh from remote capture and shows separate job and chart revisions',()=>{
+  const onRefreshCharts=vi.fn(),onTriggerRemoteSync=vi.fn();
+  const data={...emptyDashboard('7d'),sync:{readMode:'v2' as const,dataRevision:4578}};
+  render(<NextIntlClientProvider locale="zh" messages={{dashboard:zh}}><DashboardToolbar
+    rangePreset="7d" setRangePreset={()=>{}} setSelectedTrendIndex={()=>{}} data={data}
+    isRefreshing={false} refreshError={false} onRefresh={()=>{}} onRefreshCharts={onRefreshCharts} onTriggerRemoteSync={onTriggerRemoteSync}
+    refreshCycle={1} isPollingPaused={false}
+    remoteInfo={{remoteEnabled:true,readMode:'v2',intervalMs:300000,devices:[{id:'a',name:'Win',online:true,
+      lastCollectedAt:'2026-11-27T13:20:00Z',lastCommittedAt:'2026-11-27T13:20:29Z',
+      lastJob:{id:'job-4575',status:'completed',phase:'committed',dataRevision:4575,newTokens:293922}}]}}
+    remoteDevice="a" setRemoteDevice={()=>{}} remoteState="committed" refreshInterval={300000}/>
+  </NextIntlClientProvider>);
+  fireEvent.click(screen.getByRole('button',{name:'刷新图表'}));
+  expect(onRefreshCharts).toHaveBeenCalledTimes(1);
+  expect(onTriggerRemoteSync).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:'立即采集并上传'}));
+  expect(onTriggerRemoteSync).toHaveBeenCalledTimes(1);
+  const timeline=screen.getByTestId('sync-timeline').textContent ?? '';
+  expect(timeline).toContain('rev 4575');
+  expect(timeline).toContain('图表版本 rev 4578');
 });

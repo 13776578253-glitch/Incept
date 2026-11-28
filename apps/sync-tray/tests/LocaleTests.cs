@@ -60,8 +60,14 @@ internal static class LocaleTests
             {
                 select("Zh");
                 Require(text("SettingsTitle") == "设置", "unexpected Chinese title: " + text("SettingsTitle"));
+                string zhTimeout = (string)strings.GetMethod("FormatErrorCode", Flags).Invoke(null, new object[] { "UPSTREAM_TIMEOUT" });
+                Require(zhTimeout == "上传超时，等待重试", "unexpected Chinese timeout label: " + zhTimeout);
                 select("En");
                 Require(text("SettingsTitle") == "Settings", "unexpected English title: " + text("SettingsTitle"));
+                string enTimeout = (string)strings.GetMethod("FormatErrorCode", Flags).Invoke(null, new object[] { "UPSTREAM_TIMEOUT" });
+                Require(enTimeout == "Upload timed out, waiting to retry", "unexpected English timeout label: " + enTimeout);
+                string passthrough = (string)strings.GetMethod("FormatErrorCode", Flags).Invoke(null, new object[] { "CUSTOM_ERROR" });
+                Require(passthrough == "CUSTOM_ERROR", "unknown error code must pass through: " + passthrough);
                 Require(text("RestartAgent").Length > 0 && text("SourcesLabel").Length > 0, "settings strings must not be empty");
             });
             test("unknown saved values fall back to the system default", delegate

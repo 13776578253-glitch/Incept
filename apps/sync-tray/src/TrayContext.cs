@@ -221,7 +221,10 @@ namespace InceptSync
             if (state == AgentVisualState.Attention && attention != _lastError)
             {
                 _lastError = attention;
-                Notify(Strings.AttentionTitle, (attention ?? "REVIEW_REQUIRED") + Strings.AttentionSuffix, ToolTipIcon.Warning);
+                string attentionText = _snapshot != null && !string.IsNullOrEmpty(_snapshot.LastErrorCode)
+                    ? Strings.FormatErrorCode(_snapshot.LastErrorCode)
+                    : (attention ?? "REVIEW_REQUIRED");
+                Notify(Strings.AttentionTitle, attentionText + Strings.AttentionSuffix, ToolTipIcon.Warning);
             }
             else if (state != AgentVisualState.Attention)
             {

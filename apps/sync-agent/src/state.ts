@@ -167,5 +167,5 @@ export class AgentState {
     historicalHeldScopes:Number(this.db.prepare("SELECT COUNT(*) n FROM historical_seals WHERE json_extract(seal_json,'$.disposition')='isolated'").get()!.n),
     quarantineActive:Number(this.db.prepare('SELECT COUNT(*) n FROM session_isolations WHERE active=1').get()!.n),
     lastCollectionReport:this.get('lastCollectionReport'),
-    lastCollectedAt:this.get('lastCollectedAt'),lastReportAt:this.get('lastReportAt'),lastSuccessfulSyncAt:this.get('lastSuccessfulSyncAt'),dataRevision:this.get('dataRevision'),lastErrorCode:this.get('lastErrorCode'),lastErrorAt:this.get('lastErrorAt'),lastHeadLagRecovery:this.get('lastHeadLagRecovery'),issues:this.get('issues'),heartbeat:this.get('heartbeat'),remoteOnline:this.get('remoteOnline'),lastRemoteJob:this.get('lastRemoteJob'),remoteError:this.get('remoteError')};}
+    lastCollectedAt:this.get('lastCollectedAt'),lastReportAt:this.get('lastReportAt'),lastSuccessfulSyncAt:this.get('lastSuccessfulSyncAt'),dataRevision:this.get('dataRevision'),lastErrorCode:this.get('lastErrorCode'),lastErrorAt:this.get('lastErrorAt'),lastErrorDetail:this.get('lastErrorDetail'),lastHeadLagRecovery:this.get('lastHeadLagRecovery'),issues:this.get('issues'),heartbeat:this.get('heartbeat'),remoteOnline:this.get('remoteOnline'),lastRemoteJob:this.get('lastRemoteJob'),remoteError:this.get('remoteError')};}
 }

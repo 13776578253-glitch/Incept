@@ -1,21 +1,55 @@
 import { parentPort,workerData } from 'node:worker_threads';
+import { DatabaseSync } from 'node:sqlite';
 import { CompatibleSyncService } from '../adapters/local/imports/sync/legacy';
 import { SyncError,requireSync } from '../adapters/local/imports/sync/contract';
 import { ImportError } from '../adapters/local/imports/validation';
 import { capacityState,guardCapacity,checkpointWal } from './capacity';
 import { DEFAULT_CAPACITY,SyncTransportError,type SyncWork } from './protocol';
 import {resolveScope,guardExternalLegacy} from './admission';
-import {projection} from './projection';
+import {projection,projectionAllRanges} from './projection';
 import {hash} from '../adapters/local/imports/identity';
 import {listReviewSummaries} from '../adapters/local/imports/sync/reviews';
 import {readSyncDatabaseVersion,syncDatabaseFileIdentity} from './database-version';
-import {usageRanges,type TokenDashboardData} from '../domain';
+import {usageRanges} from '../domain';
+import type {SyncActor} from '../domain/sync';
 
 if(!parentPort)throw new Error('WORKER_REQUIRED');
+const readOnlyMode=workerData.readOnly===true;
+const trusted=workerData.trusted===true;
+
+if(readOnlyMode){
+  // Dedicated read-only projection worker: never acquires SQLite write locks or
+  // blocks begin/stage/commit uploads, and computes all 4 windows in one read.
+  const db=new DatabaseSync(workerData.path,{readOnly:true});
+  const serviceFileIdentity=syncDatabaseFileIdentity(workerData.path);
+  db.exec('PRAGMA query_only=ON; PRAGMA busy_timeout=5000; PRAGMA cache_size=-8192;');
+  const readService={
+    db,
+    revision:()=>Number((db.prepare('SELECT data_revision r FROM sync_meta WHERE id=1').get() as {r?:number}|undefined)?.r??0),
+    owner:(actor:SyncActor)=>{requireSync(actor.role==='owner'&&!!actor.subject&&!!actor.reason,'EXPLICIT_OWNER_REQUIRED');},
+  };
+  parentPort.on('message',({id,work}:{id:number;work:SyncWork})=>{
+    const started=performance.now(),cpu=process.cpuUsage();
+    try{
+      if(work.op!=='projection-snapshots')throw new SyncTransportError('UNKNOWN_OPERATION',400,0);
+      readService.owner(work.actor);requireSync(trusted,'TRUSTED_PROJECTION_REQUIRED');
+      const before=readSyncDatabaseVersion(workerData.path);
+      requireSync(serviceFileIdentity===syncDatabaseFileIdentity(workerData.path)&&before.identity===work.identity&&before.revision===work.revision&&readService.revision()===work.revision,'SNAPSHOT_VERSION_CHANGED');
+      const snapshots=projectionAllRanges(readService,work.home,usageRanges,work.revision,undefined,work.now);
+      for(const range of usageRanges)requireSync(snapshots[range]?.sync?.dataRevision===work.revision,'SNAPSHOT_VERSION_CHANGED');
+      const after=readSyncDatabaseVersion(workerData.path);
+      requireSync(after.identity===before.identity&&after.revision===before.revision,'SNAPSHOT_VERSION_CHANGED');
+      const used=process.cpuUsage(cpu);
+      parentPort!.postMessage({id,result:snapshots,metrics:{wallMs:performance.now()-started,cpuMs:(used.user+used.system)/1000,rssBytes:process.memoryUsage().rss,heapBytes:process.memoryUsage().heapUsed,busyRetries:0}});
+    }catch(error){
+      const code=error instanceof ImportError?'INVALID_TRANSFER':error instanceof SyncError||error instanceof SyncTransportError?error.code:'BACKEND_UNAVAILABLE';
+      parentPort!.postMessage({id,error:{code,status:error instanceof ImportError?400:error instanceof SyncTransportError?error.status:undefined,retryAfter:error instanceof SyncTransportError?error.retryAfter:undefined}});
+    }
+  });
+} else {
 const service=new CompatibleSyncService(workerData.path);
 const serviceFileIdentity=syncDatabaseFileIdentity(workerData.path);
 service.db.exec('PRAGMA cache_size=-8192; PRAGMA wal_autocheckpoint=512;');
-const trusted=workerData.trusted===true;
 const originalBefore=service.beforeVisible;
 if(!trusted)service.beforeVisible=(header,actor)=>{originalBefore?.(header,actor);guardExternalLegacy(service,workerData.legacyPath,header);};
 const policy=workerData.policy??DEFAULT_CAPACITY;
@@ -49,11 +83,8 @@ parentPort.on('message',({id,work}:{id:number;work:SyncWork})=>{
         service.owner(work.actor);requireSync(trusted,'TRUSTED_PROJECTION_REQUIRED');
         const before=readSyncDatabaseVersion(workerData.path);
         requireSync(serviceFileIdentity===syncDatabaseFileIdentity(workerData.path)&&before.identity===work.identity&&before.revision===work.revision&&service.revision()===work.revision,'SNAPSHOT_VERSION_CHANGED');
-        const snapshots:Partial<Record<typeof usageRanges[number],TokenDashboardData>>={};
-        for(const range of usageRanges) {
-          const data=projection(service,work.home,range,work.revision,undefined,work.now);
-          requireSync(data.sync.dataRevision===work.revision,'SNAPSHOT_VERSION_CHANGED');snapshots[range]=data;
-        }
+        const snapshots=projectionAllRanges(service,work.home,usageRanges,work.revision,undefined,work.now);
+        for(const range of usageRanges)requireSync(snapshots[range]?.sync?.dataRevision===work.revision,'SNAPSHOT_VERSION_CHANGED');
         const after=readSyncDatabaseVersion(workerData.path);
         requireSync(after.identity===before.identity&&after.revision===before.revision,'SNAPSHOT_VERSION_CHANGED');
         result=snapshots;break;
@@ -102,3 +133,4 @@ parentPort.on('message',({id,work}:{id:number;work:SyncWork})=>{
     parentPort!.postMessage({id,error:{code,status:error instanceof ImportError?400:error instanceof SyncTransportError?error.status:undefined,retryAfter:error instanceof SyncTransportError?error.retryAfter:undefined}});
   }
 });
+}

@@ -6,7 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { dashboardDate, usageRanges, type TokenDashboardData, type UsageRange } from '../../domain';
 import { overridesPath } from '../local/overrides';
 import { readSyncDatabaseVersion } from '../../sync/database-version';
-import type { SyncExecutor } from '../../sync/executor';
+import type { SyncExecutor, SyncJobTiming } from '../../sync/executor';
 import referenceCatalog from '../../sync/usage-billing-reference-catalog.json';
 import channelMappings from '../../sync/usage-billing-channel-mappings.json';
 
@@ -19,25 +19,56 @@ type Generation = { identity: string; revision: number; day: string };
 type Stored = { version: number; scope: string; snapshots: Snapshots; sync?: Generation };
 type Cached = { fingerprint: string; stored: Stored };
 type Context = ReturnType<typeof snapshotContext>;
-const memory = new Map<string, Cached>();
-const writes = new Map<string, Promise<void>>();
-const refreshes = new Map<string, Promise<void>>();
-const refreshTimers = new Map<string, {timer: ReturnType<typeof setTimeout>;deadline:number}>();
-const executors = new Map<string, SyncExecutor>();
+type SharedSnapshotStore = {
+  memory: Map<string, Cached>;
+  writes: Map<string, Promise<boolean>>;
+  refreshes: Map<string, Promise<void>>;
+  refreshTimers: Map<string, { timer: ReturnType<typeof setTimeout>; deadline: number }>;
+  pendingReschedule: Set<string>;
+  executors: Map<string, SyncExecutor>;
+  registeredExecutors: WeakSet<SyncExecutor>;
+};
+
+// Next.js production builds instantiate separate SSR and API module graphs in
+// the same Node process. Keep listener registration, debounce timers, in-flight
+// refreshes, and publication queues in one process-wide store so each revision
+// is projected and published at most once.
+const SHARED_STORE_KEY = Symbol.for('incept.dashboard.trustedSnapshotStore.v1');
+function sharedStore(): SharedSnapshotStore {
+  const holder = globalThis as Record<PropertyKey, unknown>;
+  let current = holder[SHARED_STORE_KEY] as SharedSnapshotStore | undefined;
+  if (!current) {
+    current = {
+      memory: new Map<string, Cached>(),
+      writes: new Map<string, Promise<boolean>>(),
+      refreshes: new Map<string, Promise<void>>(),
+      refreshTimers: new Map<string, { timer: ReturnType<typeof setTimeout>; deadline: number }>(),
+      pendingReschedule: new Set<string>(),
+      executors: new Map<string, SyncExecutor>(),
+      registeredExecutors: new WeakSet<SyncExecutor>(),
+    };
+    holder[SHARED_STORE_KEY] = current;
+  }
+  return current;
+}
+const store = sharedStore();
 export const TRUSTED_SNAPSHOT_REFRESH_DEBOUNCE_MS = 1_500;
 export const TRUSTED_SNAPSHOT_REFRESH_MAX_WAIT_MS = 10_000;
 function scheduleTrustedDashboardRefresh(context: Context) {
-  if (refreshes.get(context.key)) return;
-  const now = Date.now(), scheduled = refreshTimers.get(context.key);
+  if (store.refreshes.get(context.key)) {
+    store.pendingReschedule.add(context.key);
+    return;
+  }
+  const now = Date.now(), scheduled = store.refreshTimers.get(context.key);
   if (scheduled) clearTimeout(scheduled.timer);
   const deadline = scheduled?.deadline ?? now + TRUSTED_SNAPSHOT_REFRESH_MAX_WAIT_MS;
   const delay = Math.min(TRUSTED_SNAPSHOT_REFRESH_DEBOUNCE_MS, Math.max(0, deadline - now));
   const timer = setTimeout(() => {
-    refreshTimers.delete(context.key);
+    store.refreshTimers.delete(context.key);
     void refreshTrustedDashboardSnapshots().catch(() => {});
   }, delay);
   timer.unref?.();
-  refreshTimers.set(context.key, {timer, deadline});
+  store.refreshTimers.set(context.key, { timer, deadline });
 }
 
 export function trustedDashboardEnabled() {
@@ -73,7 +104,7 @@ function acceptable(stored: Stored, context: Context, identity?: string) {
     && stored.snapshots[range]!.dateRange.to === generation.day && stored.snapshots[range]!.checkedAt === checkedAt);
 }
 async function readStored(context: Context, identity?: string, retries = 2): Promise<Stored | undefined> {
-  const previous = memory.get(context.key);
+  const previous = store.memory.get(context.key);
   try {
     const before = await fingerprint(context.path);
     if (previous?.fingerprint === before && acceptable(previous.stored, context, identity)) return previous.stored;
@@ -85,7 +116,7 @@ async function readStored(context: Context, identity?: string, retries = 2): Pro
     for (const range of usageRanges) if (isSnapshot(stored.snapshots?.[range], range)) snapshots[range] = stored.snapshots[range];
     const valid = { ...stored, snapshots };
     // Never merge stale memory into a freshly replaced file from another process.
-    memory.set(context.key, { fingerprint: after, stored: valid });
+    store.memory.set(context.key, { fingerprint: after, stored: valid });
     return valid;
   } catch {
     return previous && acceptable(previous.stored, context, identity) ? previous.stored : undefined;
@@ -102,9 +133,9 @@ async function publicationLock(path: string) {
   }
   throw Error('SNAPSHOT_PUBLICATION_BUSY');
 }
-async function publish(context: Context, snapshots: Snapshots, generation?: Generation) {
-  const previous = writes.get(context.key) ?? Promise.resolve();
-  const job = previous.catch(() => {}).then(async () => {
+async function publish(context: Context, snapshots: Snapshots, generation?: Generation): Promise<boolean> {
+  const previous = store.writes.get(context.key) ?? Promise.resolve(false);
+  const job = previous.catch(() => false).then(async () => {
     await mkdir(dirname(context.path), { recursive: true });
     const lockPath = context.path + '.lock', temporary = context.path + '.' + randomUUID() + '.tmp';
     const lock = await publicationLock(lockPath);
@@ -113,7 +144,11 @@ async function publish(context: Context, snapshots: Snapshots, generation?: Gene
       if (generation) {
         const current = readSyncDatabaseVersion(context.database!);
         if (current.identity !== generation.identity || current.revision !== generation.revision || dashboardDate(Date.now()) !== generation.day) throw Error('SNAPSHOT_VERSION_CHANGED');
-        if (stored?.sync?.identity === generation.identity && (stored.sync.revision > generation.revision || stored.sync.day > generation.day)) throw Error('SNAPSHOT_VERSION_CHANGED');
+        if (stored?.sync?.identity === generation.identity) {
+          if (stored.sync.revision > generation.revision || stored.sync.day > generation.day) throw Error('SNAPSHOT_VERSION_CHANGED');
+          // Already published for this exact ledger identity, revision, day, and scope.
+          if (currentGeneration(stored, generation, generation.day)) return false;
+        }
       }
       const next: Stored = { version: 1, scope: context.scope, snapshots: generation ? snapshots : { ...stored?.snapshots, ...snapshots }, ...(generation ? { sync: generation } : {}) };
       await writeFile(temporary, JSON.stringify(next), { flag: 'wx', mode: 0o600 });
@@ -125,46 +160,62 @@ async function publish(context: Context, snapshots: Snapshots, generation?: Gene
       await rename(temporary, context.path);
       // Read the actual winner. A different process can replace the path just
       // after rename; pairing its fingerprint with our older object is unsafe.
-      memory.delete(context.key);
+      store.memory.delete(context.key);
       await readStored(context, generation?.identity);
+      return true;
     } finally {
       await unlink(temporary).catch(() => {});
       await lock.close(); await unlink(lockPath).catch(() => {});
     }
   });
-  writes.set(context.key, job);
-  try { await job; } finally { if (writes.get(context.key) === job) writes.delete(context.key); }
+  store.writes.set(context.key, job);
+  try { return await job; } finally { if (store.writes.get(context.key) === job) store.writes.delete(context.key); }
 }
 
 /** Reuse the application's one bounded sync worker; no public collector jobs. */
 export function configureTrustedDashboardExecutor(executor: SyncExecutor) {
   const path = resolve(executor.path);
-  if (executors.get(path) === executor) return;
-  executors.set(path, executor);
+  store.executors.set(path, executor);
+  if (store.registeredExecutors.has(executor)) return;
+  store.registeredExecutors.add(executor);
   executor.onCommitted(() => {
     const context = snapshotContext();
     if (context.database === path) scheduleTrustedDashboardRefresh(context);
   });
 }
 export function refreshTrustedDashboardSnapshots(): Promise<void> {
-  const context = snapshotContext(),scheduled=refreshTimers.get(context.key);
-  if(scheduled){clearTimeout(scheduled.timer);refreshTimers.delete(context.key);}
+  const context = snapshotContext(), scheduled = store.refreshTimers.get(context.key);
+  if (scheduled) { clearTimeout(scheduled.timer); store.refreshTimers.delete(context.key); }
   if (!context.database) return Promise.resolve();
-  const active = refreshes.get(context.key);
+  const active = store.refreshes.get(context.key);
   if (active) return active;
   const job = (async () => {
-    const executor = executors.get(context.database!);
+    const executor = store.executors.get(context.database!);
     if (!executor) return;
     for (let attempt = 0; attempt < 3; attempt++) {
       const version = readSyncDatabaseVersion(context.database!), now = Date.now(), day = dashboardDate(now);
       const stored = await readStored(context, version.identity);
-      if (stored?.sync?.revision === version.revision && stored.sync.day === day && usageRanges.every(range => isSnapshot(stored.snapshots[range], range))) return;
+      if (currentGeneration(stored, version, day)) return;
       try {
+        let timing: SyncJobTiming | undefined;
+        const started = performance.now();
         const snapshots = await executor.execute<Snapshots>({ op: 'projection-snapshots', home: context.home, revision: version.revision, identity: version.identity, now,
-          actor: { role: 'owner', subject: 'public-dashboard-cache', reason: 'Publish committed usage summary' } });
+          actor: { role: 'owner', subject: 'public-dashboard-cache', reason: 'Publish committed usage summary' } }, undefined, undefined, value => { timing = value; });
         if (!usageRanges.every(range => isSnapshot(snapshots[range], range) && snapshots[range]!.sync?.dataRevision === version.revision
           && snapshots[range]!.checkedAt === new Date(now).toISOString() && snapshots[range]!.dateRange.to === day)) throw Error('INVALID_SNAPSHOT_GENERATION');
-        await publish(context, snapshots, { ...version, day }); return;
+        const published = await publish(context, snapshots, { ...version, day });
+        if (published) {
+          console.info(JSON.stringify({
+            event: 'dashboard_snapshot_published',
+            revision: version.revision,
+            day,
+            queueWaitMs: timing?.queueWaitMs ?? 0,
+            execMs: timing?.execMs ?? Math.round(performance.now() - started),
+            workerWallMs: timing?.workerWallMs ?? null,
+            totalMs: Math.round(performance.now() - started),
+          }));
+        }
+        return;
       } catch (error) {
         if (!['SNAPSHOT_VERSION_CHANGED', 'SYNC_DATABASE_REPLACED'].includes(error instanceof Error ? error.message : '')) throw error;
       }
@@ -172,8 +223,20 @@ export function refreshTrustedDashboardSnapshots(): Promise<void> {
     // Retry on the next receipt/poll rather than monopolizing the worker during
     // continuous writes or publishing a mixed/older generation.
     throw Error('SNAPSHOT_VERSION_CHANGED');
-  })().finally(() => { if (refreshes.get(context.key) === job) refreshes.delete(context.key); });
-  refreshes.set(context.key, job); return job;
+  })().finally(() => {
+    if (store.refreshes.get(context.key) === job) store.refreshes.delete(context.key);
+    if (store.pendingReschedule.delete(context.key) && context.database) {
+      try {
+        const version = readSyncDatabaseVersion(context.database);
+        const day = dashboardDate(Date.now());
+        const cached = store.memory.get(context.key)?.stored;
+        if (!currentGeneration(cached, version, day)) scheduleTrustedDashboardRefresh(context);
+      } catch {
+        // The next read or commit will reschedule if the file is transiently unavailable.
+      }
+    }
+  });
+  store.refreshes.set(context.key, job); return job;
 }
 function currentGeneration(stored: Stored | undefined, version: Pick<Generation, 'identity' | 'revision'>, day: string) {
   return !!stored?.sync && stored.sync.identity === version.identity && stored.sync.revision === version.revision && stored.sync.day === day

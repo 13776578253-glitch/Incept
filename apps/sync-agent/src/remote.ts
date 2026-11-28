@@ -31,11 +31,21 @@ export class RemoteLink {
   async discover(){if(this.stopped||Date.now()-this.lastDiscovery<30000)return;this.lastDiscovery=Date.now();try{const result=await this.http.request<{job:{id:string;expiresAt:string}|null}>('/agent/jobs');if(result.job)this.accept({jobId:result.job.id,expiresAt:result.job.expiresAt,connectionId:this.connection});}catch{}}
   hasPending(){return !!this.state.db.prepare("SELECT 1 FROM remote_jobs WHERE state IN ('pending','running','reporting') AND next_retry<=? LIMIT 1").get(Date.now());}
   async execute(run:()=>Promise<unknown>){const row=this.state.db.prepare("SELECT * FROM remote_jobs WHERE state IN ('pending','running','reporting') AND next_retry<=? ORDER BY expires_at LIMIT 1").get(Date.now());if(!row)return;
-    const id=String(row.id);if(Number(row.expires_at)<=Date.now()){this.state.db.prepare("UPDATE remote_jobs SET state='expired' WHERE id=?").run(id);return;}
+    const id=String(row.id);
+    if(Number(row.expires_at)<=Date.now()){
+      // Release the server's active job slot promptly when the Agent abandons an expired job.
+      await this.http.request('/agent/jobs/'+id+'/fail','POST',{reason:'JOB_EXPIRED'}).catch(()=>{});
+      this.state.db.prepare("UPDATE remote_jobs SET state='expired' WHERE id=?").run(id);
+      return;
+    }
     const telemetry=setInterval(()=>{if(!this.stopped&&this.socket?.readyState===1){try{this.pong(this.socket);}catch{this.socket.close();}}},1000);telemetry.unref();
     try{let completion:Completion|undefined=row.result_json?JSON.parse(String(row.result_json)):undefined;
-      if(!completion){await this.http.request('/agent/jobs/'+id+'/start','POST',{});const cursor=row.cursor===null?Number(this.state.db.prepare('SELECT COALESCE(MAX(rowid),0) n FROM receipts').get()!.n):Number(row.cursor);
-        this.state.db.prepare("UPDATE remote_jobs SET state='running',cursor=? WHERE id=?").run(cursor,id);
+      if(!completion){
+        const started=await this.http.request<{job?:{expiresAt?:string}}>('/agent/jobs/'+id+'/start','POST',{});
+        const serverDeadline=started?.job?.expiresAt?Date.parse(started.job.expiresAt):NaN;
+        const alignedExpiry=Number.isFinite(serverDeadline)&&serverDeadline>Number(row.expires_at)?serverDeadline:Number(row.expires_at);
+        const cursor=row.cursor===null?Number(this.state.db.prepare('SELECT COALESCE(MAX(rowid),0) n FROM receipts').get()!.n):Number(row.cursor);
+        this.state.db.prepare("UPDATE remote_jobs SET state='running',cursor=?,expires_at=? WHERE id=?").run(cursor,alignedExpiry,id);
         const runResult=await run() as RunSummary|undefined;
         const summary=runResult??{};
         const batches=this.state.db.prepare('SELECT batch FROM receipts WHERE rowid>? ORDER BY rowid LIMIT 257').all(cursor).map(r=>String(r.batch));if(batches.length>256)throw Error('JOB_RECEIPT_LIMIT');
