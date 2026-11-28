@@ -58,7 +58,8 @@ export class SyncEngine {
         const isolations:SessionIsolation[]=[...part.isolations??[],...part.captures.filter(c=>restricted(c.sessionId)).map(c=>({source,sessionId:c.sessionId,
           reason:policyFor(source,c.sessionId)?.disposition==='isolated'?'HISTORICAL_CONTINUATION_UNVERIFIED':'HISTORICAL_SCOPE_SEALED',affectedRecords:c.records.length,unattributedTokens:0,coverage:'session' as const}))];
         captured.captures.push(...healthy);captured.issues.push(...part.issues,...(isolations.length?[source+':SESSION_ISOLATED']:[]));captured.isolations.push(...isolations);
-        quarantineNew+=this.state.observeSessionIsolations(source,isolations,healthy.map(c=>c.sessionId));
+        const fullScan=!classifyIssues(part.issues,[source]).blocking.length;
+        quarantineNew+=this.state.observeSessionIsolations(source,isolations,healthy.map(c=>c.sessionId),{fullScan});
         sourceReports[source]={capturedSessions:healthy.length,isolatedSessions:new Set(isolations.map(item=>item.sessionId)).size,
           sealedSessions:currentPolicies.filter(parent=>parent.header.manifest.scope.source===source&&policyFor(source,parent.header.manifest.scope.sessionId)?.disposition!=='isolated').length,
           heldHistoricalSessions:currentPolicies.filter(parent=>parent.header.manifest.scope.source===source&&policyFor(source,parent.header.manifest.scope.sessionId)?.disposition==='isolated').length,
@@ -163,7 +164,18 @@ export class SyncEngine {
     }
     const failed=Object.values(sourceReports).some(report=>report.outcome==='source_failed'),healthy=Object.values(sourceReports).some(report=>report.capturedSessions>0);
     const outcome=failed&&!healthy||uploadIncomplete&&!sent?'source_failed':currentPolicies.some(parent=>this.config.allowedSources.includes(parent.header.manifest.scope.source))||this.state.sessionIsolations().some(item=>item.active&&this.config.allowedSources.includes(item.source))||failed||classified.blocking.length||reviewTotal||uploadIncomplete?'partial_success':sent?'complete_success':'no_change';
-    const integrityReport=this.buildIntegrityReport(outcome);
+    let latestObservedAtMs:number|undefined;
+    for(const capture of captured.captures){
+      for(const record of capture.records){
+        const ts=record.event.timestampMs;
+        if(Number.isFinite(ts)&&(latestObservedAtMs===undefined||ts>latestObservedAtMs))latestObservedAtMs=ts;
+      }
+    }
+    for(const iso of captured.isolations){
+      const ts=iso.lastAffectedAtMs??iso.firstAffectedAtMs;
+      if(typeof ts==='number'&&Number.isFinite(ts)&&(latestObservedAtMs===undefined||ts>latestObservedAtMs))latestObservedAtMs=ts;
+    }
+    const integrityReport=this.buildIntegrityReport(outcome,latestObservedAtMs);
     this.state.set('lastIntegrityReport',integrityReport);
     this.state.set('lastCollectionReport',{outcome,sourceReports,quarantineNew,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null,collectTotalMs,uploadMs});
     // Best-effort sanitized integrity push after every cycle (scheduled or manual);
@@ -172,8 +184,12 @@ export class SyncEngine {
     return {sent,newTokens,uploadedTokens,tokenDeltaKnown:newTokens!==null,reviewTotal,reviewNew,held:this.state.heldCount(),warnings:classified.warnings.length,blockingIssues:classified.blocking.length+(failed?1:0)+(lineage||quarantined?1:0),
       outcome,quarantineNew,sourceReports,collectTotalMs,uploadMs,integrity:integrityReport,...this.state.status()};
   }
-  private buildIntegrityReport(outcome:string){
+  private buildIntegrityReport(outcome:string,latestObservedAtMs?:number){
     const active=this.state.sessionIsolations().filter(item=>item.active&&this.config.allowedSources.includes(item.source));
+    const policyScopes=new Set<string>([
+      ...this.state.historicalPolicies().map(policy=>policy.scope),
+      ...this.state.supersededScopes().map(item=>scopeKey(item.source,item.sessionId)),
+    ]);
     const lineageMap=new Map<string,{records:number;tokens?:number;rev:number|null}>();
     for(const row of this.state.db.prepare('SELECT scope,parent_json,receipt_json FROM lineage').all() as Array<{scope:string;parent_json:string;receipt_json:string}>){
       try{
@@ -186,26 +202,45 @@ export class SyncEngine {
         });
       }catch{/* ignore malformed row */}
     }
-    const items=active.map(item=>{
+    const frozenCutoffMs=typeof latestObservedAtMs==='number'&&Number.isFinite(latestObservedAtMs)?latestObservedAtMs-14*24*60*60*1000:undefined;
+    const allItems=active.map(item=>{
       const key=scopeKey(item.source,item.sessionId);
       const confirmed=lineageMap.get(key);
       const observedTokens=Math.max(0,Math.round(Number(item.unattributedTokens??0)));
       const blockedRecords=confirmed?Math.max(0,item.affectedRecords-confirmed.records):Math.max(0,item.affectedRecords);
-      const blockedTokens=confirmed&&confirmed.tokens!==undefined?Math.max(0,observedTokens-confirmed.tokens):observedTokens;
+      const policyExcluded=item.coverage==='prefix'
+        ||item.reason==='HISTORICAL_SCOPE_SEALED'
+        ||item.reason==='HISTORICAL_CONTINUATION_UNVERIFIED'
+        ||item.reason==='MISSING_ORIGIN_RETAINED'&&observedTokens===0
+        ||policyScopes.has(key);
+      const blockedTokens=policyExcluded
+        ?0
+        :confirmed
+          ?confirmed.tokens!==undefined
+            ?Math.max(0,observedTokens-confirmed.tokens)
+            :blockedRecords>0?observedTokens:0
+          :observedTokens;
+      const itemLastMs=typeof item.lastAffectedAtMs==='number'&&Number.isFinite(item.lastAffectedAtMs)
+        ?item.lastAffectedAtMs
+        :typeof item.firstAffectedAtMs==='number'&&Number.isFinite(item.firstAffectedAtMs)?item.firstAffectedAtMs:undefined;
+      const historicalFrozen=frozenCutoffMs!==undefined&&itemLastMs!==undefined&&itemLastMs<frozenCutoffMs;
       return {
         source:item.source,
         sessionHash:hash([item.source,item.sessionId]).slice(0,12),
         models:(item.models??[]).slice(0,12),
         reason:item.reason,
         affectedRecords:Math.max(0,item.affectedRecords),
-        blockedRecords,
+        blockedRecords:policyExcluded?0:blockedRecords,
         blockedTokens,
         firstAffectedAt:typeof item.firstAffectedAtMs==='number'&&Number.isFinite(item.firstAffectedAtMs)?new Date(item.firstAffectedAtMs).toISOString():null,
         lastAffectedAt:typeof item.lastAffectedAtMs==='number'&&Number.isFinite(item.lastAffectedAtMs)?new Date(item.lastAffectedAtMs).toISOString():null,
         lastConfirmedRevision:confirmed?.rev??null,
+        historicalFrozen,
       };
     });
-    const actionable=items.filter(item=>item.blockedTokens>0||item.blockedRecords>0);
+    const actionable=allItems
+      .filter(item=>item.blockedTokens>0&&!item.historicalFrozen)
+      .map(({historicalFrozen:_frozen,...rest})=>rest);
     actionable.sort((a,b)=>b.blockedTokens-a.blockedTokens||b.blockedRecords-a.blockedRecords||a.sessionHash.localeCompare(b.sessionHash));
     const earliestMs=actionable.map(item=>item.firstAffectedAt?Date.parse(item.firstAffectedAt):NaN).filter(Number.isFinite);
     const dataRev=this.state.get<number>('dataRevision');
@@ -214,7 +249,7 @@ export class SyncEngine {
       collectedAt:this.state.get<string>('lastCollectedAt')??new Date().toISOString(),
       outcome,
       lastConfirmedRevision:typeof dataRev==='number'&&Number.isSafeInteger(dataRev)?dataRev:null,
-      totalIsolatedSessions:new Set(items.map(item=>`${item.source}:${item.sessionHash}`)).size,
+      totalIsolatedSessions:new Set(allItems.map(item=>`${item.source}:${item.sessionHash}`)).size,
       actionableSessions:new Set(actionable.map(item=>`${item.source}:${item.sessionHash}`)).size,
       totalBlockedRecords:actionable.reduce((sum,item)=>sum+item.blockedRecords,0),
       totalBlockedTokens:actionable.reduce((sum,item)=>sum+item.blockedTokens,0),

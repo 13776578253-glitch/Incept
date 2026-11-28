@@ -34,7 +34,7 @@ export class AgentState {
   sessionIsolations(){return this.db.prepare('SELECT * FROM session_isolations ORDER BY source,session_id,reason').all().map(row=>({
     ...JSON.parse(String(row.detail_json)) as SessionIsolation,id:String(row.id),firstSeen:String(row.first_seen),lastSeen:String(row.last_seen),
     occurrences:Number(row.occurrences),active:row.active===1}));}
-  observeSessionIsolations(source:string,items:SessionIsolation[],healthySessions:string[]){return this.tx(()=>{
+  observeSessionIsolations(source:string,items:SessionIsolation[],healthySessions:string[],options?:{fullScan?:boolean}){return this.tx(()=>{
     const now=new Date().toISOString();let added=0;
     for(const session of healthySessions)if(!items.some(item=>item.sessionId===session))this.db.prepare('UPDATE session_isolations SET active=0 WHERE source=? AND session_id=?').run(source,session);
     // One notification per issue identity. Changed counters do not create another alarm.
@@ -51,6 +51,11 @@ export class AgentState {
     for(const [sessionId,ids] of activeIdsBySession){
       const existing=this.db.prepare('SELECT id FROM session_isolations WHERE source=? AND session_id=? AND active=1').all(source,sessionId) as Array<{id:string}>;
       for(const row of existing)if(!ids.has(String(row.id)))this.db.prepare('UPDATE session_isolations SET active=0 WHERE id=?').run(row.id);
+    }
+    if(options?.fullScan){
+      const currentIds=new Set(unique.keys());
+      const existing=this.db.prepare("SELECT id FROM session_isolations WHERE source=? AND active=1 AND reason<>'MISSING_ORIGIN_RETAINED'").all(source) as Array<{id:string}>;
+      for(const row of existing)if(!currentIds.has(String(row.id)))this.db.prepare('UPDATE session_isolations SET active=0 WHERE id=?').run(row.id);
     }
     return added;
   });}

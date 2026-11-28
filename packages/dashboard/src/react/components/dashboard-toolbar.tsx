@@ -290,36 +290,36 @@ export function DashboardToolbar({
                   data-testid="sync-timeline"
                   className="dashboard-sync-popover space-y-1.5 text-[0.7rem] tabular-nums text-[var(--color-text-muted)]"
                 >
-                  <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border-faint)] pb-1 text-[0.68rem] font-medium text-[var(--color-text)]">
-                    <span>
+                  <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border-faint)] pb-1 text-[0.68rem] font-medium text-[var(--color-text)]">
+                    <span className="shrink-0 whitespace-nowrap">
                       {t('remote.device')} · {t(selectedDevice?.online ? 'remote.online' : 'remote.offline')}
                     </span>
-                    <span className="text-[var(--color-text-soft)]">{refreshState}</span>
+                    <span className="text-right text-[var(--color-text-soft)]">{refreshState}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t('remote.collected')} </span>
-                    <span className="font-mono text-[var(--color-text)]">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="shrink-0 whitespace-nowrap">{t('remote.collected')} </span>
+                    <span className="text-right font-mono text-[var(--color-text)]">
                       {selectedDevice?.lastCollectedAt ? formatDateTimeShort(selectedDevice.lastCollectedAt) : '—'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t('remote.cloudCommitted')} </span>
-                    <span className="font-mono text-[var(--color-text)]">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="shrink-0 whitespace-nowrap">{t('remote.cloudCommitted')} </span>
+                    <span className="text-right font-mono text-[var(--color-text)]">
                       {selectedDevice?.lastCommittedAt ? formatDateTimeShort(selectedDevice.lastCommittedAt) : '—'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t('remote.thisRefresh')} </span>
-                    <span className="font-mono text-[var(--color-text)]">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="shrink-0 whitespace-nowrap">{t('remote.thisRefresh')} </span>
+                    <span className="text-right font-mono text-[var(--color-text)]">
                       {refreshState}
                       {job?.dataRevision !== null && job?.dataRevision !== undefined ? ` · rev ${job.dataRevision}` : ''}
                       {job?.newTokens ? ` · +${job.newTokens} tokens` : ''}
                     </span>
                   </div>
                   {chartRevision !== undefined || snapshotLag ? (
-                    <div className="flex items-center justify-between gap-3">
-                      <span>{t('remote.chartRevision')} </span>
-                      <span className="font-mono text-[var(--color-text)]">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <span className="shrink-0 whitespace-nowrap">{t('remote.chartRevision')} </span>
+                      <span className="text-right font-mono text-[var(--color-text)]">
                         {snapshotLag
                           ? `rev ${snapshotLag.publishedRevision} → ${snapshotLag.targetRevision}`
                           : `rev ${chartRevision}`}
@@ -329,10 +329,10 @@ export function DashboardToolbar({
                   {preCommitIsolatedSessions > 0 && preCommitIntegrity ? (
                     <div
                       data-testid="sync-timeline-isolation"
-                      className="flex items-center justify-between gap-3 text-[var(--badge-amber-fg)]"
+                      className="flex items-baseline justify-between gap-4 text-[var(--badge-amber-fg)]"
                     >
-                      <span>{t('workbench.diagnosticsSectionPreCommitIsolation')} </span>
-                      <span className="font-mono font-medium">
+                      <span className="shrink-0 whitespace-nowrap">{t('workbench.diagnosticsSectionPreCommitIsolation')} </span>
+                      <span className="text-right font-mono font-medium">
                         {t('workbench.diagnosticsPreCommitSummary', {
                           sessions: preCommitIsolatedSessions,
                           tokens: formatCompactTokens(preCommitIntegrity.totalBlockedTokens),
@@ -341,15 +341,15 @@ export function DashboardToolbar({
                     </div>
                   ) : null}
                   {historyReviews > 0 ? (
-                    <div className="flex items-center justify-between gap-3 text-[var(--badge-amber-fg)]">
-                      <span>{t('remote.historyReviews')} </span>
-                      <span className="font-mono font-medium">{historyReviews}</span>
+                    <div className="flex items-baseline justify-between gap-4 text-[var(--badge-amber-fg)]">
+                      <span className="shrink-0 whitespace-nowrap">{t('remote.historyReviews')} </span>
+                      <span className="text-right font-mono font-medium">{historyReviews}</span>
                     </div>
                   ) : null}
                   {legacyImportedAt ? (
-                    <div className="flex items-center justify-between gap-3">
-                      <span>{t('remote.v1Imported')} </span>
-                      <span className="font-mono text-[var(--color-text)]">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <span className="shrink-0 whitespace-nowrap">{t('remote.v1Imported')} </span>
+                      <span className="text-right font-mono text-[var(--color-text)]">
                         {formatDateTimeShort(legacyImportedAt)}
                       </span>
                     </div>

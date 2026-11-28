@@ -244,3 +244,40 @@ test('reconcileHeads with explicit session reconciles pre-commit isolated lineag
     assert.equal(state.sessionIsolations().filter(i=>i.active).length,0);
   }finally{state.close();service.close();}
 }));
+
+test('full scan deactivates stale zombie isolations and integrity report filters policy/prefix/frozen noise while keeping active leaks',()=>sandbox(async dir=>{
+  const home=join(dir,'home');f.writePhase0Pricing(home);
+  const nowDay=Date.parse('2026-11-28T10:00:00Z');
+  const frozenOldDay=Date.parse('2026-10-20T10:00:00Z');
+  session(home,'healthy-now',[point(nowDay,50)]);
+  // Active recent opening-prefix session with recovery anchor -> coverage:'prefix' must not count as actionable
+  session(home,'recovered-prefix',[point(nowDay-60_000,10_000,null),point(nowDay-30_000,10_020,20)]);
+  // Historical frozen malformed session (>14d older than latestObservedAtMs) -> must not count as actionable
+  const frozenFile=session(home,'frozen-old',[point(frozenOldDay,5_000)]);
+  appendFileSync(frozenFile,'{"truncated":\n');
+  // Active recent broken session -> MUST remain actionable!
+  session(home,'active-broken',[point(nowDay-10_000,2_000,10)]);
+
+  const state=new AgentState(join(dir,'state')),service=new f.CompatibleSyncService(join(dir,'cloud.db'));
+  state.set('recoveryRanges',[{source:'codex',sessionId:'recovered-prefix',afterTimestampMs:nowDay-60_000}]);
+  // Seed a stale zombie shard-ID isolation from an older collector version that never appears on disk anymore
+  state.observeSessionIsolations('codex',[
+    {source:'codex',sessionId:'stale-zombie-shard',reason:'OPENING_PREFIX_MISSING',affectedRecords:1,unattributedTokens:162_928_845,coverage:'session',firstAffectedAtMs:frozenOldDay,lastAffectedAtMs:frozenOldDay},
+    {source:'codex',sessionId:'sealed-zero',reason:'HISTORICAL_SCOPE_SEALED',affectedRecords:20,unattributedTokens:0,coverage:'session'},
+  ],[]);
+  assert.equal(state.sessionIsolations().filter(i=>i.active).length,2);
+
+  const config={version:1,endpoint:'https://synthetic.invalid',deviceId,home,allowedSources:['codex']};
+  const engine=new SyncEngine(state,config,localHttp(service),(h,_a,parents,_sig,opts)=>scan(h,dir,parents,opts));
+  try{
+    const res=await engine.run();
+    // Stale zombie shard and sealed-zero were NOT observed on this full scan -> deactivated!
+    assert.equal(state.sessionIsolations().find(i=>i.sessionId==='stale-zombie-shard')?.active,false);
+    assert.equal(state.sessionIsolations().find(i=>i.sessionId==='sealed-zero')?.active,false);
+    // Only active-broken should be actionable (recovered-prefix is coverage:'prefix', frozen-old is >14d older than nowDay)
+    assert.equal(res.integrity.actionableSessions,1);
+    assert.equal(res.integrity.items.length,1);
+    assert.equal(res.integrity.items[0].reason,'OPENING_PREFIX_MISSING');
+    assert.equal(res.integrity.totalBlockedTokens,1990);
+  }finally{state.close();service.close();}
+}));
